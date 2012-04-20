@@ -9,7 +9,6 @@ remote dynamic communication middleware. *Oh* means *Open Hprose*.
 study, then you can use it to easily construct cross language cross platform
 distributed application system.
 
-
 Language support
 ----------------
 
