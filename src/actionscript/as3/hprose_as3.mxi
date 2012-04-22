@@ -1,0 +1,34 @@
+<macromedia-extension
+	 name="Hprose Client Library for ActionScript 3.0"
+	 version="1.3"
+	 type="Flash component">
+
+	<author name="Ma Bingyao" />
+
+	<products>
+		<product name="Flash" version="9" primary="true" />
+	</products>
+
+	<description>
+	<![CDATA[
+	Hprose Client for ActionScript 3.0
+	]]>
+	</description>
+
+	<ui-access>
+	<![CDATA[
+	This Hprose Client Component is accessed by choosing Window > Components > Data > Hprose.
+	]]>
+	</ui-access>
+
+	<license-agreement>
+	<![CDATA[
+
+	]]>
+	</license-agreement>
+
+	<files>
+		<file source="hprose_as3.swc" destination="$flash/Components/Data" />
+	</files>
+
+</macromedia-extension>
