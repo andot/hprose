@@ -1,0 +1,19 @@
+Metadata-Version: 1.1
+Name: Hprose
+Version: 1.2.0
+Author: Ma Bingyao
+Author-email: andot at hprfc com
+Maintainer: Ma Bingyao
+Maintainer-email: andot at hprfc com
+Home-page: http://www.hprose.com
+Summary: Hprose is a High Performance Remote Object Service Engine that works over the Internet.
+Description: Hprose is a High Performance Remote Object Service Engine that works over the Internet.
+Keywords: hprose
+Platform: Any
+Classifier: Development Status :: 4 - Beta
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Programming Language :: Python
+Classifier: Topic :: Internet :: WWW/HTTP :: WSGI :: Application
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: Topic :: Software Development :: Object Brokering
+Classifier: Topic :: System :: Distributed Computing
