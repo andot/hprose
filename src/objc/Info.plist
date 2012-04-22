@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleGetInfoString</key>
+	<string>Hprose for Objective-C</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.hprfc.hprose</string>
+	<key>CFBundleName</key>
+	<string>Hprose</string>
+	<key>CFBundlePackageType</key>
+	<string>FMWK</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.3</string>
+	<key>CFBundleVersion</key>
+	<string>5</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright HPRFC Software Co.,Ltd. All rights reserved.</string>
+</dict>
+</plist>
