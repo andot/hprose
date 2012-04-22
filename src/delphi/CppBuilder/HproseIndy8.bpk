@@ -1,0 +1,140 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!-- C++Builder XML Project -->
+<PROJECT>
+  <MACROS>
+    <VERSION value="BCB.06.00"/>
+    <PROJECT value="HproseIndy8.bpl"/>
+    <OBJFILES value="HproseIndy8.obj ..\HproseIO.obj ..\HproseClient.obj ..\HproseCommon.obj 
+      ..\Indy8\HproseIdHttpClient.obj"/>
+    <RESFILES value="HproseIndy8.res"/>
+    <IDLFILES value=""/>
+    <IDLGENFILES value=""/>
+    <DEFFILE value=""/>
+    <RESDEPEN value="$(RESFILES)"/>
+    <LIBFILES value=""/>
+    <LIBRARIES value="dbxcds.lib soaprtl.lib nmfast.lib dbexpress.lib inetdbxpress.lib 
+      inetdbbde.lib bcbsmp.lib dsnapcon.lib dsnapcrba.lib visualdbclx.lib 
+      teeqr.lib dss.lib tee.lib teedb.lib teeui.lib qrpt.lib bdecds.lib cds.lib 
+      ibxpress.lib vcldbx.lib bdertl.lib adortl.lib vcldb.lib"/>
+    <SPARELIBS value="vcldb.lib adortl.lib bdertl.lib vcldbx.lib ibxpress.lib cds.lib bdecds.lib 
+      qrpt.lib teeui.lib teedb.lib tee.lib dss.lib teeqr.lib visualdbclx.lib 
+      dsnapcrba.lib dsnapcon.lib bcbsmp.lib inetdbbde.lib inetdbxpress.lib 
+      dbexpress.lib nmfast.lib bcbie.lib soaprtl.lib dbxcds.lib indy.lib rtl.lib"/>
+    <PACKAGES value="rtl.bpi indy.bpi bcbie.bpi"/>
+    <PATHCPP value=".;"/>
+    <PATHPAS value=".;..;..\Indy8"/>
+    <PATHRC value=".;"/>
+    <PATHASM value=".;"/>
+    <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
+    <RELEASELIBPATH value="$(BCB)\lib\release"/>
+    <LINKER value="ilink32"/>
+    <USERDEFINES value=""/>
+    <SYSDEFINES value="_RTLDLL;NO_STRICT;USEPACKAGES"/>
+    <MAINSOURCE value="HproseIndy8.cpp"/>
+    <INCLUDEPATH value="..\;..;..\Indy8;&quot;C:\Program Files\Borland\CBuilder6\Projects&quot;;Z:\Svnroot\hprose\trunk\delphi\Indy8;Z:\Svnroot\hprose\trunk\delphi;$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="..\;..;..\Indy8;&quot;C:\Program Files\Borland\CBuilder6\Projects&quot;;Z:\Svnroot\hprose\trunk\delphi\Indy8;Z:\Svnroot\hprose\trunk\delphi;$(BCB)\lib\obj;$(BCB)\lib"/>
+    <WARNINGS value="-w-par"/>
+    <OTHERFILES value=""/>
+  </MACROS>
+  <OPTIONS>
+    <IDLCFLAGS value="-I..\. -I.. -I..\Indy8 -I&quot;C:\Program Files\Borland\CBuilder6\Projects&quot; 
+      -IZ:\Svnroot\hprose\trunk\delphi\Indy8 -IZ:\Svnroot\hprose\trunk\delphi 
+      -I$(BCB)\include -I$(BCB)\include\vcl -src_suffix cpp -boa"/>
+    <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -a8 -b- -k- -vi -c -tWM"/>
+    <PFLAGS value="-$Y- -$L- -$D- -$C- -$A8 -v -JPHNE -M"/>
+    <RFLAGS value=""/>
+    <AFLAGS value="/mx /w2 /zn"/>
+    <LFLAGS value="-D&quot;Hprose for C++ Builder with Indy8&quot; -aa -Tpp -x -Gn -Gl -Gi"/>
+    <OTHERFILES value=""/>
+  </OPTIONS>
+  <LINKER>
+    <ALLOBJ value="c0pkg32.obj $(PACKAGES) Memmgr.Lib sysinit.obj $(OBJFILES)"/>
+    <ALLRES value="$(RESFILES)"/>
+    <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cp32mti.lib"/>
+    <OTHERFILES value=""/>
+  </LINKER>
+  <FILELIST>
+      <FILE FILENAME="HproseIndy8.res" FORMNAME="" UNITNAME="HproseIndy8.res" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="HproseIndy8.cpp" FORMNAME="" UNITNAME="HproseIndy8" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="rtl.bpi" FORMNAME="" UNITNAME="rtl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\HproseIO.pas" FORMNAME="" UNITNAME="HproseIO" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\HproseClient.pas" FORMNAME="" UNITNAME="HproseClient" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\HproseCommon.pas" FORMNAME="" UNITNAME="HproseCommon" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\Indy8\HproseIdHttpClient.pas" FORMNAME="" UNITNAME="HproseIdHttpClient" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="C:\Program Files\Borland\CBuilder6\Lib\Release\indy.bpi" FORMNAME="" UNITNAME="indy" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="bcbie.bpi" FORMNAME="" UNITNAME="bcbie" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+  </FILELIST>
+  <BUILDTOOLS>
+  </BUILDTOOLS>
+
+  <IDEOPTIONS>
+[Version Info]
+IncludeVerInfo=1
+AutoIncBuild=0
+MajorVer=1
+MinorVer=3
+Release=0
+Build=0
+Debug=0
+PreRelease=0
+Special=0
+Private=0
+DLL=0
+Locale=1033
+CodePage=1252
+
+[Version Info Keys]
+CompanyName=HPRFC
+FileDescription=
+FileVersion=1.3.0.0
+InternalName=Hprose
+LegalCopyright=
+LegalTrademarks=
+OriginalFilename=
+ProductName=Hprose
+ProductVersion=1.3.0.0
+Comments=
+
+[HistoryLists\hlIncludePath]
+Count=1
+Item0=..\Indy8;..\;C:\Program Files\Borland\CBuilder6\Projects;Z:\Svnroot\hprose\trunk\delphi\Indy8;Z:\Svnroot\hprose\trunk\delphi;$(BCB)\include;$(BCB)\include\vcl
+
+[HistoryLists\hlLibraryPath]
+Count=1
+Item0=..\Indy8;..\;C:\Program Files\Borland\CBuilder6\Projects;Z:\Svnroot\hprose\trunk\delphi\Indy8;Z:\Svnroot\hprose\trunk\delphi;$(BCB)\lib\obj;$(BCB)\lib
+
+[HistoryLists\hlDebugSourcePath]
+Count=1
+Item0=$(BCB)\source\vcl
+
+[Debugging]
+DebugSourceDirs=$(BCB)\source\vcl
+
+[Parameters]
+RunParams=
+Launcher=
+UseLauncher=0
+DebugCWD=
+HostApplication=
+RemoteHost=
+RemotePath=
+RemoteLauncher=
+RemoteCWD=
+RemoteDebug=0
+
+[Compiler]
+ShowInfoMsgs=0
+LinkDebugVcl=0
+LinkCGLIB=0
+
+[CORBA]
+AddServerUnit=1
+AddClientUnit=1
+PrecompiledHeaders=1
+
+[Linker]
+LibPrefix=
+LibSuffix=
+LibVersion=
+  </IDEOPTIONS>
+</PROJECT>

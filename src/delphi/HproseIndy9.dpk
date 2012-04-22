@@ -1,0 +1,40 @@
+package HproseIndy9;
+
+{$R *.res}
+{$R 'Hprose.dcr'}
+{$ALIGN 8}
+{$ASSERTIONS OFF}
+{$BOOLEVAL OFF}
+{$DEBUGINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS OFF}
+{$LOCALSYMBOLS OFF}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO OFF}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DESCRIPTION 'Hprose for Delphi with Indy9'}
+{$IMPLICITBUILD OFF}
+{$DEFINE RELEASE}
+
+requires
+  rtl,
+  indy;
+
+contains
+  HproseIdHttpClient in 'Indy9\HproseIdHttpClient.pas',
+  HproseClient in 'HproseClient.pas',
+  HproseCommon in 'HproseCommon.pas',
+  HproseIO in 'HproseIO.pas';
+
+end.

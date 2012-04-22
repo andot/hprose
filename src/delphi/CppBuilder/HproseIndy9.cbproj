@@ -1,0 +1,105 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ProjectGuid>{9bc03013-2fe5-47df-9bf2-7285c81ebaba}</ProjectGuid>
+    <MainSource>HproseIndy9.cpp</MainSource>
+    <Config Condition="'$(Config)'==''">Release</Config>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+    <Base>true</Base>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
+    <Base>true</Base>
+    <Cfg_1>true</Cfg_1>
+    <CfgParent>Base</CfgParent>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
+    <Base>true</Base>
+    <Cfg_2>true</Cfg_2>
+    <CfgParent>Base</CfgParent>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Base)'!=''">
+    <OutputExt>bpl</OutputExt>
+    <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
+    <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
+    <Defines>NO_STRICT</Defines>
+    <DynamicRTL>true</DynamicRTL>
+    <ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
+    <ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
+    <ILINK_ObjectSearchPath>..;..\Indy9;..\CppBuilder;..\..\delphi;..\Indy9</ILINK_ObjectSearchPath>
+    <UsePackages>true</UsePackages>
+    <ProjectType>CppPackage</ProjectType>
+    <BCC_wpar>false</BCC_wpar>
+    <ILINK_Description>Hprose for C++ Builder with Indy9</ILINK_Description>
+    <IncludePath>$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;..;..\Indy9;..\CppBuilder;..\..\delphi;..\Indy9</IncludePath>
+    <ILINK_LibraryPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;..;..\Indy9;..\CppBuilder;..\..\delphi;..\Indy9</ILINK_LibraryPath>
+    <Multithreaded>true</Multithreaded>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Cfg_1)'!=''">
+    <BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
+    <DCC_Optimize>false</DCC_Optimize>
+    <DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+    <Defines>_DEBUG;$(Defines)</Defines>
+    <ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
+    <BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
+    <ILINK_DisableIncrementalLinking>true</ILINK_DisableIncrementalLinking>
+    <BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
+    <DCC_Define>DEBUG</DCC_Define>
+    <BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
+    <IntermediateOutputDir>Debug</IntermediateOutputDir>
+    <TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
+    <BCC_StackFrames>true</BCC_StackFrames>
+    <BCC_DisableOptimizations>true</BCC_DisableOptimizations>
+    <ILINK_LibraryPath>$(BDS)\lib\debug;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+    <TASM_Debugging>Full</TASM_Debugging>
+    <BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Cfg_2)'!=''">
+    <Defines>NDEBUG;$(Defines)</Defines>
+    <IntermediateOutputDir>Release</IntermediateOutputDir>
+    <ILINK_LibraryPath>$(BDS)\lib\release;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+    <TASM_Debugging>None</TASM_Debugging>
+  </PropertyGroup>
+  <ProjectExtensions>
+    <Borland.Personality>CPlusPlusBuilder.Personality</Borland.Personality>
+    <Borland.ProjectType>CppPackage</Borland.ProjectType>
+    <BorlandProject>
+<BorlandProject><CPlusPlusBuilder.Personality><Source><Source Name="MainSource">HproseIndy9.cpp</Source></Source><VersionInfo><VersionInfo Name="IncludeVerInfo">True</VersionInfo><VersionInfo Name="AutoIncBuild">False</VersionInfo><VersionInfo Name="MajorVer">1</VersionInfo><VersionInfo Name="MinorVer">3</VersionInfo><VersionInfo Name="Release">0</VersionInfo><VersionInfo Name="Build">0</VersionInfo><VersionInfo Name="Debug">False</VersionInfo><VersionInfo Name="PreRelease">False</VersionInfo><VersionInfo Name="Special">False</VersionInfo><VersionInfo Name="Private">False</VersionInfo><VersionInfo Name="DLL">False</VersionInfo><VersionInfo Name="Locale">2052</VersionInfo><VersionInfo Name="CodePage">936</VersionInfo></VersionInfo><VersionInfoKeys><VersionInfoKeys Name="CompanyName">HPRFC</VersionInfoKeys><VersionInfoKeys Name="FileDescription"></VersionInfoKeys><VersionInfoKeys Name="FileVersion">1.3.0.0</VersionInfoKeys><VersionInfoKeys Name="InternalName">Hprose</VersionInfoKeys><VersionInfoKeys Name="LegalCopyright"></VersionInfoKeys><VersionInfoKeys Name="LegalTrademarks"></VersionInfoKeys><VersionInfoKeys Name="OriginalFilename"></VersionInfoKeys><VersionInfoKeys Name="ProductName"></VersionInfoKeys><VersionInfoKeys Name="ProductVersion">1.0.0.0</VersionInfoKeys><VersionInfoKeys Name="Comments"></VersionInfoKeys></VersionInfoKeys><Debugging><Debugging Name="DebugSourceDirs"></Debugging></Debugging><Parameters><Parameters Name="RunParams"></Parameters><Parameters Name="Launcher"></Parameters><Parameters Name="UseLauncher">False</Parameters><Parameters Name="DebugCWD"></Parameters><Parameters Name="HostApplication"></Parameters><Parameters Name="RemoteHost"></Parameters><Parameters Name="RemotePath"></Parameters><Parameters Name="RemoteParams"></Parameters><Parameters Name="RemoteLauncher"></Parameters><Parameters Name="UseRemoteLauncher">False</Parameters><Parameters Name="RemoteCWD"></Parameters><Parameters Name="RemoteDebug">False</Parameters><Parameters Name="Debug Symbols Search Path"></Parameters><Parameters Name="LoadAllSymbols">True</Parameters><Parameters Name="LoadUnspecifiedSymbols">False</Parameters></Parameters><Linker><Linker Name="LibPrefix"></Linker><Linker Name="LibSuffix"></Linker><Linker Name="LibVersion"></Linker></Linker><ProjectProperties><ProjectProperties Name="AutoShowDeps">False</ProjectProperties><ProjectProperties Name="ManagePaths">True</ProjectProperties><ProjectProperties Name="VerifyPackages">True</ProjectProperties></ProjectProperties><Excluded_Packages></Excluded_Packages><HistoryLists_hlIncludePath><HistoryLists_hlIncludePath Name="Count">1</HistoryLists_hlIncludePath><HistoryLists_hlIncludePath Name="Item0">$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;..;..\Indy9;..\CppBuilder;..\..\delphi;..\Indy9</HistoryLists_hlIncludePath></HistoryLists_hlIncludePath><HistoryLists_hlILINK_LibraryPath><HistoryLists_hlILINK_LibraryPath Name="Count">1</HistoryLists_hlILINK_LibraryPath><HistoryLists_hlILINK_LibraryPath Name="Item0">$(BDS)\lib\release;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;..;..\Indy9;..\CppBuilder;..\..\delphi;..\Indy9</HistoryLists_hlILINK_LibraryPath></HistoryLists_hlILINK_LibraryPath><HistoryLists_hlDefines><HistoryLists_hlDefines Name="Count">1</HistoryLists_hlDefines><HistoryLists_hlDefines Name="Item0">NDEBUG;NO_STRICT</HistoryLists_hlDefines></HistoryLists_hlDefines><HistoryLists_hlIntermediateOutputDir><HistoryLists_hlIntermediateOutputDir Name="Count">1</HistoryLists_hlIntermediateOutputDir><HistoryLists_hlIntermediateOutputDir Name="Item0">Release</HistoryLists_hlIntermediateOutputDir></HistoryLists_hlIntermediateOutputDir><HistoryLists_hlBCC_MaxIdentifierLength><HistoryLists_hlBCC_MaxIdentifierLength Name="Count">1</HistoryLists_hlBCC_MaxIdentifierLength><HistoryLists_hlBCC_MaxIdentifierLength Name="Item0">250</HistoryLists_hlBCC_MaxIdentifierLength></HistoryLists_hlBCC_MaxIdentifierLength><HistoryLists_hlILINK_MaxErrors><HistoryLists_hlILINK_MaxErrors Name="Count">1</HistoryLists_hlILINK_MaxErrors><HistoryLists_hlILINK_MaxErrors Name="Item0">0</HistoryLists_hlILINK_MaxErrors></HistoryLists_hlILINK_MaxErrors><HistoryLists_hlILINK_FileAlignment><HistoryLists_hlILINK_FileAlignment Name="Count">1</HistoryLists_hlILINK_FileAlignment><HistoryLists_hlILINK_FileAlignment Name="Item0">0x200</HistoryLists_hlILINK_FileAlignment></HistoryLists_hlILINK_FileAlignment><HistoryLists_hlILINK_ObjectAlignment><HistoryLists_hlILINK_ObjectAlignment Name="Count">1</HistoryLists_hlILINK_ObjectAlignment><HistoryLists_hlILINK_ObjectAlignment Name="Item0">4096</HistoryLists_hlILINK_ObjectAlignment></HistoryLists_hlILINK_ObjectAlignment><HistoryLists_hlILINK_BaseAddress><HistoryLists_hlILINK_BaseAddress Name="Count">1</HistoryLists_hlILINK_BaseAddress><HistoryLists_hlILINK_BaseAddress Name="Item0">0x00400000</HistoryLists_hlILINK_BaseAddress></HistoryLists_hlILINK_BaseAddress><HistoryLists_hlILINK_HeapCommitSize><HistoryLists_hlILINK_HeapCommitSize Name="Count">1</HistoryLists_hlILINK_HeapCommitSize><HistoryLists_hlILINK_HeapCommitSize Name="Item0">0x00001000</HistoryLists_hlILINK_HeapCommitSize></HistoryLists_hlILINK_HeapCommitSize><HistoryLists_hlILINK_HeapReserveSize><HistoryLists_hlILINK_HeapReserveSize Name="Count">1</HistoryLists_hlILINK_HeapReserveSize><HistoryLists_hlILINK_HeapReserveSize Name="Item0">0x00100000</HistoryLists_hlILINK_HeapReserveSize></HistoryLists_hlILINK_HeapReserveSize><HistoryLists_hlILINK_StackCommitSize><HistoryLists_hlILINK_StackCommitSize Name="Count">1</HistoryLists_hlILINK_StackCommitSize><HistoryLists_hlILINK_StackCommitSize Name="Item0">0x00002000</HistoryLists_hlILINK_StackCommitSize></HistoryLists_hlILINK_StackCommitSize><HistoryLists_hlILINK_StackReserveSize><HistoryLists_hlILINK_StackReserveSize Name="Count">1</HistoryLists_hlILINK_StackReserveSize><HistoryLists_hlILINK_StackReserveSize Name="Item0">0x00100000</HistoryLists_hlILINK_StackReserveSize></HistoryLists_hlILINK_StackReserveSize><HistoryLists_hlDCC_CodePage><HistoryLists_hlDCC_CodePage Name="Count">1</HistoryLists_hlDCC_CodePage><HistoryLists_hlDCC_CodePage Name="Item0">0</HistoryLists_hlDCC_CodePage></HistoryLists_hlDCC_CodePage><HistoryLists_hlTASM_HashTableCapacity><HistoryLists_hlTASM_HashTableCapacity Name="Count">1</HistoryLists_hlTASM_HashTableCapacity><HistoryLists_hlTASM_HashTableCapacity Name="Item0">8192</HistoryLists_hlTASM_HashTableCapacity></HistoryLists_hlTASM_HashTableCapacity><HistoryLists_hlTASM_MaxSymbolLength><HistoryLists_hlTASM_MaxSymbolLength Name="Count">1</HistoryLists_hlTASM_MaxSymbolLength><HistoryLists_hlTASM_MaxSymbolLength Name="Item0">12</HistoryLists_hlTASM_MaxSymbolLength></HistoryLists_hlTASM_MaxSymbolLength><HistoryLists_hlTASM_Passes><HistoryLists_hlTASM_Passes Name="Count">1</HistoryLists_hlTASM_Passes><HistoryLists_hlTASM_Passes Name="Item0">1</HistoryLists_hlTASM_Passes></HistoryLists_hlTASM_Passes><HistoryLists_hlTASM_VersionId><HistoryLists_hlTASM_VersionId Name="Count">1</HistoryLists_hlTASM_VersionId><HistoryLists_hlTASM_VersionId Name="Item0">0</HistoryLists_hlTASM_VersionId></HistoryLists_hlTASM_VersionId></CPlusPlusBuilder.Personality></BorlandProject></BorlandProject>
+  </ProjectExtensions>
+  <Import Project="$(MSBuildBinPath)\Borland.Cpp.Targets" />
+  <ItemGroup>
+    <PackageImport Include="indy.bpi">
+      <BuildOrder>0</BuildOrder>
+    </PackageImport>
+    <PackageImport Include="rtl.bpi">
+      <BuildOrder>1</BuildOrder>
+    </PackageImport>
+    <None Include="..\Hprose.dcr">
+      <BuildOrder>2</BuildOrder>
+    </None>
+    <DelphiCompile Include="..\HproseClient.pas">
+      <BuildOrder>3</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="..\HproseCommon.pas">
+      <BuildOrder>4</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="..\HproseIO.pas">
+      <BuildOrder>5</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="..\Indy9\HproseIdHttpClient.pas">
+      <BuildOrder>6</BuildOrder>
+    </DelphiCompile>
+    <CppCompile Include="HproseIndy9.cpp">
+      <BuildOrder>7</BuildOrder>
+    </CppCompile>
+    <ResFiles Include="HproseIndy9.res">
+      <BuildOrder>8</BuildOrder>
+    </ResFiles>
+    <BuildConfiguration Include="Debug">
+      <Key>Cfg_1</Key>
+    </BuildConfiguration>
+    <BuildConfiguration Include="Release">
+      <Key>Cfg_2</Key>
+    </BuildConfiguration>
+  </ItemGroup>
+</Project>
