@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for C#.                            *
  *                                                        *
- * LastModified: Apr 19, 2012                             *
+ * LastModified: Apr 24, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -141,88 +141,55 @@ namespace Hprose.IO {
         }
 
         public void Serialize(object obj) {
-            if (obj == null ||
-                obj is DBNull) {
+            if (obj == null) {
                 WriteNull();
                 return;
             }
             Type type = obj.GetType();
-            if (type == HproseHelper.typeofInt32) {
-                WriteInteger((int)obj);
+            switch (Type.GetTypeCode(type)) {
+                case TypeCode.Int32: WriteInteger((int)obj); break;
+                case TypeCode.Char: WriteUTF8Char((char)obj); break;
+                case TypeCode.Byte: WriteInteger((byte)obj); break;
+                case TypeCode.SByte: WriteInteger((sbyte)obj); break;
+                case TypeCode.Int16: WriteInteger((short)obj); break;
+                case TypeCode.UInt16: WriteInteger((ushort)obj); break;
+                case TypeCode.UInt32: WriteLong((uint)obj); break;
+                case TypeCode.Int64: WriteLong((long)obj); break;
+                case TypeCode.UInt64: WriteLong((ulong)obj); break;
+                case TypeCode.Single: WriteDouble((float)obj); break;
+                case TypeCode.Double: WriteDouble((double)obj); break;
+                case TypeCode.Decimal: WriteDouble((decimal)obj); break;
+                case TypeCode.Boolean: WriteBoolean((bool)obj); break;
+                case TypeCode.DateTime: WriteDate((DateTime)obj); break;
+                case TypeCode.String:
+                    switch (((string)obj).Length) {
+                        case 0: WriteEmpty(); break;
+                        case 1: WriteUTF8Char(((string)obj)[0]); break;
+                        default: WriteString((string)obj); break;
+                    }
+                    break;
+                case TypeCode.Empty:
+                case TypeCode.DBNull:
+                    WriteNull();
+                    break;
+                case TypeCode.Object:
+                    Serialize(obj, type);
+                    break;
             }
-            else if (type == HproseHelper.typeofChar) {
-                WriteUTF8Char((char)obj);
-            }
-            else if (type == HproseHelper.typeofByte) {
-                WriteInteger((byte)obj);
-            }
-            else if (type == HproseHelper.typeofSByte) {
-                WriteInteger((sbyte)obj);
-            }
-            else if (type == HproseHelper.typeofInt16) {
-                WriteInteger((short)obj);
-            }
-            else if (type == HproseHelper.typeofUInt16) {
-                WriteInteger((ushort)obj);
-            }
-            else if (type == HproseHelper.typeofUInt32) {
-                WriteLong((uint)obj);
-            }
-            else if (type == HproseHelper.typeofInt64) {
-                WriteLong((long)obj);
-            }
-            else if (type == HproseHelper.typeofUInt64) {
-                WriteLong((ulong)obj);
-            }
-            else if (type == HproseHelper.typeofBigInteger) {
+        }
+        
+        private void Serialize(object obj, Type type) {
+            if (type == HproseHelper.typeofBigInteger) {
                 WriteLong((BigInteger)obj);
-            }
-            else if (type == HproseHelper.typeofSingle) {
-                WriteDouble((float)obj);
-            }
-            else if (type == HproseHelper.typeofDouble) {
-                WriteDouble((double)obj);
-            }
-            else if (type == HproseHelper.typeofDecimal) {
-                WriteDouble((decimal)obj);
             }
             else if (type.IsEnum) {
                 WriteEnum((Enum)obj);
-            }
-            else if (type == HproseHelper.typeofBoolean) {
-                WriteBoolean((bool)obj);
-            }
-            else if (type == HproseHelper.typeofDateTime) {
-                WriteDate((DateTime)obj);
             }
             else if (type == HproseHelper.typeofTimeSpan) {
                 WriteLong(((TimeSpan)obj).Ticks);
             }
             else if (type.IsSubclassOf(HproseHelper.typeofStream)) {
                 WriteStream((Stream)obj);
-            }
-            else if (type == HproseHelper.typeofByteArray) {
-                if (((byte[])obj).Length == 0) {
-                    WriteEmpty();
-                }
-                else {
-                    WriteBytes((byte[])obj);
-                }
-            }
-            else if (type == HproseHelper.typeofCharArray) {
-                if (((char[])obj).Length == 0) {
-                    WriteEmpty();
-                }
-                else {
-                    WriteString((char[])obj);
-                }
-            }
-            else if (type == HproseHelper.typeofString) {
-                switch (((string)obj).Length) {
-                    case 0: WriteEmpty(); break;
-                    case 1: WriteUTF8Char(((string)obj)[0]); break;
-                    default: WriteString((string)obj); break;
-                }
             }
             else if (type == HproseHelper.typeofStringBuilder) {
                 switch (((StringBuilder)obj).Length) {
@@ -235,7 +202,23 @@ namespace Hprose.IO {
                 WriteGuid((Guid)obj);
             }
             else if (type.IsArray) {
-                if (type == HproseHelper.typeofInt32Array) {
+                if (type == HproseHelper.typeofByteArray) {
+                    if (((byte[])obj).Length == 0) {
+                        WriteEmpty();
+                    }
+                    else {
+                        WriteBytes((byte[])obj);
+                    }
+                }
+                else if (type == HproseHelper.typeofCharArray) {
+                    if (((char[])obj).Length == 0) {
+                        WriteEmpty();
+                    }
+                    else {
+                        WriteString((char[])obj);
+                    }
+                }
+                else if (type == HproseHelper.typeofInt32Array) {
                     WriteArray((int[])obj);
                 }
                 else if (type == HproseHelper.typeofSByteArray) {
@@ -444,32 +427,16 @@ namespace Hprose.IO {
             Type entype = value.GetType();
             Type underlyingType = Enum.GetUnderlyingType(entype);
             object graph = Convert.ChangeType(value, underlyingType, null);
-            if (underlyingType == HproseHelper.typeofInt32) {
-                WriteInteger((int)graph);
-            }
-            else if (underlyingType == HproseHelper.typeofByte) {
-                WriteInteger((byte)graph);
-            }
-            else if (underlyingType == HproseHelper.typeofSByte) {
-                WriteInteger((sbyte)graph);
-            }
-            else if (underlyingType == HproseHelper.typeofInt16) {
-                WriteInteger((short)graph);
-            }
-            else if (underlyingType == HproseHelper.typeofUInt16) {
-                WriteInteger((ushort)graph);
-            }
-            else if (underlyingType == HproseHelper.typeofUInt32) {
-                WriteLong((uint)graph);
-            }
-            else if (underlyingType == HproseHelper.typeofInt64) {
-                WriteLong((long)graph);
-            }
-            else if (underlyingType == HproseHelper.typeofUInt64) {
-                WriteLong((ulong)graph);
-            }
-            else if (underlyingType == HproseHelper.typeofBoolean) {
-                WriteBoolean((bool)graph);
+            switch (Type.GetTypeCode(underlyingType)) {
+                case TypeCode.Int32: WriteInteger((int)graph); break;
+                case TypeCode.Byte: WriteInteger((byte)graph); break;
+                case TypeCode.SByte: WriteInteger((sbyte)graph); break;
+                case TypeCode.Int16: WriteInteger((short)graph); break;
+                case TypeCode.UInt16: WriteInteger((ushort)graph); break;
+                case TypeCode.UInt32: WriteLong((uint)graph); break;
+                case TypeCode.Int64: WriteLong((long)graph); break;
+                case TypeCode.UInt64: WriteLong((ulong)graph); break;
+                case TypeCode.Boolean: WriteBoolean((bool)graph); break;
             }
         }
 
