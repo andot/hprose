@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for C#.                            *
  *                                                        *
- * LastModified: Apr 19, 2012                             *
+ * LastModified: Apr 25, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -140,50 +140,24 @@ namespace Hprose.IO {
                 type == HproseHelper.typeofObject) {
                 return b;
             }
-            if (type == HproseHelper.typeofByte) {
-                return (byte)b;
-            }
-            if (type == HproseHelper.typeofSByte) {
-                return (sbyte)b;
-            }
-            if (type == HproseHelper.typeofInt16) {
-                return (short)b;
-            }
-            if (type == HproseHelper.typeofUInt16) {
-                return (ushort)b;
-            }
-            if (type == HproseHelper.typeofUInt32) {
-                return (uint)b;
-            }
-            if (type == HproseHelper.typeofInt64) {
-                return (long)b;
-            }
-            if (type == HproseHelper.typeofUInt64) {
-                return (ulong)b;
-            }
-            if (type == HproseHelper.typeofChar) {
-                return (char)tag;
-            }
-            if (type == HproseHelper.typeofSingle) {
-                return (float)b;
-            }
-            if (type == HproseHelper.typeofDouble) {
-                return (double)b;
-            }
-            if (type == HproseHelper.typeofDecimal) {
-                return (decimal)b;
+            switch (Type.GetTypeCode(type)) {
+                case TypeCode.Byte: return (byte)b;
+                case TypeCode.SByte: return (sbyte)b;
+                case TypeCode.Int16: return (short)b;
+                case TypeCode.UInt16: return (ushort)b;
+                case TypeCode.UInt32: return (uint)b;
+                case TypeCode.Int64: return (long)b;
+                case TypeCode.UInt64: return (ulong)b;
+                case TypeCode.Char: return (char)tag;
+                case TypeCode.Single: return (float)b;
+                case TypeCode.Double: return (double)b;
+                case TypeCode.Decimal: return (decimal)b;
+                case TypeCode.String: return new string((char)tag, 1);
+                case TypeCode.Boolean: return (tag != '0');
+                case TypeCode.DateTime: return new DateTime((long)b);
             }
             if (type == HproseHelper.typeofBigInteger) {
                 return new BigInteger(b);
-            }
-            if (type == HproseHelper.typeofString) {
-                return new string((char)tag, 1);
-            }
-            if (type == HproseHelper.typeofBoolean) {
-                return (tag != '0');
-            }
-            if (type == HproseHelper.typeofDateTime) {
-                return new DateTime((long)b);
             }
             if (type == HproseHelper.typeofTimeSpan) {
                 return new TimeSpan((long)b);
@@ -204,47 +178,23 @@ namespace Hprose.IO {
                 type == HproseHelper.typeofObject) {
                 return i;
             }
-            if (type == HproseHelper.typeofByte) {
-                return (byte)i;
-            }
-            if (type == HproseHelper.typeofSByte) {
-                return (sbyte)i;
-            }
-            if (type == HproseHelper.typeofInt16) {
-                return (short)i;
-            }
-            if (type == HproseHelper.typeofUInt16) {
-                return (ushort)i;
-            }
-            if (type == HproseHelper.typeofUInt32) {
-                return (uint)i;
-            }
-            if (type == HproseHelper.typeofInt64) {
-                return (long)i;
-            }
-            if (type == HproseHelper.typeofUInt64) {
-                return (ulong)i;
-            }
-            if (type == HproseHelper.typeofChar) {
-                return (char)i;
-            }
-            if (type == HproseHelper.typeofSingle) {
-                return (float)i;
-            }
-            if (type == HproseHelper.typeofDouble) {
-                return (double)i;
-            }
-            if (type == HproseHelper.typeofDecimal) {
-                return (decimal)i;
+            switch (Type.GetTypeCode(type)) {
+                case TypeCode.Byte: return (byte)i;
+                case TypeCode.SByte: return (sbyte)i;
+                case TypeCode.Int16: return (short)i;
+                case TypeCode.UInt16: return (ushort)i;
+                case TypeCode.UInt32: return (uint)i;
+                case TypeCode.Int64: return (long)i;
+                case TypeCode.UInt64: return (ulong)i;
+                case TypeCode.Char: return (char)i;
+                case TypeCode.Single: return (float)i;
+                case TypeCode.Double: return (double)i;
+                case TypeCode.Decimal: return (decimal)i;
+                case TypeCode.Boolean: return (i != 0);
+                case TypeCode.DateTime: return new DateTime((long)i);
             }
             if (type == HproseHelper.typeofBigInteger) {
                 return new BigInteger(i);
-            }
-            if (type == HproseHelper.typeofBoolean) {
-                return (i != 0);
-            }
-            if (type == HproseHelper.typeofDateTime) {
-                return new DateTime((long)i);
             }
             if (type == HproseHelper.typeofTimeSpan) {
                 return new TimeSpan((long)i);
@@ -262,53 +212,26 @@ namespace Hprose.IO {
                 type == HproseHelper.typeofObject) {
                 return BigInteger.Parse(l);
             }
-            if (type == HproseHelper.typeofUInt32) {
-                return uint.Parse(l);
-            }
-            if (type == HproseHelper.typeofInt64) {
-                return long.Parse(l);
-            }
-            if (type == HproseHelper.typeofUInt64) {
-                return ulong.Parse(l);
-            }
-            if (type == HproseHelper.typeofDecimal) {
-                return decimal.Parse(l);
-            }
-            if (type == HproseHelper.typeofString) {
-                return l;
-            }
-            if (type == HproseHelper.typeofDateTime) {
-                return new DateTime(long.Parse(l));
+            switch (Type.GetTypeCode(type)) {
+                case TypeCode.Empty: return BigInteger.Parse(l);
+                case TypeCode.Byte: return byte.Parse(l);
+                case TypeCode.SByte: return sbyte.Parse(l);
+                case TypeCode.Int16: return short.Parse(l);
+                case TypeCode.UInt16: return ushort.Parse(l);
+                case TypeCode.Int32: return int.Parse(l);
+                case TypeCode.UInt32: return uint.Parse(l);
+                case TypeCode.Int64: return long.Parse(l);
+                case TypeCode.UInt64: return ulong.Parse(l);
+                case TypeCode.Char: return (char)int.Parse(l);
+                case TypeCode.Single: return float.Parse(l);
+                case TypeCode.Double: return double.Parse(l);
+                case TypeCode.Decimal: return decimal.Parse(l);
+                case TypeCode.String: return l;
+                case TypeCode.Boolean: return (int.Parse(l) != 0);
+                case TypeCode.DateTime: return new DateTime(long.Parse(l));
             }
             if (type == HproseHelper.typeofTimeSpan) {
                 return new TimeSpan(long.Parse(l));
-            }
-            if (type == HproseHelper.typeofByte) {
-                return byte.Parse(l);
-            }
-            if (type == HproseHelper.typeofSByte) {
-                return sbyte.Parse(l);
-            }
-            if (type == HproseHelper.typeofInt16) {
-                return short.Parse(l);
-            }
-            if (type == HproseHelper.typeofUInt16) {
-                return ushort.Parse(l);
-            }
-            if (type == HproseHelper.typeofInt32) {
-                return int.Parse(l);
-            }
-            if (type == HproseHelper.typeofChar) {
-                return (char)int.Parse(l);
-            }
-            if (type == HproseHelper.typeofSingle) {
-                return float.Parse(l);
-            }
-            if (type == HproseHelper.typeofDouble) {
-                return double.Parse(l);
-            }
-            if (type == HproseHelper.typeofBoolean) {
-                return (int.Parse(l) != 0);
             }
             if (type.IsEnum) {
                 return Enum.ToObject(type, long.Parse(l));
@@ -318,56 +241,33 @@ namespace Hprose.IO {
 
         private object ReadDouble(Type type) {
             String value = ReadUntil(HproseTags.TagSemicolon);
-            if (type == HproseHelper.typeofString) {
-                return value;
-            }            
-            if (type == HproseHelper.typeofDecimal) {
-                return decimal.Parse(value);
-            }
-            if (type == HproseHelper.typeofSingle) {
-                return float.Parse(value);
+            TypeCode typeCode = Type.GetTypeCode(type);
+            switch (typeCode) {
+                case TypeCode.String: return value;
+                case TypeCode.Decimal: return decimal.Parse(value);
+                case TypeCode.Single: return float.Parse(value);
             }
             double d = ParseDouble(value);
-            if (type == null ||
-                type == HproseHelper.typeofDouble ||
-                type == HproseHelper.typeofObject) {
+            switch (typeCode) {
+                case TypeCode.Empty:
+                case TypeCode.Double: return d;
+                case TypeCode.Byte: return (byte)d;
+                case TypeCode.SByte: return (sbyte)d;
+                case TypeCode.Int16: return (short)d;
+                case TypeCode.UInt16: return (ushort)d;
+                case TypeCode.Int32: return (int)d;
+                case TypeCode.UInt32: return (uint)d;
+                case TypeCode.Int64: return (long)d;
+                case TypeCode.UInt64: return (ulong)d;
+                case TypeCode.Char: return (char)(int)d;
+                case TypeCode.Boolean: return ((int)(d) != 0);
+                case TypeCode.DateTime: return new DateTime((long)d);
+            }
+            if (type == HproseHelper.typeofObject) {
                 return d;
-            }
-            if (type == HproseHelper.typeofInt32) {
-                return (int)d;
-            }
-            if (type == HproseHelper.typeofByte) {
-                return (byte)d;
-            }
-            if (type == HproseHelper.typeofSByte) {
-                return (sbyte)d;
-            }
-            if (type == HproseHelper.typeofInt16) {
-                return (short)d;
-            }
-            if (type == HproseHelper.typeofUInt16) {
-                return (ushort)d;
-            }
-            if (type == HproseHelper.typeofUInt32) {
-                return (uint)d;
-            }
-            if (type == HproseHelper.typeofInt64) {
-                return (long)d;
-            }
-            if (type == HproseHelper.typeofUInt64) {
-                return (ulong)d;
-            }
-            if (type == HproseHelper.typeofChar) {
-                return (char)(int)d;
             }
             if (type == HproseHelper.typeofBigInteger) {
                 return new BigInteger(d);
-            }
-            if (type == HproseHelper.typeofBoolean) {
-                return ((int)(d) != 0);
-            }
-            if (type == HproseHelper.typeofDateTime) {
-                return new DateTime((long)d);
             }
             if (type == HproseHelper.typeofTimeSpan) {
                 return new TimeSpan((long)d);
@@ -379,98 +279,49 @@ namespace Hprose.IO {
         }
 
         private object ReadNull(Type type) {
-            if (type == HproseHelper.typeofBoolean) {
-                return false;
-            }
-            if (type == HproseHelper.typeofInt32) {
-                return 0;
-            }
-            if (type == HproseHelper.typeofByte) {
-                return (byte)0;
-            }
-            if (type == HproseHelper.typeofSByte) {
-                return (sbyte)0;
-            }
-            if (type == HproseHelper.typeofInt16) {
-                return (short)0;
-            }
-            if (type == HproseHelper.typeofUInt16) {
-                return (ushort)0;
-            }
-            if (type == HproseHelper.typeofUInt32) {
-                return (uint)0;
-            }
-            if (type == HproseHelper.typeofInt64) {
-                return (long)0;
-            }
-            if (type == HproseHelper.typeofUInt64) {
-                return (ulong)0;
-            }
-            if (type == HproseHelper.typeofChar) {
-                return (char)0;
-            }
-            if (type == HproseHelper.typeofSingle) {
-                return (float)0;
-            }
-            if (type == HproseHelper.typeofDouble) {
-                return (double)0;
-            }
-            if (type == HproseHelper.typeofDecimal) {
-                return (decimal)0;
-            }
-            if (type == HproseHelper.typeofDBNull) {
-                return DBNull.Value;
+            switch (Type.GetTypeCode(type)) {
+                case TypeCode.Byte: return (byte)0;
+                case TypeCode.SByte: return (sbyte)0;
+                case TypeCode.Int16: return (short)0;
+                case TypeCode.UInt16: return (ushort)0;
+                case TypeCode.Int32: return 0;
+                case TypeCode.UInt32: return (uint)0;
+                case TypeCode.Int64: return (long)0;
+                case TypeCode.UInt64: return (ulong)0;
+                case TypeCode.Char: return (char)0;
+                case TypeCode.Single: return (float)0;
+                case TypeCode.Double: return (double)0;
+                case TypeCode.Decimal: return (decimal)0;
+                case TypeCode.Boolean: return false;
+                case TypeCode.DBNull: return DBNull.Value;
             }
             return null;
         }
 
         private object ReadEmpty(Type type) {
-            if (type == null ||
-                type == HproseHelper.typeofString ||
-                type == HproseHelper.typeofObject) {
+            switch (Type.GetTypeCode(type)) {
+                case TypeCode.Empty:
+                case TypeCode.String: return "";
+                case TypeCode.Byte: return (byte)0;
+                case TypeCode.SByte: return (sbyte)0;
+                case TypeCode.Int16: return (short)0;
+                case TypeCode.UInt16: return (ushort)0;
+                case TypeCode.Int32: return 0;
+                case TypeCode.UInt32: return (uint)0;
+                case TypeCode.Int64: return (long)0;
+                case TypeCode.UInt64: return (ulong)0;
+                case TypeCode.Char: return (char)0;
+                case TypeCode.Single: return (float)0;
+                case TypeCode.Double: return (double)0;
+                case TypeCode.Decimal: return (decimal)0;
+                case TypeCode.Boolean: return false;
+                case TypeCode.DBNull: return DBNull.Value;
+            }
+            if (type == HproseHelper.typeofObject) {
                 return "";
-            }
-            if (type == HproseHelper.typeofBoolean) {
-                return false;
-            }
-            if (type == HproseHelper.typeofInt32) {
-                return 0;
-            }
-            if (type == HproseHelper.typeofByte) {
-                return (byte)0;
-            }
-            if (type == HproseHelper.typeofSByte) {
-                return (sbyte)0;
-            }
-            if (type == HproseHelper.typeofInt16) {
-                return (short)0;
-            }
-            if (type == HproseHelper.typeofUInt16) {
-                return (ushort)0;
-            }
-            if (type == HproseHelper.typeofUInt32) {
-                return (uint)0;
-            }
-            if (type == HproseHelper.typeofInt64) {
-                return (long)0;
-            }
-            if (type == HproseHelper.typeofUInt64) {
-                return (ulong)0;
-            }
-            if (type == HproseHelper.typeofChar) {
-                return (char)0;
             }
             if (type == HproseHelper.typeofBigInteger) {
                 return BigInteger.Zero;
-            }
-            if (type == HproseHelper.typeofSingle) {
-                return (float)0;
-            }
-            if (type == HproseHelper.typeofDouble) {
-                return (double)0;
-            }
-            if (type == HproseHelper.typeofDecimal) {
-                return (decimal)0;
             }
             if (type.IsEnum) {
                 return Enum.ToObject(type, 0);
@@ -493,47 +344,23 @@ namespace Hprose.IO {
                 type == HproseHelper.typeofObject) {
                 return true;
             }
-            if (type == HproseHelper.typeofString) {
-                return bool.TrueString;
-            }
-            if (type == HproseHelper.typeofInt32) {
-                return 1;
-            }
-            if (type == HproseHelper.typeofByte) {
-                return (byte)1;
-            }
-            if (type == HproseHelper.typeofSByte) {
-                return (sbyte)1;
-            }
-            if (type == HproseHelper.typeofInt16) {
-                return (short)1;
-            }
-            if (type == HproseHelper.typeofUInt16) {
-                return (ushort)1;
-            }
-            if (type == HproseHelper.typeofUInt32) {
-                return (uint)1;
-            }
-            if (type == HproseHelper.typeofInt64) {
-                return (long)1;
-            }
-            if (type == HproseHelper.typeofUInt64) {
-                return (ulong)1;
-            }
-            if (type == HproseHelper.typeofChar) {
-                return 'T';
+            switch (Type.GetTypeCode(type)) {
+                case TypeCode.Byte: return (byte)1;
+                case TypeCode.SByte: return (sbyte)1;
+                case TypeCode.Int16: return (short)1;
+                case TypeCode.UInt16: return (ushort)1;
+                case TypeCode.Int32: return 1;
+                case TypeCode.UInt32: return (uint)1;
+                case TypeCode.Int64: return (long)1;
+                case TypeCode.UInt64: return (ulong)1;
+                case TypeCode.Char: return 'T';
+                case TypeCode.Single: return (float)1;
+                case TypeCode.Double: return (double)1;
+                case TypeCode.Decimal: return (decimal)1;
+                case TypeCode.String: return bool.TrueString;
             }
             if (type == HproseHelper.typeofBigInteger) {
                 return BigInteger.One;
-            }
-            if (type == HproseHelper.typeofSingle) {
-                return (float)1;
-            }
-            if (type == HproseHelper.typeofDouble) {
-                return (double)1;
-            }
-            if (type == HproseHelper.typeofDecimal) {
-                return (decimal)1;
             }
             if (type.IsEnum) {
                 return Enum.ToObject(type, 1);
@@ -547,47 +374,23 @@ namespace Hprose.IO {
                 type == HproseHelper.typeofObject) {
                 return false;
             }
-            if (type == HproseHelper.typeofString) {
-                return bool.FalseString;
-            }
-            if (type == HproseHelper.typeofInt32) {
-                return 0;
-            }
-            if (type == HproseHelper.typeofByte) {
-                return (byte)0;
-            }
-            if (type == HproseHelper.typeofSByte) {
-                return (sbyte)0;
-            }
-            if (type == HproseHelper.typeofInt16) {
-                return (short)0;
-            }
-            if (type == HproseHelper.typeofUInt16) {
-                return (ushort)0;
-            }
-            if (type == HproseHelper.typeofUInt32) {
-                return (uint)0;
-            }
-            if (type == HproseHelper.typeofInt64) {
-                return (long)0;
-            }
-            if (type == HproseHelper.typeofUInt64) {
-                return (ulong)0;
-            }
-            if (type == HproseHelper.typeofChar) {
-                return 'F';
+            switch (Type.GetTypeCode(type)) {
+                case TypeCode.Byte: return (byte)0;
+                case TypeCode.SByte: return (sbyte)0;
+                case TypeCode.Int16: return (short)0;
+                case TypeCode.UInt16: return (ushort)0;
+                case TypeCode.Int32: return 0;
+                case TypeCode.UInt32: return (uint)0;
+                case TypeCode.Int64: return (long)0;
+                case TypeCode.UInt64: return (ulong)0;
+                case TypeCode.Char: return 'F';
+                case TypeCode.Single: return (float)0;
+                case TypeCode.Double: return (double)0;
+                case TypeCode.Decimal: return (decimal)0;
+                case TypeCode.String: return bool.FalseString;
             }
             if (type == HproseHelper.typeofBigInteger) {
                 return BigInteger.Zero;
-            }
-            if (type == HproseHelper.typeofSingle) {
-                return (float)0;
-            }
-            if (type == HproseHelper.typeofDouble) {
-                return (double)0;
-            }
-            if (type == HproseHelper.typeofDecimal) {
-                return (decimal)0;
             }
             if (type.IsEnum) {
                 return Enum.ToObject(type, 0);
@@ -654,52 +457,28 @@ namespace Hprose.IO {
 
         private object ReadUTF8Char(Type type) {
             char c = ReadUTF8Char(false);
-            if (type == null ||
-                type == HproseHelper.typeofChar) {
-                return c;
+            switch (Type.GetTypeCode(type)) {
+                case TypeCode.Empty:
+                case TypeCode.Char: return c;
+                case TypeCode.Byte: return (byte)c;
+                case TypeCode.SByte: return (sbyte)c;
+                case TypeCode.Int16: return (short)c;
+                case TypeCode.UInt16: return (ushort)c;
+                case TypeCode.Int32: return (int)c;
+                case TypeCode.UInt32: return (uint)c;
+                case TypeCode.Int64: return (long)c;
+                case TypeCode.UInt64: return (ulong)c;
+                case TypeCode.Single: return (float)c;
+                case TypeCode.Double: return (double)c;
+                case TypeCode.Decimal: return (decimal)c;
+                case TypeCode.String: return new string(c, 1);
+                case TypeCode.Boolean: return "\00Ff".IndexOf(c) > -1;
             }
-            if (type == HproseHelper.typeofString ||
-                type == HproseHelper.typeofObject) {
+            if (type == HproseHelper.typeofObject) {
                 return new string(c, 1);
-            }
-            if (type == HproseHelper.typeofInt32) {
-                return (int)c;
-            }
-            if (type == HproseHelper.typeofByte) {
-                return (byte)c;
-            }
-            if (type == HproseHelper.typeofSByte) {
-                return (sbyte)c;
-            }
-            if (type == HproseHelper.typeofInt16) {
-                return (short)c;
-            }
-            if (type == HproseHelper.typeofUInt16) {
-                return (ushort)c;
-            }
-            if (type == HproseHelper.typeofUInt32) {
-                return (uint)c;
-            }
-            if (type == HproseHelper.typeofInt64) {
-                return (long)c;
-            }
-            if (type == HproseHelper.typeofUInt64) {
-                return (ulong)c;
-            }
-            if (type == HproseHelper.typeofBoolean) {
-                return "\00Ff".IndexOf(c) > -1;
             }
             if (type == HproseHelper.typeofBigInteger) {
                 return new BigInteger((int)c);
-            }
-            if (type == HproseHelper.typeofSingle) {
-                return (float)c;
-            }
-            if (type == HproseHelper.typeofDouble) {
-                return (double)c;
-            }
-            if (type == HproseHelper.typeofDecimal) {
-                return (decimal)c;
             }
             if (type.IsEnum) {
                 return Enum.ToObject(type, (int)c);
@@ -1339,49 +1118,26 @@ namespace Hprose.IO {
             if (type == HproseHelper.typeofBigInteger) {
                 return BigInteger.Parse(s);
             }
-            if (type == HproseHelper.typeofByte) {
-                return byte.Parse(s);
-            }
-            if (type == HproseHelper.typeofSByte) {
-                return sbyte.Parse(s);
-            }
-            if (type == HproseHelper.typeofInt16) {
-                return short.Parse(s);
-            }
-            if (type == HproseHelper.typeofUInt16) {
-                return ushort.Parse(s);
-            }
-            if (type == HproseHelper.typeofInt32) {
-                return int.Parse(s);
-            }
-            if (type == HproseHelper.typeofUInt32) {
-                return uint.Parse(s);
-            }
-            if (type == HproseHelper.typeofInt64) {
-                return long.Parse(s);
-            }
-            if (type == HproseHelper.typeofUInt64) {
-                return ulong.Parse(s);
-            }
-            if (type == HproseHelper.typeofSingle) {
-                return float.Parse(s);
-            }
-            if (type == HproseHelper.typeofDouble) {
-                return ParseDouble(s);
-            }
-            if (type == HproseHelper.typeofDecimal) {
-                return decimal.Parse(s);
-            }
-            if (type == HproseHelper.typeofBoolean) {
-                return bool.Parse(s);
-            }
-            if (type == HproseHelper.typeofChar) {
-                if (str.Length == 1) {
-                    return str[0];
-                }
-                else {
-                    return (char)int.Parse(s);
-                }
+            switch (Type.GetTypeCode(type)) {
+                case TypeCode.Byte: return byte.Parse(s);
+                case TypeCode.SByte: return sbyte.Parse(s);
+                case TypeCode.Int16: return short.Parse(s);
+                case TypeCode.UInt16: return ushort.Parse(s);
+                case TypeCode.Int32: return int.Parse(s);
+                case TypeCode.UInt32: return uint.Parse(s);
+                case TypeCode.Int64: return long.Parse(s);
+                case TypeCode.UInt64: return ulong.Parse(s);
+                case TypeCode.Single: return float.Parse(s);
+                case TypeCode.Double: return ParseDouble(s);
+                case TypeCode.Decimal: return decimal.Parse(s);
+                case TypeCode.Boolean: return bool.Parse(s);
+                case TypeCode.Char:
+                    if (str.Length == 1) {
+                        return str[0];
+                    }
+                    else {
+                        return (char)int.Parse(s);
+                    }
             }
             if (type == HproseHelper.typeofGuid) {
                 return new Guid(s);
