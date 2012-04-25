@@ -213,7 +213,6 @@ namespace Hprose.IO {
                 return BigInteger.Parse(l);
             }
             switch (Type.GetTypeCode(type)) {
-                case TypeCode.Empty: return BigInteger.Parse(l);
                 case TypeCode.Byte: return byte.Parse(l);
                 case TypeCode.SByte: return sbyte.Parse(l);
                 case TypeCode.Int16: return short.Parse(l);
