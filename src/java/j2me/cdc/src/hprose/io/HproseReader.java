@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for Java.                          *
  *                                                        *
- * LastModified: Jun 7, 2011                              *
+ * LastModified: Jun 15, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -1882,7 +1882,7 @@ public final class HproseReader {
             if ((type == null) || type.isAssignableFrom(cls)) {
                 obj = HproseHelper.newInstance(cls);
                 if (obj != null) {
-                    isBean = cls instanceof Serializable;
+                    isBean = !(cls instanceof Serializable);
                     if (isBean) {
                         members = HproseHelper.getMembers(cls);
                     }
