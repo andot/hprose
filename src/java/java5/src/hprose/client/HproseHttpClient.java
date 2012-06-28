@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http client class for Java.                     *
  *                                                        *
- * LastModified: May 25, 2011                             *
+ * LastModified: Jun 28, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -191,7 +191,7 @@ public class HproseHttpClient extends HproseClient {
 
     protected InputStream getInputStream(Object context) throws IOException {
         HttpURLConnection conn = (HttpURLConnection) context;
-        int i = 0;
+        int i = 1;
         String key = null;
         List<String> cookieList = new ArrayList<String>();
         while((key=conn.getHeaderFieldKey(i)) != null) {
