@@ -119,8 +119,17 @@ public class HproseHttpClient extends HproseClient {
 
     protected InputStream getInputStream(Object context) throws IOException {
         HttpConnection conn = (HttpConnection) context;
-        cookieManager.setCookie(getHeaderFields(conn, "Set-Cookie"), conn.getHost());
-        cookieManager.setCookie(getHeaderFields(conn, "Set-Cookie2"), conn.getHost());
+        int i = 0;
+        String key = null;
+        ArrayList cookieList = new ArrayList();
+        while((key=conn.getHeaderFieldKey(i)) != null) {
+            if (key.equalsIgnoreCase("set-cookie") ||
+                key.equalsIgnoreCase("set-cookie2")) {
+                cookieList.add(conn.getHeaderField(i));
+            }
+            i++;
+        }
+        cookieManager.setCookie(cookieList, conn.getHost());
         InputStream istream = conn.openInputStream();
         return istream;
     }
@@ -129,15 +138,4 @@ public class HproseHttpClient extends HproseClient {
         istream.close();
     }
 
-    private ArrayList getHeaderFields(HttpConnection conn, String name) throws IOException {
-        int i = 1;
-        String key;
-        ArrayList result = new ArrayList();
-        while ((key = conn.getHeaderFieldKey(i)) != null) {
-            if (key.equalsIgnoreCase(name)) {
-                result.add(conn.getHeaderField(i));
-            }
-        }
-        return result;
-    }
 }

@@ -31,6 +31,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -192,10 +193,18 @@ public class HproseHttpClient extends HproseClient {
 
     protected InputStream getInputStream(Object context) throws IOException {
         HttpURLConnection conn = (HttpURLConnection) context;
-        Map map = conn.getHeaderFields();
+        int i = 0;
+        String key = null;
+        List cookieList = new ArrayList();
+        while((key=conn.getHeaderFieldKey(i)) != null) {
+            if (key.equalsIgnoreCase("set-cookie") ||
+                key.equalsIgnoreCase("set-cookie2")) {
+                cookieList.add(conn.getHeaderField(i));
+            }
+            i++;
+        }
         URL url =conn.getURL();
-        cookieManager.setCookie((List)map.get("Set-Cookie"), url.getHost());
-        cookieManager.setCookie((List)map.get("Set-Cookie2"), url.getHost());
+        cookieManager.setCookie(cookieList, url.getHost());
         InputStream istream = conn.getInputStream();
         return new BufferedInputStream(istream);
     }
