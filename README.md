@@ -34,6 +34,6 @@ programming languages.
 License
 -------
 
-*Oh* is free software, available with full source. it released under the GPL or
-the MIT License for non-commercial software. Commercial licenses are available
-for customers who wish to use *Hprose* for commercial software.
+*Oh* is free software, available with full source. it released under the MIT
+License for non-commercial software. Commercial licenses are available for 
+customers who wish to use *Hprose* for commercial software.
