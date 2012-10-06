@@ -377,7 +377,7 @@ package hprose.io {
             var c:uint, c2:uint, c3:uint, c4:uint;
             for (var i:int = 0; i < len; i++) {
                 c = stream.readUnsignedByte();
-    ﻿            switch (c >>> 4) {
+                switch (c >>> 4) {
                     case 0:
                     case 1:
                     case 2:

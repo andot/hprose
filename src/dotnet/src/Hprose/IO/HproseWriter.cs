@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for C#.                            *
  *                                                        *
- * LastModified: Apr 24, 2012                             *
+ * LastModified: Oct 6, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -279,13 +279,13 @@ namespace Hprose.IO {
                     WriteArray((Array)obj);
                 }
             }
-            else if (type.IsSubclassOf(HproseHelper.typeofIList)) {
+            else if (HproseHelper.typeofIList.IsAssignableFrom(type)) {
                 WriteList((IList)obj);
             }
-            else if (type.IsSubclassOf(HproseHelper.typeofIDictionary)) {
+            else if (HproseHelper.typeofIDictionary.IsAssignableFrom(type)) {
                 WriteMap((IDictionary)obj);
             }
-            else if (type.IsSubclassOf(HproseHelper.typeofICollection)) {
+            else if (HproseHelper.typeofICollection.IsAssignableFrom(type)) {
                 WriteCollection((ICollection)obj);
             }
             else {
@@ -312,7 +312,7 @@ namespace Hprose.IO {
                     }
                 }
 #endif
-                if (type.IsSubclassOf(HproseHelper.typeofISerializable)) {
+                if (HproseHelper.typeofISerializable.IsAssignableFrom(type)) {
                     throw new HproseException(type.Name + " is a ISerializable type, hprose can't support it.");
                 }
                 WriteObject(obj);
