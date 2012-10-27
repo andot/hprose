@@ -14,12 +14,12 @@
 #                                                          #
 # hprose httpserver for python 2.3+                        #
 #                                                          #
-# LastModified: Jun 22, 2011                               #
+# LastModified: Oct 28, 2012                               #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
 
-import re, urllib, traceback
+import re, urllib
 from cStringIO import StringIO
 from sys import exc_info
 from hprose.io import *
@@ -34,7 +34,7 @@ class HproseHttpService(HproseService):
         self.sessionName = sessionName
 
     def __call__(self, environ, start_response = None):
-        result = self.handler(environ)
+        result = self.handle(environ)
         # WSGI 2
         if start_response == None:
             return result
@@ -60,7 +60,7 @@ class HproseHttpService(HproseService):
             self.onSendHeader(environ, header)
         return header
 
-    def handler(self, environ):
+    def handle(self, environ):
         sessionService = environ.get(self.sessionName, None)
         if sessionService:
             session = getattr(sessionService, 'session', sessionService)
@@ -75,28 +75,8 @@ class HproseHttpService(HproseService):
             stream.close()
             return ['200 OK', header, [body]]
         try:
-            try:
-                reader = HproseReader(environ['wsgi.input'])
-                exceptTags = (HproseTags.TagCall, HproseTags.TagEnd)
-                tag = reader.checkTags(exceptTags)
-                if tag == HproseTags.TagCall:
-                    self._doInvoke(reader, writer, session, environ)
-                if tag == HproseTags.TagEnd:
-                    self._doFunctionList(writer)
-            except (KeyboardInterrupt, SystemExit):
-                raise
-            except Exception, error:
-                if self._debug:
-                    error = ''.join(traceback.format_exception(*exc_info()))
-                stream.close()
-                if self.onSendError != None:
-                    self.onSendError(environ, error)
-                stream = StringIO()
-                writer.stream = stream
-                writer.reset()
-                writer.stream.write(HproseTags.TagError)
-                writer.writeString(str(error).encode('utf-8'), False)
-                writer.stream.write(HproseTags.TagEnd)
+            reader = HproseReader(environ['wsgi.input'])
+            self._handle(reader, writer, session, environ)
         finally:
             if hasattr(session, 'save'): session.save()
             body = stream.getvalue()

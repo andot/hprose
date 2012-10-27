@@ -14,12 +14,12 @@
 #                                                          #
 # hprose server for python 3.0+                            #
 #                                                          #
-# LastModified: Jun 22, 2011                               #
+# LastModified: Oct 28, 2012                               #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
 
-import types
+import types, traceback
 from sys import modules
 from hprose.io import *
 
@@ -160,6 +160,27 @@ class HproseService(object):
         writer.stream.write(HproseTags.TagFunctions)
         writer.writeList(list(self.__funcNames.values()), False)
         writer.stream.write(HproseTags.TagEnd)
+        
+    def _handle(self, reader, writer, session, environ):
+        try:
+            exceptTags = (HproseTags.TagCall, HproseTags.TagEnd)
+            tag = reader.checkTags(exceptTags)
+            if tag == HproseTags.TagCall:
+                self._doInvoke(reader, writer, session, environ)
+            if tag == HproseTags.TagEnd:
+                self._doFunctionList(writer)
+        except Exception as error:
+            if self._debug:
+                error = ''.join(traceback.format_exception(*exc_info()))
+            stream.close()
+            if self.onSendError != None:
+                self.onSendError(environ, error)
+            stream = BytesIO()
+            writer.stream = stream
+            writer.reset()
+            writer.stream.write(HproseTags.TagError)
+            writer.writeString(str(error), False)
+            writer.stream.write(HproseTags.TagEnd)
 
     def addMissingFunction(self, function, resultMode = HproseResultMode.Normal):
         self.addFunction(function, '*', resultMode)

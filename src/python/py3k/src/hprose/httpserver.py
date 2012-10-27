@@ -14,12 +14,12 @@
 #                                                          #
 # hprose httpserver for python 3.0+                        #
 #                                                          #
-# LastModified: Jun 22, 2011                               #
+# LastModified: Oct 28, 2012                               #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
 
-import re, urllib.parse, traceback
+import re, urllib.parse
 from io import BytesIO
 from sys import exc_info
 from hprose.io import *
@@ -34,7 +34,7 @@ class HproseHttpService(HproseService):
         self.sessionName = sessionName     
 
     def __call__(self, environ, start_response = None):
-        result = self.handler(environ)
+        result = self.handle(environ)
         # WSGI 2
         if start_response == None:
             return result
@@ -60,7 +60,7 @@ class HproseHttpService(HproseService):
             self.onSendHeader(environ, header)
         return header
 
-    def handler(self, environ):
+    def handle(self, environ):
         sessionService = environ.get(self.sessionName, None)
         if sessionService:
             session = getattr(sessionService, 'session', sessionService)
@@ -76,24 +76,7 @@ class HproseHttpService(HproseService):
             return [b'200 OK', header, [body]]
         try:
             reader = HproseReader(environ['wsgi.input'])
-            exceptTags = (HproseTags.TagCall, HproseTags.TagEnd)
-            tag = reader.checkTags(exceptTags)
-            if tag == HproseTags.TagCall:
-                self._doInvoke(reader, writer, session, environ)
-            if tag == HproseTags.TagEnd:
-                self._doFunctionList(writer)
-        except Exception as error:
-            if self._debug:
-                error = ''.join(traceback.format_exception(*exc_info()))
-            stream.close()
-            if self.onSendError != None:
-                self.onSendError(environ, error)
-            stream = BytesIO()
-            writer.stream = stream
-            writer.reset()
-            writer.stream.write(HproseTags.TagError)
-            writer.writeString(str(error), False)
-            writer.stream.write(HproseTags.TagEnd)
+            self._handle(reader, writer, session, environ)
         finally:
             if hasattr(session, 'save'): session.save()
             body = stream.getvalue()
