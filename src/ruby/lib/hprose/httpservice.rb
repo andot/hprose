@@ -14,7 +14,7 @@
 #                                                          #
 # hprose http service for ruby                             #
 #                                                          #
-# LastModified: Jun 20, 2011                               #
+# LastModified: Oct 28, 2012                               #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -61,24 +61,10 @@ module Hprose
       end
       begin
         reader = Reader.new(StringIO.new(env['rack.input'].read, 'rb'))
-        except_tags = [TAG_CALL, TAG_END]
-        tag = reader.check_tags(except_tags)
-        case tag
-        when TAG_CALL then do_invoke(reader, writer, session, env)
-        when TAG_END then do_function_list(writer)
-        end
-      rescue ::Exception => e
-        error = @debug ? e.backtrace.unshift(e.message).join("\r\n") : e.message
-        stream.close();
-        @on_send_error.call(env, error) until @on_send_error.nil?
-        stream = StringIO.new()
-        writer = Writer.new(stream)
-        stream.putc(TAG_ERROR)
-        writer.reset()
-        writer.write_string(error, false)
-        stream.putc(TAG_END)
+        handle(reader, writer, session, env)
       ensure
         reader.stream.close()
+        stream = writer.stream
         body = stream.string
         stream.close()
         header['Content-Length'] = body.size.to_s

@@ -14,7 +14,7 @@
 #                                                          #
 # hprose io stream library for ruby                        #
 #                                                          #
-# LastModified: Jun 20, 2011                               #
+# LastModified: Oct 28, 2012                               #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -203,7 +203,7 @@ module Hprose
       @classref = []
       @ref = []
     end
-    attr_reader :stream
+    attr_accessor :stream
     def unserialize(tag = nil)
       tag = @stream.getc() if tag.nil?
       return case tag
@@ -467,7 +467,7 @@ module Hprose
       @classref = {}
       @ref = {}
     end
-    attr_reader :stream
+    attr_accessor :stream
     def serialize(obj)
       case obj
       when NilClass then @stream.putc(TAG_NULL)
