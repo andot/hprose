@@ -79,6 +79,7 @@ class HproseHttpService(HproseService):
             self._handle(reader, writer, session, environ)
         finally:
             if hasattr(session, 'save'): session.save()
+            stream = writer.stream
             body = stream.getvalue()
             stream.close()
             return ['200 OK', header, [body]]
