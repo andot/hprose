@@ -14,7 +14,7 @@
  *                                                        *
  * hprose http server library for ASP.                    *
  *                                                        *
- * LastModified: Jun 22, 2011                             *
+ * LastModified: Oct 28, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -105,7 +105,6 @@ var HproseHttpServer = (function() {
             var m_output;
             var m_reader;
             var m_writer;
-            var m_error;
             this.onBeforeInvoke = null;
             this.onAfterInvoke = null;
             this.onSendHeader = null;
@@ -131,7 +130,7 @@ var HproseHttpServer = (function() {
                 if (this.onSendHeader != null) {
                     this.onSendHeader();
                 }
-                Response.addHeader('ContentType', "text/plain");
+                Response.addHeader('Content-Type', "text/plain");
                 if (m_P3P) {
                     Response.addHeader('P3P', 
                         'CP="CAO DSP COR CUR ADM DEV TAI PSA PSD IVAi IVDi ' +
@@ -150,13 +149,14 @@ var HproseHttpServer = (function() {
                 }
             }
 
-            function sendError() {
+            function sendError(error) {
                 if (this.onSendError != null) {
-                    this.onSendError(m_error);
+                    this.onSendError(error);
                 }
-                m_output.write(r_HproseTags.TagError);
+                m_output.Clear();
                 m_writer.reset();
-                m_writer.writeString(m_error, false);
+                m_output.write(r_HproseTags.TagError);
+                m_writer.writeString(error, false);
                 m_output.write(r_HproseTags.TagEnd);
             }
             
@@ -235,6 +235,20 @@ var HproseHttpServer = (function() {
                 m_output.write(r_HproseTags.TagEnd);
             }
 
+            function handle() {
+                try {
+                    var exceptTags = [r_HproseTags.TagCall, r_HproseTags.TagEnd];
+                    var tag = m_reader.checkTags(exceptTags);
+                    switch (tag) {
+                        case r_HproseTags.TagCall: doInvoke.apply(this); break;
+                        case r_HproseTags.TagEnd: doFunctionList(); break;
+                    }
+                }
+                catch (e) {
+                    sendError.call(this, e.description);
+                }
+            }
+            
             this.addMissingFunction = function(func, resultMode) {
                 this.addFunction(func, "*", resultMode);
             }
@@ -400,19 +414,10 @@ var HproseHttpServer = (function() {
                 Response.Clear();
                 sendHeader.apply(this);
                 if ((Request.ServerVariables("REQUEST_METHOD") == 'GET') && m_get) {
-                    return doFunctionList();
+                    doFunctionList();
                 }
-                try {
-                    var exceptTags = [r_HproseTags.TagCall, r_HproseTags.TagEnd];
-                    var tag = m_reader.checkTags(exceptTags);
-                    switch (tag) {
-                        case r_HproseTags.TagCall: return doInvoke.apply(this);
-                        case r_HproseTags.TagEnd: return doFunctionList();
-                    }
-                }
-                catch (e) {
-                    m_error = e.description;
-                    sendError.apply(this);
+                else {
+                    handle.apply(this);
                 }
                 Response.end();
             }
