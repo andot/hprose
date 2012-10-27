@@ -14,7 +14,7 @@
  *                                                        *
  * hprose io stream library for JavaScript.               *
  *                                                        *
- * LastModified: Jun 22, 2011                             *
+ * LastModified: Oct 28, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -51,9 +51,8 @@ function HproseStringInputStream(str) {
 function HproseStringOutputStream(str) {
     if (str === undefined) str = '';
     var buf = [str];
-    var size = buf.length;
     this.write = function(s) {
-        buf[size++] = s;
+        buf.push(s);
     }
     this.mark = function() {
         str = this.toString();
