@@ -39,10 +39,8 @@ License
 License for non-commercial software. Commercial licenses are available for 
 customers who wish to use *Hprose* for commercial software.
 
-Hprose for Node.js
-------------------
-
-## Usage
+Usage of Hprose for Node.js
+---------------------------
 
 Hprose for Node.js is very easy to use. You can create a hprose server like this:
 
