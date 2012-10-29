@@ -11,6 +11,3 @@ server.on('sendError', function(message) {
     console.log(message);
 });
 server.listen(8080);
-
-
-

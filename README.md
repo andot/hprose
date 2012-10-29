@@ -21,6 +21,7 @@ Language support
     * Objective-C
     * ActionScript
     * JavaScript
+    * Node.js
     * Python
     * Ruby
     * PHP
