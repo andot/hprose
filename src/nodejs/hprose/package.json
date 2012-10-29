@@ -1,0 +1,22 @@
+{
+  "name": "hprose",
+  "version": "1.3",
+  "author": "Ma Bingyao <andot@hprfc.com> (http://www.hprose.com/)",
+
+  "description": "hprose for node.js",
+  "main": "hprose.js",
+  "bin": {
+    "hprose_example_serialize": "./examples/serialize.js",
+    "hprose_example_server": "./examples/server.js",
+    "hprose_example_client": "./examples/client.js"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "engines": {
+    "node": "*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/andot/oh.git"
+  }
+}
