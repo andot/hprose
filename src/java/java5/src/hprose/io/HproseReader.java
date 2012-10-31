@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for Java.                          *
  *                                                        *
- * LastModified: Jun 15, 2012                             *
+ * LastModified: Nov 1, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -2048,12 +2048,17 @@ public final class HproseReader {
         ref.add(obj);
         for (int i = 0; i < count; i++) {
             Field field = (Field) fields.get(unserialize(String.class));
-            Object value = unserialize(field.getGenericType());
-            try {
-                field.set(obj, value);
+            if (field != null) {
+                Object value = unserialize(field.getGenericType());
+                try {
+                    field.set(obj, value);
+                }
+                catch (Exception e) {
+                    throw new HproseException(e.getMessage());
+                }
             }
-            catch (Exception e) {
-                throw new HproseException(e.getMessage());
+            else {
+                unserialize();
             }
         }
         return obj;
@@ -2064,13 +2069,19 @@ public final class HproseReader {
         Map properties = HproseHelper.getProperties(type);
         ref.add(obj);
         for (int i = 0; i < count; i++) {
-            Method setter = ((PropertyAccessor) properties.get(unserialize(String.class))).setter;
-            Object value = unserialize(setter.getGenericParameterTypes()[0]);
-            try {
-                setter.invoke(obj, new Object[]{value});
+            PropertyAccessor pa = (PropertyAccessor) properties.get(unserialize(String.class));
+            if (pa != null) {
+                Method setter = pa.setter;
+                Object value = unserialize(setter.getGenericParameterTypes()[0]);
+                try {
+                    setter.invoke(obj, new Object[]{value});
+                }
+                catch (Exception e) {
+                    throw new HproseException(e.getMessage());
+                }
             }
-            catch (Exception e) {
-                throw new HproseException(e.getMessage());
+            else {
+                unserialize();
             }
         }
         return obj;
@@ -2082,20 +2093,25 @@ public final class HproseReader {
         ref.add(obj);
         for (int i = 0; i < count; i++) {
             Object member = members.get(unserialize(String.class));
-            try {
-                if (member instanceof Field) {
-                    Field field = (Field) member;
-                    Object value = unserialize(field.getGenericType());
-                    field.set(obj, value);
+            if (member != null) {
+                try {
+                    if (member instanceof Field) {
+                        Field field = (Field) member;
+                        Object value = unserialize(field.getGenericType());
+                        field.set(obj, value);
+                    }
+                    else {
+                        Method setter = ((PropertyAccessor) member).setter;
+                        Object value = unserialize(setter.getGenericParameterTypes()[0]);
+                        setter.invoke(obj, new Object[]{value});
+                    }
                 }
-                else {
-                    Method setter = ((PropertyAccessor) member).setter;
-                    Object value = unserialize(setter.getGenericParameterTypes()[0]);
-                    setter.invoke(obj, new Object[]{value});
+                catch (Exception e) {
+                    throw new HproseException(e.getMessage());
                 }
             }
-            catch (Exception e) {
-                throw new HproseException(e.getMessage());
+            else {
+                unserialize();
             }
         }
         return obj;
@@ -2245,7 +2261,7 @@ public final class HproseReader {
             if ((type == null) || type.isAssignableFrom(cls)) {
                 obj = HproseHelper.newInstance(cls);
                 if (obj != null) {
-                    isBean = !(cls instanceof Serializable);
+                    isBean = !(Serializable.class.isAssignableFrom(cls));
                     if (isBean) {
                         members = HproseHelper.getMembers(cls);
                     }
@@ -2265,7 +2281,7 @@ public final class HproseReader {
             obj = HproseHelper.newInstance(type);
         }
         if ((obj != null) && (members == null)) {
-            isBean = type instanceof Serializable;
+            isBean = !(Serializable.class.isAssignableFrom(type));
             if (isBean) {
                 members = HproseHelper.getMembers(type);
             }
@@ -2289,44 +2305,60 @@ public final class HproseReader {
             if (isBean) {
                 for (int i = 0; i < count; i++) {
                     Object member = members.get(memberNames[i]);
-                    try {
-                        if (member instanceof Field) {
-                            Field field = (Field) member;
-                            Object value = unserialize(field.getGenericType());
-                            field.set(obj, value);
+                    if (member != null) {
+                        try {
+                            if (member instanceof Field) {
+                                Field field = (Field) member;
+                                Object value = unserialize(field.getGenericType());
+                                field.set(obj, value);
+                            }
+                            else {
+                                Method setter = ((PropertyAccessor) member).setter;
+                                Object value = unserialize(setter.getGenericParameterTypes()[0]);
+                                setter.invoke(obj, new Object[]{value});
+                            }
                         }
-                        else {
-                            Method setter = ((PropertyAccessor) member).setter;
-                            Object value = unserialize(setter.getGenericParameterTypes()[0]);
-                            setter.invoke(obj, new Object[]{value});
+                        catch (Exception e) {
+                            throw new HproseException(e.getMessage());
                         }
                     }
-                    catch (Exception e) {
-                        throw new HproseException(e.getMessage());
+                    else {
+                        unserialize();
                     }
                 }
             }
             else if (mode == HproseMode.FieldMode) {
                 for (int i = 0; i < count; i++) {
                     Field field = (Field) members.get(memberNames[i]);
-                    Object value = unserialize(field.getGenericType());
-                    try {
-                        field.set(obj, value);
+                    if (field != null) {
+                        Object value = unserialize(field.getGenericType());
+                        try {
+                            field.set(obj, value);
+                        }
+                        catch (Exception e) {
+                            throw new HproseException(e.getMessage());
+                        }
                     }
-                    catch (Exception e) {
-                        throw new HproseException(e.getMessage());
+                    else {
+                        unserialize();
                     }
                 }
             }
             else {
                 for (int i = 0; i < count; i++) {
-                    Method setter = ((PropertyAccessor) members.get(memberNames[i])).setter;
-                    Object value = unserialize(setter.getGenericParameterTypes()[0]);
-                    try {
-                        setter.invoke(obj, new Object[]{value});
+                    PropertyAccessor pa = (PropertyAccessor) members.get(memberNames[i]);
+                    if (pa != null) {
+                        Method setter = pa.setter;
+                        Object value = unserialize(setter.getGenericParameterTypes()[0]);
+                        try {
+                            setter.invoke(obj, new Object[]{value});
+                        }
+                        catch (Exception e) {
+                            throw new HproseException(e.getMessage());
+                        }
                     }
-                    catch (Exception e) {
-                        throw new HproseException(e.getMessage());
+                    else {
+                        unserialize();
                     }
                 }
             }
