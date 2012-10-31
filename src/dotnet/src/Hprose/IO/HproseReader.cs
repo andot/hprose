@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for C#.                            *
  *                                                        *
- * LastModified: Apr 25, 2012                             *
+ * LastModified: Nov 1, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -1740,15 +1740,22 @@ namespace Hprose.IO {
             object[] values = new object[count];
             for (int i = 0; i < count; i++) {
                 names[i] = (string)ReadString();
-                FieldInfo field = (FieldInfo)fields[names[i]];
-                values[i] = Unserialize(field.FieldType);
+                if (fields.ContainsKey(names[i])) {
+                    FieldInfo field = (FieldInfo)fields[names[i]];
+                    values[i] = Unserialize(field.FieldType);
+                }
+                else {
+                    Unserialize();
+                }
             }
 #if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
             ObjectFieldModeUnserializer.Get(type, names).Unserialize(obj, values);
 #else
             for (int i = 0; i < count; i++) {
-                FieldInfo field = (FieldInfo)fields[names[i]];
-                field.SetValue(obj, values[i]);
+                if (fields.ContainsKey(names[i])) {
+                    FieldInfo field = (FieldInfo)fields[names[i]];
+                    field.SetValue(obj, values[i]);
+                }
             }
 #endif
             return obj;
@@ -1770,19 +1777,26 @@ namespace Hprose.IO {
             object[] values = new object[count];
             for (int i = 0; i < count; i++) {
                 names[i] = (string)ReadString();
-                PropertyInfo property = (PropertyInfo)properties[names[i]];
-                values[i] = Unserialize(property.PropertyType);
+                if (properties.ContainsKey(names[i])) {
+                    PropertyInfo property = (PropertyInfo)properties[names[i]];
+                    values[i] = Unserialize(property.PropertyType);
+                }
+                else {
+                    Unserialize();
+                }
             }
 #if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
             ObjectPropertyModeUnserializer.Get(type, names).Unserialize(obj, values);
 #else
             for (int i = 0; i < count; i++) {
-                PropertyInfo property = (PropertyInfo)properties[names[i]];
+                if (properties.ContainsKey(names[i])) {
+                    PropertyInfo property = (PropertyInfo)properties[names[i]];
 #if !(PocketPC || Smartphone || WindowsCE || WP70 || SL5)
-                PropertyAccessor.Get(property).SetValue(obj, values[i]);
+                    PropertyAccessor.Get(property).SetValue(obj, values[i]);
 #else
-                property.SetValue(obj, values[i], null);
+                    property.SetValue(obj, values[i], null);
 #endif
+                }
             }
 #endif
             return obj;
@@ -1805,38 +1819,45 @@ namespace Hprose.IO {
             object[] values = new object[count];
             for (int i = 0; i < count; i++) {
                 names[i] = (string)ReadString();
-                Type memberType;
+                if (members.ContainsKey(names[i])) {
+                    Type memberType;
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                MemberInfo member = members[names[i]];
+                    MemberInfo member = members[names[i]];
 #else
-                MemberInfo member = (MemberInfo)members[names[i]];
+                    MemberInfo member = (MemberInfo)members[names[i]];
 #endif
-                if (member is FieldInfo) {
-                    memberType = ((FieldInfo)member).FieldType;
+                    if (member is FieldInfo) {
+                        memberType = ((FieldInfo)member).FieldType;
+                    }
+                    else {
+                        memberType = ((PropertyInfo)member).PropertyType;
+                    }
+                    values[i] = Unserialize(memberType);
                 }
                 else {
-                    memberType = ((PropertyInfo)member).PropertyType;
+                    Unserialize();
                 }
-                values[i] = Unserialize(memberType);
             }
 #if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
             ObjectMemberModeUnserializer.Get(type, names).Unserialize(obj, values);
 #else
             for (int i = 0; i < count; i++) {
+                if (members.ContainsKey(names[i])) {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                MemberInfo member = members[names[i]];
+                    MemberInfo member = members[names[i]];
 #else
-                MemberInfo member = (MemberInfo)members[names[i]];
+                    MemberInfo member = (MemberInfo)members[names[i]];
 #endif
-                if (member is FieldInfo) {
-                    ((FieldInfo)member).SetValue(obj, values[i]);
-                }
-                else {
+                    if (member is FieldInfo) {
+                        ((FieldInfo)member).SetValue(obj, values[i]);
+                    }
+                    else {
 #if !(PocketPC || Smartphone || WindowsCE || WP70 || SL5)
-                    PropertyAccessor.Get((PropertyInfo)member).SetValue(obj, values[i]);
+                        PropertyAccessor.Get((PropertyInfo)member).SetValue(obj, values[i]);
 #else
-                    ((PropertyInfo)member).SetValue(obj, values[i], null);
+                        ((PropertyInfo)member).SetValue(obj, values[i], null);
 #endif
+                    }
                 }
             }
 #endif
@@ -2012,34 +2033,48 @@ namespace Hprose.IO {
                     if (mode == HproseMode.FieldMode) {
                         FieldInfo field;
                         for (int i = 0; i < count; i++) {
-                            field = (FieldInfo)members[memberNames[i]];
-                            values[i] = Unserialize(field.FieldType);
+                            if (members.ContainsKey(memberNames[i])) {
+                                field = (FieldInfo)members[memberNames[i]];
+                                values[i] = Unserialize(field.FieldType);
+                            }
+                            else {
+                                Unserialize();
+                            }
                         }
 #if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
                         ObjectFieldModeUnserializer.Get(type, memberNames).Unserialize(obj, values);
 #else
                         for (int i = 0; i < count; i++) {
-                            field = (FieldInfo)members[memberNames[i]];
-                            field.SetValue(obj, values[i]);
+                            if (members.ContainsKey(memberNames[i])) {
+                                field = (FieldInfo)members[memberNames[i]];
+                                field.SetValue(obj, values[i]);
+                            }
                         }
 #endif
                     }
                     else {
                         PropertyInfo property;
                         for (int i = 0; i < count; i++) {
-                            property = (PropertyInfo)members[memberNames[i]];
-                            values[i] = Unserialize(property.PropertyType);
+                            if (members.ContainsKey(memberNames[i])) {
+                                property = (PropertyInfo)members[memberNames[i]];
+                                values[i] = Unserialize(property.PropertyType);
+                            }
+                            else {
+                                Unserialize();
+                            }
                         }
 #if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
                         ObjectPropertyModeUnserializer.Get(type, memberNames).Unserialize(obj, values);
 #else
                         for (int i = 0; i < count; i++) {
-                            property = (PropertyInfo)members[memberNames[i]];
+                            if (members.ContainsKey(memberNames[i])) {
+                                property = (PropertyInfo)members[memberNames[i]];
 #if !(PocketPC || Smartphone || WindowsCE || WP70 || SL5)
-                            PropertyAccessor.Get(property).SetValue(obj, values[i]);
+                                PropertyAccessor.Get(property).SetValue(obj, values[i]);
 #else
-                            property.SetValue(obj, values[i], null);
+                                property.SetValue(obj, values[i], null);
 #endif
+                            }
                         }
 #endif
                     }
@@ -2047,36 +2082,44 @@ namespace Hprose.IO {
                 else {
                         MemberInfo member;
                         for (int i = 0; i < count; i++) {
+                            if (members.ContainsKey(memberNames[i])) {
+                        
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                            member = members[memberNames[i]];
+                                member = members[memberNames[i]];
 #else
-                            member = (MemberInfo)members[memberNames[i]];
+                                member = (MemberInfo)members[memberNames[i]];
 #endif
-                            if (member is FieldInfo) {
-                                values[i] = Unserialize(((FieldInfo)member).FieldType);
+                                if (member is FieldInfo) {
+                                    values[i] = Unserialize(((FieldInfo)member).FieldType);
+                                }
+                                else {
+                                    values[i] = Unserialize(((PropertyInfo)member).PropertyType);
+                                }
                             }
                             else {
-                                values[i] = Unserialize(((PropertyInfo)member).PropertyType);
+                                Unserialize();
                             }
                         }
 #if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
                         ObjectMemberModeUnserializer.Get(type, memberNames).Unserialize(obj, values);
 #else
                         for (int i = 0; i < count; i++) {
+                            if (members.ContainsKey(memberNames[i])) {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                            member = members[memberNames[i]];
+                                member = members[memberNames[i]];
 #else
-                            member = (MemberInfo)members[memberNames[i]];
+                                member = (MemberInfo)members[memberNames[i]];
 #endif
-                            if (member is FieldInfo) {
-                                ((FieldInfo)member).SetValue(obj, values[i]);
-                            }
-                            else {
+                                if (member is FieldInfo) {
+                                    ((FieldInfo)member).SetValue(obj, values[i]);
+                                }
+                                else {
 #if !(PocketPC || Smartphone || WindowsCE || WP70 || SL5)
-                                PropertyAccessor.Get((PropertyInfo)member).SetValue(obj, values[i]);
+                                    PropertyAccessor.Get((PropertyInfo)member).SetValue(obj, values[i]);
 #else
-                                ((PropertyInfo)member).SetValue(obj, values[i], null);
+                                    ((PropertyInfo)member).SetValue(obj, values[i], null);
 #endif
+                                }
                             }
                         }
 #endif

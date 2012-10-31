@@ -13,7 +13,7 @@
  *                                                        *
  * Object Unserializer class for C#.                      *
  *                                                        *
- * LastModified: Apr 19, 2012                             *
+ * LastModified: Nov 1, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -161,31 +161,33 @@ namespace Hprose.IO {
             LocalBuilder e = gen.DeclareLocal(typeofException);
             int count = names.Length;
             for (int i = 0; i < count; i++) {
-                FieldInfo fieldInfo = (FieldInfo)fields[names[i]];
-                Label exTryCatch = gen.BeginExceptionBlock();
-                if (type.IsValueType) {
-                    gen.Emit(OpCodes.Ldarg_0);
-                    gen.Emit(OpCodes.Unbox, type);
+                if (fields.ContainsKey(names[i])) {
+                    FieldInfo fieldInfo = (FieldInfo)fields[names[i]];
+                    Label exTryCatch = gen.BeginExceptionBlock();
+                    if (type.IsValueType) {
+                        gen.Emit(OpCodes.Ldarg_0);
+                        gen.Emit(OpCodes.Unbox, type);
+                    }
+                    else {
+                        gen.Emit(OpCodes.Ldarg_0);
+                    }
+                    gen.Emit(OpCodes.Ldarg_1);
+                    gen.Emit(OpCodes.Ldc_I4, i);
+                    gen.Emit(OpCodes.Ldelem_Ref);
+                    if (fieldInfo.FieldType.IsValueType) {
+                        gen.Emit(OpCodes.Unbox_Any, fieldInfo.FieldType);
+                    }
+                    gen.Emit(OpCodes.Stfld, fieldInfo);
+                    gen.Emit(OpCodes.Leave_S, exTryCatch);
+                    gen.BeginCatchBlock(typeofException);
+                    gen.Emit(OpCodes.Stloc_S, e);
+                    gen.Emit(OpCodes.Ldstr, "The field value can\'t be unserialized.");
+                    gen.Emit(OpCodes.Ldloc_S, e);
+                    gen.Emit(OpCodes.Newobj, hproseExceptionCtor);
+                    gen.Emit(OpCodes.Throw);
+                    gen.Emit(OpCodes.Leave_S, exTryCatch);
+                    gen.EndExceptionBlock();
                 }
-                else {
-                    gen.Emit(OpCodes.Ldarg_0);
-                }
-                gen.Emit(OpCodes.Ldarg_1);
-                gen.Emit(OpCodes.Ldc_I4, i);
-                gen.Emit(OpCodes.Ldelem_Ref);
-                if (fieldInfo.FieldType.IsValueType) {
-                    gen.Emit(OpCodes.Unbox_Any, fieldInfo.FieldType);
-                }
-                gen.Emit(OpCodes.Stfld, fieldInfo);
-                gen.Emit(OpCodes.Leave_S, exTryCatch);
-                gen.BeginCatchBlock(typeofException);
-                gen.Emit(OpCodes.Stloc_S, e);
-                gen.Emit(OpCodes.Ldstr, "The field value can\'t be unserialized.");
-                gen.Emit(OpCodes.Ldloc_S, e);
-                gen.Emit(OpCodes.Newobj, hproseExceptionCtor);
-                gen.Emit(OpCodes.Throw);
-                gen.Emit(OpCodes.Leave_S, exTryCatch);
-                gen.EndExceptionBlock();
             }
             gen.Emit(OpCodes.Ret);
         }
@@ -210,37 +212,39 @@ namespace Hprose.IO {
             LocalBuilder e = gen.DeclareLocal(typeofException);
             int count = names.Length;
             for (int i = 0; i < count; i++) {
-                PropertyInfo propertyInfo = (PropertyInfo)properties[names[i]];
-                Label exTryCatch = gen.BeginExceptionBlock();
-                if (type.IsValueType) {
-                    gen.Emit(OpCodes.Ldarg_0);
-                    gen.Emit(OpCodes.Unbox, type);
+                if (properties.ContainsKey(names[i])) {
+                    PropertyInfo propertyInfo = (PropertyInfo)properties[names[i]];
+                    Label exTryCatch = gen.BeginExceptionBlock();
+                    if (type.IsValueType) {
+                        gen.Emit(OpCodes.Ldarg_0);
+                        gen.Emit(OpCodes.Unbox, type);
+                    }
+                    else {
+                        gen.Emit(OpCodes.Ldarg_0);
+                    }
+                    gen.Emit(OpCodes.Ldarg_1);
+                    gen.Emit(OpCodes.Ldc_I4, i);
+                    gen.Emit(OpCodes.Ldelem_Ref);
+                    if (propertyInfo.PropertyType.IsValueType) {
+                        gen.Emit(OpCodes.Unbox_Any, propertyInfo.PropertyType);
+                    }
+                    MethodInfo setMethod = propertyInfo.GetSetMethod();
+                    if (setMethod.IsVirtual) {
+                        gen.Emit(OpCodes.Callvirt, setMethod);
+                    }
+                    else {
+                        gen.Emit(OpCodes.Call, setMethod);
+                    }
+                    gen.Emit(OpCodes.Leave_S, exTryCatch);
+                    gen.BeginCatchBlock(typeofException);
+                    gen.Emit(OpCodes.Stloc_S, e);
+                    gen.Emit(OpCodes.Ldstr, "The property value can\'t be unserialized.");
+                    gen.Emit(OpCodes.Ldloc_S, e);
+                    gen.Emit(OpCodes.Newobj, hproseExceptionCtor);
+                    gen.Emit(OpCodes.Throw);
+                    gen.Emit(OpCodes.Leave_S, exTryCatch);
+                    gen.EndExceptionBlock();
                 }
-                else {
-                    gen.Emit(OpCodes.Ldarg_0);
-                }
-                gen.Emit(OpCodes.Ldarg_1);
-                gen.Emit(OpCodes.Ldc_I4, i);
-                gen.Emit(OpCodes.Ldelem_Ref);
-                if (propertyInfo.PropertyType.IsValueType) {
-                    gen.Emit(OpCodes.Unbox_Any, propertyInfo.PropertyType);
-                }
-                MethodInfo setMethod = propertyInfo.GetSetMethod();
-                if (setMethod.IsVirtual) {
-                    gen.Emit(OpCodes.Callvirt, setMethod);
-                }
-                else {
-                    gen.Emit(OpCodes.Call, setMethod);
-                }
-                gen.Emit(OpCodes.Leave_S, exTryCatch);
-                gen.BeginCatchBlock(typeofException);
-                gen.Emit(OpCodes.Stloc_S, e);
-                gen.Emit(OpCodes.Ldstr, "The property value can\'t be unserialized.");
-                gen.Emit(OpCodes.Ldloc_S, e);
-                gen.Emit(OpCodes.Newobj, hproseExceptionCtor);
-                gen.Emit(OpCodes.Throw);
-                gen.Emit(OpCodes.Leave_S, exTryCatch);
-                gen.EndExceptionBlock();
             }
             gen.Emit(OpCodes.Ret);
         }
@@ -265,46 +269,48 @@ namespace Hprose.IO {
             LocalBuilder e = gen.DeclareLocal(typeofException);
             int count = names.Length;
             for (int i = 0; i < count; i++) {
-                Label exTryCatch = gen.BeginExceptionBlock();
-                if (type.IsValueType) {
-                    gen.Emit(OpCodes.Ldarg_0);
-                    gen.Emit(OpCodes.Unbox, type);
-                }
-                else {
-                    gen.Emit(OpCodes.Ldarg_0);
-                }
-                gen.Emit(OpCodes.Ldarg_1);
-                gen.Emit(OpCodes.Ldc_I4, i);
-                gen.Emit(OpCodes.Ldelem_Ref);
-                if (members[names[i]] is FieldInfo) {
-                    FieldInfo fieldInfo = (FieldInfo)members[names[i]];
-                    if (fieldInfo.FieldType.IsValueType) {
-                        gen.Emit(OpCodes.Unbox_Any, fieldInfo.FieldType);
-                    }
-                    gen.Emit(OpCodes.Stfld, fieldInfo);
-                }
-                else {
-                    PropertyInfo propertyInfo = (PropertyInfo)members[names[i]];
-                    if (propertyInfo.PropertyType.IsValueType) {
-                        gen.Emit(OpCodes.Unbox_Any, propertyInfo.PropertyType);
-                    }
-                    MethodInfo setMethod = propertyInfo.GetSetMethod();
-                    if (setMethod.IsVirtual) {
-                        gen.Emit(OpCodes.Callvirt, setMethod);
+                if (members.ContainsKey(names[i])) {
+                    Label exTryCatch = gen.BeginExceptionBlock();
+                    if (type.IsValueType) {
+                        gen.Emit(OpCodes.Ldarg_0);
+                        gen.Emit(OpCodes.Unbox, type);
                     }
                     else {
-                        gen.Emit(OpCodes.Call, setMethod);
+                        gen.Emit(OpCodes.Ldarg_0);
                     }
+                    gen.Emit(OpCodes.Ldarg_1);
+                    gen.Emit(OpCodes.Ldc_I4, i);
+                    gen.Emit(OpCodes.Ldelem_Ref);
+                    if (members[names[i]] is FieldInfo) {
+                        FieldInfo fieldInfo = (FieldInfo)members[names[i]];
+                        if (fieldInfo.FieldType.IsValueType) {
+                            gen.Emit(OpCodes.Unbox_Any, fieldInfo.FieldType);
+                        }
+                        gen.Emit(OpCodes.Stfld, fieldInfo);
+                    }
+                    else {
+                        PropertyInfo propertyInfo = (PropertyInfo)members[names[i]];
+                        if (propertyInfo.PropertyType.IsValueType) {
+                            gen.Emit(OpCodes.Unbox_Any, propertyInfo.PropertyType);
+                        }
+                        MethodInfo setMethod = propertyInfo.GetSetMethod();
+                        if (setMethod.IsVirtual) {
+                            gen.Emit(OpCodes.Callvirt, setMethod);
+                        }
+                        else {
+                            gen.Emit(OpCodes.Call, setMethod);
+                        }
+                    }
+                    gen.Emit(OpCodes.Leave_S, exTryCatch);
+                    gen.BeginCatchBlock(typeofException);
+                    gen.Emit(OpCodes.Stloc_S, e);
+                    gen.Emit(OpCodes.Ldstr, "The member value can\'t be unserialized.");
+                    gen.Emit(OpCodes.Ldloc_S, e);
+                    gen.Emit(OpCodes.Newobj, hproseExceptionCtor);
+                    gen.Emit(OpCodes.Throw);
+                    gen.Emit(OpCodes.Leave_S, exTryCatch);
+                    gen.EndExceptionBlock();
                 }
-                gen.Emit(OpCodes.Leave_S, exTryCatch);
-                gen.BeginCatchBlock(typeofException);
-                gen.Emit(OpCodes.Stloc_S, e);
-                gen.Emit(OpCodes.Ldstr, "The member value can\'t be unserialized.");
-                gen.Emit(OpCodes.Ldloc_S, e);
-                gen.Emit(OpCodes.Newobj, hproseExceptionCtor);
-                gen.Emit(OpCodes.Throw);
-                gen.Emit(OpCodes.Leave_S, exTryCatch);
-                gen.EndExceptionBlock();
             }
             gen.Emit(OpCodes.Ret);
         }
