@@ -15,7 +15,7 @@
  *                                                        *
  * hprose http server library for php5.                   *
  *                                                        *
- * LastModified: Jul 19, 2011                             *
+ * LastModified: Nov 2, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -414,22 +414,24 @@ class HproseHttpServer {
         if (($_SERVER['REQUEST_METHOD'] == 'GET') and $this->get) {
             return $this->doFunctionList();
         }
-        try {
-            $exceptTags = array(HproseTags::TagCall, HproseTags::TagEnd);
-            $tag = $this->reader->checkTags($exceptTags);
-            switch ($tag) {
-                case HproseTags::TagCall: return $this->doInvoke();
-                case HproseTags::TagEnd: return $this->doFunctionList();
+        else if ($_SERVER['REQUEST_METHOD'] == 'GET') {
+            try {
+                $exceptTags = array(HproseTags::TagCall, HproseTags::TagEnd);
+                $tag = $this->reader->checkTags($exceptTags);
+                switch ($tag) {
+                    case HproseTags::TagCall: return $this->doInvoke();
+                    case HproseTags::TagEnd: return $this->doFunctionList();
+                }
             }
-        }
-        catch (Exception $e) {
-            $this->error = $e->getMessage();
-            if ($this->debug) {
-                $this->error .= "\nfile: " . $e->getFile() .
-                                "\nline: " . $e->getLine() .
-                                "\ntrace: " . $e->getTraceAsString();
+            catch (Exception $e) {
+                $this->error = $e->getMessage();
+                if ($this->debug) {
+                    $this->error .= "\nfile: " . $e->getFile() .
+                                    "\nline: " . $e->getLine() .
+                                    "\ntrace: " . $e->getTraceAsString();
+                }
+                $this->sendError();
             }
-            $this->sendError();
         }
         $this->input->close();
         $this->output->close();
