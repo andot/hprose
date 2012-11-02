@@ -14,7 +14,7 @@
  *                                                        *
  * HproseClient for Node.js.                              *
  *                                                        *
- * LastModified: Oct 29, 2012                             *
+ * LastModified: Nov 2, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -44,6 +44,7 @@ function HproseProxy(invoke, ns) {
 
 function HproseClient() {
     EventEmitter.call(this);
+    var self = this;
     var m_timeout = 30000;
     var m_proxy;
     if (typeof(Proxy) != 'undefined') m_proxy = Proxy.create(new HproseProxy(invoke.bind(this)));
@@ -149,11 +150,16 @@ function HproseClient() {
                 if (callback) callback(result, args);
             }
             catch (e) {
-                if (errorHandler) errorHandler(func, e);
+                invoker.emit('error', e);
             }
         });
         invoker.on('error', function(e) {
-            if (errorHandler) errorHandler(func, e);
+            if (errorHandler) {
+                errorHandler(func, e);
+            }
+            else {
+                self.emit('error', func, e);
+            }
         });
         var data = stream.toBuffer();
         this.emit('senddata', invoker, data);
