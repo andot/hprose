@@ -414,7 +414,7 @@ class HproseHttpServer {
         if (($_SERVER['REQUEST_METHOD'] == 'GET') and $this->get) {
             return $this->doFunctionList();
         }
-        else if ($_SERVER['REQUEST_METHOD'] == 'GET') {
+        else if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             try {
                 $exceptTags = array(HproseTags::TagCall, HproseTags::TagEnd);
                 $tag = $this->reader->checkTags($exceptTags);
