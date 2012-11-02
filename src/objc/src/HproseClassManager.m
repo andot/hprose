@@ -38,7 +38,7 @@ static NSMutableDictionary *gClassCache2;
             [gClassCache1 setObject:alias forKey:[NSNull null]];
         }
         else {
-            [gClassCache1 setObject:alias forKey:cls];
+            [gClassCache1 setObject:alias forKey:(id)cls];
         }
     }
     @synchronized (gClassCache2) {

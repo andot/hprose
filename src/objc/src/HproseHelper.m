@@ -334,7 +334,7 @@ static NSMutableDictionary *gPropertiesCache;
         properties = getHproseProperties1(cls);
     }
     @synchronized(gPropertiesCache) {
-        [gPropertiesCache setObject:properties forKey:cls];
+        [gPropertiesCache setObject:properties forKey:(id)cls];
     }
     return properties;
 }
@@ -382,7 +382,7 @@ static NSMutableDictionary *gPropertiesCache;
     objc_registerClassPair(cls);
     [HproseClassManager registerClass:cls withAlias:className];
     @synchronized(gPropertiesCache) {
-        [gPropertiesCache setObject:properties forKey:cls];
+        [gPropertiesCache setObject:properties forKey:(id)cls];
     }
     return cls;
 }

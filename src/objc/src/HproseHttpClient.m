@@ -70,7 +70,7 @@
     if ([httpResponse statusCode] != 200) {
         [asyncInvoke errorCallback:[HproseException exceptionWithReason:
                                     [NSString stringWithFormat:@"Http error %d: %@",
-                                     [httpResponse statusCode],
+                                     (int)[httpResponse statusCode],
                                      [NSHTTPURLResponse localizedStringForStatusCode:
                                       [httpResponse statusCode]]]]];
     }
@@ -130,7 +130,7 @@
             if (statusCode != 200 && statusCode != 0) {
                 @throw [HproseException exceptionWithReason:
                         [NSString stringWithFormat:@"Http error %d: %@",
-                         statusCode,
+                         (int)statusCode,
                          [NSHTTPURLResponse localizedStringForStatusCode:statusCode]]];                
             }
             if (context == nil) {

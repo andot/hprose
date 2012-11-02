@@ -1448,7 +1448,7 @@ static double NaN, Infinity, NegInfinity;
     if (cls == Nil) {
         cls = [HproseHelper createClass:className withPropNames:propNames];
     }
-    [attrsref setObject:propNames forKey:cls];
+    [attrsref setObject:propNames forKey:(id)cls];
     [classref addObject:cls];
 }
 
