@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for Objective-C.                   *
  *                                                        *
- * LastModified: Jul 2, 2011                              *
+ * LastModified: Nov 2, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -1375,6 +1375,10 @@ static double NaN, Infinity, NegInfinity;
 }
 
 - (void) readProperty:(HproseProperty *)property forObject:(id)o {
+    if (property == nil) {
+        [self unserialize];
+        return;
+    }
     IMP setterImp = [property setterImp];
     SEL setter = [property setter];
     id value = [self unserialize:[property cls] withType:[property type]];
