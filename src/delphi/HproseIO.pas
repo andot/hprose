@@ -15,7 +15,7 @@
  *                                                        *
  * hprose io unit for delphi.                             *
  *                                                        *
- * LastModified: Jun 22, 2011                             *
+ * LastModified: Nov 2, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -1830,8 +1830,11 @@ begin
     for I := 0 to Count - 1 do begin
       Key := ReadString;
       PropInfo := GetPropInfo(AClass, Key);
-      VType := GetVarTypeAndClass(PropInfo^.PropType{$IFNDEF FPC}^{$ENDIF}, PropClass);
-      SetPropValue(Instance, PropInfo, Unserialize(VType, PropClass));
+      if (PropInfo <> nil) then begin
+        VType := GetVarTypeAndClass(PropInfo^.PropType{$IFNDEF FPC}^{$ENDIF}, PropClass);
+        SetPropValue(Instance, PropInfo, Unserialize(VType, PropClass));
+      end
+      else Unserialize;
     end;
   end;
   CheckTag(HproseTagClosebrace);
@@ -1882,8 +1885,11 @@ begin
     FRefList.Add(Result);
     for I := 0 to Count - 1 do begin
       PropInfo := GetPropInfo(Instance, AttrNames[I]);
-      VType := GetVarTypeAndClass(PropInfo^.PropType{$IFNDEF FPC}^{$ENDIF}, PropClass);
-      SetPropValue(Instance, PropInfo, Unserialize(VType, PropClass));
+      if (PropInfo <> nil) then begin
+        VType := GetVarTypeAndClass(PropInfo^.PropType{$IFNDEF FPC}^{$ENDIF}, PropClass);
+        SetPropValue(Instance, PropInfo, Unserialize(VType, PropClass));
+      end
+      else Unserialize;
     end;
   end;
   CheckTag(HproseTagClosebrace);  
