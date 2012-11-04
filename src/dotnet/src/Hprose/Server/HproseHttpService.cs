@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http service class for C#.                      *
  *                                                        *
- * LastModified: Jun 15, 2010                             *
+ * LastModified: Nov 4, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -160,13 +160,13 @@ namespace Hprose.Server {
             }
             if (crossDomainEnabled) {
                     string origin = currentContext.Request.Headers["Origin"];
-                    if (origin != null && origin != "null") {
+                    if (origin != null && origin != "" && origin != "null") {
                         currentContext.Response.AddHeader("Access-Control-Allow-Origin", origin);
                         currentContext.Response.AddHeader("Access-Control-Allow-Credentials", "true");  
                     }
                     else {
                         currentContext.Response.AddHeader("Access-Control-Allow-Origin", "*");
-                    }       
+                    }
             }
             if (compressionEnabled) {
                 string acceptEncoding = currentContext.Request.Headers["Accept-Encoding"];
