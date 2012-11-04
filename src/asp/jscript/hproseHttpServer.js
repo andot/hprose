@@ -416,7 +416,7 @@ var HproseHttpServer = (function() {
                 if ((Request.ServerVariables("REQUEST_METHOD") == 'GET') && m_get) {
                     doFunctionList();
                 }
-                else {
+                else if (Request.ServerVariables("REQUEST_METHOD") == 'POST') {
                     handle.apply(this);
                 }
                 Response.end();

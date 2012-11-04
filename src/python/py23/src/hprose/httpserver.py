@@ -14,7 +14,7 @@
 #                                                          #
 # hprose httpserver for python 2.3+                        #
 #                                                          #
-# LastModified: Oct 28, 2012                               #
+# LastModified: Nov 4, 2012                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -67,16 +67,13 @@ class HproseHttpService(HproseService):
         else:
             session = {}
         header = self._header(environ)
-        stream = StringIO()
-        writer = HproseWriter(stream)
-        if ((environ['REQUEST_METHOD'] == 'GET') and self._get):
-            self._doFunctionList(writer)
-            body = stream.getvalue()
-            stream.close()
-            return ['200 OK', header, [body]]
+        writer = HproseWriter(StringIO())
         try:
-            reader = HproseReader(environ['wsgi.input'])
-            self._handle(reader, writer, session, environ)
+            if ((environ['REQUEST_METHOD'] == 'GET') and self._get):
+                self._doFunctionList(writer)
+            elif (environ['REQUEST_METHOD'] == 'POST'):
+                reader = HproseReader(environ['wsgi.input'])
+                self._handle(reader, writer, session, environ)
         finally:
             if hasattr(session, 'save'): session.save()
             stream = writer.stream

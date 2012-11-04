@@ -14,7 +14,7 @@
 #                                                          #
 # hprose http service for ruby                             #
 #                                                          #
-# LastModified: Oct 28, 2012                               #
+# LastModified: Nov 4, 2012                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -50,20 +50,16 @@ module Hprose
         end
       end            
       @on_send_header.call(env, header) until @on_send_header.nil?
-      stream = StringIO.new()
-      writer = Writer.new(stream)
-      if (env['REQUEST_METHOD'] == 'GET') and @get then
-        do_function_list(writer)
-        body = stream.string
-        stream.close()
-        header['Content-Length'] = body.size.to_s
-        return ['200 OK', header, [body]]
-      end
+      writer = Writer.new(StringIO.new())
       begin
-        reader = Reader.new(StringIO.new(env['rack.input'].read, 'rb'))
-        handle(reader, writer, session, env)
+        if (env['REQUEST_METHOD'] == 'GET') and @get then
+          do_function_list(writer)
+        elsif (env['REQUEST_METHOD'] == 'POST') then
+          reader = Reader.new(StringIO.new(env['rack.input'].read, 'rb'))
+          handle(reader, writer, session, env)
+          reader.stream.close()
+        end
       ensure
-        reader.stream.close()
         stream = writer.stream
         body = stream.string
         stream.close()

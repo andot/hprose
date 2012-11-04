@@ -14,7 +14,7 @@
  *                                                        *
  * HproseHttpService for Node.js.                         *
  *                                                        *
- * LastModified: Oct 28, 2012                             *
+ * LastModified: Nov 4, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -93,7 +93,7 @@ function HproseHttpService() {
             if ((request.method == "GET") && m_get) {
                 self._doFunctionList(writer);
             }
-            else {
+            else if (request.method == "POST") {
                 self._handle(reader, writer, request);
             }
             response.end(writer.stream.toBuffer());
