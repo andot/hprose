@@ -1,4 +1,4 @@
-var hprose = require("../hprose.js");
+var hprose = require("hprose");
 
 var HproseHttpClient = hprose.client.HproseHttpClient;
 var client = new HproseHttpClient('http://127.0.0.1:8080/');

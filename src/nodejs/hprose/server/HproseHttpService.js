@@ -14,7 +14,7 @@
  *                                                        *
  * HproseHttpService for Node.js.                         *
  *                                                        *
- * LastModified: Nov 4, 2012                              *
+ * LastModified: Nov 5, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -30,7 +30,6 @@ function HproseHttpService() {
     var m_crossDomain = false;
     var m_P3P = false;
     var m_get = true;
-    var self = this;
     HproseService.call(this);
 
     // protected methods
@@ -89,15 +88,17 @@ function HproseHttpService() {
             var data = Buffer.concat(bufferList, bufferLength);
             var reader = new HproseReader(new HproseBufferInputStream(data));
             var writer = new HproseWriter(new HproseBufferOutputStream());
-            self._sendHeader(request, response);
+            this._sendHeader(request, response);
+            response.on("end", function () {
+                response.end(writer.stream.toBuffer());
+            });
             if ((request.method == "GET") && m_get) {
-                self._doFunctionList(writer);
+                this._doFunctionList(writer, response);
             }
             else if (request.method == "POST") {
-                self._handle(reader, writer, request);
+                this._handle(reader, writer, request, response);
             }
-            response.end(writer.stream.toBuffer());
-        });
+        }.bind(this));
     }
 }
 

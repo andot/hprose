@@ -1,5 +1,5 @@
 var util = require("util");
-var hprose = require("../hprose.js");
+var hprose = require("hprose");
 var HproseFormatter = hprose.io.HproseFormatter;
 console.log(HproseFormatter.unserialize(HproseFormatter.serialize(0)));
 console.log(HproseFormatter.unserialize(HproseFormatter.serialize(1)));

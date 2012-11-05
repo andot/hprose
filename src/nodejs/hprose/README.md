@@ -59,6 +59,19 @@ To start it use:
 --harmony is a v8 options, hprose use it to optimize serialization.
 This is not required option, but it is recommended to use it.
 
+In fact most nodejs service methods are asynchronous, you can publish asynchronous
+function like this:
+
+    function hello(name, callback) {
+        setTimeout(function() {
+            callback("Hello " + name + "!");
+        }, 10);
+    }
+    var HproseHttpServer = require("hprose").server.HproseHttpServer;
+    var server = new HproseHttpServer();
+    server.addAsyncFunction(hello);
+    server.listen(8080);
+
 Then you can create a hprose client to invoke it like this:
 
     var HproseHttpClient = require("hprose").client.HproseHttpClient;
