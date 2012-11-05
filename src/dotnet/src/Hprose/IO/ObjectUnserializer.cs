@@ -13,11 +13,11 @@
  *                                                        *
  * Object Unserializer class for C#.                      *
  *                                                        *
- * LastModified: Nov 1, 2012                              *
+ * LastModified: Nov 6, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
 using System;
 using System.Collections.Generic;
 using System.Reflection;

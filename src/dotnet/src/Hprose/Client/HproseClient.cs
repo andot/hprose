@@ -22,7 +22,7 @@ using System.IO;
 using System.Threading;
 using Hprose.IO;
 using Hprose.Common;
-#if !(PocketPC || Smartphone || WindowsCE || WP70)
+#if !(PocketPC || Smartphone || WindowsCE || WINDOWS_PHONE)
 using Hprose.Reflection;
 #endif
 

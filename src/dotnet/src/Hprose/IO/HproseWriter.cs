@@ -29,7 +29,7 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
 using Hprose.Common;
-#if !(PocketPC || Smartphone || WindowsCE || WP70 || SL5)
+#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT)
 using Hprose.Reflection;
 #endif
 
@@ -1361,7 +1361,7 @@ namespace Hprose.IO {
 
         private void WriteSerializableObject(object obj, Type type) {
             if (mode == HproseMode.FieldMode) {
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
                 ObjectSerializer.Get(type).SerializeFields(obj, this);
 #else
 #if !(dotNET10 || dotNET11 || dotNETCF10)
@@ -1383,7 +1383,7 @@ namespace Hprose.IO {
 #endif
             }
             else {
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
                 ObjectSerializer.Get(type).SerializeProperties(obj, this);
 #else
 #if !(dotNET10 || dotNET11 || dotNETCF10)
@@ -1395,7 +1395,7 @@ namespace Hprose.IO {
 #endif
                     object value;
                     try {
-#if !(PocketPC || Smartphone || WindowsCE || WP70 || SL5)
+#if (dotNET10 || dotNET11)
                         value = PropertyAccessor.Get((PropertyInfo)property.Value).GetValue(obj);
 #else
                         value = ((PropertyInfo)property.Value).GetValue(obj, null);
@@ -1411,7 +1411,7 @@ namespace Hprose.IO {
         }
 
         private void WriteDataContractObject(object obj, Type type) {
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
             ObjectSerializer.Get(type).SerializeMembers(obj, this);
 #else
 #if !(dotNET10 || dotNET11 || dotNETCF10)
@@ -1427,7 +1427,7 @@ namespace Hprose.IO {
                         value = ((FieldInfo)member.Value).GetValue(obj);
                     }
                     else {
-#if !(PocketPC || Smartphone || WindowsCE || WP70 || SL5)
+#if (dotNET10 || dotNET11)
                         value = PropertyAccessor.Get((PropertyInfo)member.Value).GetValue(obj);
 #else
                         value = ((PropertyInfo)member.Value).GetValue(obj, null);

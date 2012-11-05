@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for C#.                            *
  *                                                        *
- * LastModified: Nov 1, 2012                              *
+ * LastModified: Nov 5, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -28,7 +28,7 @@ using System.IO;
 using System.Text;
 using System.Reflection;
 using Hprose.Common;
-#if !(PocketPC || Smartphone || WindowsCE || WP70 || SL5)
+#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT)
 using Hprose.Reflection;
 #endif
 
@@ -1484,7 +1484,7 @@ namespace Hprose.IO {
         }
 
         private IList ReadIList(Type type, int count) {
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
             IList a = (IList)CtorAccessor.Get(type).NewInstance();
 #else
             IList a = (IList)HproseHelper.NewInstance(type);
@@ -1508,7 +1508,7 @@ namespace Hprose.IO {
         }
 
         internal IList<T> ReadIList<T>(Type type, int count) {
-#if !(PocketPC || Smartphone || WindowsCE || WP70 || SL5)
+#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT)
             IList<T> a = (IList<T>)CtorAccessor.Get(type).NewInstance();
 #else
             IList<T> a = (IList<T>)HproseHelper.NewInstance(type);
@@ -1522,7 +1522,7 @@ namespace Hprose.IO {
         }
 
         internal ICollection<T> ReadICollection<T>(Type type, int count) {
-#if !(PocketPC || Smartphone || WindowsCE || WP70 || SL5)
+#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT)
             ICollection<T> a = (ICollection<T>)CtorAccessor.Get(type).NewInstance();
 #else
             ICollection<T> a = (ICollection<T>)HproseHelper.NewInstance(type);
@@ -1678,7 +1678,7 @@ namespace Hprose.IO {
         }
 
         private IDictionary ReadIDictionary(Type type, int count) {
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
             IDictionary map = (IDictionary)CtorAccessor.Get(type).NewInstance();
 #else
             IDictionary map = (IDictionary)HproseHelper.NewInstance(type);
@@ -1707,7 +1707,7 @@ namespace Hprose.IO {
         }
 
         internal IDictionary<TKey, TValue> ReadIMap<TKey, TValue>(Type type, int count) {
-#if !(PocketPC || Smartphone || WindowsCE || WP70 || SL5)
+#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT)
             IDictionary<TKey, TValue> map = (IDictionary<TKey, TValue>)CtorAccessor.Get(type).NewInstance();
 #else
             IDictionary<TKey, TValue> map = (IDictionary<TKey, TValue>)HproseHelper.NewInstance(type);
@@ -1725,7 +1725,7 @@ namespace Hprose.IO {
 #endif
 
         private object ReadObject(Type type, int count) {
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
             object obj = CtorAccessor.Get(type).NewInstance();
 #else
             object obj = HproseHelper.NewInstance(type);
@@ -1748,7 +1748,7 @@ namespace Hprose.IO {
                     Unserialize();
                 }
             }
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
             ObjectFieldModeUnserializer.Get(type, names).Unserialize(obj, values);
 #else
             for (int i = 0; i < count; i++) {
@@ -1762,7 +1762,7 @@ namespace Hprose.IO {
         }
 
         private object ReadObject2(Type type, int count) {
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
             object obj = CtorAccessor.Get(type).NewInstance();
 #else
             object obj = HproseHelper.NewInstance(type);
@@ -1785,13 +1785,13 @@ namespace Hprose.IO {
                     Unserialize();
                 }
             }
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
             ObjectPropertyModeUnserializer.Get(type, names).Unserialize(obj, values);
 #else
             for (int i = 0; i < count; i++) {
                 if (properties.ContainsKey(names[i])) {
                     PropertyInfo property = (PropertyInfo)properties[names[i]];
-#if !(PocketPC || Smartphone || WindowsCE || WP70 || SL5)
+#if (dotNET10 || dotNET11)
                     PropertyAccessor.Get(property).SetValue(obj, values[i]);
 #else
                     property.SetValue(obj, values[i], null);
@@ -1804,7 +1804,7 @@ namespace Hprose.IO {
 
 
         private object ReadObject3(Type type, int count) {
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
             object obj = CtorAccessor.Get(type).NewInstance();
 #else
             object obj = HproseHelper.NewInstance(type);
@@ -1838,7 +1838,7 @@ namespace Hprose.IO {
                     Unserialize();
                 }
             }
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
             ObjectMemberModeUnserializer.Get(type, names).Unserialize(obj, values);
 #else
             for (int i = 0; i < count; i++) {
@@ -1852,7 +1852,7 @@ namespace Hprose.IO {
                         ((FieldInfo)member).SetValue(obj, values[i]);
                     }
                     else {
-#if !(PocketPC || Smartphone || WindowsCE || WP70 || SL5)
+#if (dotNET10 || dotNET11)
                         PropertyAccessor.Get((PropertyInfo)member).SetValue(obj, values[i]);
 #else
                         ((PropertyInfo)member).SetValue(obj, values[i], null);
@@ -1962,61 +1962,16 @@ namespace Hprose.IO {
             string[] memberNames = (string[])membersref[c];
             int count = memberNames.Length;
             object obj = null;
-#if !(dotNET10 || dotNET11 || dotNETCF10)
-            Dictionary<string, MemberInfo> members = null;
-#else
-            Hashtable members = null;
-#endif
             if (c is Type) {
                 Type cls = (Type)c;
-                if ((type == null) || type.IsAssignableFrom(cls)) {
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
-                    obj = CtorAccessor.Get(cls).NewInstance();
-#else
-                    obj = HproseHelper.NewInstance(cls);
-#endif
-                    if (obj != null) {
-                        if (HproseHelper.IsSerializable(cls)) {
-                            if (mode == HproseMode.FieldMode) {
-                                members = HproseHelper.GetFields(cls);
-                            }
-                            else {
-                                members = HproseHelper.GetProperties(cls);
-                            }
-                        }
-                        else {
-                            members = HproseHelper.GetMembers(cls);
-                        }
-                    }
-                    type = cls;
-                }
-                else if (HproseHelper.IsInstantiableClass(type)) {
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
-                    obj = CtorAccessor.Get(type).NewInstance();
-#else
-                    obj = HproseHelper.NewInstance(type);
-#endif
-                }
+                if ((type == null) || type.IsAssignableFrom(cls)) type = cls;
             }
-            else if ((type != null) && HproseHelper.IsInstantiableClass(type)) {
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
+            if ((type != null) && HproseHelper.IsInstantiableClass(type)) {
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
                 obj = CtorAccessor.Get(type).NewInstance();
 #else
                 obj = HproseHelper.NewInstance(type);
 #endif
-            }
-            if ((obj != null) && (members == null)) {
-                if (HproseHelper.IsSerializable(type)) {
-                    if (mode == HproseMode.FieldMode) {
-                        members = HproseHelper.GetFields(type);
-                    }
-                    else {
-                        members = HproseHelper.GetProperties(type);
-                    }
-                }
-                else {
-                    members = HproseHelper.GetMembers(type);
-                }
             }
             if (obj == null) {
                 Hashtable map = new Hashtable(count);
@@ -2031,45 +1986,55 @@ namespace Hprose.IO {
                 object[] values = new object[count];
                 if (HproseHelper.IsSerializable(type)) {
                     if (mode == HproseMode.FieldMode) {
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+                        Dictionary<string, MemberInfo> fields = HproseHelper.GetFields(type);
+#else
+                        Hashtable fields = HproseHelper.GetFields(type);
+#endif
                         FieldInfo field;
                         for (int i = 0; i < count; i++) {
-                            if (members.ContainsKey(memberNames[i])) {
-                                field = (FieldInfo)members[memberNames[i]];
+                            if (fields.ContainsKey(memberNames[i])) {
+                                field = (FieldInfo)fields[memberNames[i]];
                                 values[i] = Unserialize(field.FieldType);
                             }
                             else {
                                 Unserialize();
                             }
                         }
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
                         ObjectFieldModeUnserializer.Get(type, memberNames).Unserialize(obj, values);
 #else
                         for (int i = 0; i < count; i++) {
-                            if (members.ContainsKey(memberNames[i])) {
-                                field = (FieldInfo)members[memberNames[i]];
+                            if (fields.ContainsKey(memberNames[i])) {
+                                field = (FieldInfo)fields[memberNames[i]];
                                 field.SetValue(obj, values[i]);
                             }
                         }
 #endif
                     }
                     else {
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+                        Dictionary<string, MemberInfo> properties = HproseHelper.GetProperties(type);
+#else
+                        Hashtable properties = HproseHelper.GetProperties(type);
+#endif
                         PropertyInfo property;
                         for (int i = 0; i < count; i++) {
-                            if (members.ContainsKey(memberNames[i])) {
-                                property = (PropertyInfo)members[memberNames[i]];
+                            if (properties.ContainsKey(memberNames[i])) {
+                                property = (PropertyInfo)properties[memberNames[i]];
                                 values[i] = Unserialize(property.PropertyType);
                             }
                             else {
                                 Unserialize();
                             }
                         }
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
                         ObjectPropertyModeUnserializer.Get(type, memberNames).Unserialize(obj, values);
 #else
                         for (int i = 0; i < count; i++) {
-                            if (members.ContainsKey(memberNames[i])) {
-                                property = (PropertyInfo)members[memberNames[i]];
-#if !(PocketPC || Smartphone || WindowsCE || WP70 || SL5)
+                            if (properties.ContainsKey(memberNames[i])) {
+                                property = (PropertyInfo)properties[memberNames[i]];
+#if (dotNET10 || dotNET11)
                                 PropertyAccessor.Get(property).SetValue(obj, values[i]);
 #else
                                 property.SetValue(obj, values[i], null);
@@ -2080,48 +2045,53 @@ namespace Hprose.IO {
                     }
                 }
                 else {
-                        MemberInfo member;
-                        for (int i = 0; i < count; i++) {
-                            if (members.ContainsKey(memberNames[i])) {
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+                    Dictionary<string, MemberInfo> members = HproseHelper.GetMembers(type);
+#else
+                    Hashtable members = HproseHelper.GetMembers(type);
+#endif
+                    MemberInfo member;
+                    for (int i = 0; i < count; i++) {
+                        if (members.ContainsKey(memberNames[i])) {
                         
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                                member = members[memberNames[i]];
+                            member = members[memberNames[i]];
 #else
-                                member = (MemberInfo)members[memberNames[i]];
+                            member = (MemberInfo)members[memberNames[i]];
 #endif
-                                if (member is FieldInfo) {
-                                    values[i] = Unserialize(((FieldInfo)member).FieldType);
-                                }
-                                else {
-                                    values[i] = Unserialize(((PropertyInfo)member).PropertyType);
-                                }
+                            if (member is FieldInfo) {
+                                values[i] = Unserialize(((FieldInfo)member).FieldType);
                             }
                             else {
-                                Unserialize();
+                                values[i] = Unserialize(((PropertyInfo)member).PropertyType);
                             }
                         }
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || WP70 || SL5)
-                        ObjectMemberModeUnserializer.Get(type, memberNames).Unserialize(obj, values);
+                        else {
+                            Unserialize();
+                        }
+                    }
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
+                    ObjectMemberModeUnserializer.Get(type, memberNames).Unserialize(obj, values);
 #else
-                        for (int i = 0; i < count; i++) {
-                            if (members.ContainsKey(memberNames[i])) {
+                    for (int i = 0; i < count; i++) {
+                        if (members.ContainsKey(memberNames[i])) {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                                member = members[memberNames[i]];
+                            member = members[memberNames[i]];
 #else
-                                member = (MemberInfo)members[memberNames[i]];
+                            member = (MemberInfo)members[memberNames[i]];
 #endif
-                                if (member is FieldInfo) {
-                                    ((FieldInfo)member).SetValue(obj, values[i]);
-                                }
-                                else {
-#if !(PocketPC || Smartphone || WindowsCE || WP70 || SL5)
-                                    PropertyAccessor.Get((PropertyInfo)member).SetValue(obj, values[i]);
+                            if (member is FieldInfo) {
+                                ((FieldInfo)member).SetValue(obj, values[i]);
+                            }
+                            else {
+#if (dotNET10 || dotNET11)
+                                PropertyAccessor.Get((PropertyInfo)member).SetValue(obj, values[i]);
 #else
-                                    ((PropertyInfo)member).SetValue(obj, values[i], null);
+                                ((PropertyInfo)member).SetValue(obj, values[i], null);
 #endif
-                                }
                             }
                         }
+                    }
 #endif
                 }
             }
