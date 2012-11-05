@@ -1,0 +1,10 @@
+﻿<xapCache source="c:\users\andot\documents\visual studio 2012\Projects\HproseTest\SilverlightHproseClient\Bin\Debug\SilverlightHproseClient.xap" wasSigned="False" certificateThumbprint="" TimeStampUrl="" lastWriteTime="2012/11/6 2:02:40">
+  <file source="c:\users\andot\documents\visual studio 2012\Projects\HproseTest\SilverlightHproseClient\obj\Debug\SilverlightHproseClient.dll" archivePath="SilverlightHproseClient.dll" lastWriteTime="2012/11/6 2:02:40" />
+  <file source="c:\users\andot\documents\visual studio 2012\Projects\HproseTest\SilverlightHproseClient\Hprose.Client.dll" archivePath="Hprose.Client.dll" lastWriteTime="2012/11/6 1:21:23" />
+  <file source="c:\Program Files (x86)\Microsoft SDKs\Silverlight\v5.0\Libraries\Client\System.ComponentModel.DataAnnotations.dll" archivePath="System.ComponentModel.DataAnnotations.dll" lastWriteTime="2011/11/18 17:40:20" />
+  <file source="c:\users\andot\documents\visual studio 2012\Projects\HproseTest\SilverlightHproseClient\System.Numerics.dll" archivePath="System.Numerics.dll" lastWriteTime="2012/11/6 1:21:23" />
+  <file source="c:\Program Files (x86)\Microsoft SDKs\Silverlight\v5.0\Libraries\Client\System.Windows.Controls.Data.Input.dll" archivePath="System.Windows.Controls.Data.Input.dll" lastWriteTime="2011/11/18 17:40:20" />
+  <file source="c:\Program Files (x86)\Microsoft SDKs\Silverlight\v5.0\Libraries\Client\zh-Hans\System.ComponentModel.DataAnnotations.resources.dll" archivePath="zh-Hans\System.ComponentModel.DataAnnotations.resources.dll" lastWriteTime="2011/12/7 23:27:32" />
+  <file source="c:\Program Files (x86)\Microsoft SDKs\Silverlight\v5.0\Libraries\Client\zh-Hans\System.Windows.Controls.Data.Input.resources.dll" archivePath="zh-Hans\System.Windows.Controls.Data.Input.resources.dll" lastWriteTime="2011/12/7 23:27:32" />
+  <file source="c:\users\andot\documents\visual studio 2012\Projects\HproseTest\SilverlightHproseClient\Bin\Debug\AppManifest.xaml" archivePath="AppManifest.xaml" lastWriteTime="2012/11/6 2:02:40" />
+</xapCache>

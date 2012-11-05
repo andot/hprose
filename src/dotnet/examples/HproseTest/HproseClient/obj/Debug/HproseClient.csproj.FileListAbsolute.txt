@@ -1,0 +1,7 @@
+c:\users\andot\documents\visual studio 2012\Projects\HproseTest\HproseClient\bin\Debug\HproseClient.exe.config
+c:\users\andot\documents\visual studio 2012\Projects\HproseTest\HproseClient\bin\Debug\HproseClient.exe
+c:\users\andot\documents\visual studio 2012\Projects\HproseTest\HproseClient\bin\Debug\HproseClient.pdb
+c:\users\andot\documents\visual studio 2012\Projects\HproseTest\HproseClient\bin\Debug\Hprose.Client.dll
+c:\users\andot\documents\visual studio 2012\Projects\HproseTest\HproseClient\obj\Debug\HproseClient.exe
+c:\users\andot\documents\visual studio 2012\Projects\HproseTest\HproseClient\obj\Debug\HproseClient.pdb
+c:\users\andot\documents\visual studio 2012\Projects\HproseTest\HproseClient\obj\Debug\HproseClient.csprojResolveAssemblyReference.cache
