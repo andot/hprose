@@ -15,7 +15,7 @@
  *                                                        *
  * hprose http server library for php5.                   *
  *                                                        *
- * LastModified: Nov 2, 2012                              *
+ * LastModified: Nov 7, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -176,6 +176,8 @@ class HproseHttpServer {
             if (!is_null($this->onAfterInvoke)) {
                 call_user_func($this->onAfterInvoke, $functionName, $functionArgs, $byref, $result);
             }
+            // some service functions/methods may echo content, we need clean it
+            ob_end_clean();
             if ($resultMode == HproseResultMode::RawWithEndTag) {
                 $this->output->write($result);
                 return;
