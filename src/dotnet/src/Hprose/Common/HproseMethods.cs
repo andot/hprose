@@ -13,7 +13,7 @@
  *                                                        *
  * hprose remote methods class for C#.                    *
  *                                                        *
- * LastModified: Jun 22, 2011                             *
+ * LastModified: Nov 6, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -146,6 +146,14 @@ namespace Hprose.Common {
         }
 
         private void AddMethod(string methodName, object obj, Type type, string aliasName, HproseResultMode mode) {
+#if dotNET45
+            IEnumerable<MethodInfo> methods = type.GetRuntimeMethods();
+            foreach (MethodInfo method in methods) {
+                if (method.IsPublic && (method.IsStatic == (obj == null)) && (methodName == method.Name)) {
+                    AddMethod(aliasName, new HproseMethod(method, obj, mode));
+                }
+            }
+#else        
             BindingFlags flags = (obj == null) ? BindingFlags.Static : BindingFlags.Instance;
             MethodInfo[] methods = type.GetMethods(flags | BindingFlags.Public);
             for (int i = 0; i < methods.Length; i++) {
@@ -153,6 +161,7 @@ namespace Hprose.Common {
                     AddMethod(aliasName, new HproseMethod(methods[i], obj, mode));
                 }
             }
+#endif
         }
 
         public void AddMethod(string methodName, object obj, string aliasName) {
@@ -192,6 +201,18 @@ namespace Hprose.Common {
         }
 
         private void AddMethods(string[] methodNames, object obj, Type type, string[] aliasNames, HproseResultMode mode) {
+#if dotNET45
+            IEnumerable<MethodInfo> methods = type.GetRuntimeMethods();
+            for (int i = 0; i < methodNames.Length; i++) {
+                string methodName = methodNames[i];
+                string aliasName = aliasNames[i];
+                foreach (MethodInfo method in methods) {
+                    if (method.IsPublic && (method.IsStatic == (obj == null)) && (methodName == method.Name)) {
+                        AddMethod(aliasName, new HproseMethod(method, obj, mode));
+                    }
+                }
+            }
+#else        
             BindingFlags flags = (obj == null) ? BindingFlags.Static : BindingFlags.Instance;
             MethodInfo[] methods = type.GetMethods(flags | BindingFlags.Public);
             for (int i = 0; i < methodNames.Length; i++) {
@@ -203,6 +224,7 @@ namespace Hprose.Common {
                     }
                 }
             }
+#endif
         }
 
         private void AddMethods(string[] methodNames, object obj, Type type, string aliasPrefix) {
@@ -279,12 +301,21 @@ namespace Hprose.Common {
 
         public void AddInstanceMethods(object obj, Type type, string aliasPrefix, HproseResultMode mode) {
             if (obj != null) {
+#if dotNET45
+                IEnumerable<MethodInfo> methods = type.GetTypeInfo().DeclaredMethods;
+                foreach (MethodInfo method in methods) {
+                    if (method.IsPublic && !(method.IsStatic)) {
+                        AddMethod(method, obj, aliasPrefix + "_" + method.Name, mode);
+                    }
+                }
+#else
                 MethodInfo[] methods = type.GetMethods(BindingFlags.DeclaredOnly |
                                                        BindingFlags.Instance |
                                                        BindingFlags.Public);
                 for (int i = 0; i < methods.Length; i++) {
                     AddMethod(methods[i], obj, aliasPrefix + "_" + methods[i].Name, mode);
                 }
+#endif
             }
         }
 
@@ -294,12 +325,21 @@ namespace Hprose.Common {
 
         public void AddInstanceMethods(object obj, Type type, HproseResultMode mode) {
             if (obj != null) {
+#if dotNET45
+                IEnumerable<MethodInfo> methods = type.GetTypeInfo().DeclaredMethods;
+                foreach (MethodInfo method in methods) {
+                    if (method.IsPublic && !(method.IsStatic)) {
+                        AddMethod(method, obj, method.Name, mode);
+                    }
+                }
+#else
                 MethodInfo[] methods = type.GetMethods(BindingFlags.DeclaredOnly |
                                                        BindingFlags.Instance |
                                                        BindingFlags.Public);
                 for (int i = 0; i < methods.Length; i++) {
                     AddMethod(methods[i], obj, methods[i].Name, mode);
                 }
+#endif
             }
         }
 
@@ -324,12 +364,21 @@ namespace Hprose.Common {
         }
 
         public void AddStaticMethods(Type type, string aliasPrefix, HproseResultMode mode) {
+#if dotNET45
+            IEnumerable<MethodInfo> methods = type.GetTypeInfo().DeclaredMethods;
+            foreach (MethodInfo method in methods) {
+                if (method.IsPublic && method.IsStatic) {
+                    AddMethod(method, null, aliasPrefix + "_" + method.Name, mode);
+                }
+            }
+#else
             MethodInfo[] methods = type.GetMethods(BindingFlags.DeclaredOnly |
                                                    BindingFlags.Static |
                                                    BindingFlags.Public);
             for (int i = 0; i < methods.Length; i++) {
                 AddMethod(methods[i], null, aliasPrefix + "_" + methods[i].Name, mode);
             }
+#endif
         }
 
         public void AddStaticMethods(Type type) {
@@ -337,12 +386,21 @@ namespace Hprose.Common {
         }
 
         public void AddStaticMethods(Type type, HproseResultMode mode) {
+#if dotNET45
+            IEnumerable<MethodInfo> methods = type.GetTypeInfo().DeclaredMethods;
+            foreach (MethodInfo method in methods) {
+                if (method.IsPublic && method.IsStatic) {
+                    AddMethod(method, null, method.Name, mode);
+                }
+            }
+#else
             MethodInfo[] methods = type.GetMethods(BindingFlags.DeclaredOnly |
                                                    BindingFlags.Static |
                                                    BindingFlags.Public);
             for (int i = 0; i < methods.Length; i++) {
                 AddMethod(methods[i], null, methods[i].Name, mode);
             }
+#endif
         }
 
         public void AddMissingMethod(string methodName, object obj) {

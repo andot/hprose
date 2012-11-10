@@ -18,7 +18,7 @@
  *                                                        *
 \**********************************************************/
 
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
 using System;
 using System.Collections;
 using System.Collections.Generic;

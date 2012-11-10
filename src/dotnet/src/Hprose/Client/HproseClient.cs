@@ -13,7 +13,7 @@
  *                                                        *
  * hprose client class for C#.                            *
  *                                                        *
- * LastModified: Jul 14, 2011                             *
+ * LastModified: Nov 6, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -22,7 +22,7 @@ using System.IO;
 using System.Threading;
 using Hprose.IO;
 using Hprose.Common;
-#if !(PocketPC || Smartphone || WindowsCE || WINDOWS_PHONE)
+#if !(PocketPC || Smartphone || WindowsCE || WINDOWS_PHONE || Core)
 using Hprose.Reflection;
 #endif
 
@@ -206,7 +206,7 @@ namespace Hprose.Client {
 
         public abstract void UseService(string uri);
 
-#if !(PocketPC || Smartphone || WindowsCE || WINDOWS_PHONE)
+#if !(PocketPC || Smartphone || WindowsCE || WINDOWS_PHONE || Core)
         public object UseService(Type type) {
             return UseService(type, null);
         }
@@ -268,7 +268,7 @@ namespace Hprose.Client {
         }
 #endif
 #endif
-#if !SILVERLIGHT
+#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
 #if !(dotNET10 || dotNET11 || dotNETCF10)
         public T Invoke<T>(string functionName) {
             return (T)Invoke(functionName, nullArgs, typeof(T), false, HproseResultMode.Normal);
@@ -638,7 +638,7 @@ namespace Hprose.Client {
         protected abstract void SendData(Stream ostream, object context, bool success);
 
         protected abstract void EndInvoke(Stream istream, object context, bool success);
-#if !SILVERLIGHT
+#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
         protected abstract Stream GetOutputStream(object context);
 
         protected abstract Stream GetInputStream(object context);

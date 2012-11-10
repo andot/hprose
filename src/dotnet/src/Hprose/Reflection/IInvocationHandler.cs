@@ -18,7 +18,7 @@
  *                                                        *
 \**********************************************************/
 
-#if !(PocketPC || Smartphone || WindowsCE || WINDOWS_PHONE)
+#if !(PocketPC || Smartphone || WindowsCE || WINDOWS_PHONE || Core)
 using System.Reflection;
 
 namespace Hprose.Reflection {

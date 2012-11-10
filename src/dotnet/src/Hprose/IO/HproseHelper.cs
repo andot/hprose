@@ -13,7 +13,7 @@
  *                                                        *
  * hprose helper class for C#.                            *
  *                                                        *
- * LastModified: May 31, 2011                             *
+ * LastModified: Nov 11, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -26,35 +26,13 @@ using System.Text;
 using System.Collections;
 using System.Numerics;
 using System.Reflection;
+#if !(PocketPC || Smartphone || WindowsCE)
 using System.Runtime.Serialization;
+#endif
 using Hprose.Common;
 
 namespace Hprose.IO {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-    interface IGIListWriter {
-        void WriteIList(HproseWriter writer, object list, bool checkRef);
-    }
-    class GIListWriter<T> : IGIListWriter {
-        public void WriteIList(HproseWriter writer, object list, bool checkRef) {
-            writer.WriteIList<T>((IList<T>) list, checkRef);
-        }
-    }
-    interface IGICollectionWriter {
-        void WriteICollection(HproseWriter writer, object collection, bool checkRef);
-    }
-    class GICollectionWriter<T> : IGICollectionWriter {
-        public void WriteICollection(HproseWriter writer, object collection, bool checkRef) {
-            writer.WriteICollection<T>((ICollection<T>) collection, checkRef);
-        }
-    }
-    interface IGIMapWriter {
-        void WriteIMap(HproseWriter writer, object map, bool checkRef);
-    }
-    class GIMapWriter<TKey, TValue> : IGIMapWriter {
-        public void WriteIMap(HproseWriter writer, object map, bool checkRef) {
-            writer.WriteIMap<TKey, TValue>((IDictionary<TKey, TValue>) map, checkRef);
-        }
-    }
     interface IGListReader {
         object ReadList(HproseReader reader, int count);
     }
@@ -97,7 +75,16 @@ namespace Hprose.IO {
     }
 #endif
     public sealed class HproseHelper {
+#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
         public static readonly Type typeofArrayList = typeof(ArrayList);
+        public static readonly Type typeofQueue = typeof(Queue);
+        public static readonly Type typeofStack = typeof(Stack);
+        public static readonly Type typeofHashMap = typeof(HashMap);
+        public static readonly Type typeofHashtable = typeof(Hashtable);
+#endif
+#if !Core
+        public static readonly Type typeofDBNull = typeof(DBNull);
+#endif
         public static readonly Type typeofBoolean = typeof(Boolean);
         public static readonly Type typeofBooleanArray = typeof(Boolean[]);
         public static readonly Type typeofBigInteger = typeof(BigInteger);
@@ -111,14 +98,12 @@ namespace Hprose.IO {
         public static readonly Type typeofCharsArray = typeof(Char[][]);
         public static readonly Type typeofDateTime = typeof(DateTime);
         public static readonly Type typeofDateTimeArray = typeof(DateTime[]);
-        public static readonly Type typeofDBNull = typeof(DBNull);
         public static readonly Type typeofDecimal = typeof(Decimal);
         public static readonly Type typeofDecimalArray = typeof(Decimal[]);
         public static readonly Type typeofDouble = typeof(Double);
         public static readonly Type typeofDoubleArray = typeof(Double[]);
         public static readonly Type typeofGuid = typeof(Guid);
-        public static readonly Type typeofHashMap = typeof(HashMap);
-        public static readonly Type typeofHashtable = typeof(Hashtable);
+        public static readonly Type typeofGuidArray = typeof(Guid[]);
         public static readonly Type typeofICollection = typeof(ICollection);
         public static readonly Type typeofIDictionary = typeof(IDictionary);
         public static readonly Type typeofIList = typeof(IList);
@@ -128,16 +113,13 @@ namespace Hprose.IO {
         public static readonly Type typeofInt32Array = typeof(Int32[]);
         public static readonly Type typeofInt64 = typeof(Int64);
         public static readonly Type typeofInt64Array = typeof(Int64[]);
-        public static readonly Type typeofISerializable = typeof(ISerializable);
         public static readonly Type typeofMemoryStream = typeof(MemoryStream);
         public static readonly Type typeofObject = typeof(Object);
         public static readonly Type typeofObjectArray = typeof(Object[]);
-        public static readonly Type typeofQueue = typeof(Queue);
         public static readonly Type typeofSByte = typeof(SByte);
         public static readonly Type typeofSByteArray = typeof(SByte[]);
         public static readonly Type typeofSingle = typeof(Single);
         public static readonly Type typeofSingleArray = typeof(Single[]);
-        public static readonly Type typeofStack = typeof(Stack);
         public static readonly Type typeofStream = typeof(Stream);
         public static readonly Type typeofString = typeof(String);
         public static readonly Type typeofStringArray = typeof(String[]);
@@ -151,6 +133,96 @@ namespace Hprose.IO {
         public static readonly Type typeofUInt32Array = typeof(UInt32[]);
         public static readonly Type typeofUInt64 = typeof(UInt64);
         public static readonly Type typeofUInt64Array = typeof(UInt64[]);
+        
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+        internal static readonly Dictionary<Type, TypeEnum> typeMap = new Dictionary<Type, TypeEnum>();
+#else
+        internal static readonly Hashtable typeMap = new Hashtable();
+#endif
+        static HproseHelper() {
+            typeMap[typeofBoolean] = TypeEnum.Boolean;
+            typeMap[typeofBooleanArray] = TypeEnum.BooleanArray;
+            typeMap[typeofBigInteger] = TypeEnum.BigInteger;
+            typeMap[typeofBigIntegerArray] = TypeEnum.BigIntegerArray;
+            typeMap[typeofByte] = TypeEnum.Byte;
+            typeMap[typeofByteArray] = TypeEnum.ByteArray;
+            typeMap[typeofBytesArray] = TypeEnum.BytesArray;
+            typeMap[typeofChar] = TypeEnum.Char;
+            typeMap[typeofCharArray] = TypeEnum.CharArray;
+            typeMap[typeofCharsArray] = TypeEnum.CharsArray;
+            typeMap[typeofDateTime] = TypeEnum.DateTime;
+            typeMap[typeofDateTimeArray] = TypeEnum.DateTimeArray;
+            typeMap[typeofDecimal] = TypeEnum.Decimal;
+            typeMap[typeofDecimalArray] = TypeEnum.DecimalArray;
+            typeMap[typeofDouble] = TypeEnum.Double;
+            typeMap[typeofDoubleArray] = TypeEnum.DoubleArray;
+            typeMap[typeofGuid] = TypeEnum.Guid;
+            typeMap[typeofGuidArray] = TypeEnum.GuidArray;
+            typeMap[typeofInt16] = TypeEnum.Int16;
+            typeMap[typeofInt16Array] = TypeEnum.Int16Array;
+            typeMap[typeofInt32] = TypeEnum.Int32;
+            typeMap[typeofInt32Array] = TypeEnum.Int32Array;
+            typeMap[typeofInt64] = TypeEnum.Int64;
+            typeMap[typeofInt64Array] = TypeEnum.Int64Array;
+            typeMap[typeofObject] = TypeEnum.Object;
+            typeMap[typeofObjectArray] = TypeEnum.ObjectArray;
+            typeMap[typeofSByte] = TypeEnum.SByte;
+            typeMap[typeofSByteArray] = TypeEnum.SByteArray;
+            typeMap[typeofSingle] = TypeEnum.Single;
+            typeMap[typeofSingleArray] = TypeEnum.SingleArray;
+            typeMap[typeofString] = TypeEnum.String;
+            typeMap[typeofStringArray] = TypeEnum.StringArray;
+            typeMap[typeofStringBuilder] = TypeEnum.StringBuilder;
+            typeMap[typeofStringBuilderArray] = TypeEnum.StringBuilderArray;
+            typeMap[typeofTimeSpan] = TypeEnum.TimeSpan;
+            typeMap[typeofTimeSpanArray] = TypeEnum.TimeSpanArray;
+            typeMap[typeofUInt16] = TypeEnum.UInt16;
+            typeMap[typeofUInt16Array] = TypeEnum.UInt16Array;
+            typeMap[typeofUInt32] = TypeEnum.UInt32;
+            typeMap[typeofUInt32Array] = TypeEnum.UInt32Array;
+            typeMap[typeofUInt64] = TypeEnum.UInt64;
+            typeMap[typeofUInt64Array] = TypeEnum.UInt64Array;
+            typeMap[typeofMemoryStream] = TypeEnum.MemoryStream;
+            typeMap[typeofStream] = TypeEnum.Stream;
+            typeMap[typeofBitArray] = TypeEnum.BitArray;
+            typeMap[typeofICollection] = TypeEnum.ICollection;
+            typeMap[typeofIDictionary] = TypeEnum.IDictionary;
+            typeMap[typeofIList] = TypeEnum.IList;
+#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
+            typeMap[typeofArrayList] = TypeEnum.ArrayList;
+            typeMap[typeofHashMap] = TypeEnum.HashMap;
+            typeMap[typeofHashtable] = TypeEnum.Hashtable;
+            typeMap[typeofQueue] = TypeEnum.Queue;
+            typeMap[typeofStack] = TypeEnum.Stack;
+#endif
+#if !Core
+            typeMap[typeofDBNull] = TypeEnum.DBNull;
+#endif
+
+        }
+
+        internal static TypeEnum GetTypeEnum(Type type) {
+            if (type == null) return TypeEnum.Null;
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+            TypeEnum t;
+            if (typeMap.TryGetValue(type, out t)) return t;
+#else
+            Object t;
+            if ((t = typeMap[type]) != null) return (TypeEnum)t;
+#endif
+#if Core
+            TypeInfo typeInfo = type.GetTypeInfo();
+            if (typeInfo.IsEnum) return TypeEnum.Enum;
+            if (typeInfo.IsArray) return TypeEnum.OtherTypeArray;
+            if (typeInfo.IsByRef) return GetTypeEnum(typeInfo.GetElementType());
+#else
+            if (type.IsEnum) return TypeEnum.Enum;
+            if (type.IsArray) return TypeEnum.OtherTypeArray;
+            if (type.IsByRef) return GetTypeEnum(type.GetElementType());
+#endif
+            return TypeEnum.OtherType;
+        }
+
 #if !(dotNET10 || dotNET11 || dotNETCF10)
         public static readonly Type typeofDictionary = typeof(Dictionary<,>);
         public static readonly Type typeofList = typeof(List<>);
@@ -158,21 +230,20 @@ namespace Hprose.IO {
         public static readonly Type typeofGIDictionary = typeof(IDictionary<,>);
         public static readonly Type typeofGIList = typeof(IList<>);
 #endif
-#if (dotNET35 || dotNET4)
+#if (dotNET35 || dotNET4 || SILVERLIGHT || WINDOWS_PHONE || Core)
         public static readonly Type typeofDataContract = typeof(DataContractAttribute);
         public static readonly Type typeofDataMember = typeof(DataMemberAttribute);
 #endif
-        public static readonly Encoding UTF8 = new UTF8Encoding(false, false);
+#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT || WINDOWS_PHONE || Core)
+        public static readonly Type typeofISerializable = typeof(ISerializable);
+#endif
 
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-        private static readonly Dictionary<Type, Dictionary<string, MemberInfo>> fieldsCache = new Dictionary<Type, Dictionary<string, MemberInfo>>();
-        private static readonly Dictionary<Type, Dictionary<string, MemberInfo>> propertiesCache = new Dictionary<Type, Dictionary<string, MemberInfo>>();
+        private static readonly Dictionary<Type, Dictionary<string, FieldInfo>> fieldsCache = new Dictionary<Type, Dictionary<string, FieldInfo>>();
+        private static readonly Dictionary<Type, Dictionary<string, PropertyInfo>> propertiesCache = new Dictionary<Type, Dictionary<string, PropertyInfo>>();
         private static readonly Dictionary<Type, Dictionary<string, MemberInfo>> membersCache = new Dictionary<Type, Dictionary<string, MemberInfo>>();
         private static readonly Dictionary<Type, ConstructorInfo> ctorCache = new Dictionary<Type, ConstructorInfo>();
         private static readonly Dictionary<ConstructorInfo, object[]> argsCache = new Dictionary<ConstructorInfo, object[]>();
-        private static readonly Dictionary<Type, IGIListWriter> gIListWriterCache = new Dictionary<Type, IGIListWriter>();
-        private static readonly Dictionary<Type, IGICollectionWriter> gICollectionWriterCache = new Dictionary<Type, IGICollectionWriter>();
-        private static readonly Dictionary<Type, IGIMapWriter> gIMapWriterCache = new Dictionary<Type, IGIMapWriter>();
         private static readonly Dictionary<Type, IGListReader> gListReaderCache = new Dictionary<Type, IGListReader>();
         private static readonly Dictionary<Type, IGIListReader> gIListReaderCache = new Dictionary<Type, IGIListReader>();
         private static readonly Dictionary<Type, IGICollectionReader> gICollectionReaderCache = new Dictionary<Type, IGICollectionReader>();
@@ -190,18 +261,24 @@ namespace Hprose.IO {
 #endif
 #endif
 
-#if (PocketPC || Smartphone || WindowsCE || SILVERLIGHT)
+#if (PocketPC || Smartphone || WindowsCE || SILVERLIGHT || WINDOWS_PHONE)
         private static readonly Assembly[] assemblies = new Assembly[] {
             Assembly.GetCallingAssembly(),
             Assembly.GetExecutingAssembly()
         };
-#else
+#elif !Core
         private static readonly Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
 #endif
 
         public static bool IsSerializable(Type type) {
+#if (PocketPC || Smartphone || WindowsCE || SILVERLIGHT || WINDOWS_PHONE)
             const TypeAttributes sa = TypeAttributes.Serializable;
             return (type.Attributes & sa) == sa;
+#elif Core
+            return type.GetTypeInfo().IsDefined(typeof(SerializableAttribute));
+#else
+            return type.IsSerializable;
+#endif
         }
 
 #if !(dotNET10 || dotNET11 || dotNETCF10)
@@ -209,7 +286,11 @@ namespace Hprose.IO {
 #else
         internal static Hashtable GetMembersWithoutCache(Type type) {
 #endif
-#if (dotNET35 || dotNET4)
+#if Core
+            if (type.GetTypeInfo().IsDefined(typeofDataContract, false)) {
+                return GetDataMembersWithoutCache(type);
+            }
+#elif (dotNET35 || dotNET4 || SILVERLIGHT || WINDOWS_PHONE)
             if (type.IsDefined(typeofDataContract, false)) {
                 return GetDataMembersWithoutCache(type);
             }
@@ -221,6 +302,27 @@ namespace Hprose.IO {
 #else
             Hashtable members = new Hashtable(caseInsensitiveHashCodeProvider, caseInsensitiveComparer);
 #endif
+#if dotNET45
+            IEnumerable<PropertyInfo> piarray = type.GetRuntimeProperties();
+            foreach (PropertyInfo pi in piarray) {
+                string name;
+                if (pi.CanRead && pi.CanWrite &&
+                    pi.GetMethod.IsPublic && pi.SetMethod.IsPublic &&
+                    !pi.GetMethod.IsStatic && !pi.SetMethod.IsStatic &&
+                    pi.GetIndexParameters().GetLength(0) == 0 &&
+                    !members.ContainsKey(name = pi.Name)) {
+                    name = char.ToLower(name[0]) + name.Substring(1);
+                    members[name] = pi;
+                }
+            }
+            IEnumerable<FieldInfo> fiarray = type.GetRuntimeFields();
+            foreach (FieldInfo fi in fiarray) {
+                string name;
+                if (fi.IsPublic && !fi.IsStatic && !members.ContainsKey(name = fi.Name)) {
+                    members[name] = fi;
+                }
+            }
+#else
             BindingFlags bindingflags = BindingFlags.Public |
                                         BindingFlags.Instance;
             PropertyInfo[] piarray = type.GetProperties(bindingflags);
@@ -240,10 +342,36 @@ namespace Hprose.IO {
                     members[name] = fi;
                 }
             }
+#endif
             return members;
         }
 
-#if (dotNET35 || dotNET4)
+#if dotNET45
+        internal static Dictionary<string, MemberInfo> GetDataMembersWithoutCache(Type type) {
+            Dictionary<string, MemberInfo> members = new Dictionary<string, MemberInfo>(StringComparer.OrdinalIgnoreCase);
+            IEnumerable<PropertyInfo> piarray = type.GetRuntimeProperties();
+            foreach (PropertyInfo pi in piarray) {
+                string name;
+                if (pi.IsDefined(typeofDataMember, false) &&
+                    pi.CanRead && pi.CanWrite &&
+                    !pi.GetMethod.IsStatic && !pi.SetMethod.IsStatic &&
+                    pi.GetIndexParameters().GetLength(0) == 0 &&
+                    !members.ContainsKey(name = pi.Name)) {
+                    name = char.ToLower(name[0]) + name.Substring(1);
+                    members[name] = pi;
+                }
+            }
+            IEnumerable<FieldInfo> fiarray = type.GetRuntimeFields();
+            foreach (FieldInfo fi in fiarray) {
+                string name;
+                if (fi.IsDefined(typeofDataMember, false) &&
+                    !fi.IsStatic && !members.ContainsKey(name = fi.Name)) {
+                    members[name] = fi;
+                }
+            }
+            return members;
+        }
+#elif (dotNET35 || dotNET4 || SILVERLIGHT || WINDOWS_PHONE)
         internal static Dictionary<string, MemberInfo> GetDataMembersWithoutCache(Type type) {
             Dictionary<string, MemberInfo> members = new Dictionary<string, MemberInfo>(StringComparer.OrdinalIgnoreCase);
             BindingFlags bindingflags = BindingFlags.Public |
@@ -302,55 +430,69 @@ namespace Hprose.IO {
         }
 
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-        internal static Dictionary<string, MemberInfo> GetPropertiesWithoutCache(Type type) {
+        internal static Dictionary<string, PropertyInfo> GetPropertiesWithoutCache(Type type) {
 #else
         internal static Hashtable GetPropertiesWithoutCache(Type type) {
 #endif
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            Dictionary<string, MemberInfo> properties = new Dictionary<string, MemberInfo>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, PropertyInfo> properties = new Dictionary<string, PropertyInfo>(StringComparer.OrdinalIgnoreCase);
 #elif MONO
             Hashtable properties = new Hashtable(StringComparer.OrdinalIgnoreCase);
 #else
             Hashtable properties = new Hashtable(caseInsensitiveHashCodeProvider, caseInsensitiveComparer);
 #endif
-            BindingFlags bindingflags = BindingFlags.Public |
-                                        BindingFlags.NonPublic |
-                                        BindingFlags.Instance;
             if (IsSerializable(type)) {
-                PropertyInfo[] piarray = type.GetProperties(bindingflags);
+#if dotNET45
+                IEnumerable<PropertyInfo> piarray = type.GetRuntimeProperties();
                 foreach (PropertyInfo pi in piarray) {
                     string name;
-                    if (pi.CanRead &&
-                        pi.CanWrite &&
+                    if (pi.CanRead && pi.CanWrite &&
+                        pi.GetMethod.IsPublic && pi.SetMethod.IsPublic &&
+                        !pi.GetMethod.IsStatic && !pi.SetMethod.IsStatic &&
                         pi.GetIndexParameters().GetLength(0) == 0 &&
                         !properties.ContainsKey(name = pi.Name)) {
                         name = char.ToLower(name[0]) + name.Substring(1);
                         properties[name] = pi;
                     }
                 }
+#else
+                BindingFlags bindingflags = BindingFlags.Public |
+                                            BindingFlags.Instance;
+                PropertyInfo[] piarray = type.GetProperties(bindingflags);
+                foreach (PropertyInfo pi in piarray) {
+                    string name;
+                    if (pi.CanRead && pi.CanWrite &&
+                        pi.GetIndexParameters().GetLength(0) == 0 &&
+                        !properties.ContainsKey(name = pi.Name)) {
+                        name = char.ToLower(name[0]) + name.Substring(1);
+                        properties[name] = pi;
+                    }
+                }
+#endif
             }
             return properties;
         }
 
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-        public static Dictionary<string, MemberInfo> GetProperties(Type type) {
+        public static Dictionary<string, PropertyInfo> GetProperties(Type type) {
 #else
         public static Hashtable GetProperties(Type type) {
 #endif
             ICollection pc = propertiesCache;
             lock (pc.SyncRoot) {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                Dictionary<string, MemberInfo> result;
+                Dictionary<string, PropertyInfo> result;
                 if (propertiesCache.TryGetValue(type, out result)) {
                     return result;
 #else
-                if (propertiesCache.ContainsKey(type)) {
-                    return (Hashtable)propertiesCache[type];
+                Hashtable result;
+                if ((result = (Hashtable)propertiesCache[type]) != null) {
+                    return result;
 #endif
                 }
             }
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            Dictionary<string, MemberInfo> properties;
+            Dictionary<string, PropertyInfo> properties;
 #else
             Hashtable properties;
 #endif
@@ -362,19 +504,36 @@ namespace Hprose.IO {
         }
 
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-        public static Dictionary<string, MemberInfo> GetFieldsWithoutCache(Type type) {
+        public static Dictionary<string, FieldInfo> GetFieldsWithoutCache(Type type) {
 #else
         public static Hashtable GetFieldsWithoutCache(Type type) {
 #endif
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            Dictionary<string, MemberInfo> fields = new Dictionary<string, MemberInfo>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, FieldInfo> fields = new Dictionary<string, FieldInfo>(StringComparer.OrdinalIgnoreCase);
 #elif MONO
             Hashtable fields = new Hashtable(StringComparer.OrdinalIgnoreCase);
 #else
             Hashtable fields = new Hashtable(caseInsensitiveHashCodeProvider, caseInsensitiveComparer);
 #endif
+#if dotNET45
+            FieldAttributes ns = FieldAttributes.NotSerialized;
+            while (type != typeofObject && IsSerializable(type)) {
+                TypeInfo typeInfo = type.GetTypeInfo();
+                IEnumerable<FieldInfo> fiarray = typeInfo.DeclaredFields;
+                foreach (FieldInfo fi in fiarray) {
+                    string name;
+                    if (((fi.Attributes & ns) != ns) &&
+                        !fi.IsStatic &&
+                        !fields.ContainsKey(name = fi.Name)) {
+                        fields[name] = fi;
+                    }
+                }
+                type = typeInfo.BaseType;
+            }
+#else
             BindingFlags bindingflags = BindingFlags.Public |
                                         BindingFlags.NonPublic |
+                                        BindingFlags.DeclaredOnly |
                                         BindingFlags.Instance;
             while (type != typeofObject && IsSerializable(type)) {
                 FieldInfo[] fiarray = type.GetFields(bindingflags);
@@ -387,28 +546,30 @@ namespace Hprose.IO {
                 }
                 type = type.BaseType;
             }
+#endif
             return fields;
         }
 
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-        public static Dictionary<string, MemberInfo> GetFields(Type type) {
+        public static Dictionary<string, FieldInfo> GetFields(Type type) {
 #else
         public static Hashtable GetFields(Type type) {
 #endif
             ICollection fc = fieldsCache;
             lock (fc.SyncRoot) {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                Dictionary<string, MemberInfo> result;
+                Dictionary<string, FieldInfo> result;
                 if (fieldsCache.TryGetValue(type, out result)) {
                     return result;
 #else
-                if (fieldsCache.ContainsKey(type)) {
-                    return (Hashtable)fieldsCache[type];
+                Hashtable result;
+                if ((result = (Hashtable)fieldsCache[type]) != null) {
+                    return result;
 #endif
                 }
             }
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            Dictionary<string, MemberInfo> fields;
+            Dictionary<string, FieldInfo> fields;
 #else
             Hashtable fields;
 #endif
@@ -431,14 +592,24 @@ namespace Hprose.IO {
             }
             return className;
         }
-
+#if Core
+        private static Type GetType(String name) {
+            try {
+                return Type.GetType(name);
+            }
+            catch (Exception) {
+                return null;
+            }
+        }
+#else
         private static Type GetType(String name) {
             Type type = null;
             for (int i = assemblies.Length - 1; type == null && i >= 0; i--) {
-                type = assemblies[i].GetType(name, false);
+                type = assemblies[i].GetType(name);
             }
             return type;
         }
+#endif
 #if !(dotNET10 || dotNET11 || dotNETCF10)
         private static Type GetNestedType(StringBuilder name, List<int> positions, int i, char c) {
 #else
@@ -491,7 +662,6 @@ namespace Hprose.IO {
             }
             return type;
         }
-
         public static Type GetClass(string className) {
             if (ClassManager.ContainsClass(className)) {
                 return ClassManager.GetClass(className);
@@ -627,6 +797,19 @@ namespace Hprose.IO {
                 }
                 else {
                     if (!ctorCached) {
+#if dotNET45
+                        IEnumerable<ConstructorInfo> ctors = type.GetTypeInfo().DeclaredConstructors;
+                        foreach (ConstructorInfo c in ctors) {
+                            try {
+                                object obj = c.Invoke(GetArgs(c));
+                                lock (cc.SyncRoot) {
+                                    ctorCache[type] = c;
+                                }
+                                return obj;
+                            }
+                            catch { }
+                        }
+#else
                         BindingFlags bindingflags = BindingFlags.Instance |
                                                     BindingFlags.Public |
                                                     BindingFlags.NonPublic |
@@ -643,6 +826,7 @@ namespace Hprose.IO {
                             }
                             catch { }
                         }
+#endif
                         lock (cc.SyncRoot) {
                             ctorCache[type] = null;
                         }
@@ -655,66 +839,14 @@ namespace Hprose.IO {
             }
         }
         internal static bool IsInstantiableClass(Type type) {
+#if Core
+            TypeInfo typeInfo = type.GetTypeInfo();
+            return !typeInfo.IsInterface && !typeInfo.IsAbstract;
+#else
             return !type.IsInterface && !type.IsAbstract;
+#endif
         }
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-        internal static IGIListWriter GetIGIListWriter(Type type) {
-            ICollection cache = gIListWriterCache;
-            IGIListWriter listWriter = null;
-            lock (cache.SyncRoot) {
-                if (gIListWriterCache.TryGetValue(type, out listWriter)) {
-                    return listWriter;
-                }
-            }
-            Type[] args = type.GetGenericArguments();
-            if (args.Length == 1 &&
-                IsInstantiableClass(type) &&
-                typeofGIList.MakeGenericType(args).IsAssignableFrom(type)) {
-                listWriter = Activator.CreateInstance(typeof(GIListWriter<>).MakeGenericType(args)) as IGIListWriter;
-            }
-            lock (cache.SyncRoot) {
-                gIListWriterCache[type] = listWriter;
-            }
-            return listWriter;
-        }
-        internal static IGICollectionWriter GetIGICollectionWriter(Type type) {
-            ICollection cache = gICollectionWriterCache;
-            IGICollectionWriter collectionWriter = null;
-            lock (cache.SyncRoot) {
-                if (gICollectionWriterCache.TryGetValue(type, out collectionWriter)) {
-                    return collectionWriter;
-                }
-            }
-            Type[] args = type.GetGenericArguments();
-            if (args.Length == 1 &&
-                IsInstantiableClass(type) &&
-                typeofGICollection.MakeGenericType(args).IsAssignableFrom(type)) {
-                collectionWriter = Activator.CreateInstance(typeof(GICollectionWriter<>).MakeGenericType(args)) as IGICollectionWriter;
-            }
-            lock (cache.SyncRoot) {
-                gICollectionWriterCache[type] = collectionWriter;
-            }
-            return collectionWriter;
-        }
-        internal static IGIMapWriter GetIGIMapWriter(Type type) {
-            ICollection cache = gIMapWriterCache;
-            IGIMapWriter mapWriter = null;
-            lock (cache.SyncRoot) {
-                if (gIMapWriterCache.TryGetValue(type, out mapWriter)) {
-                    return mapWriter;
-                }
-            }
-            Type[] args = type.GetGenericArguments();
-            if (args.Length == 2 &&
-                IsInstantiableClass(type) &&
-                typeofGIDictionary.MakeGenericType(args).IsAssignableFrom(type)) {
-                mapWriter = Activator.CreateInstance(typeof(GIMapWriter<,>).MakeGenericType(args)) as IGIMapWriter;
-            }
-            lock (cache.SyncRoot) {
-                gIMapWriterCache[type] = mapWriter;
-            }
-            return mapWriter;
-        }
         internal static IGIListReader GetIGIListReader(Type type) {
             ICollection cache = gIListReaderCache;
             IGIListReader listReader = null;
@@ -723,10 +855,18 @@ namespace Hprose.IO {
                     return listReader;
                 }
             }
+#if dotNET45
+            Type[] args = type.GenericTypeArguments;
+#else
             Type[] args = type.GetGenericArguments();
+#endif
             if (args.Length == 1 && 
                 IsInstantiableClass(type) &&
+#if Core
+                typeofGIList.MakeGenericType(args).GetTypeInfo().IsAssignableFrom(type.GetTypeInfo())) {
+#else
                 typeofGIList.MakeGenericType(args).IsAssignableFrom(type)) {
+#endif
                 listReader = Activator.CreateInstance(typeof(GIListReader<>).MakeGenericType(args)) as IGIListReader;
             }
             lock (cache.SyncRoot) {
@@ -742,10 +882,18 @@ namespace Hprose.IO {
                     return collectionReader;
                 }
             }
+#if dotNET45
+            Type[] args = type.GenericTypeArguments;
+#else
             Type[] args = type.GetGenericArguments();
+#endif
             if (args.Length == 1 && 
                 IsInstantiableClass(type) &&
+#if Core
+                typeofGICollection.MakeGenericType(args).GetTypeInfo().IsAssignableFrom(type.GetTypeInfo())) {
+#else
                 typeofGICollection.MakeGenericType(args).IsAssignableFrom(type)) {
+#endif
                 collectionReader = Activator.CreateInstance(typeof(GICollectionReader<>).MakeGenericType(args)) as IGICollectionReader;
             }
             lock (cache.SyncRoot) {
@@ -761,10 +909,18 @@ namespace Hprose.IO {
                     return mapReader;
                 }
             }
+#if dotNET45
+            Type[] args = type.GenericTypeArguments;
+#else
             Type[] args = type.GetGenericArguments();
+#endif
             if (args.Length == 2 && 
                 IsInstantiableClass(type) &&
+#if Core
+                typeofGIDictionary.MakeGenericType(args).GetTypeInfo().IsAssignableFrom(type.GetTypeInfo())) {
+#else
                 typeofGIDictionary.MakeGenericType(args).IsAssignableFrom(type)) {
+#endif
                 mapReader = Activator.CreateInstance(typeof(GIMapReader<,>).MakeGenericType(args)) as IGIMapReader;
             }
             lock (cache.SyncRoot) {
@@ -780,7 +936,11 @@ namespace Hprose.IO {
                     return listReader;
                 }
             }
+#if dotNET45
+            Type[] args = type.GenericTypeArguments;
+#else
             Type[] args = type.GetGenericArguments();
+#endif
             if (args.Length == 1 &&
                 (typeofList.MakeGenericType(args) == type ||
                  typeofGIList.MakeGenericType(args) == type ||
@@ -800,7 +960,11 @@ namespace Hprose.IO {
                     return mapReader;
                 }
             }
+#if dotNET45
+            Type[] args = type.GenericTypeArguments;
+#else
             Type[] args = type.GetGenericArguments();
+#endif
             if (args.Length == 2 &&
                 (typeofDictionary.MakeGenericType(args) == type ||
                  typeofGIDictionary.MakeGenericType(args) == type)) {

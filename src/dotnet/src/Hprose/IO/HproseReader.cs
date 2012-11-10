@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for C#.                            *
  *                                                        *
- * LastModified: Nov 5, 2012                              *
+ * LastModified: Nov 8, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -28,7 +28,7 @@ using System.IO;
 using System.Text;
 using System.Reflection;
 using Hprose.Common;
-#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT || WINDOWS_PHONE || Core)
 using Hprose.Reflection;
 #endif
 
@@ -68,9 +68,6 @@ namespace Hprose.IO {
         }
 
         private object Unserialize(int tag, Type type) {
-            if (type != null && type.IsByRef) {
-                type = type.GetElementType();
-            }
             switch (tag) {
                 case '0':
                 case '1':
@@ -135,352 +132,288 @@ namespace Hprose.IO {
 
         private object ReadDigit(int tag, Type type) {
             int b = tag - '0';
-            if (type == null ||
-                type == HproseHelper.typeofInt32 ||
-                type == HproseHelper.typeofObject) {
-                return b;
-            }
-            switch (Type.GetTypeCode(type)) {
-                case TypeCode.Byte: return (byte)b;
-                case TypeCode.SByte: return (sbyte)b;
-                case TypeCode.Int16: return (short)b;
-                case TypeCode.UInt16: return (ushort)b;
-                case TypeCode.UInt32: return (uint)b;
-                case TypeCode.Int64: return (long)b;
-                case TypeCode.UInt64: return (ulong)b;
-                case TypeCode.Char: return (char)tag;
-                case TypeCode.Single: return (float)b;
-                case TypeCode.Double: return (double)b;
-                case TypeCode.Decimal: return (decimal)b;
-                case TypeCode.String: return new string((char)tag, 1);
-                case TypeCode.Boolean: return (tag != '0');
-                case TypeCode.DateTime: return new DateTime((long)b);
-            }
-            if (type == HproseHelper.typeofBigInteger) {
-                return new BigInteger(b);
-            }
-            if (type == HproseHelper.typeofTimeSpan) {
-                return new TimeSpan((long)b);
-            }
-            if (type.IsEnum) {
-                return Enum.ToObject(type, b);
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.Int32:
+                case TypeEnum.Object: return b;
+                case TypeEnum.Byte: return (byte)b;
+                case TypeEnum.SByte: return (sbyte)b;
+                case TypeEnum.Int16: return (short)b;
+                case TypeEnum.UInt16: return (ushort)b;
+                case TypeEnum.UInt32: return (uint)b;
+                case TypeEnum.Int64: return (long)b;
+                case TypeEnum.UInt64: return (ulong)b;
+                case TypeEnum.Char: return (char)tag;
+                case TypeEnum.Single: return (float)b;
+                case TypeEnum.Double: return (double)b;
+                case TypeEnum.Decimal: return (decimal)b;
+                case TypeEnum.String: return new string((char)tag, 1);
+                case TypeEnum.Boolean: return (tag != '0');
+                case TypeEnum.DateTime: return new DateTime((long)b);
+                case TypeEnum.BigInteger: return new BigInteger(b);
+                case TypeEnum.TimeSpan: return new TimeSpan((long)b);
+                case TypeEnum.Enum: return Enum.ToObject(type, b);
+                case TypeEnum.StringBuilder: return new StringBuilder(1).Append((char)tag);
             }
             return CastError("Integer", type);
         }
 
         private object ReadInteger(Type type) {
-            if (type == HproseHelper.typeofString) {
-                return ReadUntil(HproseTags.TagSemicolon);
-            }
             int i = ReadInt(HproseTags.TagSemicolon);
-            if (type == null ||
-                type == HproseHelper.typeofInt32 ||
-                type == HproseHelper.typeofObject) {
-                return i;
-            }
-            switch (Type.GetTypeCode(type)) {
-                case TypeCode.Byte: return (byte)i;
-                case TypeCode.SByte: return (sbyte)i;
-                case TypeCode.Int16: return (short)i;
-                case TypeCode.UInt16: return (ushort)i;
-                case TypeCode.UInt32: return (uint)i;
-                case TypeCode.Int64: return (long)i;
-                case TypeCode.UInt64: return (ulong)i;
-                case TypeCode.Char: return (char)i;
-                case TypeCode.Single: return (float)i;
-                case TypeCode.Double: return (double)i;
-                case TypeCode.Decimal: return (decimal)i;
-                case TypeCode.Boolean: return (i != 0);
-                case TypeCode.DateTime: return new DateTime((long)i);
-            }
-            if (type == HproseHelper.typeofBigInteger) {
-                return new BigInteger(i);
-            }
-            if (type == HproseHelper.typeofTimeSpan) {
-                return new TimeSpan((long)i);
-            }
-            if (type.IsEnum) {
-                return Enum.ToObject(type, i);
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.Int32:
+                case TypeEnum.Object: return i;
+                case TypeEnum.Byte: return (byte)i;
+                case TypeEnum.SByte: return (sbyte)i;
+                case TypeEnum.Int16: return (short)i;
+                case TypeEnum.UInt16: return (ushort)i;
+                case TypeEnum.UInt32: return (uint)i;
+                case TypeEnum.Int64: return (long)i;
+                case TypeEnum.UInt64: return (ulong)i;
+                case TypeEnum.Char: return (char)i;
+                case TypeEnum.Single: return (float)i;
+                case TypeEnum.Double: return (double)i;
+                case TypeEnum.Decimal: return (decimal)i;
+                case TypeEnum.String: return i.ToString();
+                case TypeEnum.Boolean: return (i != 0);
+                case TypeEnum.DateTime: return new DateTime((long)i);
+                case TypeEnum.BigInteger: return new BigInteger(i);
+                case TypeEnum.TimeSpan: return new TimeSpan((long)i);
+                case TypeEnum.Enum: return Enum.ToObject(type, i);
+                case TypeEnum.StringBuilder: return new StringBuilder(i.ToString());
             }
             return CastError("Integer", type);
         }
 
         private object ReadLong(Type type) {
-            string l = ReadUntil(HproseTags.TagSemicolon);
-            if (type == null ||
-                type == HproseHelper.typeofBigInteger ||
-                type == HproseHelper.typeofObject) {
-                return BigInteger.Parse(l);
-            }
-            switch (Type.GetTypeCode(type)) {
-                case TypeCode.Byte: return byte.Parse(l);
-                case TypeCode.SByte: return sbyte.Parse(l);
-                case TypeCode.Int16: return short.Parse(l);
-                case TypeCode.UInt16: return ushort.Parse(l);
-                case TypeCode.Int32: return int.Parse(l);
-                case TypeCode.UInt32: return uint.Parse(l);
-                case TypeCode.Int64: return long.Parse(l);
-                case TypeCode.UInt64: return ulong.Parse(l);
-                case TypeCode.Char: return (char)int.Parse(l);
-                case TypeCode.Single: return float.Parse(l);
-                case TypeCode.Double: return double.Parse(l);
-                case TypeCode.Decimal: return decimal.Parse(l);
-                case TypeCode.String: return l;
-                case TypeCode.Boolean: return (int.Parse(l) != 0);
-                case TypeCode.DateTime: return new DateTime(long.Parse(l));
-            }
-            if (type == HproseHelper.typeofTimeSpan) {
-                return new TimeSpan(long.Parse(l));
-            }
-            if (type.IsEnum) {
-                return Enum.ToObject(type, long.Parse(l));
+            StringBuilder l = ReadUntil(HproseTags.TagSemicolon);
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.BigInteger:
+                case TypeEnum.Object: return BigInteger.Parse(l.ToString());
+                case TypeEnum.Byte: return byte.Parse(l.ToString());
+                case TypeEnum.SByte: return sbyte.Parse(l.ToString());
+                case TypeEnum.Int16: return short.Parse(l.ToString());
+                case TypeEnum.UInt16: return ushort.Parse(l.ToString());
+                case TypeEnum.Int32: return int.Parse(l.ToString());
+                case TypeEnum.UInt32: return uint.Parse(l.ToString());
+                case TypeEnum.Int64: return long.Parse(l.ToString());
+                case TypeEnum.UInt64: return ulong.Parse(l.ToString());
+                case TypeEnum.Char: return (char)int.Parse(l.ToString());
+                case TypeEnum.Single: return ParseFloat(l);
+                case TypeEnum.Double: return ParseDouble(l);
+                case TypeEnum.Decimal: return decimal.Parse(l.ToString());
+                case TypeEnum.String: return l.ToString();
+                case TypeEnum.Boolean: return (int.Parse(l.ToString()) != 0);
+                case TypeEnum.DateTime: return new DateTime(long.Parse(l.ToString()));
+                case TypeEnum.TimeSpan: return new TimeSpan(long.Parse(l.ToString()));
+                case TypeEnum.Enum: return Enum.ToObject(type, long.Parse(l.ToString()));
+                case TypeEnum.StringBuilder: return l;
             }
             return CastError("Long", type);
         }
 
         private object ReadDouble(Type type) {
-            String value = ReadUntil(HproseTags.TagSemicolon);
-            TypeCode typeCode = Type.GetTypeCode(type);
-            switch (typeCode) {
-                case TypeCode.String: return value;
-                case TypeCode.Decimal: return decimal.Parse(value);
-                case TypeCode.Single: return float.Parse(value);
-            }
-            double d = ParseDouble(value);
-            switch (typeCode) {
-                case TypeCode.Empty:
-                case TypeCode.Double: return d;
-                case TypeCode.Byte: return (byte)d;
-                case TypeCode.SByte: return (sbyte)d;
-                case TypeCode.Int16: return (short)d;
-                case TypeCode.UInt16: return (ushort)d;
-                case TypeCode.Int32: return (int)d;
-                case TypeCode.UInt32: return (uint)d;
-                case TypeCode.Int64: return (long)d;
-                case TypeCode.UInt64: return (ulong)d;
-                case TypeCode.Char: return (char)(int)d;
-                case TypeCode.Boolean: return ((int)(d) != 0);
-                case TypeCode.DateTime: return new DateTime((long)d);
-            }
-            if (type == HproseHelper.typeofObject) {
-                return d;
-            }
-            if (type == HproseHelper.typeofBigInteger) {
-                return new BigInteger(d);
-            }
-            if (type == HproseHelper.typeofTimeSpan) {
-                return new TimeSpan((long)d);
-            }
-            if (type.IsEnum) {
-                return Enum.ToObject(type, (long)d);
+            StringBuilder value = ReadUntil(HproseTags.TagSemicolon);
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.Double:
+                case TypeEnum.Object: return ParseDouble(value);
+                case TypeEnum.Byte: return (byte)ParseDouble(value);
+                case TypeEnum.SByte: return (sbyte)ParseDouble(value);
+                case TypeEnum.Int16: return (short)ParseDouble(value);
+                case TypeEnum.UInt16: return (ushort)ParseDouble(value);
+                case TypeEnum.Int32: return (int)ParseDouble(value);
+                case TypeEnum.UInt32: return (uint)ParseDouble(value);
+                case TypeEnum.Int64: return (long)ParseDouble(value);
+                case TypeEnum.UInt64: return (ulong)ParseDouble(value);
+                case TypeEnum.Char: return (char)(int)ParseDouble(value);
+                case TypeEnum.Single: return ParseFloat(value);
+                case TypeEnum.Decimal: return decimal.Parse(value.ToString());
+                case TypeEnum.String: return value.ToString();
+                case TypeEnum.Boolean: return ((int)(ParseDouble(value)) != 0);
+                case TypeEnum.DateTime: return new DateTime((long)ParseDouble(value));
+                case TypeEnum.BigInteger: return new BigInteger(ParseDouble(value));
+                case TypeEnum.TimeSpan: return new TimeSpan((long)ParseDouble(value));
+                case TypeEnum.Enum: return Enum.ToObject(type, (long)ParseDouble(value));
+                case TypeEnum.StringBuilder: return value;
             }
             return CastError("Double", type);
         }
 
         private object ReadNull(Type type) {
-            switch (Type.GetTypeCode(type)) {
-                case TypeCode.Byte: return (byte)0;
-                case TypeCode.SByte: return (sbyte)0;
-                case TypeCode.Int16: return (short)0;
-                case TypeCode.UInt16: return (ushort)0;
-                case TypeCode.Int32: return 0;
-                case TypeCode.UInt32: return (uint)0;
-                case TypeCode.Int64: return (long)0;
-                case TypeCode.UInt64: return (ulong)0;
-                case TypeCode.Char: return (char)0;
-                case TypeCode.Single: return (float)0;
-                case TypeCode.Double: return (double)0;
-                case TypeCode.Decimal: return (decimal)0;
-                case TypeCode.Boolean: return false;
-                case TypeCode.DBNull: return DBNull.Value;
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Byte: return (byte)0;
+                case TypeEnum.SByte: return (sbyte)0;
+                case TypeEnum.Int16: return (short)0;
+                case TypeEnum.UInt16: return (ushort)0;
+                case TypeEnum.Int32: return 0;
+                case TypeEnum.UInt32: return (uint)0;
+                case TypeEnum.Int64: return (long)0;
+                case TypeEnum.UInt64: return (ulong)0;
+                case TypeEnum.Char: return (char)0;
+                case TypeEnum.Single: return (float)0;
+                case TypeEnum.Double: return (double)0;
+                case TypeEnum.Decimal: return (decimal)0;
+                case TypeEnum.Boolean: return false;
+                case TypeEnum.Enum: return Enum.ToObject(type, 0);
+#if !Core
+                case TypeEnum.DBNull: return DBNull.Value;
+#endif
             }
             return null;
         }
 
         private object ReadEmpty(Type type) {
-            switch (Type.GetTypeCode(type)) {
-                case TypeCode.Empty:
-                case TypeCode.String: return "";
-                case TypeCode.Byte: return (byte)0;
-                case TypeCode.SByte: return (sbyte)0;
-                case TypeCode.Int16: return (short)0;
-                case TypeCode.UInt16: return (ushort)0;
-                case TypeCode.Int32: return 0;
-                case TypeCode.UInt32: return (uint)0;
-                case TypeCode.Int64: return (long)0;
-                case TypeCode.UInt64: return (ulong)0;
-                case TypeCode.Char: return (char)0;
-                case TypeCode.Single: return (float)0;
-                case TypeCode.Double: return (double)0;
-                case TypeCode.Decimal: return (decimal)0;
-                case TypeCode.Boolean: return false;
-                case TypeCode.DBNull: return DBNull.Value;
-            }
-            if (type == HproseHelper.typeofObject) {
-                return "";
-            }
-            if (type == HproseHelper.typeofBigInteger) {
-                return BigInteger.Zero;
-            }
-            if (type.IsEnum) {
-                return Enum.ToObject(type, 0);
-            }
-            if (type == HproseHelper.typeofStringBuilder) {
-                return new StringBuilder();
-            }
-            if (type == HproseHelper.typeofCharArray) {
-                return new char[0];
-            }
-            if (type == HproseHelper.typeofByteArray) {
-                return new byte[0];
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.String:
+                case TypeEnum.Object: return "";
+                case TypeEnum.Byte: return (byte)0;
+                case TypeEnum.SByte: return (sbyte)0;
+                case TypeEnum.Int16: return (short)0;
+                case TypeEnum.UInt16: return (ushort)0;
+                case TypeEnum.Int32: return 0;
+                case TypeEnum.UInt32: return (uint)0;
+                case TypeEnum.Int64: return (long)0;
+                case TypeEnum.UInt64: return (ulong)0;
+                case TypeEnum.Char: return (char)0;
+                case TypeEnum.Single: return (float)0;
+                case TypeEnum.Double: return (double)0;
+                case TypeEnum.Decimal: return (decimal)0;
+                case TypeEnum.Boolean: return false;
+                case TypeEnum.BigInteger: return BigInteger.Zero;
+                case TypeEnum.Enum: return Enum.ToObject(type, 0);
+                case TypeEnum.StringBuilder: return new StringBuilder();
+                case TypeEnum.CharArray: return new char[0];
+                case TypeEnum.ByteArray: return new byte[0];
+#if !Core
+                case TypeEnum.DBNull: return DBNull.Value;
+#endif
             }
             return CastError("Empty String", type);
         }
 
         private object ReadTrue(Type type) {
-            if (type == null ||
-                type == HproseHelper.typeofBoolean ||
-                type == HproseHelper.typeofObject) {
-                return true;
-            }
-            switch (Type.GetTypeCode(type)) {
-                case TypeCode.Byte: return (byte)1;
-                case TypeCode.SByte: return (sbyte)1;
-                case TypeCode.Int16: return (short)1;
-                case TypeCode.UInt16: return (ushort)1;
-                case TypeCode.Int32: return 1;
-                case TypeCode.UInt32: return (uint)1;
-                case TypeCode.Int64: return (long)1;
-                case TypeCode.UInt64: return (ulong)1;
-                case TypeCode.Char: return 'T';
-                case TypeCode.Single: return (float)1;
-                case TypeCode.Double: return (double)1;
-                case TypeCode.Decimal: return (decimal)1;
-                case TypeCode.String: return bool.TrueString;
-            }
-            if (type == HproseHelper.typeofBigInteger) {
-                return BigInteger.One;
-            }
-            if (type.IsEnum) {
-                return Enum.ToObject(type, 1);
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.Boolean:
+                case TypeEnum.Object: return true;
+                case TypeEnum.Byte: return (byte)1;
+                case TypeEnum.SByte: return (sbyte)1;
+                case TypeEnum.Int16: return (short)1;
+                case TypeEnum.UInt16: return (ushort)1;
+                case TypeEnum.Int32: return 1;
+                case TypeEnum.UInt32: return (uint)1;
+                case TypeEnum.Int64: return (long)1;
+                case TypeEnum.UInt64: return (ulong)1;
+                case TypeEnum.Char: return 'T';
+                case TypeEnum.Single: return (float)1;
+                case TypeEnum.Double: return (double)1;
+                case TypeEnum.Decimal: return (decimal)1;
+                case TypeEnum.String: return bool.TrueString;
+                case TypeEnum.BigInteger: return BigInteger.One;
+                case TypeEnum.Enum: return Enum.ToObject(type, 1);
+                case TypeEnum.StringBuilder: return new StringBuilder(bool.TrueString);
             }
             return CastError("Boolean", type);
         }
 
         private object ReadFalse(Type type) {
-            if (type == null ||
-                type == HproseHelper.typeofBoolean ||
-                type == HproseHelper.typeofObject) {
-                return false;
-            }
-            switch (Type.GetTypeCode(type)) {
-                case TypeCode.Byte: return (byte)0;
-                case TypeCode.SByte: return (sbyte)0;
-                case TypeCode.Int16: return (short)0;
-                case TypeCode.UInt16: return (ushort)0;
-                case TypeCode.Int32: return 0;
-                case TypeCode.UInt32: return (uint)0;
-                case TypeCode.Int64: return (long)0;
-                case TypeCode.UInt64: return (ulong)0;
-                case TypeCode.Char: return 'F';
-                case TypeCode.Single: return (float)0;
-                case TypeCode.Double: return (double)0;
-                case TypeCode.Decimal: return (decimal)0;
-                case TypeCode.String: return bool.FalseString;
-            }
-            if (type == HproseHelper.typeofBigInteger) {
-                return BigInteger.Zero;
-            }
-            if (type.IsEnum) {
-                return Enum.ToObject(type, 0);
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.Boolean:
+                case TypeEnum.Object: return false;
+                case TypeEnum.Byte: return (byte)0;
+                case TypeEnum.SByte: return (sbyte)0;
+                case TypeEnum.Int16: return (short)0;
+                case TypeEnum.UInt16: return (ushort)0;
+                case TypeEnum.Int32: return 0;
+                case TypeEnum.UInt32: return (uint)0;
+                case TypeEnum.Int64: return (long)0;
+                case TypeEnum.UInt64: return (ulong)0;
+                case TypeEnum.Char: return 'F';
+                case TypeEnum.Single: return (float)0;
+                case TypeEnum.Double: return (double)0;
+                case TypeEnum.Decimal: return (decimal)0;
+                case TypeEnum.String: return bool.FalseString;
+                case TypeEnum.BigInteger: return BigInteger.Zero;
+                case TypeEnum.Enum: return Enum.ToObject(type, 0);
+                case TypeEnum.StringBuilder: return new StringBuilder(bool.FalseString);
             }
             return CastError("Boolean", type);
         }
 
         private object ReadNaN(Type type) {
-            if (type == null ||
-                type == HproseHelper.typeofDouble ||
-                type == HproseHelper.typeofObject) {
-                return double.NaN;
-            }
-            if (type == HproseHelper.typeofSingle) {
-                return float.NaN;
-            }
-            if (type == HproseHelper.typeofString) {
-                return "NaN";
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.Double:
+                case TypeEnum.Object: return double.NaN;
+                case TypeEnum.Single: return float.NaN;
+                case TypeEnum.String: return "NaN";
+                case TypeEnum.StringBuilder: return new StringBuilder("NaN");
             }
             return CastError("NaN", type);
         }
 
         private object ReadInfinity(Type type) {
-            if (type == null ||
-                type == HproseHelper.typeofDouble ||
-                type == HproseHelper.typeofObject) {
-                return (stream.ReadByte() == HproseTags.TagPos ?
-                    double.PositiveInfinity :
-                    double.NegativeInfinity);
-            }
-            if (type == HproseHelper.typeofSingle) {
-                return (stream.ReadByte() == HproseTags.TagPos ?
-                    float.PositiveInfinity :
-                    float.NegativeInfinity);
-            }
-            if (type == HproseHelper.typeofString) {
-                return (stream.ReadByte() == HproseTags.TagPos ?
-                    "Infinity" : "-Infinity");
+            bool isPosInf = (stream.ReadByte() == HproseTags.TagPos);
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.Double:
+                case TypeEnum.Object: return (isPosInf ? double.PositiveInfinity : double.NegativeInfinity);
+                case TypeEnum.Single: return (isPosInf ? float.PositiveInfinity : float.NegativeInfinity);
+                case TypeEnum.String: return (isPosInf ? "Infinity" : "-Infinity");
+                case TypeEnum.StringBuilder: return new StringBuilder((isPosInf ? "Infinity" : "-Infinity"));
             }
             return CastError("Infinity", type);
         }
 
         private object ReadBytes(Type type) {
-            if ((type == null) ||
-                type == HproseHelper.typeofByteArray ||
-                type == HproseHelper.typeofObject) {
-                return ReadBytes(false);
-            }
-            if (type == HproseHelper.typeofGuid) {
-                return new Guid(ReadBytes(false));
-            }
-            if (type == HproseHelper.typeofMemoryStream ||
-                type == HproseHelper.typeofStream) {
-                return ReadStream(false);
-            }
-#if !SILVERLIGHT
-            if (type == HproseHelper.typeofString) {
-                byte[] buf = ReadBytes(false);
-                return Encoding.Default.GetString(buf, 0, buf.Length);
-            }
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.ByteArray:
+                case TypeEnum.Object: return ReadBytes(false);
+                case TypeEnum.Guid: return new Guid(ReadBytes(false));
+                case TypeEnum.Stream:
+                case TypeEnum.MemoryStream: return ReadStream(false);
+#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
+                case TypeEnum.String: {
+                    byte[] buf = ReadBytes(false);
+                    return Encoding.Default.GetString(buf, 0, buf.Length);
+                }
+                case TypeEnum.StringBuilder: {
+                    byte[] buf = ReadBytes(false);
+                    return new StringBuilder(Encoding.Default.GetString(buf, 0, buf.Length));
+                }
 #endif
+            }
             return CastError("byte[]", type);
         }
 
         private object ReadUTF8Char(Type type) {
             char c = ReadUTF8Char(false);
-            switch (Type.GetTypeCode(type)) {
-                case TypeCode.Empty:
-                case TypeCode.Char: return c;
-                case TypeCode.Byte: return (byte)c;
-                case TypeCode.SByte: return (sbyte)c;
-                case TypeCode.Int16: return (short)c;
-                case TypeCode.UInt16: return (ushort)c;
-                case TypeCode.Int32: return (int)c;
-                case TypeCode.UInt32: return (uint)c;
-                case TypeCode.Int64: return (long)c;
-                case TypeCode.UInt64: return (ulong)c;
-                case TypeCode.Single: return (float)c;
-                case TypeCode.Double: return (double)c;
-                case TypeCode.Decimal: return (decimal)c;
-                case TypeCode.String: return new string(c, 1);
-                case TypeCode.Boolean: return "\00Ff".IndexOf(c) > -1;
-            }
-            if (type == HproseHelper.typeofObject) {
-                return new string(c, 1);
-            }
-            if (type == HproseHelper.typeofBigInteger) {
-                return new BigInteger((int)c);
-            }
-            if (type.IsEnum) {
-                return Enum.ToObject(type, (int)c);
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.Char: return c;
+                case TypeEnum.Byte: return (byte)c;
+                case TypeEnum.SByte: return (sbyte)c;
+                case TypeEnum.Int16: return (short)c;
+                case TypeEnum.UInt16: return (ushort)c;
+                case TypeEnum.Int32: return (int)c;
+                case TypeEnum.UInt32: return (uint)c;
+                case TypeEnum.Int64: return (long)c;
+                case TypeEnum.UInt64: return (ulong)c;
+                case TypeEnum.Single: return (float)c;
+                case TypeEnum.Double: return (double)c;
+                case TypeEnum.Decimal: return (decimal)c;
+                case TypeEnum.Object:
+                case TypeEnum.String: return new string(c, 1);
+                case TypeEnum.Boolean: return "\00Ff".IndexOf(c) > -1;
+                case TypeEnum.BigInteger: return new BigInteger((int)c);
+                case TypeEnum.Enum: return Enum.ToObject(type, (int)c);
+                case TypeEnum.StringBuilder: return new StringBuilder(1).Append(c);
             }
             return CastError("Char", type);
         }
@@ -510,26 +443,34 @@ namespace Hprose.IO {
             return CheckTags(expectTags, stream.ReadByte());
         }
 
-        public string ReadUntil(int tag) {
+        private StringBuilder ReadUntil(int tag) {
             StringBuilder sb = new StringBuilder();
             int i = stream.ReadByte();
             while ((i != tag) && (i != -1)) {
                 sb.Append((char)i);
                 i = stream.ReadByte();
             }
-            return sb.ToString();
+            return sb;
+        }
+        
+        private void SkipUntil(int tag) {
+            int i = stream.ReadByte();
+            while ((i != tag) && (i != -1)) {
+                i = stream.ReadByte();
+            }
         }
 
         public int ReadInt(int tag) {
             int result = 0;
             int sign = 1;
             int i = stream.ReadByte();
-            if (i == '+') {
-                i = stream.ReadByte();
-            }
-            else if (i == '-') {
-                sign = -1;
-                i = stream.ReadByte();
+            switch (i) {
+                case '-':
+                    sign = -1;
+                    goto case '+';
+                case '+':
+                    i = stream.ReadByte();
+                    break;
             }
             while ((i != tag) && (i != -1)) {
                 result *= 10;
@@ -558,16 +499,20 @@ namespace Hprose.IO {
             return ReadBigInteger(true);
         }
 
+        private static string expectLongTags = String.Concat(
+            (char)HproseTags.TagInteger,
+            (char)HproseTags.TagLong
+        );
+        
         public BigInteger ReadBigInteger(bool includeTag) {
             if (includeTag) {
                 int tag = stream.ReadByte();
                 if ((tag >= '0') && (tag <= '9')) {
                     return new BigInteger(tag - '0');
                 }
-                CheckTags((char)HproseTags.TagInteger + "" +
-                          (char)HproseTags.TagLong, tag);
+                CheckTags(expectLongTags, tag);
             }
-            return BigInteger.Parse(ReadUntil(HproseTags.TagSemicolon));
+            return BigInteger.Parse(ReadUntil(HproseTags.TagSemicolon).ToString());
         }
 
         public long ReadLong() {
@@ -580,13 +525,34 @@ namespace Hprose.IO {
                 if ((tag >= '0') && (tag <= '9')) {
                     return (long)(tag - '0');
                 }
-                CheckTags((char)HproseTags.TagInteger + "" +
-                          (char)HproseTags.TagLong, tag);
+                CheckTags(expectLongTags, tag);
             }
-            return long.Parse(ReadUntil(HproseTags.TagSemicolon));
+            return long.Parse(ReadUntil(HproseTags.TagSemicolon).ToString());
         }
 
-        private double ParseDouble(string value) {
+        private float ParseFloat(StringBuilder value) {
+            return ParseFloat(value.ToString());
+        }
+        
+        private float ParseFloat(String value) {
+            try {
+                return float.Parse(value);
+            }
+            catch (OverflowException) {
+                if (value[0] == '-') {
+                    return float.NegativeInfinity;
+                }
+                else {
+                    return float.PositiveInfinity;
+                }
+            }
+        }
+
+        private double ParseDouble(StringBuilder value) {
+            return ParseDouble(value.ToString());
+        }
+
+        private double ParseDouble(String value) {
             try {
                 return double.Parse(value);
             }
@@ -604,17 +570,21 @@ namespace Hprose.IO {
             return ReadDouble(true);
         }
 
+        private static string expectDoubleTags = String.Concat(
+            (char)HproseTags.TagInteger,
+            (char)HproseTags.TagLong,
+            (char)HproseTags.TagDouble,
+            (char)HproseTags.TagNaN,
+            (char)HproseTags.TagInfinity
+        );
+
         public double ReadDouble(bool includeTag) {
             if (includeTag) {
                 int tag = stream.ReadByte();
                 if ((tag >= '0') && (tag <= '9')) {
                     return (double)(tag - '0');
                 }
-                CheckTags((char)HproseTags.TagInteger + "" +
-                          (char)HproseTags.TagLong + "" +
-                          (char)HproseTags.TagDouble + "" +
-                          (char)HproseTags.TagNaN + "" +
-                          (char)HproseTags.TagInfinity, tag);
+                CheckTags(expectDoubleTags, tag);
                 if (tag == HproseTags.TagNaN) {
                     return double.NaN;
                 }
@@ -652,9 +622,13 @@ namespace Hprose.IO {
             return null;
         }
 
+        private static string expectBooleanTags = String.Concat(
+            (char)HproseTags.TagTrue,
+            (char)HproseTags.TagFalse
+        );
+
         public bool ReadBoolean() {
-            int tag = CheckTags((char)HproseTags.TagTrue + "" + (char)HproseTags.TagFalse);
-            return (tag == HproseTags.TagTrue);
+            return (CheckTags(expectBooleanTags) == HproseTags.TagTrue);
         }
 
         public object ReadDate() {
@@ -669,12 +643,14 @@ namespace Hprose.IO {
             return ReadDate(true, type);
         }
 
+        private static string expectDateTags = String.Concat(
+            (char)HproseTags.TagDate,
+            (char)HproseTags.TagRef
+        );
+
         public object ReadDate(bool includeTag, Type type) {
-            int tag;
             if (includeTag) {
-                tag = CheckTags((char)HproseTags.TagDate + "" +
-                                (char)HproseTags.TagRef);
-                if (tag == HproseTags.TagRef) {
+                if (CheckTags(expectDateTags) == HproseTags.TagRef) {
                     return ReadRef(type);
                 }
             }
@@ -687,7 +663,7 @@ namespace Hprose.IO {
             month = month * 10 + stream.ReadByte() - '0';
             int day = stream.ReadByte() - '0';
             day = day * 10 + stream.ReadByte() - '0';
-            tag = stream.ReadByte();
+            int tag = stream.ReadByte();
             if (tag == HproseTags.TagTime) {
                 int hour = stream.ReadByte() - '0';
                 hour = hour * 10 + stream.ReadByte() - '0';
@@ -745,12 +721,14 @@ namespace Hprose.IO {
             return ReadTime(true, type);
         }
 
+        private static string expectTimeTags = String.Concat(
+            (char)HproseTags.TagTime,
+            (char)HproseTags.TagRef
+        );
+
         public object ReadTime(bool includeTag, Type type) {
-            int tag;
             if (includeTag) {
-                tag = CheckTags((char)HproseTags.TagTime + "" +
-                                (char)HproseTags.TagRef);
-                if (tag == HproseTags.TagRef) {
+                if (CheckTags(expectTimeTags) == HproseTags.TagRef) {
                     return ReadRef(type);
                 }
             }
@@ -761,7 +739,7 @@ namespace Hprose.IO {
             int second = stream.ReadByte() - '0';
             second = second * 10 + stream.ReadByte() - '0';
             int millisecond = 0;
-            tag = stream.ReadByte();
+            int tag = stream.ReadByte();
             if (tag == HproseTags.TagPoint) {
                 millisecond = stream.ReadByte() - '0';
                 millisecond = millisecond * 10 + stream.ReadByte() - '0';
@@ -793,33 +771,29 @@ namespace Hprose.IO {
             return ReadDateTime(null);
         }
 
+        private static string expectDateTimeTags = String.Concat(
+            (char)HproseTags.TagDate,
+            (char)HproseTags.TagTime,
+            (char)HproseTags.TagRef
+        );
+
         public object ReadDateTime(Type type) {
-            int tag = CheckTags((char)HproseTags.TagDate + "" +
-                                (char)HproseTags.TagTime + "" +
-                                (char)HproseTags.TagRef);
-            if (tag == HproseTags.TagRef) {
-                return ReadRef(type);
+            switch (CheckTags(expectDateTimeTags)) {
+                case HproseTags.TagRef: return ReadRef(type);
+                case HproseTags.TagDate: return ReadDate(false, type);
+                default: return ReadTime(false, type);
             }
-            if (tag == HproseTags.TagDate) {
-                return ReadDate(false, type);
-            }
-            return ReadTime(false, type);
         }
 
         private object ChangeCalendarType(DateTime datetime, Type type) {
-            if (type == null ||
-                type == HproseHelper.typeofDateTime ||
-                type == HproseHelper.typeofObject) {
-                return datetime;
-            }
-            if (type == HproseHelper.typeofTimeSpan) {
-                return new TimeSpan(datetime.Ticks);
-            }
-            if (type == HproseHelper.typeofInt64) {
-                return datetime.Ticks;
-            }
-            if (type == HproseHelper.typeofString) {
-                return datetime.ToString();
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.DateTime:
+                case TypeEnum.Object: return datetime;
+                case TypeEnum.TimeSpan: return new TimeSpan(datetime.Ticks);
+                case TypeEnum.Int64: return datetime.Ticks;
+                case TypeEnum.String: return datetime.ToString();
+                case TypeEnum.StringBuilder: return new StringBuilder(datetime.ToString());
             }
             return CastError(datetime, type);
         }
@@ -828,11 +802,14 @@ namespace Hprose.IO {
             return ReadBytes(true);
         }
 
+        private static string expectBytesTags = String.Concat(
+            (char)HproseTags.TagBytes,
+            (char)HproseTags.TagRef
+        );
+
         public byte[] ReadBytes(bool includeTag) {
             if (includeTag) {
-                int tag = CheckTags((char)HproseTags.TagBytes + "" +
-                                    (char)HproseTags.TagRef);
-                if (tag == HproseTags.TagRef) {
+                if (CheckTags(expectBytesTags) == HproseTags.TagRef) {
                     return (byte[])ReadRef(HproseHelper.typeofByteArray);
                 }
             }
@@ -855,9 +832,7 @@ namespace Hprose.IO {
 
         public MemoryStream ReadStream(bool includeTag) {
             if (includeTag) {
-                int tag = CheckTags((char)HproseTags.TagBytes + "" +
-                                    (char)HproseTags.TagRef);
-                if (tag == HproseTags.TagRef) {
+                if (CheckTags(expectBytesTags) == HproseTags.TagRef) {
                     return (MemoryStream)ReadRef(HproseHelper.typeofMemoryStream);
                 }
             }
@@ -944,21 +919,62 @@ namespace Hprose.IO {
             return ReadString(includeTag, type, true);
         }
 
+        private static string expectStringTags = String.Concat(
+            (char)HproseTags.TagString,
+            (char)HproseTags.TagRef
+        );
+
         private object ReadString(bool includeTag, Type type, bool includeRef) {
             if (includeTag) {
-                int tag = CheckTags((char)HproseTags.TagString + "" +
-                                    (char)HproseTags.TagRef);
-                if (tag == HproseTags.TagRef) {
+                if (CheckTags(expectStringTags) == HproseTags.TagRef) {
                     return ReadRef(type);
                 }
             }
-            if (type == HproseHelper.typeofMemoryStream ||
-                type == HproseHelper.typeofStream) {
-                return ReadStringAsStream(includeRef);
+            object o;
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.String:
+                case TypeEnum.Object: o = ReadCharsAsString(); break;
+                case TypeEnum.Stream:
+                case TypeEnum.MemoryStream: o = ReadCharsAsStream(); break;
+                case TypeEnum.ByteArray: o = ReadCharsAsStream().ToArray(); break;
+                case TypeEnum.CharArray: o = ReadChars(); break;
+                case TypeEnum.StringBuilder: o = new StringBuilder(ReadCharsAsString()); break;
+                case TypeEnum.BigInteger: o = BigInteger.Parse(ReadCharsAsString()); break;
+                case TypeEnum.Byte: o = byte.Parse(ReadCharsAsString()); break;
+                case TypeEnum.SByte: o = sbyte.Parse(ReadCharsAsString()); break;
+                case TypeEnum.Int16: o = short.Parse(ReadCharsAsString()); break;
+                case TypeEnum.UInt16: o = ushort.Parse(ReadCharsAsString()); break;
+                case TypeEnum.Int32: o = int.Parse(ReadCharsAsString()); break;
+                case TypeEnum.UInt32: o = uint.Parse(ReadCharsAsString()); break;
+                case TypeEnum.Int64: o = long.Parse(ReadCharsAsString()); break;
+                case TypeEnum.UInt64: o = ulong.Parse(ReadCharsAsString()); break;
+                case TypeEnum.Single: o = ParseFloat(ReadCharsAsString()); break;
+                case TypeEnum.Double: o = ParseDouble(ReadCharsAsString()); break;
+                case TypeEnum.Decimal: o = decimal.Parse(ReadCharsAsString()); break;
+                case TypeEnum.Boolean: o = bool.Parse(ReadCharsAsString()); break;
+                case TypeEnum.Guid: o = new Guid(ReadCharsAsString()); break;
+                case TypeEnum.DateTime: o = DateTime.Parse(ReadCharsAsString()); break;
+                case TypeEnum.TimeSpan: o = TimeSpan.Parse(ReadCharsAsString()); break;
+                case TypeEnum.Char: {
+                    char[] chars = ReadChars();
+                    o = (chars.Length == 1) ? chars[0] : (char)int.Parse(new String(chars));
+                    break;
+                }
+                default:
+                    return CastError("String", type);
             }
-            if (type == HproseHelper.typeofByteArray) {
-                return ReadStringAsBytes(includeRef);
+            if (includeRef) {
+                references.Add(o);
             }
+            return o;
+        }
+
+        private String ReadCharsAsString() {
+            return new String(ReadChars());
+        }
+
+        private char[] ReadChars() {
             int count = ReadInt(HproseTags.TagQuote);
             char[] buf = new char[count];
             for (int i = 0; i < count; i++) {
@@ -1019,15 +1035,12 @@ namespace Hprose.IO {
                 }
             }
             CheckTag(HproseTags.TagQuote);
-            object o = ChangeStringType(buf, type);
-            if (includeRef) {
-                references.Add(o);
-            }
-            return o;
+            return buf;
         }
 
-        private MemoryStream ReadStringAsStream(bool includeRef) {
+        private MemoryStream ReadCharsAsStream() {
             int count = ReadInt(HproseTags.TagQuote);
+            // here count is capacity, not the real size
             MemoryStream ms = new MemoryStream(count);
             for (int i = 0; i < count; i++) {
                 int c = stream.ReadByte();
@@ -1087,61 +1100,7 @@ namespace Hprose.IO {
             }
             CheckTag(HproseTags.TagQuote);
             ms.Position = 0;
-            if (includeRef) {
-                references.Add(ms);
-            }
             return ms;
-        }
-
-        private byte[] ReadStringAsBytes(bool includeRef) {
-            byte[] bytes = ReadStringAsStream(false).ToArray();
-            if (includeRef) {
-                references.Add(bytes);
-            }
-            return bytes;
-        }
-
-        private object ChangeStringType(char[] str, Type type) {
-            if (type == HproseHelper.typeofCharArray) {
-                return str;
-            }
-            if (type == HproseHelper.typeofStringBuilder) {
-                return new StringBuilder(str.Length).Append(str);
-            }
-            String s = new String(str);
-            if (type == null ||
-                type == HproseHelper.typeofString ||
-                type == HproseHelper.typeofObject) {
-                return s;
-            }
-            if (type == HproseHelper.typeofBigInteger) {
-                return BigInteger.Parse(s);
-            }
-            switch (Type.GetTypeCode(type)) {
-                case TypeCode.Byte: return byte.Parse(s);
-                case TypeCode.SByte: return sbyte.Parse(s);
-                case TypeCode.Int16: return short.Parse(s);
-                case TypeCode.UInt16: return ushort.Parse(s);
-                case TypeCode.Int32: return int.Parse(s);
-                case TypeCode.UInt32: return uint.Parse(s);
-                case TypeCode.Int64: return long.Parse(s);
-                case TypeCode.UInt64: return ulong.Parse(s);
-                case TypeCode.Single: return float.Parse(s);
-                case TypeCode.Double: return ParseDouble(s);
-                case TypeCode.Decimal: return decimal.Parse(s);
-                case TypeCode.Boolean: return bool.Parse(s);
-                case TypeCode.Char:
-                    if (str.Length == 1) {
-                        return str[0];
-                    }
-                    else {
-                        return (char)int.Parse(s);
-                    }
-            }
-            if (type == HproseHelper.typeofGuid) {
-                return new Guid(s);
-            }
-            return CastError(str, type);
         }
 
         public object ReadGuid()  {
@@ -1156,11 +1115,14 @@ namespace Hprose.IO {
             return ReadGuid(true, type);
         }
 
+        private static string expectGuidTags = String.Concat(
+            (char)HproseTags.TagGuid,
+            (char)HproseTags.TagRef
+        );
+
         public object ReadGuid(bool includeTag, Type type) {
             if (includeTag) {
-                int tag = CheckTags((char)HproseTags.TagGuid + "" +
-                                    (char)HproseTags.TagRef);
-                if (tag == HproseTags.TagRef) {
+                if (CheckTags(expectGuidTags) == HproseTags.TagRef) {
                     return ReadRef(type);
                 }
             }
@@ -1170,32 +1132,19 @@ namespace Hprose.IO {
                 buf[i] = (char)stream.ReadByte();
             }
             CheckTag(HproseTags.TagClosebrace);
-            object o = ChangeGuidType(buf, type);
+            object o;
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.CharArray: o = buf; break;
+                case TypeEnum.String: o = new String(buf); break;
+                case TypeEnum.StringBuilder: o = new StringBuilder(new String(buf)); break;
+                case TypeEnum.Null:
+                case TypeEnum.Guid:
+                case TypeEnum.Object: o = new Guid(new String(buf)); break;
+                case TypeEnum.ByteArray: o = new Guid(new String(buf)).ToByteArray(); break;
+                default: return CastError("Guid", type);
+            }
             references.Add(o);
             return o;
-        }
-
-        private object ChangeGuidType(char[] buf, Type type) {
-            if (type == HproseHelper.typeofCharArray) {
-                return buf;
-            }
-            String s = new String(buf);
-            if (type == HproseHelper.typeofString) {
-                return s;
-            }
-            if (type == HproseHelper.typeofStringBuilder) {
-                return new StringBuilder(s);
-            }
-            Guid g = new Guid(s);
-            if (type == null ||
-                type == HproseHelper.typeofGuid ||
-                type == HproseHelper.typeofObject) {
-                return g;
-            }
-            if (type == HproseHelper.typeofByteArray) {
-                return g.ToByteArray();
-            }
-            return CastError(g, type);
         }
 
         private sbyte[] ReadSByteArray(int count) {
@@ -1360,6 +1309,15 @@ namespace Hprose.IO {
             return a;
         }
 
+        private Guid[] ReadGuidArray(int count) {
+            Guid[] a = new Guid[count];
+            references.Add(a);
+            for (int i = 0; i < count; i++) {
+                a[i] = (Guid)Unserialize(HproseHelper.typeofGuid);
+            }
+            return a;
+        }
+
         private Array ReadArray(Type type, int count) {
 #if !dotNETCF10
             int rank = type.GetArrayRank();
@@ -1419,7 +1377,7 @@ namespace Hprose.IO {
                     for (i = rank - n; i < rank; i++) {
                         CheckTag(HproseTags.TagList);
                         references.Add(null);
-                        ReadUntil(HproseTags.TagOpenbrace);
+                        SkipUntil(HproseTags.TagOpenbrace);
                     }
                 }
                 return a;
@@ -1443,20 +1401,21 @@ namespace Hprose.IO {
             return a;
         }
 
-        private ArrayList ReadArrayList(int count) {
-            ArrayList a = new ArrayList(count);
-            references.Add(a);
-            for (int i = 0; i < count; i++) {
-                a.Add(Unserialize(HproseHelper.typeofObject));
-            }
-            return a;
-        }
-
         private BitArray ReadBitArray(int count) {
             BitArray a = new BitArray(count);
             references.Add(a);
             for (int i = 0; i < count; i++) {
                 a[i] = (bool)Unserialize(HproseHelper.typeofBoolean);
+            }
+            return a;
+        }
+
+#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
+        private ArrayList ReadArrayList(int count) {
+            ArrayList a = new ArrayList(count);
+            references.Add(a);
+            for (int i = 0; i < count; i++) {
+                a.Add(Unserialize(HproseHelper.typeofObject));
             }
             return a;
         }
@@ -1482,9 +1441,10 @@ namespace Hprose.IO {
             }
             return a;
         }
+#endif
 
         private IList ReadIList(Type type, int count) {
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
             IList a = (IList)CtorAccessor.Get(type).NewInstance();
 #else
             IList a = (IList)HproseHelper.NewInstance(type);
@@ -1508,7 +1468,7 @@ namespace Hprose.IO {
         }
 
         internal IList<T> ReadIList<T>(Type type, int count) {
-#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT || WINDOWS_PHONE || Core)
             IList<T> a = (IList<T>)CtorAccessor.Get(type).NewInstance();
 #else
             IList<T> a = (IList<T>)HproseHelper.NewInstance(type);
@@ -1522,7 +1482,7 @@ namespace Hprose.IO {
         }
 
         internal ICollection<T> ReadICollection<T>(Type type, int count) {
-#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT || WINDOWS_PHONE || Core)
             ICollection<T> a = (ICollection<T>)CtorAccessor.Get(type).NewInstance();
 #else
             ICollection<T> a = (ICollection<T>)HproseHelper.NewInstance(type);
@@ -1548,115 +1508,90 @@ namespace Hprose.IO {
             return ReadList(true, type);
         }
 
+        private static string expectListTags = String.Concat(
+            (char)HproseTags.TagList,
+            (char)HproseTags.TagRef
+        );
+
         public object ReadList(bool includeTag, Type type) {
             if (includeTag) {
-                int tag = CheckTags((char)HproseTags.TagList + "" +
-                                    (char)HproseTags.TagRef);
-                if (tag == HproseTags.TagRef) {
+                if (CheckTags(expectListTags) == HproseTags.TagRef) {
                     return ReadRef(type);
                 }
             }
             int count = ReadInt(HproseTags.TagOpenbrace);
             object list = null;
-            if (type == null ||
-                type == HproseHelper.typeofObject ||
-                type == HproseHelper.typeofICollection ||
-                type == HproseHelper.typeofIList ||
-                type == HproseHelper.typeofArrayList) {
-                list = ReadArrayList(count);
-            }
-            else if (type == HproseHelper.typeofSByteArray) {
-                list = ReadSByteArray(count);
-            }
-            else if (type == HproseHelper.typeofInt16Array) {
-                list = ReadInt16Array(count);
-            }
-            else if (type == HproseHelper.typeofUInt16Array) {
-                list = ReadUInt16Array(count);
-            }
-            else if (type == HproseHelper.typeofInt32Array) {
-                list = ReadInt32Array(count);
-            }
-            else if (type == HproseHelper.typeofUInt32Array) {
-                list = ReadUInt32Array(count);
-            }
-            else if (type == HproseHelper.typeofInt64Array) {
-                list = ReadInt64Array(count);
-            }
-            else if (type == HproseHelper.typeofUInt64Array) {
-                list = ReadUInt64Array(count);
-            }
-            else if (type == HproseHelper.typeofSingleArray) {
-                list = ReadSingleArray(count);
-            }
-            else if (type == HproseHelper.typeofDoubleArray) {
-                list = ReadDoubleArray(count);
-            }
-            else if (type == HproseHelper.typeofDecimalArray) {
-                list = ReadDecimalArray(count);
-            }
-            else if (type == HproseHelper.typeofBigIntegerArray) {
-                list = ReadBigIntegerArray(count);
-            }
-            else if (type == HproseHelper.typeofBooleanArray) {
-                list = ReadBooleanArray(count);
-            }
-            else if (type == HproseHelper.typeofBytesArray) {
-                list = ReadBytesArray(count);
-            }
-            else if (type == HproseHelper.typeofCharsArray) {
-                list = ReadCharsArray(count);
-            }
-            else if (type == HproseHelper.typeofStringArray) {
-                list = ReadStringArray(count);
-            }
-            else if (type == HproseHelper.typeofStringBuilderArray) {
-                list = ReadStringBuilderArray(count);
-            }
-            else if (type == HproseHelper.typeofDateTimeArray) {
-                list = ReadDateTimeArray(count);
-            }
-            else if (type == HproseHelper.typeofTimeSpanArray) {
-                list = ReadTimeSpanArray(count);
-            }
-            else if (type == HproseHelper.typeofObjectArray) {
-                list = ReadArray(count);
-            }
-            else if (type.IsArray) {
-                list = ReadArray(type, count);
-            }
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.Object:
+                case TypeEnum.ICollection:
+#if (dotNET10 || dotNET11 || dotNETCF10)
+                case TypeEnum.IList: list = ReadArrayList(count); break;
+#else
+                case TypeEnum.IList: list = ReadList<object>(count); break;
+#endif
+                case TypeEnum.SByteArray: list = ReadSByteArray(count); break;
+                case TypeEnum.Int16Array: list = ReadInt16Array(count); break;
+                case TypeEnum.UInt16Array: list = ReadUInt16Array(count); break;
+                case TypeEnum.Int32Array: list = ReadInt32Array(count); break;
+                case TypeEnum.UInt32Array: list = ReadUInt32Array(count); break;
+                case TypeEnum.Int64Array: list = ReadInt64Array(count); break;
+                case TypeEnum.UInt64Array: list = ReadUInt64Array(count); break;
+                case TypeEnum.SingleArray: list = ReadSingleArray(count); break;
+                case TypeEnum.DoubleArray: list = ReadDoubleArray(count); break;
+                case TypeEnum.DecimalArray: list = ReadDecimalArray(count); break;
+                case TypeEnum.BigIntegerArray: list = ReadBigIntegerArray(count); break;
+                case TypeEnum.BooleanArray: list = ReadBooleanArray(count); break;
+                case TypeEnum.BytesArray: list = ReadBytesArray(count); break;
+                case TypeEnum.CharsArray: list = ReadCharsArray(count); break;
+                case TypeEnum.StringArray: list = ReadStringArray(count); break;
+                case TypeEnum.StringBuilderArray: list = ReadStringBuilderArray(count); break;
+                case TypeEnum.DateTimeArray: list = ReadDateTimeArray(count); break;
+                case TypeEnum.TimeSpanArray: list = ReadTimeSpanArray(count); break;
+                case TypeEnum.GuidArray: list = ReadGuidArray(count); break;
+                case TypeEnum.ObjectArray: list = ReadArray(count); break;
+                case TypeEnum.OtherTypeArray: list = ReadArray(type, count); break;
+                case TypeEnum.BitArray: list = ReadBitArray(count); break;
+#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
+                case TypeEnum.ArrayList: list = ReadArrayList(count); break;
+                case TypeEnum.Queue: list = ReadQuote(count); break;
+                case TypeEnum.Stack: list = ReadStack(count); break;
+#endif
+                default: {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            else if (type.IsGenericType) {
-                IGListReader listReader = HproseHelper.GetIGListReader(type);
-                if (listReader != null) {
-                    list = listReader.ReadList(this, count);
-                }
-                else {
-                    IGIListReader ilistReader = HproseHelper.GetIGIListReader(type);
-                    if (ilistReader != null) {
-                        list = ilistReader.ReadIList(this, type, count);
-                    }
-                    else {
-                        IGICollectionReader iCollectionReader = HproseHelper.GetIGICollectionReader(type);
-                        if (iCollectionReader != null) {
-                            list = iCollectionReader.ReadICollection(this, type, count);
+#if Core
+                    if (type.GetTypeInfo().IsGenericType) {
+#else
+                    if (type.IsGenericType) {
+#endif
+                        IGListReader listReader = HproseHelper.GetIGListReader(type);
+                        if (listReader != null) {
+                            list = listReader.ReadList(this, count);
+                        }
+                        else {
+                            IGIListReader ilistReader = HproseHelper.GetIGIListReader(type);
+                            if (ilistReader != null) {
+                                list = ilistReader.ReadIList(this, type, count);
+                            }
+                            else {
+                                IGICollectionReader iCollectionReader = HproseHelper.GetIGICollectionReader(type);
+                                if (iCollectionReader != null) {
+                                    list = iCollectionReader.ReadICollection(this, type, count);
+                                }
+                            }
                         }
                     }
-                }
-            }
+                    else
 #endif
-            else if (HproseHelper.IsInstantiableClass(type)) {
-                if (type == HproseHelper.typeofBitArray) {
-                    list = ReadBitArray(count);
-                }
-                else if (type == HproseHelper.typeofQueue) {
-                    list = ReadQuote(count);
-                }
-                else if (type == HproseHelper.typeofStack) {
-                    list = ReadStack(count);
-                }
-                else if (HproseHelper.typeofIList.IsAssignableFrom(type)) {
-                    list = ReadIList(type, count);
+#if Core
+                    if (HproseHelper.typeofIList.GetTypeInfo().IsAssignableFrom(type.GetTypeInfo()) &&
+#else
+                    if (HproseHelper.typeofIList.IsAssignableFrom(type) &&
+#endif
+                        HproseHelper.IsInstantiableClass(type)) {
+                        list = ReadIList(type, count);
+                    }
+                    break;
                 }
             }
             if (list == null) {
@@ -1665,7 +1600,7 @@ namespace Hprose.IO {
             CheckTag(HproseTags.TagClosebrace);
             return list;
         }
-
+#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
         private HashMap ReadHashMap(int count) {
             HashMap map = new HashMap(count);
             references.Add(map);
@@ -1676,9 +1611,9 @@ namespace Hprose.IO {
             }
             return map;
         }
-
+#endif
         private IDictionary ReadIDictionary(Type type, int count) {
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
             IDictionary map = (IDictionary)CtorAccessor.Get(type).NewInstance();
 #else
             IDictionary map = (IDictionary)HproseHelper.NewInstance(type);
@@ -1693,6 +1628,19 @@ namespace Hprose.IO {
         }
 
 #if !(dotNET10 || dotNET11 || dotNETCF10)
+        internal HashMap<TKey, TValue> ReadHashMap<TKey, TValue>(int count) {
+            HashMap<TKey, TValue> map = new HashMap<TKey, TValue>(count);
+            references.Add(map);
+            Type k = typeof(TKey);
+            Type v = typeof(TValue);
+            for (int i = 0; i < count; i++) {
+                TKey key = (TKey)Unserialize(k);
+                TValue value = (TValue)Unserialize(v);
+                map[key] = value;
+            }
+            return map;
+        }
+
         internal Dictionary<TKey, TValue> ReadMap<TKey, TValue>(int count) {
             Dictionary<TKey, TValue> map = new Dictionary<TKey, TValue>(count);
             references.Add(map);
@@ -1707,7 +1655,7 @@ namespace Hprose.IO {
         }
 
         internal IDictionary<TKey, TValue> ReadIMap<TKey, TValue>(Type type, int count) {
-#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT || WINDOWS_PHONE || Core)
             IDictionary<TKey, TValue> map = (IDictionary<TKey, TValue>)CtorAccessor.Get(type).NewInstance();
 #else
             IDictionary<TKey, TValue> map = (IDictionary<TKey, TValue>)HproseHelper.NewInstance(type);
@@ -1725,86 +1673,94 @@ namespace Hprose.IO {
 #endif
 
         private object ReadObject(Type type, int count) {
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
             object obj = CtorAccessor.Get(type).NewInstance();
 #else
             object obj = HproseHelper.NewInstance(type);
 #endif
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            Dictionary<string, MemberInfo> fields = HproseHelper.GetFields(type);
+            Dictionary<string, FieldInfo> fields = HproseHelper.GetFields(type);
 #else
             Hashtable fields = HproseHelper.GetFields(type);
 #endif
             references.Add(obj);
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
             string[] names = new string[count];
             object[] values = new object[count];
+#endif
+            FieldInfo field;
             for (int i = 0; i < count; i++) {
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
                 names[i] = (string)ReadString();
-                if (fields.ContainsKey(names[i])) {
-                    FieldInfo field = (FieldInfo)fields[names[i]];
+                if (fields.TryGetValue(names[i], out field)) {
+#elif !(dotNET10 || dotNET11 || dotNETCF10)
+                if (fields.TryGetValue((string)ReadString(), out field)) {
+#else
+                if ((field = (FieldInfo)fields[(string)ReadString()]) != null) {
+#endif
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
                     values[i] = Unserialize(field.FieldType);
+#else
+                    field.SetValue(obj, Unserialize(field.FieldType));
+#endif
                 }
                 else {
                     Unserialize();
                 }
             }
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
             ObjectFieldModeUnserializer.Get(type, names).Unserialize(obj, values);
-#else
-            for (int i = 0; i < count; i++) {
-                if (fields.ContainsKey(names[i])) {
-                    FieldInfo field = (FieldInfo)fields[names[i]];
-                    field.SetValue(obj, values[i]);
-                }
-            }
 #endif
             return obj;
         }
 
         private object ReadObject2(Type type, int count) {
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
             object obj = CtorAccessor.Get(type).NewInstance();
 #else
             object obj = HproseHelper.NewInstance(type);
 #endif
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            Dictionary<string, MemberInfo> properties = HproseHelper.GetProperties(type);
+            Dictionary<string, PropertyInfo> properties = HproseHelper.GetProperties(type);
 #else
             Hashtable properties = HproseHelper.GetProperties(type);
 #endif
             references.Add(obj);
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
             string[] names = new string[count];
             object[] values = new object[count];
+#endif
+            PropertyInfo property;
             for (int i = 0; i < count; i++) {
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
                 names[i] = (string)ReadString();
-                if (properties.ContainsKey(names[i])) {
-                    PropertyInfo property = (PropertyInfo)properties[names[i]];
+                if (properties.TryGetValue(names[i], out property)) {
+#elif !(dotNET10 || dotNET11 || dotNETCF10)
+                if (properties.TryGetValue((string)ReadString(), out property)) {
+#else
+                if ((property = (PropertyInfo)properties[(string)ReadString()]) != null) {
+#endif
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
                     values[i] = Unserialize(property.PropertyType);
+#elif (dotNET10 || dotNET11)
+                    PropertyAccessor.Get(property).SetValue(obj, Unserialize(property.PropertyType));
+#else
+                    property.SetValue(obj, Unserialize(property.PropertyType), null);
+#endif
                 }
                 else {
                     Unserialize();
                 }
             }
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
             ObjectPropertyModeUnserializer.Get(type, names).Unserialize(obj, values);
-#else
-            for (int i = 0; i < count; i++) {
-                if (properties.ContainsKey(names[i])) {
-                    PropertyInfo property = (PropertyInfo)properties[names[i]];
-#if (dotNET10 || dotNET11)
-                    PropertyAccessor.Get(property).SetValue(obj, values[i]);
-#else
-                    property.SetValue(obj, values[i], null);
-#endif
-                }
-            }
 #endif
             return obj;
         }
 
 
         private object ReadObject3(Type type, int count) {
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
             object obj = CtorAccessor.Get(type).NewInstance();
 #else
             object obj = HproseHelper.NewInstance(type);
@@ -1815,51 +1771,47 @@ namespace Hprose.IO {
             Hashtable members = HproseHelper.GetMembers(type);
 #endif
             references.Add(obj);
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
             string[] names = new string[count];
             object[] values = new object[count];
-            for (int i = 0; i < count; i++) {
-                names[i] = (string)ReadString();
-                if (members.ContainsKey(names[i])) {
-                    Type memberType;
-#if !(dotNET10 || dotNET11 || dotNETCF10)
-                    MemberInfo member = members[names[i]];
-#else
-                    MemberInfo member = (MemberInfo)members[names[i]];
 #endif
+            MemberInfo member;
+            for (int i = 0; i < count; i++) {
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
+                names[i] = (string)ReadString();
+                if (members.TryGetValue(names[i], out member)) {
+#elif !(dotNET10 || dotNET11 || dotNETCF10)
+                if (members.TryGetValue((string)ReadString(), out member)) {
+#else
+                if ((member = (MemberInfo)members[(string)ReadString()]) != null) {
+#endif
+                    Type memberType;
                     if (member is FieldInfo) {
-                        memberType = ((FieldInfo)member).FieldType;
+                        FieldInfo field = (FieldInfo)member;
+                        memberType = field.FieldType;
+#if (PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
+                        field.SetValue(obj, Unserialize(memberType));
+#endif
                     }
                     else {
-                        memberType = ((PropertyInfo)member).PropertyType;
+                        PropertyInfo property = (PropertyInfo)member;
+                        memberType = property.PropertyType;
+#if (dotNET10 || dotNET11)
+                        PropertyAccessor.Get(property).SetValue(obj, Unserialize(memberType));
+#elif (PocketPC || Smartphone || WindowsCE || SILVERLIGHT || WINDOWS_PHONE || Core)
+                        property.SetValue(obj, Unserialize(memberType), null);
+#endif
                     }
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
                     values[i] = Unserialize(memberType);
+#endif
                 }
                 else {
                     Unserialize();
                 }
             }
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
             ObjectMemberModeUnserializer.Get(type, names).Unserialize(obj, values);
-#else
-            for (int i = 0; i < count; i++) {
-                if (members.ContainsKey(names[i])) {
-#if !(dotNET10 || dotNET11 || dotNETCF10)
-                    MemberInfo member = members[names[i]];
-#else
-                    MemberInfo member = (MemberInfo)members[names[i]];
-#endif
-                    if (member is FieldInfo) {
-                        ((FieldInfo)member).SetValue(obj, values[i]);
-                    }
-                    else {
-#if (dotNET10 || dotNET11)
-                        PropertyAccessor.Get((PropertyInfo)member).SetValue(obj, values[i]);
-#else
-                        ((PropertyInfo)member).SetValue(obj, values[i], null);
-#endif
-                    }
-                }
-            }
 #endif
             return obj;
         }
@@ -1876,57 +1828,74 @@ namespace Hprose.IO {
             return ReadMap(true, type);
         }
 
+        private static string expectMapTags = String.Concat(
+            (char)HproseTags.TagMap,
+            (char)HproseTags.TagRef
+        );
         public object ReadMap(bool includeTag, Type type) {
             if (includeTag) {
-                int tag = CheckTags((char)HproseTags.TagMap + "" +
-                                    (char)HproseTags.TagRef);
-                if (tag == HproseTags.TagRef) {
+                if (CheckTags(expectMapTags) == HproseTags.TagRef) {
                     return ReadRef(type);
                 }
             }
             int count = ReadInt(HproseTags.TagOpenbrace);
             object map = null;
-            if (type == null ||
-                type == HproseHelper.typeofObject ||
-                type == HproseHelper.typeofIDictionary ||
-                type == HproseHelper.typeofHashtable ||
-                type == HproseHelper.typeofHashMap) {
-                map = ReadHashMap(count);
-            }
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.Object:
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            else if (type.IsGenericType) {
-                IGMapReader mapReader = HproseHelper.GetIGMapReader(type);
-                if (mapReader != null) {
-                    map = mapReader.ReadMap(this, count);
-                }
-                else {
-                    IGIMapReader imapReader = HproseHelper.GetIGIMapReader(type);
-                    if (imapReader != null) {
-                        map = imapReader.ReadIMap(this, type, count);
-                    }
-                }
-            }
+                case TypeEnum.IDictionary: map = ReadHashMap<object, object>(count); break;
+#else
+                case TypeEnum.IDictionary:
 #endif
-            else if (HproseHelper.IsInstantiableClass(type) &&
-                     HproseHelper.typeofIDictionary.IsAssignableFrom(type)) {
-                map = ReadIDictionary(type, count);
-            }
-            if (map == null) {
-                if (HproseHelper.IsInstantiableClass(type)) {
-                    if (HproseHelper.IsSerializable(type)) {
-                        if (mode == HproseMode.FieldMode) {
-                            map = ReadObject(type, count);
+#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
+                case TypeEnum.Hashtable:
+                case TypeEnum.HashMap: map = ReadHashMap(count); break;
+#endif
+                default: {
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+#if Core
+                    if (type.GetTypeInfo().IsGenericType) {
+#else
+                    if (type.IsGenericType) {
+#endif
+                        IGMapReader mapReader = HproseHelper.GetIGMapReader(type);
+                        if (mapReader != null) {
+                            map = mapReader.ReadMap(this, count);
                         }
                         else {
-                            map = ReadObject2(type, count);
+                            IGIMapReader imapReader = HproseHelper.GetIGIMapReader(type);
+                            if (imapReader != null) {
+                                map = imapReader.ReadIMap(this, type, count);
+                            }
+                        }
+                    }
+                    else
+#endif
+                    if (HproseHelper.IsInstantiableClass(type)) {
+#if Core
+                        if (HproseHelper.typeofIDictionary.GetTypeInfo().IsAssignableFrom(type.GetTypeInfo())) {
+#else
+                        if (HproseHelper.typeofIDictionary.IsAssignableFrom(type)) {
+#endif
+                            map = ReadIDictionary(type, count);
+                        }
+                        else if (HproseHelper.IsSerializable(type)) {
+                            if (mode == HproseMode.FieldMode) {
+                                map = ReadObject(type, count);
+                            }
+                            else {
+                                map = ReadObject2(type, count);
+                            }
+                        }
+                        else {
+                            map = ReadObject3(type, count);
                         }
                     }
                     else {
-                        map = ReadObject3(type, count);
+                        CastError("Map", type);
                     }
-                }
-                else {
-                    CastError("Map", type);
+                    break;
                 }
             }
             CheckTag(HproseTags.TagClosebrace);
@@ -1945,36 +1914,53 @@ namespace Hprose.IO {
             return ReadObject(true, type);
         }
 
+        private static string expectObjectTags = String.Concat(
+            (char)HproseTags.TagObject,
+            (char)HproseTags.TagClass,
+            (char)HproseTags.TagRef
+        );
+
         public object ReadObject(bool includeTag, Type type) {
             if (includeTag) {
-                int tag = CheckTags((char)HproseTags.TagObject + "" +
-                                    (char)HproseTags.TagClass + "" +
-                                    (char)HproseTags.TagRef);
-                if (tag == HproseTags.TagRef) {
-                    return ReadRef(type);
-                }
-                if (tag == HproseTags.TagClass) {
-                    ReadClass();
-                    return ReadObject(type);
+                switch (CheckTags(expectObjectTags)) {
+                    case HproseTags.TagRef: return ReadRef(type);
+                    case HproseTags.TagClass: {
+                        ReadClass();
+                        return ReadObject(type);
+                    }
                 }
             }
             object c = classref[ReadInt(HproseTags.TagOpenbrace)];
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+            string[] memberNames = membersref[c];
+#else
             string[] memberNames = (string[])membersref[c];
+#endif
             int count = memberNames.Length;
             object obj = null;
             if (c is Type) {
                 Type cls = (Type)c;
-                if ((type == null) || type.IsAssignableFrom(cls)) type = cls;
+                if ((type == null) ||
+#if Core
+                    type.GetTypeInfo().IsAssignableFrom(cls.GetTypeInfo())
+#else
+                    type.IsAssignableFrom(cls)
+#endif
+                ) type = cls;
             }
             if ((type != null) && HproseHelper.IsInstantiableClass(type)) {
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
                 obj = CtorAccessor.Get(type).NewInstance();
 #else
                 obj = HproseHelper.NewInstance(type);
 #endif
             }
             if (obj == null) {
+#if (dotNET10 || dotNET11 || dotNETCF10)
                 Hashtable map = new Hashtable(count);
+#else
+                Dictionary<string, object> map = new Dictionary<string, object>(count);
+#endif
                 references.Add(map);
                 for (int i = 0; i < count; i++) {
                     map[memberNames[i]] = Unserialize(HproseHelper.typeofObject);
@@ -1983,64 +1969,64 @@ namespace Hprose.IO {
             }
             else {
                 references.Add(obj);
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
                 object[] values = new object[count];
+#endif
                 if (HproseHelper.IsSerializable(type)) {
                     if (mode == HproseMode.FieldMode) {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                        Dictionary<string, MemberInfo> fields = HproseHelper.GetFields(type);
+                        Dictionary<string, FieldInfo> fields = HproseHelper.GetFields(type);
 #else
                         Hashtable fields = HproseHelper.GetFields(type);
 #endif
                         FieldInfo field;
                         for (int i = 0; i < count; i++) {
-                            if (fields.ContainsKey(memberNames[i])) {
-                                field = (FieldInfo)fields[memberNames[i]];
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+                            if (fields.TryGetValue(memberNames[i], out field)) {
+#else
+                            if ((field = (FieldInfo)fields[memberNames[i]]) != null) {
+#endif
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
                                 values[i] = Unserialize(field.FieldType);
+#else
+                                field.SetValue(obj, Unserialize(field.FieldType));
+#endif
                             }
                             else {
                                 Unserialize();
                             }
                         }
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
                         ObjectFieldModeUnserializer.Get(type, memberNames).Unserialize(obj, values);
-#else
-                        for (int i = 0; i < count; i++) {
-                            if (fields.ContainsKey(memberNames[i])) {
-                                field = (FieldInfo)fields[memberNames[i]];
-                                field.SetValue(obj, values[i]);
-                            }
-                        }
 #endif
                     }
                     else {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                        Dictionary<string, MemberInfo> properties = HproseHelper.GetProperties(type);
+                        Dictionary<string, PropertyInfo> properties = HproseHelper.GetProperties(type);
 #else
                         Hashtable properties = HproseHelper.GetProperties(type);
 #endif
                         PropertyInfo property;
                         for (int i = 0; i < count; i++) {
-                            if (properties.ContainsKey(memberNames[i])) {
-                                property = (PropertyInfo)properties[memberNames[i]];
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+                            if (properties.TryGetValue(memberNames[i], out property)) {
+#else
+                            if ((property = (PropertyInfo)properties[memberNames[i]]) != null) {
+#endif
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
                                 values[i] = Unserialize(property.PropertyType);
+#elif (dotNET10 || dotNET11)
+                                PropertyAccessor.Get(property).SetValue(obj, Unserialize(property.PropertyType));
+#else
+                                property.SetValue(obj, Unserialize(property.PropertyType), null);
+#endif
                             }
                             else {
                                 Unserialize();
                             }
                         }
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
                         ObjectPropertyModeUnserializer.Get(type, memberNames).Unserialize(obj, values);
-#else
-                        for (int i = 0; i < count; i++) {
-                            if (properties.ContainsKey(memberNames[i])) {
-                                property = (PropertyInfo)properties[memberNames[i]];
-#if (dotNET10 || dotNET11)
-                                PropertyAccessor.Get(property).SetValue(obj, values[i]);
-#else
-                                property.SetValue(obj, values[i], null);
-#endif
-                            }
-                        }
 #endif
                     }
                 }
@@ -2052,46 +2038,38 @@ namespace Hprose.IO {
 #endif
                     MemberInfo member;
                     for (int i = 0; i < count; i++) {
-                        if (members.ContainsKey(memberNames[i])) {
-                        
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                            member = members[memberNames[i]];
+                        if (members.TryGetValue(memberNames[i], out member)) {
 #else
-                            member = (MemberInfo)members[memberNames[i]];
+                        if ((member = (MemberInfo)members[memberNames[i]]) != null) {
 #endif
+                            Type memberType;
                             if (member is FieldInfo) {
-                                values[i] = Unserialize(((FieldInfo)member).FieldType);
+                                FieldInfo field = (FieldInfo)member;
+                                memberType = field.FieldType;
+#if (PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
+                                field.SetValue(obj, Unserialize(memberType));
+#endif
                             }
                             else {
-                                values[i] = Unserialize(((PropertyInfo)member).PropertyType);
+                                PropertyInfo property = (PropertyInfo)member;
+                                memberType = property.PropertyType;
+#if (dotNET10 || dotNET11)
+                                PropertyAccessor.Get(property).SetValue(obj, Unserialize(memberType));
+#elif (PocketPC || Smartphone || WindowsCE || SILVERLIGHT || WINDOWS_PHONE || Core)
+                                property.SetValue(obj, Unserialize(memberType), null);
+#endif
                             }
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
+                            values[i] = Unserialize(memberType);
+#endif
                         }
                         else {
                             Unserialize();
                         }
                     }
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
                     ObjectMemberModeUnserializer.Get(type, memberNames).Unserialize(obj, values);
-#else
-                    for (int i = 0; i < count; i++) {
-                        if (members.ContainsKey(memberNames[i])) {
-#if !(dotNET10 || dotNET11 || dotNETCF10)
-                            member = members[memberNames[i]];
-#else
-                            member = (MemberInfo)members[memberNames[i]];
-#endif
-                            if (member is FieldInfo) {
-                                ((FieldInfo)member).SetValue(obj, values[i]);
-                            }
-                            else {
-#if (dotNET10 || dotNET11)
-                                PropertyAccessor.Get((PropertyInfo)member).SetValue(obj, values[i]);
-#else
-                                ((PropertyInfo)member).SetValue(obj, values[i], null);
-#endif
-                            }
-                        }
-                    }
 #endif
                 }
             }
@@ -2121,7 +2099,12 @@ namespace Hprose.IO {
 
         private object ReadRef(Type type) {
             object o = references[ReadInt(HproseTags.TagSemicolon)];
-            if (type == null || type.IsInstanceOfType(o)) {
+            if (type == null ||
+#if Core
+                type.GetTypeInfo().IsAssignableFrom(o.GetType().GetTypeInfo())) {
+#else
+                type.IsInstanceOfType(o)) {
+#endif
                 return o;
             }
             return CastError(o, type);

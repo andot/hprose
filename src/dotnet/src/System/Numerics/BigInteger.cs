@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Numerics {
 
-    [Serializable, StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     public struct BigInteger : IFormattable, IComparable
 #if !(dotNET10 || dotNET11 || dotNETCF10)
         , IComparable<BigInteger>, IEquatable<BigInteger>

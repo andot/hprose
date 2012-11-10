@@ -13,7 +13,7 @@
  *                                                        *
  * hprose invoker interface for C#.                       *
  *                                                        *
- * LastModified: Jun 22, 2011                             *
+ * LastModified: Nov 6, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -21,7 +21,7 @@ using System;
 
 namespace Hprose.Common {
     public interface IHproseInvoker {
-#if !SILVERLIGHT
+#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
 #if !(dotNET10 || dotNET11 || dotNETCF10)
         T Invoke<T>(string functionName);
         T Invoke<T>(string functionName, object[] arguments);

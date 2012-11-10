@@ -1,18 +1,12 @@
 /* HashMap class.
  * This library is free. You can redistribute it and/or modify it.
  */
+#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
 using System;
-
 namespace System.Collections {
-    public class HashMap: Hashtable, IDictionary, ICollection, IEnumerable
-#if !SILVERLIGHT
-    , ICloneable
-#endif
-    {
+    public class HashMap: Hashtable, IDictionary, ICollection, IEnumerable, ICloneable {
         private object valueOfNullKey = null;
         private bool hasNullKey = false;
-        private ICollection keys = null;
-        private ICollection values = null;
         public HashMap(): base() {
         }
         public HashMap(int capacity): base(capacity) {
@@ -23,8 +17,8 @@ namespace System.Collections {
         }
         public override object Clone() {
             HashMap m = (HashMap)base.Clone();
-            m.valueOfNullKey = null;
-            m.hasNullKey = false;
+            m.valueOfNullKey = valueOfNullKey;
+            m.hasNullKey = hasNullKey;
             return m;
         }
         public override object this[object key] {
@@ -111,26 +105,16 @@ namespace System.Collections {
         }
         public override ICollection Keys {
             get {
-                if (this.keys == null) {
-                    this.keys = new KeysCollection(this, base.Keys);
-                }
-                return this.keys;
+                return new KeysCollection(this, base.Keys);
             }
         }
         public override ICollection Values {
             get {
-                if (this.values == null) {
-                    this.values = new ValuesCollection(this, base.Values);
-                }
-                return this.values;
+                return new ValuesCollection(this, base.Values);
             }
         }
 
-        private class HashMapEnumerator: IDictionaryEnumerator, IEnumerator
-#if !SILVERLIGHT
-    , ICloneable
-#endif
-        {
+        private class HashMapEnumerator: IDictionaryEnumerator, IEnumerator, ICloneable {
             private IEnumerator e;
             private object v;
             private int p;
@@ -287,3 +271,4 @@ namespace System.Collections {
         }
     }
 }
+#endif

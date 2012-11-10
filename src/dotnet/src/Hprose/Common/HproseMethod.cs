@@ -13,7 +13,7 @@
  *                                                        *
  * hprose remote method class for C#.                     *
  *                                                        *
- * LastModified: Jun 22, 2011                             *
+ * LastModified: Nov 6, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -44,7 +44,11 @@ namespace Hprose.Common {
         }
         public HproseMethod(string methodName, Type type, Type[] paramTypes, HproseResultMode mode) {
             this.obj = null;
+#if dotNET45
+            this.method = type.GetRuntimeMethod(methodName, paramTypes);
+#else
             this.method = type.GetMethod(methodName, paramTypes);
+#endif
             if (!method.IsStatic) {
                 throw new MissingMethodException();
             }
@@ -56,7 +60,11 @@ namespace Hprose.Common {
         }
         public HproseMethod(string methodName, object obj, Type[] paramTypes, HproseResultMode mode) {
             this.obj = obj;
+#if dotNET45
+            this.method = obj.GetType().GetRuntimeMethod(methodName, paramTypes);
+#else
             this.method = obj.GetType().GetMethod(methodName, paramTypes);
+#endif
             if (method.IsStatic) {
                 throw new MissingMethodException();
             }

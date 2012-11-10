@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for C#.                            *
  *                                                        *
- * LastModified: Oct 6, 2012                              *
+ * LastModified: Nov 9, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -22,22 +22,22 @@ using System.Collections;
 #if !(dotNET10 || dotNET11 || dotNETCF10)
 using System.Collections.Generic;
 #endif
+#if dotNET45
+using System.Linq;
+#endif
 using System.Numerics;
 using System.IO;
 using System.Text;
 using System.Reflection;
-using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
-using Hprose.Common;
-#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT || WINDOWS_PHONE || Core)
+using System.Runtime.Serialization;
 using Hprose.Reflection;
 #endif
+using Hprose.Common;
 
 namespace Hprose.IO {
     public sealed class HproseWriter {
-#if (dotNET10 || PocketPC || Smartphone || WindowsCE)
-        private static MethodInfo getHashCode = typeof(object).GetMethod("GetHashCode", BindingFlags.Public | BindingFlags.Instance);
-#endif
         public Stream stream;
         private HproseMode mode;
 #if !(dotNET10 || dotNET11 || dotNETCF10)
@@ -70,11 +70,7 @@ namespace Hprose.IO {
             }
 
             int IEqualityComparer<object>.GetHashCode(object obj) {
-#if (PocketPC || Smartphone || WindowsCE)
-                return (int)getHashCode.Invoke(obj, null);
-#else
-                return RuntimeHelpers.GetHashCode(obj);
-#endif
+                return obj.GetHashCode();
             }
         }
 #elif MONO
@@ -83,17 +79,13 @@ namespace Hprose.IO {
                 return object.ReferenceEquals(x, y);
             }
             int IEqualityComparer.GetHashCode(object obj) {
-                return RuntimeHelpers.GetHashCode(obj);
+                return obj.GetHashCode();
             }
         }
 #elif !dotNETCF10
         public class IdentityHashcodeProvider : IHashCodeProvider {
             public int GetHashCode(object obj) {
-#if dotNET10
-                return (int)getHashCode.Invoke(obj, null);
-#else
-                return RuntimeHelpers.GetHashCode(obj);
-#endif
+                return obj.GetHashCode();
             }
         }
 
@@ -140,182 +132,170 @@ namespace Hprose.IO {
 #endif
         }
 
+        
         public void Serialize(object obj) {
             if (obj == null) {
                 WriteNull();
-                return;
-            }
-            Type type = obj.GetType();
-            switch (Type.GetTypeCode(type)) {
-                case TypeCode.Int32: WriteInteger((int)obj); break;
-                case TypeCode.Char: WriteUTF8Char((char)obj); break;
-                case TypeCode.Byte: WriteInteger((byte)obj); break;
-                case TypeCode.SByte: WriteInteger((sbyte)obj); break;
-                case TypeCode.Int16: WriteInteger((short)obj); break;
-                case TypeCode.UInt16: WriteInteger((ushort)obj); break;
-                case TypeCode.UInt32: WriteLong((uint)obj); break;
-                case TypeCode.Int64: WriteLong((long)obj); break;
-                case TypeCode.UInt64: WriteLong((ulong)obj); break;
-                case TypeCode.Single: WriteDouble((float)obj); break;
-                case TypeCode.Double: WriteDouble((double)obj); break;
-                case TypeCode.Decimal: WriteDouble((decimal)obj); break;
-                case TypeCode.Boolean: WriteBoolean((bool)obj); break;
-                case TypeCode.DateTime: WriteDate((DateTime)obj); break;
-                case TypeCode.String:
-                    switch (((string)obj).Length) {
-                        case 0: WriteEmpty(); break;
-                        case 1: WriteUTF8Char(((string)obj)[0]); break;
-                        default: WriteString((string)obj); break;
-                    }
-                    break;
-                case TypeCode.Empty:
-                case TypeCode.DBNull:
-                    WriteNull();
-                    break;
-                case TypeCode.Object:
-                    Serialize(obj, type);
-                    break;
-            }
-        }
-        
-        private void Serialize(object obj, Type type) {
-            if (type == HproseHelper.typeofBigInteger) {
-                WriteLong((BigInteger)obj);
-            }
-            else if (type.IsEnum) {
-                WriteEnum((Enum)obj);
-            }
-            else if (type == HproseHelper.typeofTimeSpan) {
-                WriteLong(((TimeSpan)obj).Ticks);
-            }
-            else if (type.IsSubclassOf(HproseHelper.typeofStream)) {
-                WriteStream((Stream)obj);
-            }
-            else if (type == HproseHelper.typeofStringBuilder) {
-                switch (((StringBuilder)obj).Length) {
-                    case 0: WriteEmpty(); break;
-                    case 1: WriteUTF8Char(((StringBuilder)obj)[0]); break;
-                    default: WriteString((StringBuilder)obj); break;
-                }
-            }
-            else if (type == HproseHelper.typeofGuid) {
-                WriteGuid((Guid)obj);
-            }
-            else if (type.IsArray) {
-                if (type == HproseHelper.typeofByteArray) {
-                    if (((byte[])obj).Length == 0) {
-                        WriteEmpty();
-                    }
-                    else {
-                        WriteBytes((byte[])obj);
-                    }
-                }
-                else if (type == HproseHelper.typeofCharArray) {
-                    if (((char[])obj).Length == 0) {
-                        WriteEmpty();
-                    }
-                    else {
-                        WriteString((char[])obj);
-                    }
-                }
-                else if (type == HproseHelper.typeofInt32Array) {
-                    WriteArray((int[])obj);
-                }
-                else if (type == HproseHelper.typeofSByteArray) {
-                    WriteArray((sbyte[])obj);
-                }
-                else if (type == HproseHelper.typeofInt16Array) {
-                    WriteArray((short[])obj);
-                }
-                else if (type == HproseHelper.typeofUInt16Array) {
-                    WriteArray((ushort[])obj);
-                }
-                else if (type == HproseHelper.typeofUInt32Array) {
-                    WriteArray((uint[])obj);
-                }
-                else if (type == HproseHelper.typeofInt64Array) {
-                    WriteArray((long[])obj);
-                }
-                else if (type == HproseHelper.typeofUInt64Array) {
-                    WriteArray((ulong[])obj);
-                }
-                else if (type == HproseHelper.typeofBigIntegerArray) {
-                    WriteArray((BigInteger[])obj);
-                }
-                else if (type == HproseHelper.typeofSingleArray) {
-                    WriteArray((float[])obj);
-                }
-                else if (type == HproseHelper.typeofDoubleArray) {
-                    WriteArray((double[])obj);
-                }
-                else if (type == HproseHelper.typeofDecimalArray) {
-                    WriteArray((decimal[])obj);
-                }
-                else if (type == HproseHelper.typeofBooleanArray) {
-                    WriteArray((bool[])obj);
-                }
-                else if (type == HproseHelper.typeofBytesArray) {
-                    WriteArray((byte[][])obj);
-                }
-                else if (type == HproseHelper.typeofCharsArray) {
-                    WriteArray((char[][])obj);
-                }
-                else if (type == HproseHelper.typeofStringArray) {
-                    WriteArray((string[])obj);
-                }
-                else if (type == HproseHelper.typeofStringBuilderArray) {
-                    WriteArray((StringBuilder[])obj);
-                }
-                else if (type == HproseHelper.typeofTimeSpanArray) {
-                    WriteArray((TimeSpan[])obj);
-                }
-                else if (type == HproseHelper.typeofDateTimeArray) {
-                    WriteArray((DateTime[])obj);
-                }
-                else if (type == HproseHelper.typeofObjectArray) {
-                    WriteArray((object[])obj);
-                }
-                else {
-                    WriteArray((Array)obj);
-                }
-            }
-            else if (HproseHelper.typeofIList.IsAssignableFrom(type)) {
-                WriteList((IList)obj);
-            }
-            else if (HproseHelper.typeofIDictionary.IsAssignableFrom(type)) {
-                WriteMap((IDictionary)obj);
-            }
-            else if (HproseHelper.typeofICollection.IsAssignableFrom(type)) {
-                WriteCollection((ICollection)obj);
             }
             else {
-#if !(dotNET10 || dotNET11 || dotNETCF10)
-                if (type.IsGenericType) {
-                    if (type.Name.StartsWith("<>f__AnonymousType")) {
-                        WriteAnonymousType(obj);
-                        return;
-                    }
-                    IGIListWriter listWriter = HproseHelper.GetIGIListWriter(type);
-                    if (listWriter != null) {
-                        listWriter.WriteIList(this, obj, true);
-                        return;
-                    }
-                    IGICollectionWriter collectionWriter = HproseHelper.GetIGICollectionWriter(type);
-                    if (collectionWriter != null) {
-                        collectionWriter.WriteICollection(this, obj, true);
-                        return;
-                    }
-                    IGIMapWriter mapWriter = HproseHelper.GetIGIMapWriter(type);
-                    if (mapWriter != null) {
-                        mapWriter.WriteIMap(this, obj, true);
-                        return;
-                    }
-                }
+                Serialize(obj, obj.GetType());
+            }
+        }
+
+        private void Serialize(object obj, Type type) {
+            if (obj == null) {
+                WriteNull();
+            }
+            else {
+                switch (HproseHelper.GetTypeEnum(type)) {
+#if !Core
+                    case TypeEnum.DBNull:
 #endif
-                if (HproseHelper.typeofISerializable.IsAssignableFrom(type)) {
-                    throw new HproseException(type.Name + " is a ISerializable type, hprose can't support it.");
+                    case TypeEnum.Null: WriteNull(); break;
+                    case TypeEnum.Int32: WriteInteger((int)obj); break;
+                    case TypeEnum.Char: WriteUTF8Char((char)obj); break;
+                    case TypeEnum.Byte: WriteInteger((byte)obj); break;
+                    case TypeEnum.SByte: WriteInteger((sbyte)obj); break;
+                    case TypeEnum.Int16: WriteInteger((short)obj); break;
+                    case TypeEnum.UInt16: WriteInteger((ushort)obj); break;
+                    case TypeEnum.UInt32: WriteLong((uint)obj); break;
+                    case TypeEnum.Int64: WriteLong((long)obj); break;
+                    case TypeEnum.UInt64: WriteLong((ulong)obj); break;
+                    case TypeEnum.Single: WriteDouble((float)obj); break;
+                    case TypeEnum.Double: WriteDouble((double)obj); break;
+                    case TypeEnum.Decimal: WriteDouble((decimal)obj); break;
+                    case TypeEnum.Boolean: WriteBoolean((bool)obj); break;
+                    case TypeEnum.DateTime: WriteDate((DateTime)obj); break;
+                    case TypeEnum.BigInteger: WriteLong((BigInteger)obj); break;
+                    case TypeEnum.Enum: WriteEnum(obj, type); break;
+                    case TypeEnum.TimeSpan: WriteLong(((TimeSpan)obj).Ticks); break;
+                    case TypeEnum.Guid: WriteGuid((Guid)obj); break;
+                    case TypeEnum.SByteArray: WriteArray((sbyte[])obj); break;
+                    case TypeEnum.Int16Array: WriteArray((short[])obj); break;
+                    case TypeEnum.UInt16Array: WriteArray((ushort[])obj); break;
+                    case TypeEnum.Int32Array: WriteArray((int[])obj); break;
+                    case TypeEnum.UInt32Array: WriteArray((uint[])obj); break;
+                    case TypeEnum.Int64Array: WriteArray((long[])obj); break;
+                    case TypeEnum.UInt64Array: WriteArray((ulong[])obj); break;
+                    case TypeEnum.BigIntegerArray: WriteArray((BigInteger[])obj); break;
+                    case TypeEnum.SingleArray: WriteArray((float[])obj); break;
+                    case TypeEnum.DoubleArray: WriteArray((double[])obj); break;
+                    case TypeEnum.DecimalArray: WriteArray((decimal[])obj); break;
+                    case TypeEnum.BooleanArray: WriteArray((bool[])obj); break;
+                    case TypeEnum.BytesArray: WriteArray((byte[][])obj); break;
+                    case TypeEnum.CharsArray: WriteArray((char[][])obj); break;
+                    case TypeEnum.StringArray: WriteArray((string[])obj); break;
+                    case TypeEnum.StringBuilderArray: WriteArray((StringBuilder[])obj); break;
+                    case TypeEnum.TimeSpanArray: WriteArray((TimeSpan[])obj); break;
+                    case TypeEnum.DateTimeArray: WriteArray((DateTime[])obj); break;
+                    case TypeEnum.ObjectArray: WriteArray((object[])obj); break;
+                    case TypeEnum.OtherTypeArray: WriteArray((Array)obj); break;
+                    case TypeEnum.BitArray: WriteBitArray((BitArray)obj); break;
+                    case TypeEnum.Stream: 
+                    case TypeEnum.MemoryStream: WriteStream((Stream)obj); break;
+#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
+                    case TypeEnum.ArrayList:
+#endif
+                    case TypeEnum.IList: WriteList((IList)obj); break;
+#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
+                    case TypeEnum.Stack:
+                    case TypeEnum.Queue:
+#endif
+                    case TypeEnum.ICollection: WriteCollection((ICollection)obj); break;
+#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
+                    case TypeEnum.Hashtable:
+                    case TypeEnum.HashMap:
+#endif
+                    case TypeEnum.IDictionary: WriteMap((IDictionary)obj); break;
+                    case TypeEnum.String:
+                        switch (((string)obj).Length) {
+                            case 0: WriteEmpty(); break;
+                            case 1: WriteUTF8Char(((string)obj)[0]); break;
+                            default: WriteString((string)obj); break;
+                        }
+                        break;
+                    case TypeEnum.StringBuilder:
+                        switch (((StringBuilder)obj).Length) {
+                            case 0: WriteEmpty(); break;
+                            case 1: WriteUTF8Char(((StringBuilder)obj)[0]); break;
+                            default: WriteString((StringBuilder)obj); break;
+                        }
+                        break;
+                    case TypeEnum.CharArray:
+                        if (((char[])obj).Length == 0) {
+                            WriteEmpty();
+                        }
+                        else {
+                            WriteString((char[])obj);
+                        }
+                        break;
+                    case TypeEnum.ByteArray:
+                        if (((byte[])obj).Length == 0) {
+                            WriteEmpty();
+                        }
+                        else {
+                            WriteBytes((byte[])obj);
+                        }
+                        break;
+                    case TypeEnum.Object: 
+                        type = obj.GetType();
+                        if (type != HproseHelper.typeofObject) {
+                            Serialize(obj, type);
+                        }
+                        else {
+                            throw new HproseException("Hprose can't serialize Object type.");
+                        }
+                        break;
+                     default: {
+#if Core
+                        TypeInfo typeInfo = type.GetTypeInfo();
+                        if (HproseHelper.typeofStream.GetTypeInfo().IsAssignableFrom(typeInfo)) {
+                            WriteStream((Stream)obj);
+                        }
+                        else if (HproseHelper.typeofIList.GetTypeInfo().IsAssignableFrom(typeInfo)) {
+                            WriteList((IList)obj);
+                        }
+                        else if (HproseHelper.typeofIDictionary.GetTypeInfo().IsAssignableFrom(typeInfo)) {
+                            WriteMap((IDictionary)obj);
+                        }
+                        else if (HproseHelper.typeofICollection.GetTypeInfo().IsAssignableFrom(typeInfo)) {
+                            WriteCollection((ICollection)obj);
+                        }
+                        else if (typeInfo.IsGenericType && type.Name.StartsWith("<>f__AnonymousType")) {
+                            WriteAnonymousType(obj);
+                            return;
+                        }
+#else
+                        if (type.IsSubclassOf(HproseHelper.typeofStream)) {
+                            WriteStream((Stream)obj);
+                        }
+                        else if (HproseHelper.typeofIList.IsAssignableFrom(type)) {
+                            WriteList((IList)obj);
+                        }
+                        else if (HproseHelper.typeofIDictionary.IsAssignableFrom(type)) {
+                            WriteMap((IDictionary)obj);
+                        }
+                        else if (HproseHelper.typeofICollection.IsAssignableFrom(type)) {
+                            WriteCollection((ICollection)obj);
+                        }
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+                        else if (type.IsGenericType && type.Name.StartsWith("<>f__AnonymousType")) {
+                            WriteAnonymousType(obj);
+                            return;
+                        }
+#endif
+#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT || WINDOWS_PHONE)
+                        else if (HproseHelper.typeofISerializable.IsAssignableFrom(type)) {
+                            throw new HproseException(type.Name + " is a ISerializable type, hprose can't support it.");
+                        }
+#endif
+#endif
+                        else {
+                            WriteObject(obj);
+                        }
+                        break;
+                    }
                 }
-                WriteObject(obj);
             }
         }
 
@@ -423,20 +403,16 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagSemicolon);
         }
 
-        public void WriteEnum(Enum value) {
-            Type entype = value.GetType();
-            Type underlyingType = Enum.GetUnderlyingType(entype);
-            object graph = Convert.ChangeType(value, underlyingType, null);
-            switch (Type.GetTypeCode(underlyingType)) {
-                case TypeCode.Int32: WriteInteger((int)graph); break;
-                case TypeCode.Byte: WriteInteger((byte)graph); break;
-                case TypeCode.SByte: WriteInteger((sbyte)graph); break;
-                case TypeCode.Int16: WriteInteger((short)graph); break;
-                case TypeCode.UInt16: WriteInteger((ushort)graph); break;
-                case TypeCode.UInt32: WriteLong((uint)graph); break;
-                case TypeCode.Int64: WriteLong((long)graph); break;
-                case TypeCode.UInt64: WriteLong((ulong)graph); break;
-                case TypeCode.Boolean: WriteBoolean((bool)graph); break;
+        public void WriteEnum(object value, Type type) {
+            switch (HproseHelper.GetTypeEnum(Enum.GetUnderlyingType(type))) {
+                case TypeEnum.Int32: WriteInteger((int)value); break;
+                case TypeEnum.Byte: WriteInteger((byte)value); break;
+                case TypeEnum.SByte: WriteInteger((sbyte)value); break;
+                case TypeEnum.Int16: WriteInteger((short)value); break;
+                case TypeEnum.UInt16: WriteInteger((ushort)value); break;
+                case TypeEnum.UInt32: WriteLong((uint)value); break;
+                case TypeEnum.Int64: WriteLong((long)value); break;
+                case TypeEnum.UInt64: WriteLong((ulong)value); break;
             }
         }
 
@@ -601,28 +577,25 @@ namespace Hprose.IO {
         }
 
         public void WriteStream(Stream s, bool checkRef) {
-            if (!s.CanRead || !s.CanSeek) throw new HproseException("This stream can't support serialize.");
+            if (!s.CanRead) throw new HproseException("This stream can't support serialize.");
             if (WriteRef(s, checkRef)) {
                 stream.WriteByte(HproseTags.TagBytes);
-                long oldPos = s.Position;
-                s.Position = 0;
-                byte[] buffer;
+                long oldPos = 0;
+                if (s.CanSeek) {
+                    oldPos = s.Position;
+                    s.Position = 0;
+                }
                 int length = (int)s.Length;
                 if (length > 0) WriteInt(length, stream);
                 stream.WriteByte(HproseTags.TagQuote);
-                if (length > 4096) {
-                    for (buffer = new byte[4096];
-                        s.Position < s.Length;
-                        length = s.Read(buffer, 0, 4096),
-                        stream.Write(buffer, 0, length)) ;
-                }
-                else if (length > 0) {
-                    buffer = new byte[length];
-                    length = s.Read(buffer, 0, length);
+                byte[] buffer = new byte[4096];
+                while ((length = s.Read(buffer, 0, 4096)) != 0) {
                     stream.Write(buffer, 0, length);
                 }
                 stream.WriteByte(HproseTags.TagQuote);
-                s.Position = oldPos;
+                if (s.CanSeek) {
+                    s.Position = oldPos;
+                }
             }
         }
 
@@ -751,48 +724,8 @@ namespace Hprose.IO {
         public void WriteString(StringBuilder s, bool checkRef) {
             if (WriteRef(s, checkRef)) {
                 stream.WriteByte(HproseTags.TagString);
-                WriteUTF8String(s);
+                WriteUTF8String(s.ToString(), stream);
             }
-        }
-
-        private void WriteUTF8String(StringBuilder s) {
-            int length = s.Length;
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagQuote);
-            for (int i = 0; i < length; i++) {
-                int c = 0xffff & s[i];
-                if (c < 0x80) {
-                    stream.WriteByte((byte)c);
-                }
-                else if (c < 0x800) {
-                    stream.WriteByte((byte)(0xc0 | (c >> 6)));
-                    stream.WriteByte((byte)(0x80 | (c & 0x3f)));
-                }
-                else if (c < 0xd800 || c > 0xdfff) {
-                    stream.WriteByte((byte)(0xe0 | (c >> 12)));
-                    stream.WriteByte((byte)(0x80 | ((c >> 6) & 0x3f)));
-                    stream.WriteByte((byte)(0x80 | (c & 0x3f)));
-                }
-                else {
-                    if (++i < length) {
-                        int c2 = 0xffff & s[i];
-                        if (c < 0xdc00 && 0xdc00 <= c2 && c2 <= 0xdfff) {
-                            c = ((c & 0x03ff) << 10 | (c2 & 0x03ff)) + 0x010000;
-                            stream.WriteByte((byte)(0xf0 | (c >> 18)));
-                            stream.WriteByte((byte)(0x80 | ((c >> 12) & 0x3f)));
-                            stream.WriteByte((byte)(0x80 | ((c >> 6) & 0x3f)));
-                            stream.WriteByte((byte)(0x80 | (c & 0x3f)));
-                        }
-                        else {
-                            throw new HproseException("wrong unicode string");
-                        }
-                    }
-                    else {
-                        throw new HproseException("wrong unicode string");
-                    }
-                }
-            }
-            stream.WriteByte(HproseTags.TagQuote);
         }
 
         public void WriteGuid(Guid g) {
@@ -1023,7 +956,13 @@ namespace Hprose.IO {
                 if (length > 0) WriteInt(length, stream);
                 stream.WriteByte(HproseTags.TagOpenbrace);
                 for (int i = 0; i < length; i++) {
-                    WriteBytes(array[i]);
+                    byte[] value;
+                    if ((value = array[i]) == null) {
+                        WriteNull();
+                    }
+                    else {
+                        WriteBytes(value);
+                    }
                 }
                 stream.WriteByte(HproseTags.TagClosebrace);
             }
@@ -1040,7 +979,13 @@ namespace Hprose.IO {
                 if (length > 0) WriteInt(length, stream);
                 stream.WriteByte(HproseTags.TagOpenbrace);
                 for (int i = 0; i < length; i++) {
-                    WriteString(array[i]);
+                    char[] value;
+                    if ((value = array[i]) == null) {
+                        WriteNull();
+                    }
+                    else {
+                        WriteString(value);
+                    }
                 }
                 stream.WriteByte(HproseTags.TagClosebrace);
             }
@@ -1057,7 +1002,13 @@ namespace Hprose.IO {
                 if (length > 0) WriteInt(length, stream);
                 stream.WriteByte(HproseTags.TagOpenbrace);
                 for (int i = 0; i < length; i++) {
-                    WriteString(array[i]);
+                    string value;
+                    if ((value = array[i]) == null) {
+                        WriteNull();
+                    }
+                    else {
+                        WriteString(value);
+                    }
                 }
                 stream.WriteByte(HproseTags.TagClosebrace);
             }
@@ -1074,7 +1025,13 @@ namespace Hprose.IO {
                 if (length > 0) WriteInt(length, stream);
                 stream.WriteByte(HproseTags.TagOpenbrace);
                 for (int i = 0; i < length; i++) {
-                    WriteString(array[i]);
+                    StringBuilder value;
+                    if ((value = array[i]) == null) {
+                        WriteNull();
+                    }
+                    else {
+                        WriteString(value);
+                    }
                 }
                 stream.WriteByte(HproseTags.TagClosebrace);
             }
@@ -1197,6 +1154,23 @@ namespace Hprose.IO {
             }
         }
 
+        public void WriteBitArray(BitArray array) {
+            WriteBitArray(array, true);
+        }
+
+        public void WriteBitArray(BitArray array, bool checkRef) {
+            if (WriteRef(array, checkRef)) {
+                int length = array.Length;
+                stream.WriteByte(HproseTags.TagList);
+                if (length > 0) WriteInt(length, stream);
+                stream.WriteByte(HproseTags.TagOpenbrace);
+                for (int i = 0; i < length; i++) {
+                    WriteBoolean(array[i]);
+                }
+                stream.WriteByte(HproseTags.TagClosebrace);
+            }
+        }
+
         public void WriteList(IList list) {
             WriteList(list, true);
         }
@@ -1260,8 +1234,9 @@ namespace Hprose.IO {
                 stream.WriteByte(HproseTags.TagList);
                 if (length > 0) WriteInt(length, stream);
                 stream.WriteByte(HproseTags.TagOpenbrace);
+                Type type = typeof(T);
                 for (int i = 0; i < length; i++) {
-                    Serialize(list[i]);
+                    Serialize(list[i], type);
                 }
                 stream.WriteByte(HproseTags.TagClosebrace);
             }
@@ -1277,9 +1252,11 @@ namespace Hprose.IO {
                 stream.WriteByte(HproseTags.TagMap);
                 if (length > 0) WriteInt(length, stream);
                 stream.WriteByte(HproseTags.TagOpenbrace);
+                Type keyType = typeof(TKey);
+                Type valueType = typeof(TValue);
                 foreach (KeyValuePair<TKey, TValue> e in map) {
-                    Serialize(e.Key);
-                    Serialize(e.Value);
+                    Serialize(e.Key, keyType);
+                    Serialize(e.Value, valueType);
                 }
                 stream.WriteByte(HproseTags.TagClosebrace);
             }
@@ -1295,8 +1272,9 @@ namespace Hprose.IO {
                 stream.WriteByte(HproseTags.TagList);
                 if (length > 0) WriteInt(length, stream);
                 stream.WriteByte(HproseTags.TagOpenbrace);
+                Type type = typeof(T);
                 foreach (object e in collection) {
-                    Serialize(e);
+                    Serialize(e, type);
                 }
                 stream.WriteByte(HproseTags.TagClosebrace);
             }
@@ -1308,8 +1286,13 @@ namespace Hprose.IO {
 
         public void WriteAnonymousType(object obj, bool checkRef) {
             if (WriteRef(obj, checkRef)) {
+#if dotNET45
+                IEnumerable<PropertyInfo> properties = obj.GetType().GetRuntimeProperties();
+                int length = properties.Count();
+#else
                 PropertyInfo[] properties = obj.GetType().GetProperties();
                 int length = properties.Length;
+#endif
                 stream.WriteByte(HproseTags.TagMap);
                 if (length > 0) WriteInt(length, stream);
                 stream.WriteByte(HproseTags.TagOpenbrace);
@@ -1334,8 +1317,9 @@ namespace Hprose.IO {
                 Type type = obj.GetType();
                 int cr;
 #if (dotNET10 || dotNET11 || dotNETCF10)
-                if (classref.ContainsKey(type)) {
-                    cr = (int)classref[type];
+                object crobj;
+                if ((crobj = classref[type]) != null) {
+                    cr = (int)crobj;
                 }
                 else {
                     cr = WriteClass(type);
@@ -1361,19 +1345,22 @@ namespace Hprose.IO {
 
         private void WriteSerializableObject(object obj, Type type) {
             if (mode == HproseMode.FieldMode) {
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
                 ObjectSerializer.Get(type).SerializeFields(obj, this);
 #else
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                Dictionary<string, MemberInfo> fields = HproseHelper.GetFields(type);
-                foreach (KeyValuePair<string, MemberInfo> field in fields) {
-#else
-                Hashtable fields = HproseHelper.GetFields(type);
-                foreach (DictionaryEntry field in fields) {
-#endif
+                ICollection<FieldInfo> fields = HproseHelper.GetFields(type).Values;
+                foreach (FieldInfo field in fields) {
                     object value;
                     try {
-                        value = ((FieldInfo)field.Value).GetValue(obj);
+                        value = field.GetValue(obj);
+#else
+                ICollection fields = HproseHelper.GetFields(type).Values;
+                foreach (object field in fields) {
+                    object value;
+                    try {
+                        value = ((FieldInfo)field).GetValue(obj);
+#endif
                     }
                     catch (Exception e) {
                         throw new HproseException("The field value can't be serialized.", e);
@@ -1383,22 +1370,25 @@ namespace Hprose.IO {
 #endif
             }
             else {
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
                 ObjectSerializer.Get(type).SerializeProperties(obj, this);
 #else
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                Dictionary<string, MemberInfo> properties = HproseHelper.GetProperties(type);
-                foreach (KeyValuePair<string, MemberInfo> property in properties) {
+                ICollection<PropertyInfo> properties = HproseHelper.GetProperties(type).Values;
+                foreach (PropertyInfo property in properties) {
+                    object value;
+                    try {
+                        value = property.GetValue(obj, null);
 #else
-                Hashtable properties = HproseHelper.GetProperties(type);
-                foreach (DictionaryEntry property in properties) {
-#endif
+                ICollection properties = HproseHelper.GetProperties(type).Values;
+                foreach (object property in properties) {
                     object value;
                     try {
 #if (dotNET10 || dotNET11)
-                        value = PropertyAccessor.Get((PropertyInfo)property.Value).GetValue(obj);
+                        value = PropertyAccessor.Get((PropertyInfo)property).GetValue(obj);
 #else
-                        value = ((PropertyInfo)property.Value).GetValue(obj, null);
+                        value = ((PropertyInfo)property).GetValue(obj, null);
+#endif
 #endif
                     }
                     catch (Exception e) {
@@ -1411,26 +1401,26 @@ namespace Hprose.IO {
         }
 
         private void WriteDataContractObject(object obj, Type type) {
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
             ObjectSerializer.Get(type).SerializeMembers(obj, this);
 #else
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            Dictionary<string, MemberInfo> members = HproseHelper.GetMembers(type);
-            foreach (KeyValuePair<string, MemberInfo> member in members) {
+            ICollection<MemberInfo> members = HproseHelper.GetMembers(type).Values;
+            foreach (MemberInfo member in members) {
 #else
-            Hashtable members = HproseHelper.GetMembers(type);
-            foreach (DictionaryEntry member in members) {
+            ICollection members = HproseHelper.GetMembers(type).Values;
+            foreach (object member in members) {
 #endif
                 object value;
                 try {
-                    if (member.Value is FieldInfo) {
-                        value = ((FieldInfo)member.Value).GetValue(obj);
+                    if (member is FieldInfo) {
+                        value = ((FieldInfo)member).GetValue(obj);
                     }
                     else {
 #if (dotNET10 || dotNET11)
-                        value = PropertyAccessor.Get((PropertyInfo)member.Value).GetValue(obj);
+                        value = PropertyAccessor.Get((PropertyInfo)member).GetValue(obj);
 #else
-                        value = ((PropertyInfo)member.Value).GetValue(obj, null);
+                        value = ((PropertyInfo)member).GetValue(obj, null);
 #endif
                     }
                 }
@@ -1466,9 +1456,7 @@ namespace Hprose.IO {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
                     fieldsCache.TryGetValue(type, out cache);
 #else
-                    if (fieldsCache.ContainsKey(type)) {
-                        cache = (SerializeCache)fieldsCache[type];
-                    }
+                    cache = (SerializeCache)fieldsCache[type];
 #endif
                 }
             }
@@ -1478,9 +1466,7 @@ namespace Hprose.IO {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
                     propertiesCache.TryGetValue(type, out cache);
 #else
-                    if (propertiesCache.ContainsKey(type)) {
-                        cache = (SerializeCache)propertiesCache[type];
-                    }
+                    cache = (SerializeCache)propertiesCache[type];
 #endif
                 }
             }
@@ -1488,34 +1474,32 @@ namespace Hprose.IO {
                 cache = new SerializeCache();
                 MemoryStream cachestream = new MemoryStream();
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                Dictionary<string, MemberInfo> members;
+                ICollection<string> keys;
 #else
-                Hashtable members;
+                ICollection keys;
 #endif
                 if (mode == HproseMode.FieldMode) {
-                    members = HproseHelper.GetFields(type);
+                    keys = HproseHelper.GetFields(type).Keys;
                 }
                 else {
-                    members = HproseHelper.GetProperties(type);
+                    keys = HproseHelper.GetProperties(type).Keys;
                 }
-                int count = members.Count;
+                int count = keys.Count;
                 cachestream.WriteByte(HproseTags.TagClass);
                 WriteUTF8String(HproseHelper.GetClassName(type), cachestream);
                 if (count > 0) WriteInt(count, cachestream);
                 cachestream.WriteByte(HproseTags.TagOpenbrace);
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                foreach (KeyValuePair<string, MemberInfo> member in members) {
+                foreach (string key in keys) {
                     cachestream.WriteByte(HproseTags.TagString);
-                    WriteUTF8String(member.Key, cachestream);
-                    cache.refcount++;
-                }
+                    WriteUTF8String(key, cachestream);
 #else
-                foreach (DictionaryEntry member in members) {
+                foreach (object key in keys) {
                     cachestream.WriteByte(HproseTags.TagString);
-                    WriteUTF8String((string)member.Key, cachestream);
+                    WriteUTF8String((string)key, cachestream);
+#endif
                     cache.refcount++;
                 }
-#endif
                 cachestream.WriteByte(HproseTags.TagClosebrace);
                 cache.data = cachestream.ToArray();
                 if (mode == HproseMode.FieldMode) {
@@ -1541,9 +1525,7 @@ namespace Hprose.IO {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
                 membersCache.TryGetValue(type, out cache);
 #else
-                if (membersCache.ContainsKey(type)) {
-                    cache = (SerializeCache)membersCache[type];
-                }
+                cache = (SerializeCache)membersCache[type];
 #endif
             }
             if (cache == null) {
@@ -1564,15 +1546,13 @@ namespace Hprose.IO {
                 foreach (KeyValuePair<string, MemberInfo> member in members) {
                     cachestream.WriteByte(HproseTags.TagString);
                     WriteUTF8String(member.Key, cachestream);
-                    cache.refcount++;
-                }
 #else
                 foreach (DictionaryEntry member in members) {
                     cachestream.WriteByte(HproseTags.TagString);
                     WriteUTF8String((string)member.Key, cachestream);
+#endif
                     cache.refcount++;
                 }
-#endif
                 cachestream.WriteByte(HproseTags.TagClosebrace);
                 cache.data = cachestream.ToArray();
                 lock (c.SyncRoot) {

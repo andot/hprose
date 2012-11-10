@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http client class for C#.                       *
  *                                                        *
- * LastModified: Aug 7, 2011                              *
+ * LastModified: Nov 10, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -23,14 +23,16 @@ using System.Collections;
 using System.Collections.Generic;
 #endif
 using System.IO;
-#if !SILVERLIGHT
+#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
 using System.IO.Compression;
-#elif !SL2
+#elif !(SL2 || Core)
 using System.Net.Browser;
 #endif
 using System.Net;
 using Hprose.IO;
+#if !(dotNET10 || dotNET11 || dotNETCF10 || dotNETCF20 || SILVERLIGHT || WINDOWS_PHONE || Core)
 using System.Security.Cryptography.X509Certificates;
+#endif
 using System.Threading;
 
 namespace Hprose.Client {
@@ -43,11 +45,15 @@ namespace Hprose.Client {
         private class HttpClientContext {
             internal HttpWebRequest request;
             internal HttpWebResponse response;
+#if !Core
             internal Timer timer;
+#endif
             internal HttpClientContext(HttpWebRequest request, HttpWebResponse response) {
                 this.request = request;
                 this.response = response;
+#if !Core
                 this.timer = null;
+#endif
             }
         }
 
@@ -59,9 +65,12 @@ namespace Hprose.Client {
 #else
         private Hashtable headers = new Hashtable(new CaseInsensitiveHashCodeProvider(), new CaseInsensitiveComparer());
 #endif
+#if !Core
 		private int timeout = 30000;
-#if !SILVERLIGHT
+#endif
+#if !(SILVERLIGHT || WINDOWS_PHONE)
         private ICredentials credentials = null;
+#if !Core
         private bool keepAlive = false;
         private int keepAliveTimeout = 300;
         private IWebProxy proxy = null;
@@ -69,6 +78,7 @@ namespace Hprose.Client {
         private string connectionGroupName = null;
 #if !(dotNET10 || dotNET11 || dotNETCF20)
         private X509CertificateCollection clientCertificates = null;
+#endif
 #endif
 #endif
 #endif
@@ -114,6 +124,7 @@ namespace Hprose.Client {
 #endif
         }
 
+#if !Core
         public int Timeout {
             get {
                 return timeout;
@@ -122,8 +133,9 @@ namespace Hprose.Client {
                 timeout = value;
             }
         }
+#endif
 
-#if !SILVERLIGHT
+#if !(SILVERLIGHT || WINDOWS_PHONE)
         public ICredentials Credentials {
             get {
                 return credentials;
@@ -133,6 +145,7 @@ namespace Hprose.Client {
             }
         }
 
+#if !Core
         public bool KeepAlive {
             get {
                 return keepAlive;
@@ -181,21 +194,23 @@ namespace Hprose.Client {
 #endif
 #endif
 #endif
+#endif
 
         protected override object GetInvokeContext() {
             Uri uri = new Uri(url);
-#if !SILVERLIGHT || SL2
+#if !(SILVERLIGHT || WINDOWS_PHONE) || SL2
             HttpWebRequest request = WebRequest.Create(uri) as HttpWebRequest;
 #else
             HttpWebRequest request = WebRequestCreator.ClientHttp.Create(uri) as HttpWebRequest;
 #endif
-#if !SILVERLIGHT
+#if !(SILVERLIGHT || WINDOWS_PHONE)
+            request.Credentials = credentials;
+#if !Core
             request.Timeout = timeout;
             request.SendChunked = false;
 #if !(dotNET10 || dotNETCF10)
             request.ReadWriteTimeout = timeout;
 #endif
-            request.Credentials = credentials;
             request.ProtocolVersion = HttpVersion.Version11;
             if (proxy != null) {
                 request.Proxy = proxy;
@@ -210,6 +225,7 @@ namespace Hprose.Client {
             if (clientCertificates != null) {
                 request.ClientCertificates = clientCertificates;
             }
+#endif
 #endif
 #endif
 #endif
@@ -235,20 +251,34 @@ namespace Hprose.Client {
 
         protected override void SendData(Stream ostream, object context, bool success) {
             ostream.Flush();
+#if (dotNET10 || dotNET11 || dotNETCF10 || dotNETCF20)
             ostream.Close();
+#else
+            ostream.Dispose();
+#endif
         }
 
         protected override void EndInvoke(Stream istream, object context, bool success) {
             HttpClientContext clientContext = (HttpClientContext)context;
+#if !Core
             if (clientContext.timer != null) {
                 clientContext.timer.Dispose();
                 clientContext.timer = null;
             }
+#endif
+#if (dotNET10 || dotNET11 || dotNETCF10 || dotNETCF20)
             istream.Close();
+#else
+            istream.Dispose();
+#endif
+#if dotNET45
+            clientContext.response.Dispose();
+#else
             clientContext.response.Close();
+#endif
         }
 
-#if !SILVERLIGHT
+#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
         protected override Stream GetOutputStream(object context) {
             HttpWebRequest request = ((HttpClientContext)context).request;
             request.Method = "POST";
@@ -283,6 +313,7 @@ namespace Hprose.Client {
             return istream;
         }
 #endif
+#if !Core
         protected void TimeoutHandler(object state) {
             HttpClientContext context = (HttpClientContext)state;
             if (context.response == null) {
@@ -294,22 +325,24 @@ namespace Hprose.Client {
             context.timer.Dispose();
             context.timer = null;
         }
-
+#endif
         protected override IAsyncResult BeginGetOutputStream(AsyncCallback callback, object context) {
             HttpWebRequest request = ((HttpClientContext)context).request;
             request.Method = "POST";
             request.ContentType = "application/hprose";
+#if !Core
             ((HttpClientContext)context).timer = new Timer(new TimerCallback(TimeoutHandler),
                                                            context,
                                                            timeout,
                                                            0);
+#endif
             return request.BeginGetRequestStream(callback, context);
         }
 
         protected override Stream EndGetOutputStream(IAsyncResult asyncResult) {
             HttpClientContext context = (HttpClientContext)asyncResult.AsyncState;
             Stream ostream = context.request.EndGetRequestStream(asyncResult);
-#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT || WINDOWS_PHONE || Core)
             ostream = new BufferedStream(ostream);
 #endif
             return ostream;
@@ -329,10 +362,10 @@ namespace Hprose.Client {
             cookieManager.SetCookie(response.Headers.GetValues("Set-Cookie2"), request.RequestUri.Host);
 #endif
             Stream istream = response.GetResponseStream();
-#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT || WINDOWS_PHONE || Core)
             istream = new BufferedStream(istream);
 #endif
-#if !SILVERLIGHT
+#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
             string contentEncoding = response.ContentEncoding.ToLower();
             if (contentEncoding.IndexOf("deflate") > -1) {
                 istream = new DeflateStream(istream, CompressionMode.Decompress);

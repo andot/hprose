@@ -13,11 +13,11 @@
  *                                                        *
  * hprose InvocationHandler class for C#.                 *
  *                                                        *
- * LastModified: Jul 14, 2010                             *
+ * LastModified: Nov 6, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
-#if !(PocketPC || Smartphone || WindowsCE || WINDOWS_PHONE)
+#if !(PocketPC || Smartphone || WindowsCE || WINDOWS_PHONE || Core)
 using System;
 using System.Numerics;
 using System.Reflection;

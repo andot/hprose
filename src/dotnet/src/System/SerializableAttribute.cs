@@ -2,7 +2,7 @@
  * This library is free. You can redistribute it and/or modify it.
  */
 
-#if (PocketPC || Smartphone || WindowsCE || SILVERLIGHT) && !dotNETCF20 && !dotNETCF35
+#if (PocketPC || Smartphone || WindowsCE || SILVERLIGHT || WINDOWS_PHONE || Core) && !dotNETCF20 && !dotNETCF35
 namespace System {
     using System.Runtime.InteropServices;
 

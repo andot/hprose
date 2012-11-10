@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Numerics {
 
-    [Serializable, StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     public struct Complex : 
 #if !(dotNET10 || dotNET11 || dotNETCF10)
     IEquatable<Complex>, 

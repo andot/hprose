@@ -13,11 +13,11 @@
  *                                                        *
  * Object Unserializer class for C#.                      *
  *                                                        *
- * LastModified: Nov 6, 2012                              *
+ * LastModified: Nov 8, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT)
+#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -156,13 +156,13 @@ namespace Hprose.IO {
         }
 
         protected override void InitUnserializeDelegate(Type type, string[] names, DynamicMethod dynamicMethod) {
-            Dictionary<string, MemberInfo> fields = HproseHelper.GetFields(type);
+            Dictionary<string, FieldInfo> fields = HproseHelper.GetFields(type);
             ILGenerator gen = dynamicMethod.GetILGenerator();
             LocalBuilder e = gen.DeclareLocal(typeofException);
             int count = names.Length;
             for (int i = 0; i < count; i++) {
-                if (fields.ContainsKey(names[i])) {
-                    FieldInfo fieldInfo = (FieldInfo)fields[names[i]];
+                FieldInfo fieldInfo;
+                if (fields.TryGetValue(names[i], out fieldInfo)) {
                     Label exTryCatch = gen.BeginExceptionBlock();
                     if (type.IsValueType) {
                         gen.Emit(OpCodes.Ldarg_0);
@@ -207,13 +207,13 @@ namespace Hprose.IO {
         }
 
         protected override void InitUnserializeDelegate(Type type, string[] names, DynamicMethod dynamicMethod) {
-            Dictionary<string, MemberInfo> properties = HproseHelper.GetProperties(type);
+            Dictionary<string, PropertyInfo> properties = HproseHelper.GetProperties(type);
             ILGenerator gen = dynamicMethod.GetILGenerator();
             LocalBuilder e = gen.DeclareLocal(typeofException);
             int count = names.Length;
             for (int i = 0; i < count; i++) {
-                if (properties.ContainsKey(names[i])) {
-                    PropertyInfo propertyInfo = (PropertyInfo)properties[names[i]];
+                PropertyInfo propertyInfo;
+                if (properties.TryGetValue(names[i], out propertyInfo)) {
                     Label exTryCatch = gen.BeginExceptionBlock();
                     if (type.IsValueType) {
                         gen.Emit(OpCodes.Ldarg_0);
@@ -269,7 +269,8 @@ namespace Hprose.IO {
             LocalBuilder e = gen.DeclareLocal(typeofException);
             int count = names.Length;
             for (int i = 0; i < count; i++) {
-                if (members.ContainsKey(names[i])) {
+                MemberInfo memberInfo;
+                if (members.TryGetValue(names[i], out memberInfo)) {
                     Label exTryCatch = gen.BeginExceptionBlock();
                     if (type.IsValueType) {
                         gen.Emit(OpCodes.Ldarg_0);
@@ -282,14 +283,14 @@ namespace Hprose.IO {
                     gen.Emit(OpCodes.Ldc_I4, i);
                     gen.Emit(OpCodes.Ldelem_Ref);
                     if (members[names[i]] is FieldInfo) {
-                        FieldInfo fieldInfo = (FieldInfo)members[names[i]];
+                        FieldInfo fieldInfo = (FieldInfo)memberInfo;
                         if (fieldInfo.FieldType.IsValueType) {
                             gen.Emit(OpCodes.Unbox_Any, fieldInfo.FieldType);
                         }
                         gen.Emit(OpCodes.Stfld, fieldInfo);
                     }
                     else {
-                        PropertyInfo propertyInfo = (PropertyInfo)members[names[i]];
+                        PropertyInfo propertyInfo = (PropertyInfo)memberInfo;
                         if (propertyInfo.PropertyType.IsValueType) {
                             gen.Emit(OpCodes.Unbox_Any, propertyInfo.PropertyType);
                         }

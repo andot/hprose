@@ -4,13 +4,15 @@ if not exist bin mkdir bin
 if not exist bin\1.0 mkdir bin\1.0
 if not exist bin\1.1 mkdir bin\1.1
 if not exist bin\2.0 mkdir bin\2.0
-if not exist bin\2.0\x64 mkdir bin\2.0\x64
 if not exist bin\3.5 mkdir bin\3.5
-if not exist bin\3.5\x64 mkdir bin\3.5\x64
+if not exist bin\3.5\ClientProfile mkdir bin\3.5\ClientProfile
 if not exist bin\4.0 mkdir bin\4.0
-if not exist bin\4.0\x64 mkdir bin\4.0\x64
+if not exist bin\4.0\ClientProfile mkdir bin\4.0\ClientProfile
+if not exist bin\4.5 mkdir bin\4.5
+if not exist bin\4.5\Core mkdir bin\4.5\Core
 if not exist bin\WindowsPhone mkdir bin\WindowsPhone
 if not exist bin\WindowsPhone71 mkdir bin\WindowsPhone71
+if not exist bin\WindowsPhone8 mkdir bin\WindowsPhone8
 if not exist bin\SilverLight2 mkdir bin\SilverLight2
 if not exist bin\SilverLight3 mkdir bin\SilverLight3
 if not exist bin\SilverLight4 mkdir bin\SilverLight4
@@ -27,6 +29,7 @@ set SL4_PATH=C:\Program Files\Reference Assemblies\Microsoft\Framework\Silverlig
 set SL5_PATH=C:\Program Files\Reference Assemblies\Microsoft\Framework\Silverlight\v5.0
 set WP70_PATH=C:\Program Files\Reference Assemblies\Microsoft\Framework\Silverlight\v4.0\Profile\WindowsPhone
 set WP71_PATH=C:\Program Files\Reference Assemblies\Microsoft\Framework\Silverlight\v4.0\Profile\WindowsPhone71
+set WP80_PATH=C:\Program Files\Reference Assemblies\Microsoft\Framework\WindowsPhone\v8.0
 set CF_PATH=C:\Program Files\Microsoft.NET\SDK\CompactFramework
 if DEFINED ProgramFiles(x86) set SL2_PATH=C:\Program Files (x86)\Microsoft SDKs\Silverlight\v2.0\Reference Assemblies
 if DEFINED ProgramFiles(x86) set SL3_PATH=C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\Silverlight\v3.0
@@ -34,12 +37,10 @@ if DEFINED ProgramFiles(x86) set SL4_PATH=C:\Program Files (x86)\Reference Assem
 if DEFINED ProgramFiles(x86) set SL5_PATH=C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\Silverlight\v5.0
 if DEFINED ProgramFiles(x86) set WP70_PATH=C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\Silverlight\v4.0\Profile\WindowsPhone
 if DEFINED ProgramFiles(x86) set WP71_PATH=C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\Silverlight\v4.0\Profile\WindowsPhone71
+if DEFINED ProgramFiles(x86) set WP80_PATH=C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\WindowsPhone\v8.0
 if DEFINED ProgramFiles(x86) set CF_PATH=C:\Program Files (x86)\Microsoft.NET\SDK\CompactFramework
 
 set NUMERICS_SRC=
-set NUMERICS_SRC=%NUMERICS_SRC% src\System\NotImplementedException.cs
-set NUMERICS_SRC=%NUMERICS_SRC% src\System\SerializableAttribute.cs
-set NUMERICS_SRC=%NUMERICS_SRC% src\System\Runtime\Serialization\ISerializable.cs
 
 set NUMERICS_SRC=%NUMERICS_SRC% src\System\Numerics\BigInteger.cs
 set NUMERICS_SRC=%NUMERICS_SRC% src\System\Numerics\BigIntegerBuilder.cs
@@ -49,11 +50,11 @@ set NUMERICS_SRC=%NUMERICS_SRC% src\System\Numerics\Complex.cs
 set NUMERICS_SRC=%NUMERICS_SRC% src\System\Numerics\DoubleUlong.cs
 
 set HPROSE_SRC=
-set HPROSE_SRC=%HPROSE_SRC% src\System\Collections\ArrayList.cs
-set HPROSE_SRC=%HPROSE_SRC% src\System\Collections\Hashtable.cs
+set HPROSE_SRC=%HPROSE_SRC% src\System\NotImplementedException.cs
+set HPROSE_SRC=%HPROSE_SRC% src\System\SerializableAttribute.cs
+set HPROSE_SRC=%HPROSE_SRC% src\System\MissingMethodException.cs
 set HPROSE_SRC=%HPROSE_SRC% src\System\Collections\HashMap.cs
-set HPROSE_SRC=%HPROSE_SRC% src\System\Collections\Queue.cs
-set HPROSE_SRC=%HPROSE_SRC% src\System\Collections\Stack.cs
+set HPROSE_SRC=%HPROSE_SRC% src\System\Collections\Generic\HashMap.cs
 set HPROSE_SRC=%HPROSE_SRC% src\System\IO\InvalidDataException.cs
 set HPROSE_SRC=%HPROSE_SRC% src\System\IO\Compression\BlockType.cs
 set HPROSE_SRC=%HPROSE_SRC% src\System\IO\Compression\CompressionMode.cs
@@ -89,6 +90,7 @@ set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Reflection\Proxy.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Reflection\IInvocationHandler.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Reflection\CtorAccessor.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Reflection\PropertyAccessor.cs
+set HPROSE_SRC=%HPROSE_SRC% src\Hprose\IO\TypeEnum.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\IO\ClassManager.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\IO\ObjectSerializer.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\IO\ObjectUnserializer.cs
@@ -114,58 +116,109 @@ set NUMERICS_INFO= src\AssemblyInfo\System.Numerics\1.0\AssemblyInfo.cs
 set HPROSE_INFO= src\AssemblyInfo\Hprose\1.0\AssemblyInfo.cs
 set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\1.0\AssemblyInfo.cs
 C:\WINDOWS\Microsoft.NET\Framework\v1.0.3705\Csc.exe -out:bin\1.0\System.Numerics.dll -define:dotNET10 -filealign:512 -target:library -optimize+ -debug- %NUMERICS_SRC% %NUMERICS_INFO%
-C:\WINDOWS\Microsoft.NET\Framework\v1.0.3705\Csc.exe -out:bin\1.0\Hprose.dll -define:dotNET10 -filealign:512 -target:library -optimize+ -debug- %NUMERICS_REF% %HPROSE_SRC% %HPROSE_INFO%
 C:\WINDOWS\Microsoft.NET\Framework\v1.0.3705\Csc.exe -out:bin\1.0\Hprose.Client.dll -define:dotNET10;ClientOnly -filealign:512 -target:library -optimize+ -debug- %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
+C:\WINDOWS\Microsoft.NET\Framework\v1.0.3705\Csc.exe -out:bin\1.0\Hprose.dll -define:dotNET10 -filealign:512 -target:library -optimize+ -debug- %NUMERICS_REF% %HPROSE_SRC% %HPROSE_INFO%
 
 set NUMERICS_REF= -reference:"bin\1.1\System.Numerics.dll"
 set NUMERICS_INFO= src\AssemblyInfo\System.Numerics\1.1\AssemblyInfo.cs
 set HPROSE_INFO= src\AssemblyInfo\Hprose\1.1\AssemblyInfo.cs
 set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\1.1\AssemblyInfo.cs
 c:\WINDOWS\Microsoft.NET\Framework\v1.1.4322\Csc.exe -out:bin\1.1\System.Numerics.dll -define:dotNET11 -filealign:512 -target:library -optimize+ -debug- %NUMERICS_SRC% %NUMERICS_INFO%
-c:\WINDOWS\Microsoft.NET\Framework\v1.1.4322\Csc.exe -out:bin\1.1\Hprose.dll -define:dotNET11 -filealign:512 -target:library -optimize+ -debug- %NUMERICS_REF% %HPROSE_SRC% %HPROSE_INFO%
 c:\WINDOWS\Microsoft.NET\Framework\v1.1.4322\Csc.exe -out:bin\1.1\Hprose.Client.dll -define:dotNET11;ClientOnly -filealign:512 -target:library -optimize+ -debug- %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
+c:\WINDOWS\Microsoft.NET\Framework\v1.1.4322\Csc.exe -out:bin\1.1\Hprose.dll -define:dotNET11 -filealign:512 -target:library -optimize+ -debug- %NUMERICS_REF% %HPROSE_SRC% %HPROSE_INFO%
 
 set NUMERICS_REF= -reference:"bin\2.0\System.Numerics.dll"
 set NUMERICS_INFO= src\AssemblyInfo\System.Numerics\2.0\AssemblyInfo.cs
 set HPROSE_INFO= src\AssemblyInfo\Hprose\2.0\AssemblyInfo.cs
 set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\2.0\AssemblyInfo.cs
 c:\WINDOWS\Microsoft.NET\Framework\v2.0.50727\Csc.exe -out:bin\2.0\System.Numerics.dll -define:dotNET2 -filealign:512 -target:library -optimize+ -debug- %NUMERICS_SRC% %NUMERICS_INFO%
-c:\WINDOWS\Microsoft.NET\Framework\v2.0.50727\Csc.exe -out:bin\2.0\Hprose.dll -define:dotNET2 -filealign:512 -target:library -optimize+ -debug- %NUMERICS_REF% %HPROSE_SRC% %HPROSE_INFO%
 c:\WINDOWS\Microsoft.NET\Framework\v2.0.50727\Csc.exe -out:bin\2.0\Hprose.Client.dll -define:dotNET2;ClientOnly -filealign:512 -target:library -optimize+ -debug- %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
-
-set NUMERICS_REF= -reference:"bin\2.0\x64\System.Numerics.dll"
-c:\WINDOWS\Microsoft.NET\Framework64\v2.0.50727\Csc.exe -out:bin\2.0\x64\System.Numerics.dll -define:dotNET2 -filealign:512 -target:library -optimize+ -debug- %NUMERICS_SRC% %NUMERICS_INFO%
-c:\WINDOWS\Microsoft.NET\Framework64\v2.0.50727\Csc.exe -out:bin\2.0\x64\Hprose.dll -define:dotNET2 -filealign:512 -target:library -optimize+ -debug- %NUMERICS_REF% %HPROSE_SRC% %HPROSE_INFO%
-c:\WINDOWS\Microsoft.NET\Framework64\v2.0.50727\Csc.exe -out:bin\2.0\x64\Hprose.Client.dll -define:dotNET2;ClientOnly -filealign:512 -target:library -optimize+ -debug- %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
+c:\WINDOWS\Microsoft.NET\Framework\v2.0.50727\Csc.exe -out:bin\2.0\Hprose.dll -define:dotNET2 -filealign:512 -target:library -optimize+ -debug- %NUMERICS_REF% %HPROSE_SRC% %HPROSE_INFO%
 
 set NUMERICS_REF= -reference:"bin\3.5\System.Numerics.dll"
 set NUMERICS_INFO= src\AssemblyInfo\System.Numerics\3.5\AssemblyInfo.cs
 set HPROSE_INFO= src\AssemblyInfo\Hprose\3.5\AssemblyInfo.cs
 set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\3.5\AssemblyInfo.cs
 C:\WINDOWS\Microsoft.NET\Framework\v3.5\Csc.exe -out:bin\3.5\System.Numerics.dll -define:dotNET35 -filealign:512 -target:library -optimize+ -debug- %NUMERICS_SRC% %NUMERICS_INFO%
-C:\WINDOWS\Microsoft.NET\Framework\v3.5\Csc.exe -out:bin\3.5\Hprose.dll -define:dotNET35 -filealign:512 -target:library -optimize+ -debug- %NUMERICS_REF% %HPROSE_SRC% %HPROSE_INFO%
 C:\WINDOWS\Microsoft.NET\Framework\v3.5\Csc.exe -out:bin\3.5\Hprose.Client.dll -define:dotNET35;ClientOnly -filealign:512 -target:library -optimize+ -debug- %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
+C:\WINDOWS\Microsoft.NET\Framework\v3.5\Csc.exe -out:bin\3.5\Hprose.dll -define:dotNET35 -filealign:512 -target:library -optimize+ -debug- %NUMERICS_REF% %HPROSE_SRC% %HPROSE_INFO%
 
-set NUMERICS_REF= -reference:"bin\3.5\x64\System.Numerics.dll"
-C:\WINDOWS\Microsoft.NET\Framework64\v3.5\Csc.exe -out:bin\3.5\x64\System.Numerics.dll -define:dotNET35 -filealign:512 -target:library -optimize+ -debug- %NUMERICS_SRC% %NUMERICS_INFO%
-C:\WINDOWS\Microsoft.NET\Framework64\v3.5\Csc.exe -out:bin\3.5\x64\Hprose.dll -define:dotNET35 -filealign:512 -target:library -optimize+ -debug- %NUMERICS_REF% %HPROSE_SRC% %HPROSE_INFO%
-C:\WINDOWS\Microsoft.NET\Framework64\v3.5\Csc.exe -out:bin\3.5\x64\Hprose.Client.dll -define:dotNET35;ClientOnly -filealign:512 -target:library -optimize+ -debug- %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
+set DOTNET_PATH=C:\Program Files\Reference Assemblies\Microsoft\Framework\.NETFramework\v3.5\Profile\Client
+if DEFINED ProgramFiles(x86) set DOTNET_PATH=C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v3.5\Profile\Client
+set DOTNET_REFERENCE=
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\mscorlib.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Core.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Runtime.Serialization.dll"
+set NUMERICS_REF= -reference:"bin\3.5\ClientProfile\System.Numerics.dll"
+C:\WINDOWS\Microsoft.NET\Framework\v3.5\Csc.exe -out:bin\3.5\ClientProfile\System.Numerics.dll -define:dotNET35;ClientProfile -filealign:512 -target:library -noconfig -nostdlib+ -optimize+ -debug- %DOTNET_REFERENCE% %NUMERICS_SRC% %NUMERICS_INFO%
+C:\WINDOWS\Microsoft.NET\Framework\v3.5\Csc.exe -out:bin\3.5\ClientProfile\Hprose.Client.dll -define:dotNET35;ClientProfile;ClientOnly -filealign:512 -target:library -noconfig -nostdlib+ -optimize+ -debug- %DOTNET_REFERENCE% %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
+C:\WINDOWS\Microsoft.NET\Framework\v3.5\Csc.exe -out:bin\3.5\ClientProfile\Hprose.dll -define:dotNET35;ClientProfile -filealign:512 -target:library -noconfig -nostdlib+ -optimize+ -debug- %DOTNET_REFERENCE% %NUMERICS_REF% %HPROSE_SRC% %HPROSE_INFO%
 
-set NUMERICS_REF= -reference:"C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\System.Numerics.dll"
 set HPROSE_INFO= src\AssemblyInfo\Hprose\4.0\AssemblyInfo.cs
 set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\4.0\AssemblyInfo.cs
-C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\4.0\Hprose.dll -define:dotNET4 -filealign:512 -target:library -optimize+ -debug- %NUMERICS_REF% %HPROSE_SRC% %HPROSE_INFO%
-C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\4.0\Hprose.Client.dll -define:dotNET4;ClientOnly -filealign:512 -target:library -optimize+ -debug- %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
-set NUMERICS_REF= -reference:"C:\WINDOWS\Microsoft.NET\Framework64\v4.0.30319\System.Numerics.dll"
-C:\WINDOWS\Microsoft.NET\Framework64\v4.0.30319\Csc.exe -out:bin\4.0\x64\Hprose.dll -define:dotNET4 -filealign:512 -target:library -optimize+ -debug- %NUMERICS_REF% %HPROSE_SRC% %HPROSE_INFO%
-C:\WINDOWS\Microsoft.NET\Framework64\v4.0.30319\Csc.exe -out:bin\4.0\x64\Hprose.Client.dll -define:dotNET4;ClientOnly -filealign:512 -target:library -optimize+ -debug- %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
+set DOTNET_PATH=C:\Program Files\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0
+if DEFINED ProgramFiles(x86) set DOTNET_PATH=C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0
+set DOTNET_REFERENCE=
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\mscorlib.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Core.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Runtime.Serialization.dll"
+set NUMERICS_REF= -reference:"%DOTNET_PATH%\System.Numerics.dll"
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\4.0\Hprose.Client.dll -define:dotNET4;ClientOnly -filealign:512 -target:library -noconfig -nostdlib+ -optimize+ -debug- %DOTNET_REFERENCE% %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Web.dll"
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\4.0\Hprose.dll -define:dotNET4; -filealign:512 -target:library -noconfig -nostdlib+ -optimize+ -debug- %DOTNET_REFERENCE% %NUMERICS_REF% %HPROSE_SRC% %HPROSE_INFO%
+
+set DOTNET_PATH=C:\Program Files\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0\Profile\Client
+if DEFINED ProgramFiles(x86) set DOTNET_PATH=C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0\Profile\Client
+set DOTNET_REFERENCE=
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\mscorlib.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Core.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Runtime.Serialization.dll"
+set NUMERICS_REF= -reference:"%DOTNET_PATH%\System.Numerics.dll"
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\4.0\ClientProfile\Hprose.Client.dll -define:dotNET4;ClientProfile;ClientOnly -filealign:512 -target:library -noconfig -nostdlib+ -optimize+ -debug- %DOTNET_REFERENCE% %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\4.0\ClientProfile\Hprose.dll -define:dotNET4;ClientProfile -filealign:512 -target:library -noconfig -nostdlib+ -optimize+ -debug- %DOTNET_REFERENCE% %NUMERICS_REF% %HPROSE_SRC% %HPROSE_INFO%
+
+set HPROSE_INFO= src\AssemblyInfo\Hprose\4.5\AssemblyInfo.cs
+set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\4.5\AssemblyInfo.cs
+set DOTNET_PATH=C:\Program Files\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5
+if DEFINED ProgramFiles(x86) set DOTNET_PATH=C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5
+set DOTNET_REFERENCE=
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\mscorlib.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Core.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Runtime.Serialization.dll"
+set NUMERICS_REF= -reference:"%DOTNET_PATH%\System.Numerics.dll"
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\4.5\Hprose.Client.dll -define:dotNET4;dotNET45;ClientOnly -filealign:512 -target:library -noconfig -nostdlib+ -optimize+ -debug- %DOTNET_REFERENCE% %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Web.dll"
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\4.5\Hprose.dll -define:dotNET4;dotNET45 -filealign:512 -target:library -noconfig -nostdlib+ -optimize+ -debug- %DOTNET_REFERENCE% %NUMERICS_REF% %HPROSE_SRC% %HPROSE_INFO%
+
+set DOTNET_PATH=C:\Program Files\Reference Assemblies\Microsoft\Framework\.NETCore\v4.5
+if DEFINED ProgramFiles(x86) set DOTNET_PATH=C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETCore\v4.5
+set DOTNET_REFERENCE=
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Collections.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.IO.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Linq.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Net.Requests.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Net.Primitives.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Reflection.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Reflection.Extensions.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Reflection.Primitives.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Runtime.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Runtime.Extensions.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Runtime.Serialization.Primitives.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Threading.dll"
+set NUMERICS_REF= -reference:"%DOTNET_PATH%\System.Runtime.Numerics.dll"
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\4.5\Core\Hprose.Client.dll -define:dotNET4;dotNET45;Core;ClientOnly -filealign:512 -target:library -noconfig -nostdlib+ -optimize+ -debug- %DOTNET_REFERENCE% %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
+
 
 set SL_REFERENCE=
 set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL2_PATH%\mscorlib.dll"
 set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL2_PATH%\System.Core.dll"
-set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL2_PATH%\system.dll"
+set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL2_PATH%\System.dll"
 set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL2_PATH%\System.Net.dll"
-
+set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL2_PATH%\System.Runtime.Serialization.dll"
 set NUMERICS_REF= -reference:"bin\SilverLight2\System.Numerics.dll"
 set NUMERICS_INFO= src\AssemblyInfo\System.Numerics\SilverLight2\AssemblyInfo.cs
 set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\SilverLight2\AssemblyInfo.cs
@@ -175,10 +228,10 @@ C:\WINDOWS\Microsoft.NET\Framework\v2.0.50727\Csc.exe -out:bin\SilverLight2\Hpro
 set SL_REFERENCE=
 set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL3_PATH%\mscorlib.dll"
 set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL3_PATH%\System.Core.dll"
-set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL3_PATH%\system.dll"
+set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL3_PATH%\System.dll"
 set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL3_PATH%\System.Net.dll"
 set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL3_PATH%\System.Windows.dll"
-
+set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL3_PATH%\System.Runtime.Serialization.dll"
 set NUMERICS_REF= -reference:"bin\SilverLight3\System.Numerics.dll"
 set NUMERICS_INFO= src\AssemblyInfo\System.Numerics\SilverLight3\AssemblyInfo.cs
 set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\SilverLight3\AssemblyInfo.cs
@@ -188,10 +241,10 @@ C:\WINDOWS\Microsoft.NET\Framework\v3.5\Csc.exe -out:bin\SilverLight3\Hprose.Cli
 set SL_REFERENCE=
 set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL4_PATH%\mscorlib.dll"
 set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL4_PATH%\System.Core.dll"
-set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL4_PATH%\system.dll"
+set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL4_PATH%\System.dll"
 set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL4_PATH%\System.Net.dll"
 set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL4_PATH%\System.Windows.dll"
-
+set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL4_PATH%\System.Runtime.Serialization.dll"
 set NUMERICS_REF= -reference:"bin\SilverLight4\System.Numerics.dll"
 set NUMERICS_INFO= src\AssemblyInfo\System.Numerics\SilverLight4\AssemblyInfo.cs
 set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\SilverLight4\AssemblyInfo.cs
@@ -201,10 +254,10 @@ C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\SilverLight4\Hpro
 set SL_REFERENCE=
 set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL5_PATH%\mscorlib.dll"
 set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL5_PATH%\System.Core.dll"
-set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL5_PATH%\system.dll"
+set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL5_PATH%\System.dll"
 set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL5_PATH%\System.Net.dll"
 set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL5_PATH%\System.Windows.dll"
-
+set SL_REFERENCE=%SL_REFERENCE% -reference:"%SL5_PATH%\System.Runtime.Serialization.dll"
 set NUMERICS_REF= -reference:"bin\SilverLight5\System.Numerics.dll"
 set NUMERICS_INFO= src\AssemblyInfo\System.Numerics\SilverLight5\AssemblyInfo.cs
 set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\SilverLight5\AssemblyInfo.cs
@@ -214,34 +267,46 @@ C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\SilverLight5\Hpro
 set WP_REFERENCE=
 set WP_REFERENCE=%WP_REFERENCE% -reference:"%WP70_PATH%\mscorlib.dll"
 set WP_REFERENCE=%WP_REFERENCE% -reference:"%WP70_PATH%\System.Core.dll"
-set WP_REFERENCE=%WP_REFERENCE% -reference:"%WP70_PATH%\system.dll"
+set WP_REFERENCE=%WP_REFERENCE% -reference:"%WP70_PATH%\System.dll"
 set WP_REFERENCE=%WP_REFERENCE% -reference:"%WP70_PATH%\System.Net.dll"
 set WP_REFERENCE=%WP_REFERENCE% -reference:"%WP70_PATH%\System.Windows.dll"
-
+set WP_REFERENCE=%WP_REFERENCE% -reference:"%WP70_PATH%\System.Runtime.Serialization.dll"
 set NUMERICS_REF= -reference:"bin\WindowsPhone\System.Numerics.dll"
 set NUMERICS_INFO= src\AssemblyInfo\System.Numerics\WindowsPhone\AssemblyInfo.cs
 set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\WindowsPhone\AssemblyInfo.cs
-C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\WindowsPhone\System.Numerics.dll -define:SILVERLIGHT;SL4;WINDOWS_PHONE;WP70;ClientOnly -filealign:512 -target:library -noconfig -nostdlib+ -optimize+ -debug- %WP_REFERENCE% %NUMERICS_SRC% %NUMERICS_INFO%
-C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\WindowsPhone\Hprose.Client.dll -define:SILVERLIGHT;SL4;WINDOWS_PHONE;WP70;ClientOnly -filealign:512 -target:library -noconfig -nowarn:0444 -nostdlib+ -optimize+ -debug- %WP_REFERENCE% %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\WindowsPhone\System.Numerics.dll -define:WINDOWS_PHONE;WP70;ClientOnly -filealign:512 -target:library -noconfig -nostdlib+ -optimize+ -debug- %WP_REFERENCE% %NUMERICS_SRC% %NUMERICS_INFO%
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\WindowsPhone\Hprose.Client.dll -define:WINDOWS_PHONE;WP70;ClientOnly -filealign:512 -target:library -noconfig -nowarn:0444 -nostdlib+ -optimize+ -debug- %WP_REFERENCE% %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
 
 set WP_REFERENCE=
 set WP_REFERENCE=%WP_REFERENCE% -reference:"%WP71_PATH%\mscorlib.dll"
 set WP_REFERENCE=%WP_REFERENCE% -reference:"%WP71_PATH%\System.Core.dll"
-set WP_REFERENCE=%WP_REFERENCE% -reference:"%WP71_PATH%\system.dll"
+set WP_REFERENCE=%WP_REFERENCE% -reference:"%WP71_PATH%\System.dll"
 set WP_REFERENCE=%WP_REFERENCE% -reference:"%WP71_PATH%\System.Net.dll"
 set WP_REFERENCE=%WP_REFERENCE% -reference:"%WP71_PATH%\System.Windows.dll"
-
+set WP_REFERENCE=%WP_REFERENCE% -reference:"%WP71_PATH%\System.Runtime.Serialization.dll"
 set NUMERICS_REF= -reference:"bin\WindowsPhone71\System.Numerics.dll"
 set NUMERICS_INFO= src\AssemblyInfo\System.Numerics\WindowsPhone71\AssemblyInfo.cs
 set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\WindowsPhone71\AssemblyInfo.cs
-C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\WindowsPhone71\System.Numerics.dll -define:SILVERLIGHT;SL4;WINDOWS_PHONE;WP71;ClientOnly -filealign:512 -target:library -noconfig -nostdlib+ -optimize+ -debug- %WP_REFERENCE% %NUMERICS_SRC% %NUMERICS_INFO%
-C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\WindowsPhone71\Hprose.Client.dll -define:SILVERLIGHT;SL4;WINDOWS_PHONE;WP71;ClientOnly -filealign:512 -target:library -noconfig -nowarn:0444 -nostdlib+ -optimize+ -debug- %WP_REFERENCE% %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\WindowsPhone71\System.Numerics.dll -define:WINDOWS_PHONE;WP71;ClientOnly -filealign:512 -target:library -noconfig -nostdlib+ -optimize+ -debug- %WP_REFERENCE% %NUMERICS_SRC% %NUMERICS_INFO%
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\WindowsPhone71\Hprose.Client.dll -define:WINDOWS_PHONE;WP71;ClientOnly -filealign:512 -target:library -noconfig -nowarn:0444 -nostdlib+ -optimize+ -debug- %WP_REFERENCE% %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
+
+set WP_REFERENCE=
+set WP_REFERENCE=%WP_REFERENCE% -reference:"%WP80_PATH%\mscorlib.dll"
+set WP_REFERENCE=%WP_REFERENCE% -reference:"%WP80_PATH%\System.Core.dll"
+set WP_REFERENCE=%WP_REFERENCE% -reference:"%WP80_PATH%\System.dll"
+set WP_REFERENCE=%WP_REFERENCE% -reference:"%WP80_PATH%\System.Net.dll"
+set WP_REFERENCE=%WP_REFERENCE% -reference:"%WP80_PATH%\System.Windows.dll"
+set WP_REFERENCE=%WP_REFERENCE% -reference:"%WP80_PATH%\System.Runtime.Serialization.dll"
+set NUMERICS_REF= -reference:"bin\WindowsPhone8\System.Numerics.dll"
+set NUMERICS_INFO= src\AssemblyInfo\System.Numerics\WindowsPhone8\AssemblyInfo.cs
+set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\WindowsPhone8\AssemblyInfo.cs
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\WindowsPhone8\System.Numerics.dll -define:WINDOWS_PHONE;WP80;ClientOnly -filealign:512 -target:library -noconfig -nostdlib+ -optimize+ -debug- %WP_REFERENCE% %NUMERICS_SRC% %NUMERICS_INFO%
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\WindowsPhone8\Hprose.Client.dll -define:WINDOWS_PHONE;WP80;ClientOnly -filealign:512 -target:library -noconfig -nowarn:0444 -nostdlib+ -optimize+ -debug- %WP_REFERENCE% %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
 
 set CF_REFERENCE=
 set CF_REFERENCE=%CF_REFERENCE% -reference:"%CF_PATH%\v1.0\WindowsCE\mscorlib.dll"
 set CF_REFERENCE=%CF_REFERENCE% -reference:"%CF_PATH%\v1.0\WindowsCE\System.dll"
 set CF_REFERENCE=%CF_REFERENCE% -reference:"%CF_PATH%\v1.0\WindowsCE\System.Windows.Forms.dll"
-
 set NUMERICS_REF= -reference:"bin\CF1.0\System.Numerics.dll"
 set NUMERICS_INFO= src\AssemblyInfo\System.Numerics\CF1.0\AssemblyInfo.cs
 set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\CF1.0\AssemblyInfo.cs
@@ -252,7 +317,6 @@ set CF_REFERENCE=
 set CF_REFERENCE=%CF_REFERENCE% -reference:"%CF_PATH%\v2.0\WindowsCE\mscorlib.dll"
 set CF_REFERENCE=%CF_REFERENCE% -reference:"%CF_PATH%\v2.0\WindowsCE\System.dll"
 set CF_REFERENCE=%CF_REFERENCE% -reference:"%CF_PATH%\v2.0\WindowsCE\System.Windows.Forms.dll"
-
 set NUMERICS_REF= -reference:"bin\CF2.0\System.Numerics.dll"
 set NUMERICS_INFO= src\AssemblyInfo\System.Numerics\CF2.0\AssemblyInfo.cs
 set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\CF2.0\AssemblyInfo.cs
@@ -263,7 +327,6 @@ set CF_REFERENCE=
 set CF_REFERENCE=%CF_REFERENCE% -reference:"%CF_PATH%\v3.5\WindowsCE\mscorlib.dll"
 set CF_REFERENCE=%CF_REFERENCE% -reference:"%CF_PATH%\v3.5\WindowsCE\System.dll"
 set CF_REFERENCE=%CF_REFERENCE% -reference:"%CF_PATH%\v3.5\WindowsCE\System.Windows.Forms.dll"
-
 set NUMERICS_REF= -reference:"bin\CF3.5\System.Numerics.dll"
 set NUMERICS_INFO= src\AssemblyInfo\System.Numerics\CF3.5\AssemblyInfo.cs
 set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\CF3.5\AssemblyInfo.cs
@@ -289,6 +352,8 @@ call gmcs -out:bin\Mono2\Hprose.Client.dll -define:dotNET2;MONO;ClientOnly -noco
 set DHPARAMS_RESOURCE=
 set NUMERICS_SRC=
 set HPROSE_SRC=
+set DOTNET_PATH=
+set DOTNET_REFERENCE=
 set SL_REFERENCE=
 set SL2_PATH=
 set SL3_PATH=
@@ -297,6 +362,7 @@ set SL5_PATH=
 set WP_REFERENCE=
 set WP70_PATH=
 set WP71_PATH=
+set WP80_PATH=
 set CF_REFERENCE=
 set CF_PATH=
 set NUMERICS_REF=

@@ -13,11 +13,11 @@
  *                                                        *
  * hprose http service class for C#.                      *
  *                                                        *
- * LastModified: Nov 5, 2012                              *
+ * LastModified: Nov 6, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
-#if !ClientOnly
+#if !(ClientOnly || ClientProfile)
 using System;
 using System.IO;
 using System.IO.Compression;
