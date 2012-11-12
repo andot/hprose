@@ -38,8 +38,10 @@ namespace HproseClient
             user2.friends.Add(user1);
             users.Add(user1);
             users.Add(user2);
-            MemoryStream stream = (MemoryStream)client.Invoke("sendUsers", new object[] { users }, Hprose.Common.HproseResultMode.RawWithEndTag);
-            Console.WriteLine(UTF8Encoding.Default.GetString(stream.ToArray()));
+            Func<List<User>, List<User>> SendUsers = userList => client.Invoke<List<User>>("sendUsers", new object[] { userList });
+
+            MemoryStream stream = (MemoryStream)HproseFormatter.Serialize(SendUsers(users));
+            Console.WriteLine(Encoding.UTF8.GetString(stream.ToArray()));
             Console.ReadLine();
         }
     }

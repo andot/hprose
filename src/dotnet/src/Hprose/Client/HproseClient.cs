@@ -13,7 +13,7 @@
  *                                                        *
  * hprose client class for C#.                            *
  *                                                        *
- * LastModified: Nov 6, 2012                              *
+ * LastModified: Nov 12, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -27,18 +27,14 @@ using Hprose.Reflection;
 #endif
 
 namespace Hprose.Client {
-
     public abstract class HproseClient : IHproseInvoker {
         private static readonly object[] nullArgs = new object[0];
         public event HproseErrorEvent OnError = null;
-        private static SynchronizationContext syncContext = null;
+        private static SynchronizationContext syncContext = SynchronizationContext.Current;
         public static SynchronizationContext SynchronizationContext {
             get {
                 if (syncContext == null) {
-                    syncContext = SynchronizationContext.Current;
-                    if (syncContext == null) {
-                        syncContext = new SynchronizationContext();
-                    }
+                    syncContext = new SynchronizationContext();
                 }
                 return syncContext;
             }
@@ -46,17 +42,16 @@ namespace Hprose.Client {
                 syncContext = value;
             }
         }
-
         private abstract class AsyncInvokeContextBase {
-            protected HproseClient client;
+            private HproseClient client;
+            private Type returnType;
+            private bool byRef;
+            private HproseResultMode resultMode;
+            private SynchronizationContext syncContext;
             protected string functionName;
             protected object[] arguments;
             protected HproseErrorEvent errorCallback;
-            protected Type returnType;
-            protected bool byRef;
-            protected HproseResultMode resultMode;
             protected object result;
-            private readonly SynchronizationContext syncContext = HproseClient.SynchronizationContext;
             internal AsyncInvokeContextBase(HproseClient client, string functionName, object[] arguments, HproseErrorEvent errorCallback, Type returnType, bool byRef, HproseResultMode resultMode) {
                 this.client = client;
                 this.functionName = functionName;
@@ -65,6 +60,7 @@ namespace Hprose.Client {
                 this.returnType = returnType;
                 this.byRef = byRef;
                 this.resultMode = resultMode;
+                this.syncContext = HproseClient.SynchronizationContext;
             }
 
             internal void GetOutputStream(IAsyncResult asyncResult) {
@@ -268,7 +264,6 @@ namespace Hprose.Client {
         }
 #endif
 #endif
-#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
 #if !(dotNET10 || dotNET11 || dotNETCF10)
         public T Invoke<T>(string functionName) {
             return (T)Invoke(functionName, nullArgs, typeof(T), false, HproseResultMode.Normal);
@@ -317,7 +312,7 @@ namespace Hprose.Client {
         public object Invoke(string functionName, object[] arguments, bool byRef, HproseResultMode resultMode) {
             return Invoke(functionName, arguments, (Type)null, byRef, resultMode);
         }
-
+#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
         private object Invoke(string functionName, object[] arguments, Type returnType, bool byRef, HproseResultMode resultMode) {
             object context = GetInvokeContext();
             Stream ostream = GetOutputStream(context);
@@ -344,8 +339,39 @@ namespace Hprose.Client {
             }
             return result;
         }
+#else
+        private object Invoke(string functionName, object[] arguments, Type returnType, bool byRef, HproseResultMode resultMode) {
+            object result = null;
+            Exception error = null;
+            AutoResetEvent done = new AutoResetEvent(false);
+            Invoke(functionName, arguments,
+                delegate(object res, object[] args) {
+                    result = res;
+                    if (byRef) {
+                        int length = arguments.Length;
+                        if (length > args.Length) length = args.Length;
+                        Array.Copy(args, 0, arguments, 0, length);
+                    }
+                    done.Set();
+                },
+                delegate(string name, Exception e) {
+                    error = e;
+                    done.Set();
+                },
+                returnType, byRef, resultMode);
+            done.WaitOne();
+#if (SL2 || SL3)
+            done.Close();
+#else
+            done.Dispose();
+#endif
+            if (error != null) throw error;
+            return result;
+        }
 
 #endif
+
+
         private object DoInput(object[] arguments, Type returnType, HproseResultMode resultMode, Stream istream) {
             int tag;
             object result = null;
@@ -381,7 +407,9 @@ namespace Hprose.Client {
                         else {
                             hproseReader.Reset();
                             Object[] args = (Object[])hproseReader.ReadList(HproseHelper.typeofObjectArray);
-                            Array.Copy(args, 0, arguments, 0, arguments.Length);
+                            int length = arguments.Length;
+                            if (length > args.Length) length = args.Length;
+                            Array.Copy(args, 0, arguments, 0, length);
                         }
                         break;
                     case HproseTags.TagError:

@@ -1,7 +1,0 @@
-c:\users\andot\documents\visual studio 2012\Projects\HproseTest\HproseServer\bin\Debug\HproseServer.exe.config
-c:\users\andot\documents\visual studio 2012\Projects\HproseTest\HproseServer\bin\Debug\HproseServer.exe
-c:\users\andot\documents\visual studio 2012\Projects\HproseTest\HproseServer\bin\Debug\HproseServer.pdb
-c:\users\andot\documents\visual studio 2012\Projects\HproseTest\HproseServer\bin\Debug\Hprose.dll
-c:\users\andot\documents\visual studio 2012\Projects\HproseTest\HproseServer\obj\Debug\HproseServer.exe
-c:\users\andot\documents\visual studio 2012\Projects\HproseTest\HproseServer\obj\Debug\HproseServer.pdb
-c:\users\andot\documents\visual studio 2012\Projects\HproseTest\HproseServer\obj\Debug\HproseServer.csprojResolveAssemblyReference.cache

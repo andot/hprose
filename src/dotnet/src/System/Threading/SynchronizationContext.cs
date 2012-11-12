@@ -5,7 +5,7 @@ using System.Windows.Forms;
 namespace System.Threading {
 	public delegate void SendOrPostCallback(object state);
     public class SynchronizationContext {
-        private static SynchronizationContext currentContext;
+        private static SynchronizationContext currentContext = new WindowsFormsSynchronizationContext();
 
         public SynchronizationContext() {
         }
@@ -28,9 +28,6 @@ namespace System.Threading {
 
         public static SynchronizationContext Current {
             get {
-                if (currentContext == null) {
-                    currentContext = new WindowsFormsSynchronizationContext();
-                }
                 return currentContext;
             }
         }

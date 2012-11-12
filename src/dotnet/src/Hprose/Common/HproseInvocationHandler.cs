@@ -26,26 +26,6 @@ using Hprose.IO;
 using Hprose.Reflection;
 
 namespace Hprose.Common {
-#if !(dotNET10 || dotNET11 || dotNETCF10)
-    interface IInvokeHelper {
-        void Invoke(IHproseInvoker client, string functionName, object[] args, Delegate callback, bool byRef);
-    }
-
-    class InvokeHelper<T> : IInvokeHelper {
-        public void Invoke(IHproseInvoker client, string functionName, object[] args, Delegate callback, bool byRef) {
-            client.Invoke<T>(functionName, args, (HproseCallback<T>)callback, byRef);
-        }
-    }
-    interface IInvokeHelper1 {
-        void Invoke(IHproseInvoker client, string functionName, object[] args, Delegate callback);
-    }
-
-    class InvokeHelper1<T> : IInvokeHelper1 {
-        public void Invoke(IHproseInvoker client, string functionName, object[] args, Delegate callback) {
-            client.Invoke<T>(functionName, args, (HproseCallback1<T>)callback);
-        }
-    }
-#endif
     class HproseInvocationHandler : IInvocationHandler {
         private IHproseInvoker client;
         private String ns;

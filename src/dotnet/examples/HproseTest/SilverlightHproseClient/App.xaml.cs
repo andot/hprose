@@ -40,32 +40,6 @@ namespace SilverlightHproseClient
         {
             this.RootVisual = new MainPage();
             ClassManager.Register(typeof(User), "User");
-            HproseHttpClient client = new HproseHttpClient("http://localhost:2012/");
-            List<User> users = new List<User>();
-            User user1 = new User();
-            user1.name = "李雷";
-            user1.age = 32;
-            user1.male = true;
-            user1.friends = new List<User>();
-            User user2 = new User();
-            user2.name = "韩梅梅";
-            user2.age = 31;
-            user2.male = false;
-            user2.friends = new List<User>();
-            user1.friends.Add(user2);
-            user2.friends.Add(user1);
-            users.Add(user1);
-            users.Add(user2);
-            MemoryStream stream = HproseFormatter.Serialize(users);
-            byte[] bytes = stream.ToArray();
-            System.Windows.Browser.HtmlPage.Window.Eval("alert('" + UTF8Encoding.UTF8.GetString(bytes, 0, bytes.Length) + "')");
-            client.Invoke<List<User>>("sendUsers", new object[] { users }, result =>
-            {
-                MemoryStream s = HproseFormatter.Serialize(result);
-                byte[] b = stream.ToArray();
-                System.Windows.Browser.HtmlPage.Window.Eval("alert('" + UTF8Encoding.UTF8.GetString(b, 0, bytes.Length) + "')");
-            });
-
 
         }
 
