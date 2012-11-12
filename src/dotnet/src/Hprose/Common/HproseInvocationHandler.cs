@@ -13,7 +13,7 @@
  *                                                        *
  * hprose InvocationHandler class for C#.                 *
  *                                                        *
- * LastModified: Nov 6, 2012                              *
+ * LastModified: Nov 13, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -115,15 +115,11 @@ namespace Hprose.Common {
                 return null;
             }
 #endif
-#if SILVERLIGHT
-            throw new HproseException("SilverLight do not support synchronous invoke.");
-#else
             object result = client.Invoke(functionName, args, returnType, byRef);
             if (result is Exception) {
                 throw (Exception)result;
             }
             return result;
-#endif
         }
     }
 }
