@@ -14,7 +14,7 @@
  *                                                        *
  * hprose http client for ASP.                            *
  *                                                        *
- * LastModified: Jun 22, 2011                             *
+ * LastModified: Nov 18, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -120,7 +120,7 @@ var HproseHttpClient = (function () {
                 var names = [];
                 for (var name in s_cookieManager[domain]) {
                     var cookie = s_cookieManager[domain][name];
-                    if (cookie['EXPIRES'] && ((new Date()).getTime() > cookie['EXPIRES'].getTime())) {
+                    if (cookie['EXPIRES'] && ((new Date()).getTime() > cookie['EXPIRES'])) {
                         names.push(name);
                     }
                     else if (path.indexOf(cookie['PATH']) === 0) {
