@@ -15,7 +15,7 @@
  *                                                        *
  * hprose common unit for delphi.                         *
  *                                                        *
- * LastModified: Jun 22, 2011                             *
+ * LastModified: Nov 25, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -139,7 +139,11 @@ type
 
   TListClass = class of TAbstractList;
 
-  TArrayList = class(TAbstractList)
+  IArrayList = interface(IList)
+  ['{0D12803C-6B0B-476B-A9E3-C219BF651BD1}']
+  end;
+
+  TArrayList = class(TAbstractList, IArrayList)
   private
     FCount: Integer;
     FCapacity: Integer;
@@ -215,7 +219,11 @@ type
     property Capacity: Integer read FCapacity write SetCapacity;
   end;
 
-  THashedList = class(TArrayList)
+  IHashedList = interface(IArrayList)
+  ['{D2392014-7451-40EF-809E-D25BFB0FA661}']
+  end;
+
+  THashedList = class(TArrayList, IHashedList)
   private
     FHashBucket: THashBucket;
   protected
@@ -241,7 +249,11 @@ type
     procedure Insert(Index: Integer; const Value: Variant); override;
   end;
 
-  TCaseInsensitiveHashedList = class(THashedList)
+  ICaseInsensitiveHashedList = interface(IHashedList)
+  ['{9ECA15EC-9486-4BF6-AADD-BBD88890FAF8}']
+  end;
+
+  TCaseInsensitiveHashedList = class(THashedList, ICaseInsensitiveHashedList)
   protected
     function HashOf(const Value: Variant): Integer; override;
     function IndexCompare(Index: Integer; const Value: Variant):
@@ -356,7 +368,11 @@ type
     do those operations. But THashMap needs less memory than
     THashedMap. }
 
-  THashMap = class(TAbstractMap)
+  IHashMap = interface(IMap)
+  ['{B66C3C4F-3FBB-41FF-B0FA-5E73D87CBE56}']
+  end;
+
+  THashMap = class(TAbstractMap, IHashMap)
   private
     FKeys: IList;
     FValues: IList;
@@ -401,19 +417,31 @@ type
   { function ContainsValue is an O(1) operation in THashedMap,
     and property Key is also an O(1) operation. }
 
-  THashedMap = class(THashMap)
+  IHashedMap = interface(IHashMap)
+  ['{D2598919-07DA-401A-A971-7DB8624E2660}']
+  end;
+
+  THashedMap = class(THashMap, IHashedMap)
   public
     constructor Create(Capacity: Integer = 16; Factor: Single = 0.75;
       Sync: Boolean = True; ReadWriteSync: Boolean = False); override;
   end;
 
-  TCaseInsensitiveHashMap = class(THashMap)
+  ICaseInsensitiveHashMap = interface(IHashMap)
+  ['{B8F8E5E7-53ED-48BE-B171-2EA2548FCAC7}']
+  end;
+
+  TCaseInsensitiveHashMap = class(THashMap, ICaseInsensitiveHashMap)
   public
     constructor Create(Capacity: Integer = 16; Factor: Single = 0.75;
       Sync: Boolean = True; ReadWriteSync: Boolean = False); override;
   end;
 
-  TCaseInsensitiveHashedMap = class(THashMap)
+  ICaseInsensitiveHashedMap = interface(IHashMap)
+  ['{839DCE08-95DE-462F-B59D-16BA89D3DC6B}']
+  end;
+
+  TCaseInsensitiveHashedMap = class(THashMap, ICaseInsensitiveHashedMap)
   public
     constructor Create(Capacity: Integer = 16; Factor: Single = 0.75;
       Sync: Boolean = True; ReadWriteSync: Boolean = False); override;
@@ -479,15 +507,22 @@ function VarIsList(const Value: Variant): Boolean;
 function VarIsMap(const Value: Variant): Boolean;
 function VarToList(const Value: Variant): IList;
 function VarToMap(const Value: Variant): IMap;
+function VarIsIntf(const Value: Variant): Boolean; overload;
+function VarIsIntf(const Value: Variant; const IID: TGUID): Boolean; overload;
+function VarToIntf(const Value: Variant; const IID: TGUID; out AIntf): Boolean;
+function IntfToObj(const Intf: IInterface): TInterfacedObject;
 
 function CopyVarRec(const Item: TVarRec): TVarRec;
 function CreateConstArray(const Elements: array of const): TConstArray;
 procedure FinalizeVarRec(var Item: TVarRec);
 procedure FinalizeConstArray(var Arr: TConstArray);
 
-procedure RegisterClass(const AClass: TClass; const Alias: string);
+procedure RegisterClass(const AClass: TClass; const Alias: string); overload;
+procedure RegisterClass(const AClass: TInterfacedClass; const IID: TGUID; const Alias: string); overload;
 function GetClassByAlias(const Alias: string): TClass;
 function GetClassAlias(const AClass: TClass): string;
+function GetClassByInterface(const IID: TGUID): TClass;
+function GetInterfaceByClass(const AClass: TClass): TGUID;
 
 function ListSplit(ListClass: TListClass; Str: string;
   const Separator: string = ','; Limit: Integer = 0; TrimItem: Boolean = False;
@@ -814,6 +849,54 @@ begin
     VarToObj(Value, TAbstractMap, Result)
   else
     Error(reInvalidCast);
+end;
+
+function VarIsIntf(const Value: Variant): Boolean;
+begin
+  Result := (FindVarData(Value)^.VType = varUnknown);
+end;
+
+function VarIsIntf(const Value: Variant; const IID: TGUID): Boolean;
+begin
+  Result := (FindVarData(Value)^.VType = varUnknown) and
+            Supports(IInterface(Value), IID);
+end;
+
+function VarToIntf(const Value: Variant; const IID: TGUID; out AIntf): Boolean;
+begin
+  if FindVarData(Value)^.VType = varUnknown then
+    Result := Supports(IInterface(Value), IID, AIntf)
+  else
+    Result := false;
+end;
+
+{$ifndef DELPHI2010_UP}
+type
+  TObjectFromInterfaceStub = packed record
+    Stub: cardinal;
+    case integer of
+    0: (ShortJmp: ShortInt);
+    1: (LongJmp: LongInt)
+  end;
+  PObjectFromInterfaceStub = ^TObjectFromInterfaceStub;
+{$endif}
+
+function IntfToObj(const Intf: IInterface): TInterfacedObject; {$ifdef Supports_Inline}inline;{$endif}
+begin
+  if Intf = nil then
+    result := nil
+  else begin
+{$ifdef DELPHI2010_UP}
+    result := Intf as TObject; // slower but always working
+{$else}
+    with PObjectFromInterfaceStub(PPointer(PPointer(Intf)^)^)^ do
+    case Stub of
+      $04244483: result := Pointer(Integer(Intf) + ShortJmp);
+      $04244481: result := Pointer(Integer(Intf) + LongJmp);
+      else       result := nil;
+    end;
+{$endif}
+  end;
 end;
 
 const
@@ -2443,6 +2526,7 @@ end;
 
 var
   HproseClassMap: IMap;
+  HproseInterfaceMap: IMap;
 
 procedure RegisterClass(const AClass: TClass; const Alias: string);
 begin
@@ -2455,6 +2539,17 @@ begin
 {$ENDIF}
   finally
     HproseClassMap.EndWrite;
+  end;
+end;
+
+procedure RegisterClass(const AClass: TInterfacedClass; const IID: TGUID; const Alias: string);
+begin
+  HproseInterfaceMap.BeginWrite;
+  RegisterClass(AClass, Alias);
+  try
+    HproseInterfaceMap[Alias] := GuidToString(IID);
+  finally
+    HproseInterfaceMap.EndWrite;
   end;
 end;
 
@@ -2486,6 +2581,26 @@ begin
   end;
 end;
 
+function GetClassByInterface(const IID: TGUID): TClass;
+begin
+  HproseInterfaceMap.BeginRead;
+  try
+    Result := GetClassByAlias(HproseInterfaceMap.Key[GuidToString(IID)]);
+  finally
+    HproseInterfaceMap.EndRead;
+  end;
+end;
+
+function GetInterfaceByClass(const AClass: TClass): TGUID;
+begin
+  HproseInterfaceMap.BeginRead;
+  try
+    Result := StringToGuid(HproseInterfaceMap[GetClassAlias(AClass)]);
+  finally
+    HproseInterfaceMap.EndRead;
+  end;
+end;
+
 function ListSplit(ListClass: TListClass; Str: string;
   const Separator: string; Limit: Integer; TrimItem: Boolean;
   SkipEmptyItem: Boolean): IList;
@@ -2505,6 +2620,16 @@ end;
 initialization
 
   HproseClassMap := TCaseInsensitiveHashedMap.Create(False, True);
+  HproseInterfaceMap := TCaseInsensitiveHashedMap.Create(False, True);
+  RegisterClass(TArrayList, IList, '!List');
+  RegisterClass(TArrayList, IArrayList, '!ArrayList');
+  RegisterClass(THashedList, IHashedList, '!HashedList');
+  RegisterClass(TCaseInsensitiveHashedList, ICaseInsensitiveHashedList, '!CaseInsensitiveHashedList');
+  RegisterClass(THashMap, IMap, '!Map');
+  RegisterClass(THashMap, IHashMap, '!HashMap');
+  RegisterClass(THashedMap, IHashedMap, '!HashedMap');
+  RegisterClass(TCaseInsensitiveHashMap, ICaseInsensitiveHashMap, '!CaseInsensitiveHashMap');
+  RegisterClass(TCaseInsensitiveHashedMap, ICaseInsensitiveHashedMap, '!CaseInsensitiveHashedMap');
 {$IFNDEF FPC}
   VarObjectType := TVarObjectType.Create;
   varObject := VarObjectType.VarType;

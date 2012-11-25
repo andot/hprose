@@ -15,7 +15,7 @@
  *                                                        *
  * hprose io unit for delphi.                             *
  *                                                        *
- * LastModified: Nov 2, 2012                              *
+ * LastModified: Nov 25, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -114,7 +114,6 @@ type
     procedure ReadComplexRaw(const OStream: TStream; Tag: AnsiChar);
   public
     constructor Create(AStream: TStream);
-    destructor Destroy; override;
     function Unserialize(VType: TVarType = varVariant;
       AClass: TClass = nil): Variant; overload;
     procedure CheckTag(expectTag: AnsiChar);
@@ -205,6 +204,7 @@ type
     procedure WriteList(AList: IList; CheckRef: Boolean = True);
     procedure WriteMap(AMap: IMap; CheckRef: Boolean = True);
     procedure WriteObject(AObject: TObject; CheckRef: Boolean = True);
+    procedure WriteInterface(Intf: IInterface; CheckRef: Boolean = True);
     procedure Reset;
     property Stream: TStream read FStream;
   end;
@@ -647,7 +647,9 @@ begin
     tkVariant:
       SetVariantProp(Instance, PropInfo, Value);
     tkInterface:
-      SetInterfaceProp(Instance, PropInfo, Value);
+      begin
+        SetInterfaceProp(Instance, PropInfo, Value);
+      end;
     tkDynArray:
       begin
         DynArray := nil; // "nil array"
@@ -743,8 +745,10 @@ begin
 {$ENDIF}
       tkInt64:
         Result := varInt64;
-      tkInterface:
+      tkInterface: begin
         Result := varUnknown;
+        AClass := GetClassByInterface(TypeData.Guid);
+      end;
       tkDynArray:
         Result := TypeData.varType;
       tkClass:
@@ -806,19 +810,6 @@ begin
   FRefList := TArrayList.Create(False);
   FClassRefList := TArrayList.Create(False);
   FAttrRefMap := THashMap.Create(False);
-end;
-
-destructor THproseReader.Destroy;
-var
-  I: Integer;
-  R: Variant;
-begin
-  FAttrRefMap.Clear;
-  for I := 0 to FClassRefList.Count - 1 do begin
-    R := FClassRefList[I];
-    if VarIsObj(R) then VarToObj(R).Free;
-  end;
-  inherited Destroy;
 end;
 
 function THproseReader.ReadBoolean: Boolean;
@@ -1825,7 +1816,10 @@ begin
   end
   else begin
     Instance := AClass.Create;
-    Result := ObjToVar(Instance);
+    if AClass.InheritsFrom(TInterfacedObject) then
+      Result := IInterface(TInterfacedObject(Instance))
+    else
+      Result := ObjToVar(Instance);
     FRefList.Add(Result);
     for I := 0 to Count - 1 do begin
       Key := ReadString;
@@ -1847,7 +1841,9 @@ var
   AttrNames: IList;
   I, Count: Integer;
   Cls: TClass;
+  IID: TGUID;
   AMap: IMap;
+  Intf: IInterface;
   Instance: TObject;
   PropInfo: PPropInfo;
   VType: TVarType;
@@ -1871,17 +1867,19 @@ begin
 {$ELSE}
     Cls := TClass(Integer(C));
 {$ENDIF}
-    if (AClass = nil) or Cls.InheritsFrom(AClass) then Instance := Cls.Create;
+    if (AClass = nil) or Cls.InheritsFrom(AClass) then AClass := Cls;
   end;
-  if (Instance = nil) and (AClass <> nil) then Instance := AClass.Create;
-  if Instance = nil then begin
-    AMap := TCaseInsensitiveHashMap.Create(Count);
-    Result := AMap;
-    FRefList.Add(Result);
-    for I := 0 to Count - 1 do AMap[AttrNames[I]] := Unserialize;
-  end
-  else begin
-    Result := ObjToVar(Instance);
+  if AClass <> nil then begin
+    if AClass.InheritsFrom(TInterfacedObject) then begin
+      IID := GetInterfaceByClass(AClass);
+      Supports(TInterfacedClass(AClass).Create, IID, Intf);
+      Result := Intf;
+      Instance := IntfToObj(Intf);
+    end
+    else begin
+      Instance := AClass.Create;
+      Result := ObjToVar(Instance);
+    end;
     FRefList.Add(Result);
     for I := 0 to Count - 1 do begin
       PropInfo := GetPropInfo(Instance, AttrNames[I]);
@@ -1891,6 +1889,12 @@ begin
       end
       else Unserialize;
     end;
+  end
+  else begin
+    AMap := TCaseInsensitiveHashMap.Create(Count);
+    Result := AMap;
+    FRefList.Add(Result);
+    for I := 0 to Count - 1 do AMap[AttrNames[I]] := Unserialize;
   end;
   CheckTag(HproseTagClosebrace);  
 end;
@@ -2118,7 +2122,7 @@ begin
   CheckTag(HproseTagClosebrace);
   AClass := GetClassByAlias(ClassName);
   if AClass = nil then begin
-    Key := ObjToVar(TObject.Create());
+    Key := IInterface(TInterfacedObject.Create());
     FClassRefList.Add(Key);
     FAttrRefMap[Key] := AttrNames;
   end
@@ -2217,12 +2221,14 @@ begin
       varDate:
         WriteDateTime(Value);
       varUnknown:
-        if Supports(IInterface(Value), IList, AList) then
+        if (IInterface(Value) = nil) then
+          WriteNull
+        else if Supports(IInterface(Value), IList, AList) then
           WriteList(AList)
         else if Supports(IInterface(Value), IMap, AMap) then
           WriteMap(AMap)
         else
-          WriteNull;
+          WriteInterface(IInterface(Value));
     else
       if VType and varArray = varArray then
         if (VType and varTypeMask = varByte) and
@@ -2273,7 +2279,9 @@ begin
       vtString:        WriteString(WideString(VString^));
       vtPChar:         WriteString(WideString(AnsiString(VPChar)));
       vtObject:
-        if Supports(VObject, IList, AList) then
+        if VObject = nil then
+          WriteNull
+        else if Supports(VObject, IList, AList) then
           WriteList(AList)
         else if Supports(VObject, IMap, AMap) then
           WriteMap(AMap)
@@ -2285,12 +2293,14 @@ begin
       vtCurrency:      WriteCurrency(VCurrency^);
       vtVariant:       Serialize(VVariant^);
       vtInterface:
-        if Supports(IList(VInterface), IList, AList) then
+        if IInterface(VInterface) = nil then
+          WriteNull
+        else if Supports(IInterface(VInterface), IList, AList) then
           WriteList(AList)
-        else if Supports(IMap(VInterface), IMap, AMap) then
+        else if Supports(IInterface(VInterface), IMap, AMap) then
           WriteMap(AMap)
         else
-          WriteNull;
+          WriteInterface(IInterface(VInterface));
       vtWideString:    WriteString(WideString(VWideString));
       vtInt64:         WriteLong(VInt64^);
 {$IFDEF FPC}
@@ -2766,6 +2776,40 @@ begin
       Exit;
     end;
   end;
+  ClassRef := FClassRefList.IndexOf(AObject.ClassName);
+  if ClassRef < 0 then ClassRef := WriteClass(AObject);
+  FRefList.Add(Value);
+  FStream.WriteBuffer(HproseTagObject, 1);
+  WriteRawByteString(RawByteString(IntToStr(ClassRef)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  PropCount := GetStoredPropList(AObject, PropList);
+  try
+    for I := 0 to PropCount - 1 do
+      Serialize(GetPropValue(AObject, PropList^[I]));
+  finally
+    FreeMem(PropList);
+  end;
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteInterface(Intf: IInterface;
+  CheckRef: Boolean);
+var
+  Ref, ClassRef: Integer;
+  Value: Variant;
+  AObject: TObject;
+  PropList: PPropList;
+  PropCount, I: Integer;
+begin
+  Value := Intf;
+  if CheckRef then begin
+    Ref := FRefList.IndexOf(Value);
+    if Ref > -1 then begin
+      WriteRef(Ref);
+      Exit;
+    end;
+  end;
+  AObject := IntfToObj(Intf);
   ClassRef := FClassRefList.IndexOf(AObject.ClassName);
   if ClassRef < 0 then ClassRef := WriteClass(AObject);
   FRefList.Add(Value);
