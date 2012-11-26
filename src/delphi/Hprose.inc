@@ -101,6 +101,7 @@
 
 {$ifdef DELPHI2009_UP}
   {$define Supports_Unicode}
+  {$define Supports_Generics}
 {$endif}
 
 // Free Pascal
