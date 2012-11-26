@@ -101,6 +101,7 @@ var HproseHttpServer = (function() {
             var m_crossDomain = false;
             var m_P3P = false;
             var m_get = true;
+            var m_filter = null;
             var m_input;
             var m_output;
             var m_reader;
@@ -120,9 +121,17 @@ var HproseHttpServer = (function() {
                 Session.CodePage = 65001;
                 Response.CodePage = 65001;
                 Response.Buffer = true;
+                if (m_filter) {
+                    str = m_filter.inputFilter(str);
+                }
                 m_input = new r_HproseStringInputStream(str);
                 m_reader = new r_HproseReader(m_input, vbs);
-                m_output = Response;
+                if (m_filter) {
+                    m_output = r_HproseStringOutputStream();
+                }
+                else {
+                    m_output = Response;
+                }
                 m_writer = new r_HproseWriter(m_output);
             }
 
@@ -153,13 +162,13 @@ var HproseHttpServer = (function() {
                 if (this.onSendError != null) {
                     this.onSendError(error);
                 }
-                m_output.Clear();
+                m_output.clear();
                 m_writer.reset();
                 m_output.write(r_HproseTags.TagError);
                 m_writer.writeString(error, false);
                 m_output.write(r_HproseTags.TagEnd);
             }
-            
+
             function doInvoke() {
                 do {
                     m_reader.reset();
@@ -248,15 +257,15 @@ var HproseHttpServer = (function() {
                     sendError.call(this, e.description);
                 }
             }
-            
+
             this.addMissingFunction = function(func, resultMode) {
                 this.addFunction(func, "*", resultMode);
             }
-            
+
             this.addMissingMethod = function(method, obj, context, resultMode) {
                 this.addMethod(method, obj, "*", context, resultMode);
             }
-            
+
             this.addFunction = function(func, alias, resultMode) {
                 if (resultMode === undefined) {
                     resultMode = r_HproseResultMode.Normal;
@@ -286,7 +295,7 @@ var HproseHttpServer = (function() {
                     throw new r_HproseException('Argument alias is not a string');
                 }
             }
-            
+
             this.addFunctions = function(functions, aliases, resultMode) {
                 if (r_HproseUtil.isVBArray(functions)) {
                     functions = r_HproseUtil.toJSArray(functions);
@@ -305,7 +314,7 @@ var HproseHttpServer = (function() {
                 }
                 for (i = 0; i < count; i++) this.addFunction(functions[i], aliases[i], resultMode);
             }
-            
+
             this.addMethod = function(method, obj, alias, context, resultMode) {
                 if (obj === undefined || obj == null) {
                     this.addFunction(method, alias, resultMode);
@@ -342,7 +351,7 @@ var HproseHttpServer = (function() {
                     throw new r_HproseException('Argument alias is not a string');
                 }
             }
-            
+
             this.addMethods = function(methods, obj, aliases, context, resultMode) {
                 if (r_HproseUtil.isVBArray(methods)) {
                     methods = r_HproseUtil.toJSArray(methods);
@@ -411,13 +420,16 @@ var HproseHttpServer = (function() {
                 m_get = enable;
             }
             this.handle = function() {
-                Response.Clear();
+                Response.clear();
                 sendHeader.apply(this);
                 if ((Request.ServerVariables("REQUEST_METHOD") == 'GET') && m_get) {
                     doFunctionList();
                 }
                 else if (Request.ServerVariables("REQUEST_METHOD") == 'POST') {
                     handle.apply(this);
+                }
+                if (m_filter) {
+                    Response.write(m_filter.outputFilter(m_output.toString()));
                 }
                 Response.end();
             }
