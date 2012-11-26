@@ -15,7 +15,7 @@
  *                                                        *
  * Hprose IO library for AAuto Quicker                    *
  *                                                        *
- * LastModified: Nov 17, 2012                             *
+ * LastModified: Nov 26, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -32,13 +32,6 @@ namespace hprose.io {
     var istime = ..time.istime;
     var NaN = -(0/0);
     var Inf = -(..math.log(0));
-    
-    namespace HproseResultMode {
-        _Normal = 0;
-        _Serialized = 1;
-        _Raw = 2;
-        _RawWithEndTag = 3;
-    }
     
     class InputStream {
         ctor(buf) {

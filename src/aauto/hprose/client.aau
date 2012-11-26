@@ -15,10 +15,12 @@
  *                                                        *
  * Hprose Client library for AAuto Quicker                *
  *                                                        *
- * LastModified: Nov 18, 2012                             *
+ * LastModified: Nov 26, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
+
+import hprose.common;
 import hprose.io;
 import inet.whttp;
 import inet.urlpart;
@@ -26,7 +28,8 @@ import web.script;
 import thread;
 
 namespace hprose.client {
-    var HproseResultMode = ..hprose.io.HproseResultMode;
+    var HproseResultMode = ..hprose.common.HproseResultMode;
+    var HproseFilter = ..hprose.common.HproseFilter;
     var InputStream = ..hprose.io.InputStream;
     var OutputStream = ..hprose.io.OutputStream;
     var HproseReader = ..hprose.io.HproseReader;
@@ -57,6 +60,7 @@ namespace hprose.client {
     }
     class HproseClient {
         ctor() {
+            this.filter = HproseFilter();
             this.onerror = function(){};
             this.send = null;
             _expectTags = HproseTags._TagResult ++
@@ -108,8 +112,8 @@ namespace hprose.client {
             var result = null;
             var errstr = null;
             try {
-                var data = tostring(stream);
-                data = this.send(data);
+                var data = this.filter.outputFilter(tostring(stream));
+                data = this.filter.inputFilter(this.send(data));
                 stream = InputStream(data);
                 if (resultMode == HproseResultMode._RawWithEndTag) {
                     result = stream.readall();
