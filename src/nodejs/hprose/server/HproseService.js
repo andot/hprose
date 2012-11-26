@@ -14,7 +14,7 @@
  *                                                        *
  * HproseService for Node.js.                             *
  *                                                        *
- * LastModified: Nov 5, 2012                              *
+ * LastModified: Nov 26, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -23,7 +23,12 @@ var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 var HproseResultMode = require('../common/HproseResultMode.js');
 var HproseException = require('../common/HproseException.js');
+var HproseFilter = require('../common/HproseFilter.js');
 var HproseTags = require('../io/HproseTags.js');
+var HproseBufferInputStream = require('../io/HproseBufferInputStream.js');
+var HproseBufferOutputStream = require('../io/HproseBufferOutputStream.js');
+var HproseReader = require('../io/HproseReader.js');
+var HproseWriter = (typeof(Map) === 'undefined') ? require('../io/HproseWriter.js') : require('../io/HproseWriter2.js');
 
 function callService(method, obj, context, args) {
     var result;
@@ -53,12 +58,16 @@ function getFuncName(func, obj) {
     return funcname;
 }
 
-function getCallback(functionName, functionArgs, byref, resultMode, async, writer, request, response) {
+function responseEnd(writer, response, filter) {
+    response.emit("end", filter.outputFilter(writer.stream.toBuffer()));
+}
+
+function getCallback(functionName, functionArgs, byref, resultMode, async, writer, request, response, filter) {
     return function(result) {
         this.emit('afterInvoke', functionName, functionArgs, byref, result, request);
         if (resultMode == HproseResultMode.RawWithEndTag) {
             writer.stream.write(result);
-            response.emit("end");
+            responseEnd(writer, response, filter);
             return true;
         }
         else if (resultMode == HproseResultMode.Raw) {
@@ -81,7 +90,7 @@ function getCallback(functionName, functionArgs, byref, resultMode, async, write
         }
         if (async) {
             writer.stream.write(HproseTags.TagEnd);
-            response.emit("end");
+            responseEnd(writer, response, filter);
         }
         return false;
     };
@@ -91,6 +100,7 @@ function HproseService() {
     var m_functions = {};
     var m_funcNames = {};
     var m_debug = false;
+    var m_filter = new HproseFilter();
 
     EventEmitter.call(this);
     
@@ -102,7 +112,7 @@ function HproseService() {
         writer.stream.write(HproseTags.TagError);
         writer.writeString(e.message, false);
         writer.stream.write(HproseTags.TagEnd);
-        response.emit("end");
+        responseEnd(writer, response, m_filter);
     }
 
     this._doInvoke = function(reader, writer, request, response) {
@@ -130,7 +140,7 @@ function HproseService() {
             }
             this.emit('beforeInvoke', functionName, functionArgs, byref, request);
             if (func = m_functions[aliasName]) {
-                callback = getCallback(functionName, functionArgs, byref, func.resultMode, func.async, writer, request, response).bind(this);
+                callback = getCallback(functionName, functionArgs, byref, func.resultMode, func.async, writer, request, response, m_filter).bind(this);
                 if (func.async) {
                     async = true;
                     callService(func.method, func.obj, func.context, functionArgs.concat([callback]));
@@ -140,7 +150,7 @@ function HproseService() {
                 }
             }
             else if (func = m_functions['*']) {
-                callback = getCallback(functionName, functionArgs, byref, func.resultMode, func.async, writer, request, response).bind(this);
+                callback = getCallback(functionName, functionArgs, byref, func.resultMode, func.async, writer, request, response, m_filter).bind(this);
                 if (func.async) {
                     async = true;
                     callService(func.method, func.obj, func.context, [functionName, functionArgs, callback]);
@@ -155,19 +165,22 @@ function HproseService() {
         } while (tag == HproseTags.TagCall);
         if (!async) {
             writer.stream.write(HproseTags.TagEnd);
-            response.emit("end");
+            responseEnd(writer, response, m_filter);
         }
     }
     
-    this._doFunctionList = function(writer, response) {
+    this._doFunctionList = function(response) {
+        var writer = new HproseWriter(new HproseBufferOutputStream());
         var functions = arrayValues(m_funcNames);
         writer.stream.write(HproseTags.TagFunctions);
         writer.writeList(functions, false);
         writer.stream.write(HproseTags.TagEnd);
-        response.emit("end");
+        responseEnd(writer, response, m_filter);
     }
 
-    this._handle = function(reader, writer, request, response) {
+    this._handle = function(data, request, response) {
+        var reader = new HproseReader(new HproseBufferInputStream(m_filter.inputFilter(data)));
+        var writer = new HproseWriter(new HproseBufferOutputStream());
         try {
             var exceptTags = [HproseTags.TagCall, HproseTags.TagEnd];
             var tag = reader.checkTags(exceptTags);
@@ -328,6 +341,9 @@ function HproseService() {
         this.addInstanceMethods(obj, aliasPrefix, context, resultMode, true);
     }
 
+    this.setFilter = function(filter) {
+        m_filter = filter;
+    }
 }
 
 util.inherits(HproseService, EventEmitter);

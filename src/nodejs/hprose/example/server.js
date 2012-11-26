@@ -13,6 +13,7 @@ var server = new HproseHttpServer();
 server.setCrossDomainEnabled(true);
 server.addFunction(hello);
 server.addAsyncFunction(asyncHello);
+server.setCrossDomainXmlFile('./crossdomain.xml');
 server.on('sendError', function(message) {
     console.log(message);
 });

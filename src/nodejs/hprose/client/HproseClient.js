@@ -14,7 +14,7 @@
  *                                                        *
  * HproseClient for Node.js.                              *
  *                                                        *
- * LastModified: Nov 2, 2012                              *
+ * LastModified: Nov 26, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -23,6 +23,7 @@ var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 var HproseResultMode = require('../common/HproseResultMode.js');
 var HproseException = require('../common/HproseException.js');
+var HproseFilter = require('../common/HproseFilter.js');
 var HproseBufferInputStream = require('../io/HproseBufferInputStream.js');
 var HproseBufferOutputStream = require('../io/HproseBufferOutputStream.js');
 var HproseReader = require('../io/HproseReader.js');
@@ -47,6 +48,7 @@ function HproseClient() {
     var self = this;
     var m_timeout = 30000;
     var m_proxy;
+    var m_filter = new HproseFilter();
     if (typeof(Proxy) != 'undefined') m_proxy = Proxy.create(new HproseProxy(invoke.bind(this)));
     
     function invoke(func, args) {
@@ -161,11 +163,12 @@ function HproseClient() {
                 self.emit('error', func, e);
             }
         });
-        var data = stream.toBuffer();
+        var data = m_filter.outputFilter(stream.toBuffer());
         this.emit('senddata', invoker, data);
     }
     
     function getResult(data, func, args, resultMode) {
+        data = m_filter.inputFilter(data);
         var result;
         if (resultMode == HproseResultMode.RawWithEndTag) {
             result = data;
@@ -224,6 +227,9 @@ function HproseClient() {
     }
     this.useService = function() {
         return m_proxy;
+    }
+    this.setFilter = function(filter) {
+        m_filter = filter;
     }
 }
 

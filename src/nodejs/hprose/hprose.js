@@ -14,7 +14,7 @@
  *                                                        *
  * hprose for Node.js.                                    *
  *                                                        *
- * LastModified: Oct 29, 2012                             *
+ * LastModified: Nov 26, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -23,6 +23,7 @@ module.exports = {
     common: {
         HproseException: require('./common/HproseException.js'),
         HproseResultMode: require('./common/HproseResultMode.js'),
+        HproseFilter: require('./common/HproseFilter.js'),
     },
     io: {
         ClassManager: (typeof(Map) === 'undefined') ? require('./io/ClassManager.js') : require('./io/ClassManager2.js'),

@@ -14,22 +14,64 @@
  *                                                        *
  * HproseHttpService for Node.js.                         *
  *                                                        *
- * LastModified: Nov 5, 2012                              *
+ * LastModified: Nov 26, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 
+var fs = require("fs");
 var util = require("util");
 var HproseService = require("./HproseService.js");
-var HproseBufferInputStream = require('../io/HproseBufferInputStream.js');
-var HproseBufferOutputStream = require('../io/HproseBufferOutputStream.js');
-var HproseReader = require('../io/HproseReader.js');
-var HproseWriter = (typeof(Map) === 'undefined') ? require('../io/HproseWriter.js') : require('../io/HproseWriter2.js');
 
 function HproseHttpService() {
     var m_crossDomain = false;
     var m_P3P = false;
     var m_get = true;
+    var m_crossDomainXmlFile = null;
+    var m_crossDomainXmlContent = null;
+    var m_clientAccessPolicyXmlFile = null;
+    var m_clientAccessPolicyXmlContent = null;
+    var m_lastModified = (new Date()).toUTCString();
+    var m_etag = Math.floor(Math.random() * 2147483647).toString(16) + ":" + (Math.random() * 2147483647).toFixed(0);
+
+    var crossDomainXmlHandler = function(request, response) {
+        if (request.url.toLowerCase() == "/crossdomain.xml") {
+            if (request.headers["if-modified-since"] == m_lastModified &&
+                request.headers["if-none-match"] == m_etag) {
+                response.statusCode = 304;
+            }
+            else {
+                response.setHeader("Last-Modified", m_lastModified);
+                response.setHeader("Etag", m_etag);
+                response.setHeader("Content-Type", "text/xml");
+                response.setHeader("Content-Length", m_crossDomainXmlContent.length);
+                response.write(m_crossDomainXmlContent);
+            }
+            response.end();
+            return true;
+        }
+        return false;
+    }
+
+    var clientAccessPolicyXmlHandler = function(request, response) {
+        if (request.url.toLowerCase() == "/clientaccesspolicy.xml") {
+            if (request.headers["if-modified-since"] == m_lastModified &&
+                request.headers["if-none-match"] == m_etag) {
+                response.statusCode = 304;
+            }
+            else {
+                response.setHeader("Last-Modified", m_lastModified);
+                response.setHeader("Etag", m_etag);
+                response.setHeader("Content-Type", "text/xml");
+                response.setHeader("Content-Length", m_crossDomainXmlContent.length);
+                response.write(m_clientAccessPolicyXmlContent);
+            }
+            response.end();
+            return true;
+        }
+        return false;
+    }
+
     HproseService.call(this);
 
     // protected methods
@@ -58,23 +100,66 @@ function HproseHttpService() {
     this.isCrossDomainEnabled = function() {
         return m_crossDomain;
     }
+
     this.setCrossDomainEnabled = function(enable) {
         if (enable === undefined) enable = true;
         m_crossDomain = enable;
     }
+
     this.isP3PEnabled = function() {
         return m_P3P;
     }
+
     this.setP3PEnabled = function(enable) {
         if (enable === undefined) enable = true;
         m_P3P = enable;
     }
+
     this.isGetEnabled = function() {
         return m_get;
     }
+
     this.setGetEnabled = function(enable) {
         if (enable === undefined) enable = true;
         m_get = enable;
+    }
+
+    this.getCrossDomainXmlFile = function() {
+        return m_crossDomainXmlFile;
+    }
+
+    this.setCrossDomainXmlFile = function(value) {
+        m_crossDomainXmlFile = value;
+        m_crossDomainXmlContent = fs.readFileSync(m_crossDomainXmlFile);
+    }
+
+    this.getCrossDomainXmlContent = function() {
+        return m_crossDomainXmlContent;
+    }
+
+    this.setCrossDomainXmlContent = function(value) {
+        m_crossDomainXmlFile = null;
+        if (typeof(value) == "string") value = new Buffer(value);
+        m_crossDomainXmlContent = value;
+    }
+
+    this.getClientAccessPolicyXmlFile = function() {
+        return m_clientAccessPolicyXmlFile;
+    }
+
+    this.setClientAccessPolicyXmlFile = function(value) {
+        m_clientAccessPolicyXmlFile = value;
+        m_clientAccessPolicyXmlContent = fs.readFileSync(m_clientAccessPolicyXmlFile);
+    }
+
+    this.getClientAccessPolicyXmlContent = function() {
+        return m_clientAccessPolicyXmlContent;
+    }
+
+    this.setClientAccessPolicyXmlContent = function(value) {
+        m_clientAccessPolicyXmlFile = null;
+        if (typeof(value) == "string") value = new Buffer(value);
+        m_clientAccessPolicyXmlContent = value;
     }
 
     this.handle = function(request, response) {
@@ -85,18 +170,19 @@ function HproseHttpService() {
             bufferLength += chunk.length;
         });
         request.on("end", function() {
-            var data = Buffer.concat(bufferList, bufferLength);
-            var reader = new HproseReader(new HproseBufferInputStream(data));
-            var writer = new HproseWriter(new HproseBufferOutputStream());
+            if (m_clientAccessPolicyXmlContent != null && clientAccessPolicyXmlHandler(request, response)) return;
+            if (m_crossDomainXmlContent != null && crossDomainXmlHandler(request, response)) return;
             this._sendHeader(request, response);
-            response.on("end", function () {
-                response.end(writer.stream.toBuffer());
+            response.on("end", function (data) {
+                response.setHeader("Content-Length", data.length);
+                response.end(data);
             });
             if ((request.method == "GET") && m_get) {
-                this._doFunctionList(writer, response);
+                this._doFunctionList(response);
             }
             else if (request.method == "POST") {
-                this._handle(reader, writer, request, response);
+                var data = Buffer.concat(bufferList, bufferLength);
+                this._handle(data, request, response);
             }
         }.bind(this));
     }
