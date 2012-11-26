@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http invoker class for ActionScript 3.0.        *
  *                                                        *
- * LastModified: Jul 6, 2011                              *
+ * LastModified: Nov 26, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -47,9 +47,10 @@ package hprose.client {
         private var completed:Boolean;
         private var timeout:uint;
         private var resultMode:int;
+        private var filter:IHproseFilter;
         private var httpRequest:HproseHttpRequest = null;
         
-        public function HproseHttpInvoker(url:String, header:Object, func:String, args:Array, byref:Boolean, callback:Function, errorHandler:Function, progressHandler:Function, dispatcher:EventDispatcher, timeout:uint, resultMode:int) {
+        public function HproseHttpInvoker(url:String, header:Object, func:String, args:Array, byref:Boolean, callback:Function, errorHandler:Function, progressHandler:Function, dispatcher:EventDispatcher, timeout:uint, resultMode:int, filter:IHproseFilter) {
             this.url = url;
             this.header = header;
             this.func = func;
@@ -58,6 +59,7 @@ package hprose.client {
             this.dispatcher = dispatcher;
             this.timeout = timeout;
             this.resultMode = resultMode;
+            this.filter = filter;
             if (callback != null) {
                 start(callback, errorHandler, progressHandler);
             }
@@ -104,16 +106,13 @@ package hprose.client {
             completed = false;
             var invoker:HproseHttpInvoker = this;
             httpRequest = HproseHttpRequest.post(url, header, stream,
-            function(stream:IDataInput):void {
+            function(stream:ByteArray):void {
                 if (invoker.resultMode == HproseResultMode.RawWithEndTag ||
                     invoker.resultMode == HproseResultMode.Raw) {
-                    var data:ByteArray = new ByteArray();
-                    stream.readBytes(data);
-                    data.position = 0;
                     if (invoker.resultMode == HproseResultMode.Raw) {
-                        data.length = data.length - 1;
+                        stream.length = stream.length - 1;
                     }
-                    invoker.result = data;
+                    invoker.result = stream;
                 }
                 else {
                     var reader:HproseReader = new HproseReader(stream);
@@ -179,7 +178,7 @@ package hprose.client {
                 else if (invoker.hasEventListener(ProgressEvent.PROGRESS)) {
                     invoker.dispatchEvent(event);
                 }
-            }, timeout);
+            }, timeout, filter);
             return this;
         }
 

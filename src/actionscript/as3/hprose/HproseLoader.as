@@ -13,7 +13,7 @@
  *                                                        *
  * hprose class loader for ActionScript 3.0.              *
  *                                                        *
- * LastModified: Jun 22, 2011                             *
+ * LastModified: Jun 26, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -25,6 +25,8 @@ package hprose {
     import hprose.client.HproseSuccessEvent;
     import hprose.client.HproseErrorEvent;
     import hprose.client.HproseResultMode;
+    import hprose.client.HproseFilter;
+    import hprose.client.IHproseFilter;
     import hprose.io.ClassManager;
     import hprose.io.HproseException;
     import hprose.io.HproseFormatter;
@@ -42,6 +44,8 @@ package hprose {
             hprose.client.HproseSuccessEvent;
             hprose.client.HproseErrorEvent;
             hprose.client.HproseResultMode;
+            hprose.client.HproseFilter;
+            hprose.client.IHproseFilter;
             hprose.io.ClassManager;
             hprose.io.HproseException;
             hprose.io.HproseFormatter;

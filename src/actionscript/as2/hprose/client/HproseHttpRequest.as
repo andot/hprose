@@ -13,20 +13,21 @@
  *                                                        *
  * hprose http request class for ActionScript 2.0.        *
  *                                                        *
- * LastModified: Jun 6, 2010                              *
+ * LastModified: Nov 26, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
+import hprose.client.IHproseFilter;
 import hprose.io.HproseFormatter;
 import hprose.io.HproseTags;
 
 class hprose.client.HproseHttpRequest {
-    public static function post(url, header, data, callback, timeout) {
+    public static function post(url:String, header:Object, data:String, callback:Function, timeout:Number, filter:IHproseFilter) {
         var lv:LoadVars = new LoadVars();
         var timeoutID:Number;
         lv.contentType = "application/hprose; charset=utf-8";
         lv.toString = function () {
-            return data;
+            return filter.outputFilter(data);
         }
         for (var name:String in header) {
             lv.addRequestHeader(name, header[name]);
@@ -34,7 +35,7 @@ class hprose.client.HproseHttpRequest {
         lv.onData = function (src:String) {
             _global.clearTimeout(timeoutID);
             if (src) {
-                callback(src);
+                callback(filter.inputFilter(src));
             }
             else {
                 callback(this.error);

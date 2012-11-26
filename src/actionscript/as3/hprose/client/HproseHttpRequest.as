@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http request class for ActionScript 3.0.        *
  *                                                        *
- * LastModified: Jun 8, 2010                              *
+ * LastModified: Nov 26, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -34,24 +34,26 @@ package hprose.client {
     import flash.utils.Timer;
     
     public final class HproseHttpRequest {
-        public static function post(url:String, header:Object, data:ByteArray, callback:Function, progress:Function, timeout:uint):HproseHttpRequest {            
+        public static function post(url:String, header:Object, data:ByteArray, callback:Function, progress:Function, timeout:uint, filter:IHproseFilter):HproseHttpRequest {            
             var request:URLRequest = new URLRequest(url);
             request.method = URLRequestMethod.POST;
             request.contentType = "application/hprose";
-            request.data = data;
+            request.data = filter.outputFilter(data);
             for (var name:String in header) {
                 request.requestHeaders.push(new URLRequestHeader(name, header[name]));
             }
-            return new HproseHttpRequest(request, callback, progress, timeout);
+            return new HproseHttpRequest(request, callback, progress, timeout, filter);
         }
         private const stream:URLStream = new URLStream();
         private var callback:Function;
         private var progress:Function;
         private var timer:Timer;
         private var complete:Boolean = false;
-        public function HproseHttpRequest(request:URLRequest, callback:Function, progress:Function, timeout:uint) {
+        private var filter:IHproseFilter;
+        public function HproseHttpRequest(request:URLRequest, callback:Function, progress:Function, timeout:uint, filter:IHproseFilter) {
             this.callback = callback;
             this.progress = progress;
+            this.filter = filter;
             timer = new Timer(timeout);
             stream.addEventListener(Event.COMPLETE, completeHandler);
             stream.addEventListener(HTTPStatusEvent.HTTP_STATUS, httpStatusHandler);
@@ -66,6 +68,10 @@ package hprose.client {
             if (!complete) {
                 complete = true;
                 timer.stop();
+                var data:ByteArray = new ByteArray();
+                stream.readBytes(data);
+                data.position = 0;
+                data = filter.inputFilter(data);
                 callback(stream);
             }
         }

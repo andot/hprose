@@ -13,12 +13,14 @@
  *                                                        *
  * hprose http client class for ActionScript 2.0.         *
  *                                                        *
- * LastModified: Jun 22, 2011                             *
+ * LastModified: Jun 26, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 import hprose.client.HproseHttpInvoker;
 import hprose.client.HproseResultMode;
+import hprose.client.IHproseFilter;
+import hprose.client.HproseFilter;
 import hprose.io.HproseException;
 
 dynamic class hprose.client.HproseHttpClient extends Object {
@@ -27,12 +29,14 @@ dynamic class hprose.client.HproseHttpClient extends Object {
     private var onerror:Array;
     public var byref:Boolean;
     public var timeout:Number;
+    public var filter:IHproseFilter;
     public function HproseHttpClient(url:String) {
         this.url = null;
         this.header = {};
         this.onerror = [];
         this.byref = false;
         this.timeout = 30000;
+        this.filter = new HproseFilter();
         if (url) {
             useService(url);
         }
@@ -227,6 +231,6 @@ dynamic class hprose.client.HproseHttpClient extends Object {
             callback = args[count - 1];
             args.length--;
         }
-        return new HproseHttpInvoker(url, header, func, args, byref, callback, errorHandler, progressHandler, onerror, timeout, resultMode);
+        return new HproseHttpInvoker(url, header, func, args, byref, callback, errorHandler, progressHandler, onerror, timeout, resultMode, filter);
     }
 }

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http invoker class for ActionScript 2.0.        *
  *                                                        *
- * LastModified: Jun 22, 2011                             *
+ * LastModified: Jun 26, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -22,6 +22,7 @@ import hprose.client.HproseSuccessEvent;
 import hprose.client.HproseErrorEvent;
 import hprose.client.HproseProgressEvent;
 import hprose.client.HproseResultMode;
+import hprose.client.IHproseFilter;
 import hprose.io.HproseException;
 import hprose.io.HproseReader;
 import hprose.io.HproseStringInputStream;
@@ -46,8 +47,9 @@ class hprose.client.HproseHttpInvoker {
     private var lv:LoadVars;
     private var timeout:Number;
     private var resultMode:Number;
+    private var filter:IHproseFilter;
     
-    public function HproseHttpInvoker(url:String, header:Object, func:String, args:Array, byref:Boolean, callback:Function, errorHandler:Function, progressHandler:Function, onerror:Array, timeout:Number, resultMode:Number) {
+    public function HproseHttpInvoker(url:String, header:Object, func:String, args:Array, byref:Boolean, callback:Function, errorHandler:Function, progressHandler:Function, onerror:Array, timeout:Number, resultMode:Number, filter:IHproseFilter) {
         this.url = url;
         this.header = header;
         this.func = func;
@@ -64,6 +66,7 @@ class hprose.client.HproseHttpInvoker {
         this.lv = null;
         this.timeout = timeout;
         this.resultMode = resultMode;
+        this.filter = filter;
         if (callback) {
             start(callback, errorHandler, progressHandler);
         }
@@ -230,7 +233,7 @@ class hprose.client.HproseHttpInvoker {
                     invoker.fireEvent(invoker.globalonerror, new HproseErrorEvent(invoker.func, error));
                 }
             }
-        }, this.timeout);
+        }, timeout, filter);
         function doprogress() {
             var byteloaded = invoker.lv.getBytesLoaded();
             var bytetotal = invoker.lv.getBytesTotal();
