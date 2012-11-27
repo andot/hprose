@@ -15,7 +15,7 @@
  *                                                        *
  * hprose common unit for delphi.                         *
  *                                                        *
- * LastModified: Nov 25, 2012                             *
+ * LastModified: Nov 27, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -44,6 +44,12 @@ type
   EHproseException = class(Exception);
   EHashBucketError = class(Exception);
   EArrayListError = class(Exception);
+
+  IHproseFilter = interface
+  ['{4AD7CCF2-1121-4CA4-92A7-5704C5956BA4}']
+    function InputFilter(const data: TStream): TStream;
+    function OutputFilter(const data: TStream): TStream;
+  end;
 
   IListEnumerator = interface
   ['{767477EC-A143-4DC6-9962-A6837A7AEC01}']

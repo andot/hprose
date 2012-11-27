@@ -15,7 +15,7 @@
  *                                                        *
  * hprose client unit for delphi.                         *
  *                                                        *
- * LastModified: Aug 7, 2010                              *
+ * LastModified: Nov 27, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -40,6 +40,7 @@ type
   THproseClient = class(TComponent)
   private
     FErrorEvent: THproseErrorEvent;
+    FFilter: IHproseFilter;
   protected
     FUri: string;
     function GetInvokeContext: TObject; virtual; abstract;
@@ -58,6 +59,7 @@ type
     procedure DoOutput(const Name: string; const Args: TVariants;
       ByRef: Boolean; OutStream: TStream); overload;
   public
+    constructor Create(AOwner: TComponent); override;
     procedure UseService(const AUri: string); virtual;
     // Synchronous invoke
     function Invoke(const Name: string;
@@ -209,6 +211,7 @@ type
       overload; virtual;
   published
     property Uri: string read FUri write UseService;
+    property Filter: IHproseFilter read FFilter write FFilter;
     // This event OnError only for asynchronous invoke
     property OnError: THproseErrorEvent read FErrorEvent write FErrorEvent;
   end;
@@ -269,6 +272,13 @@ type
 
 { THproseClient }
 
+constructor THproseClient.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  FErrorEvent := nil;
+  FFilter := nil;
+end;
+
 function THproseClient.DoInput(var Args: TVariants;
   ReturnType: TVarType; ReturnClass: TClass; ResultMode: THproseResultMode;
   InStream: TStream): Variant;
@@ -277,6 +287,7 @@ var
   HproseReader: THproseReader;
   Stream: TMemoryStream;
 begin
+  if Assigned(FFilter) then InStream := FFilter.InputFilter(InStream);
   Result := Null;
   if (ResultMode = RawWithEndTag) or
     (ResultMode = Raw) then begin
@@ -328,6 +339,7 @@ var
   HproseReader: THproseReader;
   Stream: TMemoryStream;
 begin
+  if Assigned(FFilter) then InStream := FFilter.InputFilter(InStream);
   Result := Null;
   if (ResultMode = RawWithEndTag) or
     (ResultMode = Raw) then begin
@@ -371,6 +383,7 @@ procedure THproseClient.DoOutput(const Name: string;
 var
   HproseWriter: THproseWriter;
 begin
+  if Assigned(FFilter) then OutStream := FFilter.OutputFilter(OutStream);
   HproseWriter := THproseWriter.Create(OutStream);
   try
     OutStream.Write(HproseTagCall, 1);
@@ -390,6 +403,7 @@ procedure THproseClient.DoOutput(const Name: string;
 var
   HproseWriter: THproseWriter;
 begin
+  if Assigned(FFilter) then OutStream := FFilter.OutputFilter(OutStream);
   HproseWriter := THproseWriter.Create(OutStream);
   try
     OutStream.Write(HproseTagCall, 1);
