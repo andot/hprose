@@ -13,7 +13,7 @@
  *                                                        *
  * hprose service class for C#.                           *
  *                                                        *
- * LastModified: Jun 22, 2011                             *
+ * LastModified: Nov 27, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -39,6 +39,7 @@ namespace Hprose.Server {
         public event AfterInvokeEvent OnAfterInvoke = null;
         public event SendHeaderEvent OnSendHeader = null;
         public event SendErrorEvent OnSendError = null;
+        private IHproseFilter filter = null;
 
         public virtual HproseMethods GlobalMethods {
             get {
@@ -70,6 +71,15 @@ namespace Hprose.Server {
             }
         }
 
+        public IHproseFilter Filter {
+            get {
+                return filter;
+            }
+            set {
+                filter = value;
+            }
+        }
+        
         public void Add(MethodInfo method, object obj, string aliasName) {
             GlobalMethods.AddMethod(method, obj, aliasName);
         }
@@ -286,8 +296,10 @@ namespace Hprose.Server {
 
         protected void DoInvoke(HproseMethods methods) {
             Stream istream = InputStream;
+            if (filter != null) istream = filter.InputFilter(istream);
             HproseReader reader = new HproseReader(istream, mode);
             Stream ostream = OutputStream;
+            if (filter != null) ostream = filter.OutputFilter(ostream);
             HproseWriter writer = new HproseWriter(ostream, mode);
             int tag;
             do {
