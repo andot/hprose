@@ -14,7 +14,7 @@
  *                                                        *
  * hprose common library for JavaScript.                  *
  *                                                        *
- * LastModified: Jun 22, 2011                             *
+ * LastModified: Nov 26, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -31,3 +31,8 @@ function HproseException(message) {
 };
 HproseException.prototype = new Error;
 HproseException.prototype.name = 'HproseException';
+
+function HproseFilter() {
+    this.inputFilter = function(value) { return value; };
+    this.outputFilter = function(value) { return value; };
+}

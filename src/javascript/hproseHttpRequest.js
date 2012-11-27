@@ -14,14 +14,14 @@
  *                                                        *
  * POST data to HTTP Server (using Flash).                *
  *                                                        *
- * LastModified: Jun 15, 2010                             *
+ * LastModified: Nov 27, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 
 /*
  * Interfaces:
- * HproseHttpRequest.post(url, header, data, callback, timeout);
+ * HproseHttpRequest.post(url, header, data, callback, timeout, filter);
  */
 
 /* public class HproseHttpRequest
@@ -43,6 +43,10 @@ var HproseHttpRequest = (function() {
      */
     var s_callbackList = [];
 
+    /*
+     * to save all request callback filters
+     */
+    var s_callbackFilters = [];
     /*
      * to save HproseHttpRequest tasks.
      */
@@ -233,7 +237,7 @@ var HproseHttpRequest = (function() {
                                          HproseTags.TagEnd);
         };
         xdr.onload = function() {
-            HproseHttpRequest.__callback(callbackid, xdr.responseText);
+            HproseHttpRequest.__callback(callbackid, xdr.responseText, true);
         };
         xdr.open('POST', url);
         xdr.send(data);
@@ -249,7 +253,7 @@ var HproseHttpRequest = (function() {
                     window.clearTimeout(timeoutId);
                 }
                 if (xmlhttp.status == 200) {
-                    HproseHttpRequest.__callback(callbackid, xmlhttp.responseText);
+                    HproseHttpRequest.__callback(callbackid, xmlhttp.responseText, true);
                 }
                 else {
                     var error = xmlhttp.status + ':' +  xmlhttp.statusText;
@@ -310,12 +314,14 @@ var HproseHttpRequest = (function() {
 
     var HproseHttpRequest = {};
 
-    HproseHttpRequest.post = function (url, header, data, callback, timeout) {
+    HproseHttpRequest.post = function (url, header, data, callback, timeout, filter) {
         var callbackid = -1;
         if (callback) {
             callbackid = s_callbackList.length;
             s_callbackList[callbackid] = callback;
+            s_callbackFilters[callbackid] = filter;
         }
+        data = filter.outputFilter(data);
         if (s_jsReady) {
             post(url, header, data, callbackid, timeout);
         }
@@ -327,11 +333,15 @@ var HproseHttpRequest = (function() {
         }
     }
 
-    HproseHttpRequest.__callback = function(callbackid, data) {
+    HproseHttpRequest.__callback = function(callbackid, data, needToFilter) {
+        if (needToFilter) {
+            data = s_callbackFilters[callbackid].inputFilter(data);
+        }
         if (typeof(s_callbackList[callbackid]) == 'function') {
             s_callbackList[callbackid](data);
         }
         delete s_callbackList[callbackid];
+        delete s_callbackFilters[callbackid];
     }
 
     HproseHttpRequest.__jsReady = function () {

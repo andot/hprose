@@ -14,7 +14,7 @@
  *                                                        *
  * hprose http client for Javascript.                     *
  *                                                        *
- * LastModified: Jun 22, 2011                             *
+ * LastModified: Nov 27, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -23,6 +23,7 @@ var HproseHttpClient = (function () {
     /* Reference of global Class */
     var r_HproseResultMode = HproseResultMode;
     var r_HproseException = HproseException;
+    var r_HproseFilter = HproseFilter;
     var r_HproseHttpRequest = HproseHttpRequest;
     var r_HproseStringInputStream = HproseStringInputStream;
     var r_HproseStringOutputStream = HproseStringOutputStream;
@@ -41,6 +42,7 @@ var HproseHttpClient = (function () {
         var m_url;
         var m_timeout = 30000;
         var m_byref = false;
+        var m_filter = new r_HproseFilter();
         var self = this;
         // public methods
         this.useService = function(url, functions, create) {
@@ -99,6 +101,9 @@ var HproseHttpClient = (function () {
             if (value === undefined) value = true;
             m_byref = value;
         }
+        this.setFilter = function(filter) {
+            m_filter = filter;
+        }
         // events
         this.onReady = function() {
             // your code
@@ -133,7 +138,7 @@ var HproseHttpClient = (function () {
                 if (error != null) {
                     self.onError('useService', error);
                 }
-            }, m_timeout);
+            }, m_timeout, m_filter);
         }
         function setFunction(func) {
             var serverProxy = this;
@@ -359,7 +364,7 @@ var HproseHttpClient = (function () {
                         callback(result, args);
                     }
                 }
-            }, m_timeout);
+            }, m_timeout, m_filter);
         }
         /* constructor */ {
             if (typeof(url) == "string") {
