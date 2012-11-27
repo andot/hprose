@@ -13,7 +13,7 @@
  *                                                        *
  * hprose service class for Java.                         *
  *                                                        *
- * LastModified: Jun 22, 2011                             *
+ * LastModified: Nov 27, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -22,6 +22,7 @@ package hprose.server;
 import hprose.common.HproseMethods;
 import hprose.common.HproseMethod;
 import hprose.common.HproseResultMode;
+import hprose.common.HproseFilter;
 import hprose.io.HproseMode;
 import hprose.io.HproseTags;
 import hprose.io.HproseReader;
@@ -39,6 +40,7 @@ public abstract class HproseService {
     private boolean debugEnabled = false;
     private HproseServiceEvent event = null;
     protected HproseMethods globalMethods = null;
+    private HproseFilter filter = null;
 
     public HproseMethods getGlobalMethods() {
         if (globalMethods == null) {
@@ -73,6 +75,14 @@ public abstract class HproseService {
 
     public void setEvent(HproseServiceEvent event) {
         this.event = event;
+    }
+
+    public HproseFilter getFilter() {
+        return filter;
+    }
+
+    public void setFilter(HproseFilter filter) {
+        this.filter = filter;
     }
 
     public void add(Method method, Object obj, String aliasName) {
@@ -278,6 +288,7 @@ public abstract class HproseService {
             event.onSendError(error);
         }
         OutputStream ostream = getOutputStream();
+        if (filter != null) ostream = filter.outputFilter(ostream);
         HproseWriter writer = new HproseWriter(ostream, mode);
         ostream.write(HproseTags.TagError);
         writer.writeString(error, false);
@@ -287,8 +298,10 @@ public abstract class HproseService {
 
     protected void doInvoke(HproseMethods methods) throws Throwable {
         InputStream istream = getInputStream();
+        if (filter != null) istream = filter.inputFilter(istream);
         HproseReader reader = new HproseReader(istream, mode);
         OutputStream ostream = getOutputStream();
+        if (filter != null) ostream = filter.outputFilter(ostream);
         HproseWriter writer = new HproseWriter(ostream, mode);
         int tag;
         do {
@@ -420,6 +433,7 @@ public abstract class HproseService {
             names.addAll(methods.getAllNames());
         }
         OutputStream ostream = getOutputStream();
+        if (filter != null) ostream = filter.outputFilter(ostream);
         HproseWriter writer = new HproseWriter(ostream, mode);
         ostream.write(HproseTags.TagFunctions);
         writer.writeList(names, false);

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose client class for Java.                          *
  *                                                        *
- * LastModified: Jun 22, 2011                             *
+ * LastModified: Nov 27, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -25,6 +25,7 @@ import hprose.common.HproseCallback;
 import hprose.common.HproseInvoker;
 import hprose.common.HproseException;
 import hprose.common.HproseResultMode;
+import hprose.common.HproseFilter;
 import hprose.io.HproseMode;
 import hprose.io.HproseWriter;
 import hprose.io.HproseReader;
@@ -40,6 +41,7 @@ public abstract class HproseClient implements HproseInvoker {
 
     private static final Object[] nullArgs = new Object[0];
     private HproseMode mode;
+    private HproseFilter filter = null;
     public HproseErrorEvent onError = null;
 
     protected HproseClient() {
@@ -58,6 +60,14 @@ public abstract class HproseClient implements HproseInvoker {
     protected HproseClient(String uri, HproseMode mode) {
         useService(uri);
         this.mode = mode;
+    }
+
+    public HproseFilter getFilter() {
+        return filter;
+    }
+
+    public void setFilter(HproseFilter filter) {
+        this.filter = filter;
     }
 
     public abstract void useService(String uri);
@@ -272,6 +282,7 @@ public abstract class HproseClient implements HproseInvoker {
 
     private Object doInput(Object[] arguments, Type returnType, HproseResultMode resultMode, InputStream istream) throws IOException {
         int tag;
+        if (filter != null) istream = filter.inputFilter(istream);
         Object result = null;
         HproseReader hproseReader = new HproseReader(istream, mode);
         ByteArrayOutputStream bytestream = null;
@@ -330,6 +341,7 @@ public abstract class HproseClient implements HproseInvoker {
     }
 
     private void doOutput(String functionName, Object[] arguments, boolean byRef, OutputStream ostream) throws IOException {
+        if (filter != null) ostream = filter.outputFilter(ostream);
         HproseWriter hproseWriter = new HproseWriter(ostream, mode);
         ostream.write(HproseTags.TagCall);
         hproseWriter.writeString(functionName, false);
