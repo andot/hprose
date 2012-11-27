@@ -23,6 +23,7 @@ var HproseHttpClient = (function () {
     /* Reference of global Class */
     var r_HproseResultMode = HproseResultMode;
     var r_HproseException = HproseException;
+    var r_HproseFilter = HproseFilter;
     var r_HproseStringInputStream = HproseStringInputStream;
     var r_HproseStringOutputStream = HproseStringOutputStream;
     var r_HproseReader = HproseReader;
@@ -224,7 +225,7 @@ var HproseHttpClient = (function () {
         var m_timeout = 30000;
         var m_byref = false;
         var m_xhrs = [];
-        var m_filter = new HproseFilter();
+        var m_filter = new r_HproseFilter();
         var self = this;
         // public methods
         this.useService = function(url, functions, create) {
@@ -353,7 +354,7 @@ var HproseHttpClient = (function () {
         function useService() {
             var response = post(m_url, m_header, r_HproseTags.TagEnd,
                                 m_proxy, m_proxyUsername, m_proxyPassword,
-                                m_timeout);
+                                m_timeout, m_filter);
             var stream = new r_HproseStringInputStream(response);
             var hproseReader = new r_HproseReader(stream);
             var tag = hproseReader.checkTags([r_HproseTags.TagFunctions,
