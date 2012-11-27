@@ -13,7 +13,7 @@
  *                                                        *
  * hprose client class for C#.                            *
  *                                                        *
- * LastModified: Nov 12, 2012                             *
+ * LastModified: Nov 27, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -181,9 +181,11 @@ namespace Hprose.Client {
         }
 #endif
         private HproseMode mode;
+        private IHproseFilter filter;
 
         protected HproseClient() {
             mode = HproseMode.FieldMode;
+            filter = null;
         }
 
         protected HproseClient(string uri) {
@@ -200,6 +202,14 @@ namespace Hprose.Client {
             this.mode = mode;
         }
 
+        public IHproseFilter Filter {
+            get {
+                return filter;
+            }
+            set {
+                filter = value;
+            }
+        }
         public abstract void UseService(string uri);
 
 #if !(PocketPC || Smartphone || WindowsCE || WINDOWS_PHONE || Core)
@@ -371,9 +381,9 @@ namespace Hprose.Client {
 
 #endif
 
-
         private object DoInput(object[] arguments, Type returnType, HproseResultMode resultMode, Stream istream) {
             int tag;
+            if (filter != null) istream = filter.InputFilter(istream);
             object result = null;
             HproseReader hproseReader = new HproseReader(istream, mode);
             MemoryStream memstream = null;
@@ -435,6 +445,7 @@ namespace Hprose.Client {
         }
 
         private void DoOutput(string functionName, object[] arguments, bool byRef, Stream ostream) {
+            if (filter != null) ostream = filter.OutputFilter(ostream);
             HproseWriter hproseWriter = new HproseWriter(ostream, mode);
             ostream.WriteByte(HproseTags.TagCall);
             hproseWriter.WriteString(functionName, false);

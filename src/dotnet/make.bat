@@ -88,6 +88,7 @@ set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Common\HproseMethod.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Common\HproseMethods.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Common\HproseResultMode.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Common\IHproseInvoker.cs
+set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Common\IHproseFilter.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Common\InvokeHelper.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Reflection\Proxy.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Reflection\IInvocationHandler.cs
