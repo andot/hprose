@@ -15,7 +15,7 @@
  *                                                        *
  * hprose http server library for php5.                   *
  *                                                        *
- * LastModified: Nov 7, 2012                              *
+ * LastModified: Nov 27, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -24,6 +24,19 @@ require_once('HproseCommon.php');
 require_once('HproseIO.php');
 
 class HproseHttpServer {
+    private $errorTable = array(E_ERROR => 'Error',
+                                E_WARNING => 'Warning',
+                                E_PARSE => 'Parse Error',
+                                E_NOTICE => 'Notice',
+                                E_CORE_ERROR => 'Core Error',
+                                E_CORE_WARNING => 'Core Warning',
+                                E_COMPILE_ERROR => 'Compile Error',
+                                E_COMPILE_WARNING => 'Compile Warning',
+                                E_USER_ERROR => 'User Error',
+                                E_USER_WARNING => 'User Warning',
+                                E_USER_NOTICE => 'User Notice',
+                                E_STRICT => 'Run-time Notice',
+                                E_RECOVERABLE_ERROR => 'Error');
     private $functions;
     private $funcNames;
     private $resultModes;
@@ -36,6 +49,7 @@ class HproseHttpServer {
     private $reader;
     private $writer;
     private $error;
+    private $filter;
     public $onBeforeInvoke;
     public $onAfterInvoke;
     public $onSendHeader;
@@ -48,25 +62,20 @@ class HproseHttpServer {
         $this->crossDomain = false;
         $this->P3P = false;
         $this->get = true;
-        if (!isset($HTTP_RAW_POST_DATA)) $HTTP_RAW_POST_DATA = file_get_contents("php://input");
-        $this->input = new HproseStringStream($HTTP_RAW_POST_DATA);
-        $this->reader = new HproseReader($this->input);
-        $this->output = new HproseFileStream(fopen('php://output', 'wb'));
-        $this->writer = new HproseWriter($this->output);
+        $this->filter = NULL;
         $this->onBeforeInvoke = NULL;
         $this->onAfterInvoke = NULL;
         $this->onSendHeader = NULL;
         $this->onSendError = NULL;
         set_error_handler(array(&$this, '__errorHandler'));
-        ob_start(array(&$this, "__fatalErrorHandler"));
+        ob_start(array(&$this, "__filterHandler"));
         ob_implicit_flush(0);
     }
     /*
-      __fatalErrorHandler & __errorHandler must be public,
+      __filterHandler & __errorHandler must be public,
       however we should never call them directly.
     */
-    public function __fatalErrorHandler($data) {
-        $s = HproseTags::TagEnd;
+    public function __filterHandler($data) {
         if (preg_match('/<b>.*? error<\/b>:(.*?)<br/', $data, $match)) {
             if ($this->debug) {
                 $error = preg_replace('/<.*?>/', '', $match[1]);
@@ -74,21 +83,19 @@ class HproseHttpServer {
             else {
                 $error = preg_replace('/ in <b>.*<\/b>$/', '', $match[1]);
             }
-            $s = HproseTags::TagError .
+            $data = HproseTags::TagError .
                  HproseFormatter::serialize(trim($error)) .
                  HproseTags::TagEnd;
         }
-        return $s;
+        if ($this->filter) $data = $this->filter->outputFilter($data);
+        return $data;
     }
     public function __errorHandler($errno, $errstr, $errfile, $errline) {
         if ($this->debug) {
             $errstr .= " in $errfile on line $errline";
         }
-        if (($errno == E_ERROR) or ($errno == E_CORE_ERROR) or
-            ($errno == E_COMPILE_ERROR) or ($errno == E_USER_ERROR)) {
-            $this->error = $errstr;
-            $this->sendError();
-        }
+        $this->error = $this->errorTable[$errno] . ": " . $errstr;
+        $this->sendError();
         return true;
     }
     private function sendHeader() {
@@ -116,11 +123,12 @@ class HproseHttpServer {
         if (!is_null($this->onSendError)) {
             call_user_func($this->onSendError, $this->error);
         }
-        ob_end_clean();
+        ob_clean();
         $this->output->write(HproseTags::TagError);
         $this->writer->reset();
         $this->writer->writeString($this->error, false);
         $this->output->write(HproseTags::TagEnd);
+        ob_end_flush();
     }
     private function call($function, &$args, $byref) {
         if ($byref) {
@@ -177,7 +185,7 @@ class HproseHttpServer {
                 call_user_func($this->onAfterInvoke, $functionName, $functionArgs, $byref, $result);
             }
             // some service functions/methods may echo content, we need clean it
-            ob_end_clean();
+            ob_clean();
             if ($resultMode == HproseResultMode::RawWithEndTag) {
                 $this->output->write($result);
                 return;
@@ -202,12 +210,14 @@ class HproseHttpServer {
             }
         } while ($tag == HproseTags::TagCall);
         $this->output->write(HproseTags::TagEnd);
+        ob_end_flush();
     }
     private function doFunctionList() {
         $functions = array_values($this->funcNames);
         $this->output->write(HproseTags::TagFunctions);
         $this->writer->writeList($functions, false);
         $this->output->write(HproseTags::TagEnd);
+        ob_end_flush();
     }
     private function getDeclaredOnlyMethods($class) {
         $all = get_class_methods($class);
@@ -410,8 +420,20 @@ class HproseHttpServer {
     public function setGetEnabled($enable = true) {
         $this->get = $enable;
     }
+    public function getFilter() {
+        return $this->filter;
+    }
+    public function setFilter($filter) {
+        $this->filter = $filter;
+    }
     public function handle() {
-        ob_end_clean();
+        if (!isset($HTTP_RAW_POST_DATA)) $HTTP_RAW_POST_DATA = file_get_contents("php://input");
+        if ($this->filter) $HTTP_RAW_POST_DATA = $this->filter->inputFilter($HTTP_RAW_POST_DATA);
+        $this->input = new HproseStringStream($HTTP_RAW_POST_DATA);
+        $this->reader = new HproseReader($this->input);
+        $this->output = new HproseFileStream(fopen('php://output', 'wb'));
+        $this->writer = new HproseWriter($this->output);
+        ob_clean();
         $this->sendHeader();
         if (($_SERVER['REQUEST_METHOD'] == 'GET') and $this->get) {
             return $this->doFunctionList();

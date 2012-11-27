@@ -15,7 +15,7 @@
  *                                                        *
  * hprose http client library for php5.                   *
  *                                                        *
- * LastModified: Jul 19, 2011                             *
+ * LastModified: Nov 27, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -33,6 +33,7 @@ class HproseHttpClient {
     private $timeout;
     private $keepAlive;
     private $keepAliveTimeout;
+    private $filter;
     private static $cookieManager = array();
     static function hproseKeepCookieInSession() {
         $_SESSION['HPROSE_COOKIE_MANAGER'] = self::$cookieManager;
@@ -111,6 +112,7 @@ class HproseHttpClient {
     public function __construct($url = '') {
         $this->useService($url);
         $this->header = array('Content-type' => 'application/hprose');
+        $this->filter = NULL;
     }
     public function useService($url = '', $namespace = '') {
         if ($url) {
@@ -138,6 +140,7 @@ class HproseHttpClient {
         }
         $stream->write(HproseTags::TagEnd);
         $request = $stream->toString();
+        if ($this->filter) $request = $this->filter->outputFilter($request);
         $stream->close();
         $f = new SaeFetchurl();
         $cookie = $this->getCookie();
@@ -165,6 +168,7 @@ class HproseHttpClient {
         }
         $http_response_header = $f->responseHeaders(false);
         $this->setCookie($http_response_header);
+        if ($this->filter) $response = $this->filter->inputFilter($response);
         if ($resultMode == HproseResultMode::RawWithEndTag) {
             return $response;
         }
@@ -241,6 +245,12 @@ class HproseHttpClient {
     }
     public function getKeepAliveTimeout() {
         return $this->keepAliveTimeout;
+    }
+    public function getFilter() {
+        return $this->filter;
+    }
+    public funtion setFilter($filter) {
+        $this->filter = $filter;
     }
     public function __call($function, $arguments) {
         return $this->invoke($function, $arguments);

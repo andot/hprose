@@ -15,7 +15,7 @@
  *                                                        *
  * hprose common library for php5.                        *
  *                                                        *
- * LastModified: Jun 22, 2011                             *
+ * LastModified: Nov 27, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -28,6 +28,11 @@ class HproseResultMode {
 }
 
 class HproseException extends Exception {}
+
+interface HproseFilter {
+    function inputFilter($data);
+    function outputFilter($data);    
+}
 
 class HproseDate {
     public $year;
