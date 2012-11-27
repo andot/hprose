@@ -287,6 +287,7 @@ namespace Hprose.Server {
                 OnSendError(error);
             }
             Stream ostream = OutputStream;
+            if (filter != null) ostream = filter.OutputFilter(ostream);
             HproseWriter writer = new HproseWriter(ostream, mode);
             ostream.WriteByte(HproseTags.TagError);
             writer.WriteString(error, false);
@@ -413,6 +414,7 @@ namespace Hprose.Server {
                 names.AddRange(methods.AllNames);
             }
             Stream ostream = OutputStream;
+            if (filter != null) ostream = filter.OutputFilter(ostream);
             HproseWriter writer = new HproseWriter(ostream, mode);
             ostream.WriteByte(HproseTags.TagFunctions);
             writer.WriteList(names, false);
