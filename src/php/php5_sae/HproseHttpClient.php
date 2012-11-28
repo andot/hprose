@@ -15,7 +15,7 @@
  *                                                        *
  * hprose http client library for php5.                   *
  *                                                        *
- * LastModified: Nov 27, 2012                             *
+ * LastModified: Nov 28, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -249,7 +249,7 @@ class HproseHttpClient {
     public function getFilter() {
         return $this->filter;
     }
-    public funtion setFilter($filter) {
+    public function setFilter($filter) {
         $this->filter = $filter;
     }
     public function __call($function, $arguments) {
