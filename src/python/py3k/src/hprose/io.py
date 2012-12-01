@@ -421,7 +421,7 @@ class HproseReader:
         return (tag, microsecond)
     def readRaw(self, ostream = None, tag = None):
         if ostream == None:
-            tag = BytesIO()
+            ostream = BytesIO()
         if tag == None:
             tag = self.stream.read(1)
         if ((b'0' <= tag <= b'9') or
@@ -466,6 +466,7 @@ class HproseReader:
             raise HproseUnserializeException(
                 "Unexpected serialize tag '%s' in stream" %
                 str(tag, 'utf-8'))
+        return ostream
     def __readNumberRaw(self, ostream, tag):
         ostream.write(tag)
         ostream.write(_readuntil(self.stream, HproseTags.TagSemicolon))
