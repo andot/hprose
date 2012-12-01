@@ -14,7 +14,7 @@
 #                                                          #
 # hprose httpserver for python 2.3+                        #
 #                                                          #
-# LastModified: Nov 4, 2012                                #
+# LastModified: Dec 1, 2012                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -23,6 +23,7 @@ import re, urllib
 from cStringIO import StringIO
 from sys import exc_info
 from hprose.io import *
+from hprose.common import *
 from hprose.server import HproseService
 
 class HproseHttpService(HproseService):
@@ -67,12 +68,12 @@ class HproseHttpService(HproseService):
         else:
             session = {}
         header = self._header(environ)
-        writer = HproseWriter(StringIO())
+        writer = HproseWriter(self._filter.outputFilter(StringIO()))
         try:
             if ((environ['REQUEST_METHOD'] == 'GET') and self._get):
                 self._doFunctionList(writer)
             elif (environ['REQUEST_METHOD'] == 'POST'):
-                reader = HproseReader(environ['wsgi.input'])
+                reader = HproseReader(self._filter.inputFilter(environ['wsgi.input']))
                 self._handle(reader, writer, session, environ)
         finally:
             if hasattr(session, 'save'): session.save()
@@ -174,6 +175,12 @@ class HproseHttpServer(object):
     def setDebugEnabled(self, enable = True):
         self.app.setDebugEnabled(enable)
 
+    def isCrossDomainEnabled(self):
+        return self.app.isCrossDomainEnabled()
+
+    def setCrossDomainEnabled(self, enable = True):
+        self.app.setCrossDomainEnabled(enable)
+
     def isP3PEnabled(self):
         return self.app.isP3PEnabled()
 
@@ -185,6 +192,12 @@ class HproseHttpServer(object):
 
     def setGetEnabled(self, enable = True):
         self.app.setGetEnabled(enable)
+
+    def getFilter(self):
+        return self.app.getFilter()
+
+    def setFilter(self, filter):
+        self.app.setFilter(filter)
 
     def start(self):
         print "Serving on port %s:%s..." % (self.host, self.port)

@@ -14,7 +14,7 @@
 #                                                          #
 # hprose httpclient for python 2.3+                        #
 #                                                          #
-# LastModified: Jun 12, 2010                               #
+# LastModified: Dec 1, 2012                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -23,6 +23,7 @@ import httplib, re, threading, urlparse
 from cStringIO import StringIO
 from calendar import timegm
 from hprose.io import *
+from hprose.common import *
 import time
 from hprose.client import HproseClient
 
@@ -313,7 +314,7 @@ class HproseHttpClient(HproseClient):
         return HproseHttpInvokeContext()
     
     def _getOutputStream(self, context):
-        context.outstream = StringIO()
+        context.outstream = self._filter.outputFilter(StringIO())
         return context.outstream
 
     def _sendData(self, context):
@@ -321,7 +322,7 @@ class HproseHttpClient(HproseClient):
         context.outstream.close()
         context.outstream = None
         data = self.__post(request)
-        context.instream = StringIO(data)
+        context.instream = self._filter.inputFilter(StringIO(data))
 
     def _getInputStream(self, context):
         return context.instream

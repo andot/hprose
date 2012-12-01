@@ -14,7 +14,7 @@
 #                                                          #
 # hprose io for python 3.0+                                #
 #                                                          #
-# LastModified: Jun 22, 2011                               #
+# LastModified: Dec 1, 2012                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -27,12 +27,7 @@ from inspect import isclass
 from sys import modules, exc_info
 from threading import RLock
 from uuid import UUID
-
-class HproseResultMode:
-    Normal = 0
-    Serialized = 1
-    Raw = 2
-    RawWithEndTag = 3
+from hprose.common import *
 
 ZERO = datetime.timedelta(0)
 
@@ -44,9 +39,6 @@ class UTC(datetime.tzinfo):
     def dst(self, dt):
         return ZERO
 utc = UTC()
-
-class HproseException(Exception):
-    pass
 
 class HproseSerializeException(HproseException):
     pass

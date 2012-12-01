@@ -14,7 +14,7 @@
 #                                                          #
 # hprose client for python 3.0+                            #
 #                                                          #
-# LastModified: Jun 12, 2010                               #
+# LastModified: Dec 1, 2012                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -22,6 +22,7 @@
 import threading, types
 from sys import modules
 from hprose.io import *
+from hprose.common import *
 
 class _Method(object):
     def __init__(self, invoke, name):
@@ -68,6 +69,7 @@ class _AsyncInvoke(object):
 class HproseClient(object):
     def __init__(self, uri = None):
         self.onError = None
+        self._filter = HproseFilter()
         self.useService(uri)
 
     def __getattr__(self, name):
@@ -101,6 +103,12 @@ class HproseClient(object):
         raise NotImplementedError
 
     uri = property(fset = setUri)
+
+    def getFilter(self):
+        return self._filter
+
+    def setFilter(self, filter):
+        self._filter = filter
 
     def _getInovkeContext(self):
         raise NotImplementedError

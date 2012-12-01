@@ -14,7 +14,7 @@
 #                                                          #
 # hprose server for python 3.0+                            #
 #                                                          #
-# LastModified: Oct 28, 2012                               #
+# LastModified: Dec 1, 2012                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -22,6 +22,7 @@
 import types, traceback
 from sys import modules
 from hprose.io import *
+from hprose.common import *
 
 def _getInstanceMethods(cls):
     v = vars(cls)
@@ -41,6 +42,7 @@ class HproseService(object):
         self.__funcNames = {}
         self.__resultMode = {}
         self._debug = False
+        self._filter = HproseFilter()
         self.onBeforeInvoke = None
         self.onAfterInvoke = None
         self.onSendHeader = None
@@ -172,11 +174,10 @@ class HproseService(object):
         except Exception as error:
             if self._debug:
                 error = ''.join(traceback.format_exception(*exc_info()))
-            stream.close()
             if self.onSendError != None:
                 self.onSendError(environ, error)
-            stream = BytesIO()
-            writer.stream = stream
+            writer.stream.seek(0);
+            writer.stream.truncate(0);
             writer.reset()
             writer.stream.write(HproseTags.TagError)
             writer.writeString(str(error), False)
@@ -314,3 +315,9 @@ class HproseService(object):
         
     def setDebugEnabled(self, enable = True):
         self._debug = enable
+
+    def getFilter(self):
+        return self._filter
+
+    def setFilter(self, filter):
+        self._filter = filter
