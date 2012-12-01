@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http listener server class for C#.              *
  *                                                        *
- * LastModified: May 17, 2010                             *
+ * LastModified: Dec 1, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -232,7 +232,7 @@ namespace Hprose.Server {
             service.OnSendHeader += OnSendHeader;
             service.OnSendError += OnSendError;
             lastModified = DateTime.Now.ToString("R");
-            etag = new Random().Next().ToString("x") + ":" + new Random().Next().ToString();
+            etag = '"' + new Random().Next().ToString("x") + ":" + new Random().Next().ToString() + '"';
             Listener.Start();
             for (uint i = 0; i < threadCount; i++) {
                 Listener.BeginGetContext(GetContext, Listener);

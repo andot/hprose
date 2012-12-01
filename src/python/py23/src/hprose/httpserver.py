@@ -19,8 +19,10 @@
 #                                                          #
 ############################################################
 
-import re, urllib
+import re, urllib, datetime
 from cStringIO import StringIO
+from math import trunc
+from random import random
 from sys import exc_info
 from hprose.io import *
 from hprose.common import *
@@ -29,9 +31,15 @@ from hprose.server import HproseService
 class HproseHttpService(HproseService):
     def __init__(self, sessionName = None):
         super(HproseHttpService, self).__init__()
-        self._crossDomain = False;
+        self._crossDomain = False
         self._P3P = False
         self._get = True
+        self._crossDomainXmlFile = None
+        self._crossDomainXmlContent = None
+        self._clientAccessPolicyXmlFile = None
+        self._clientAccessPolicyXmlContent = None
+        self._lastModified = datetime.datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT");
+        self._etag = '"%x:%x"' % (trunc(random() * 2147483647), trunc(random() * 2147483647));
         self.sessionName = sessionName
 
     def __call__(self, environ, start_response = None):
@@ -42,6 +50,32 @@ class HproseHttpService(HproseService):
         # WSGI 1
         start_response(result[0], result[1])
         return result[2]
+
+    def _crossDomainXmlHandler(self, environ):
+        path = (environ['SCRIPT_NAME'] + environ['PATH_INFO']).lower()
+        if (path == '/crossdomain.xml'):
+            if ((environ.get('HTTP_IF_MODIFIED_SINCE', '') == self._lastModified) and
+                (environ.get('HTTP_IF_NONE_MATCH', '') == self._etag)):
+                return ['304 Not Modified', [], ['']]
+            else:
+                header = [('Content-Type', 'text/xml'),
+                          ('Last-Modified', self._lastModified),
+                          ('Etag', self._etag)]
+                return ['200 OK', header, [self._crossDomainXmlContent]]
+        return False;
+
+    def _clientAccessPolicyXmlHandler(self, environ):
+        path = (environ['SCRIPT_NAME'] + environ['PATH_INFO']).lower()
+        if (path == '/clientaccesspolicy.xml'):
+            if ((environ.get('HTTP_IF_MODIFIED_SINCE', '') == self._lastModified) and
+                (environ.get('HTTP_IF_NONE_MATCH', '') == self._etag)):
+                return ['304 Not Modified', [], ['']]
+            else:
+                header = [('Content-Type', 'text/xml'),
+                          ('Last-Modified', self._lastModified),
+                          ('Etag', self._etag)]
+                return ['200 OK', header, [self.m_clientAccessPolicyXmlContent]]
+        return False;
 
     def _header(self, environ):
         header = [('Content-Type', 'text/plain')]
@@ -62,6 +96,14 @@ class HproseHttpService(HproseService):
         return header
 
     def handle(self, environ):
+        if (self._clientAccessPolicyXmlContent != None):
+            result = self._clientAccessPolicyXmlHandler(environ)
+            if (result):
+                return result
+        if (self._crossDomainXmlContent != None):
+            result = self._crossDomainXmlHandler(environ)
+            if (result):
+                return result
         sessionService = environ.get(self.sessionName, None)
         if sessionService:
             session = getattr(sessionService, 'session', sessionService)
@@ -99,6 +141,42 @@ class HproseHttpService(HproseService):
 
     def setGetEnabled(self, enable = True):
         self._get = enable
+
+    def getCrossDomainXmlFile(self):
+        return self._crossDomainXmlFile
+
+    def setCrossDomainXmlFile(self, value):
+        self._crossDomainXmlFile = value
+        f = open(value)
+        try:
+            self._crossDomainXmlContent = f.read()
+        finally:
+            f.close()
+
+    def getCrossDomainXmlContent(self):
+        return self._crossDomainXmlContent
+
+    def setCrossDomainXmlContent(self, value):
+        self._crossDomainXmlFile = None
+        self._crossDomainXmlContent = value
+
+    def getClientAccessPolicyXmlFile(self):
+        return self._clientAccessPolicyXmlFile
+
+    def setClientAccessPolicyXmlFile(self, value):
+        self._clientAccessPolicyXmlFile = value
+        f = open(value)
+        try:
+            self._clientAccessPolicyXmlContent = f.read()
+        finally:
+            f.close()
+
+    def getClientAccessPolicyXmlContent(self):
+        return self._clientAccessPolicyXmlContent
+
+    def setClientAccessPolicyXmlContent(self, value):
+        self._clientAccessPolicyXmlFile = None
+        self._clientAccessPolicyXmlContent = value
 
 ################################################################################
 # UrlMapMiddleware                                                             #
@@ -198,6 +276,30 @@ class HproseHttpServer(object):
 
     def setFilter(self, filter):
         self.app.setFilter(filter)
+
+    def getCrossDomainXmlFile(self):
+        return self.app.getCrossDomainXmlFile()
+
+    def setCrossDomainXmlFile(self, value):
+        self.app.setCrossDomainXmlFile(value)
+
+    def getCrossDomainXmlContent(self):
+        return self.app.getCrossDomainXmlContent()
+
+    def setCrossDomainXmlContent(self, value):
+        self.app.setCrossDomainXmlContent(value)
+
+    def getClientAccessPolicyXmlFile(self):
+        return self.app.getClientAccessPolicyXmlFile()
+
+    def setClientAccessPolicyXmlFile(self, value):
+        self.app.setClientAccessPolicyXmlFile(value)
+
+    def getClientAccessPolicyXmlContent(self):
+        return self.app.getClientAccessPolicyXmlContent()
+
+    def setClientAccessPolicyXmlContent(self, value):
+        self.app.setClientAccessPolicyXmlContent(value)
 
     def start(self):
         print "Serving on port %s:%s..." % (self.host, self.port)

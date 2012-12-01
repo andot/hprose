@@ -14,7 +14,7 @@
  *                                                        *
  * HproseHttpService for Node.js.                         *
  *                                                        *
- * LastModified: Nov 26, 2012                             *
+ * LastModified: Dec 1, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -32,7 +32,7 @@ function HproseHttpService() {
     var m_clientAccessPolicyXmlFile = null;
     var m_clientAccessPolicyXmlContent = null;
     var m_lastModified = (new Date()).toUTCString();
-    var m_etag = Math.floor(Math.random() * 2147483647).toString(16) + ":" + (Math.random() * 2147483647).toFixed(0);
+    var m_etag = '"' + Math.floor(Math.random() * 2147483647).toString(16) + ":" + Math.floor(Math.random() * 2147483647).toString(16) + '"';
 
     var crossDomainXmlHandler = function(request, response) {
         if (request.url.toLowerCase() == "/crossdomain.xml") {
@@ -63,7 +63,7 @@ function HproseHttpService() {
                 response.setHeader("Last-Modified", m_lastModified);
                 response.setHeader("Etag", m_etag);
                 response.setHeader("Content-Type", "text/xml");
-                response.setHeader("Content-Length", m_crossDomainXmlContent.length);
+                response.setHeader("Content-Length", m_clientAccessPolicyXmlContent.length);
                 response.write(m_clientAccessPolicyXmlContent);
             }
             response.end();
