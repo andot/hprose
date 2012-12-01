@@ -27,6 +27,7 @@ Language support
     * PHP
     * ASP
     * Perl
+    * AAuto Quicker
     * ...
 
 Through *Oh*, You can conveniently and efficiently intercommunicate between those
