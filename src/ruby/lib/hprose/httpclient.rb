@@ -14,7 +14,7 @@
 #                                                          #
 # hprose http client for ruby                              #
 #                                                          #
-# LastModified: Jun 12, 2010                               #
+# LastModified: Dec 1, 2012                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -67,17 +67,17 @@ module Hprose
       context.outstream = StringIO.new()
     end
     def send_data(context)
-      request = context.outstream.string
+      request = @filter.output_filter(context.outstream.string)
       context.outstream.close()
-      context.outstream = nil;
-      context.instream = StringIO.new(_post(request), 'rb')      
+      context.outstream = nil
+      context.instream = StringIO.new(@filter.input_filter(_post(request)), 'rb')      
     end
     def get_input_stream(context)
       context.instream      
     end
     def end_invoke(context)
       context.instream.close()
-      context.instream = nil;
+      context.instream = nil
     end
     private
     def _post(request)
@@ -101,16 +101,16 @@ module Hprose
       headers['Cookie'] = _get_cookie(@uri.host.downcase, @uri.path, @uri.scheme == 'https')
       reqpath = @uri.path
       reqpath << '?' << @uri.query unless @uri.query.nil?
-      response, body = httpclient.request_post(reqpath, request, headers)
+      response = httpclient.request_post(reqpath, request, headers)
       case response
         when Net::HTTPSuccess then
         cookielist = []
         cookielist.concat(response['set-cookie'].split(',')) if response.key?('set-cookie')
         cookielist.concat(response['set-cookie2'].split(',')) if response.key?('set-cookie2')
         _set_cookie(cookielist, @uri.host.downcase)
-        return body
+        return response.body
       else
-        response.error!
+        raise Exception.new(response.message)
       end
     end
     def _set_cookie(cookielist, host)

@@ -14,23 +14,25 @@
 #                                                          #
 # hprose service for ruby                                  #
 #                                                          #
-# LastModified: Oct 28, 2012                               #
+# LastModified: Dec 1, 2012                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
 
+require "hprose/common"
 require "hprose/io"
 require "thread"
 
 module Hprose
   class Service
-    attr_accessor :debug
+    attr_accessor :debug, :filter
     attr_accessor :on_before_invoke, :on_after_invoke
     attr_accessor :on_send_header, :on_send_error
     def initialize()
       @functions = {}
       @funcNames = {}
       @debug = $DEBUG
+      @filter = Filter.new()
       @on_before_invoke = nil
       @on_after_invoke = nil
       @on_send_header = nil
@@ -236,14 +238,14 @@ module Hprose
         args = []
         byref = false
         result = nil
-        tag = reader.check_tags([TAG_LIST, TAG_CALL, TAG_END])
-        if tag == TAG_LIST then
+        tag = reader.check_tags([TagList, TagCall, TagEnd])
+        if tag == TagList then
           reader.reset()
           args = reader.read_list(false)
-          tag = reader.check_tags([TAG_TRUE, TAG_CALL, TAG_END])
-          if tag == TAG_TRUE then
+          tag = reader.check_tags([TagTrue, TagCall, TagEnd])
+          if tag == TagTrue then
             byref = true
-            tag = reader.check_tags([TAG_CALL, TAG_END])
+            tag = reader.check_tags([TagCall, TagEnd])
           end
         end
         @on_before_invoke.call(env, name, args, byref) until @on_before_invoke.nil?
@@ -259,40 +261,39 @@ module Hprose
           raise Exception, "Can't find this function " << name
         end
         @on_after_invoke.call(env, name, args, byref, result) until @on_after_invoke.nil?
-        writer.stream.putc(TAG_RESULT)
+        writer.stream.putc(TagResult)
         writer.reset()
         writer.serialize(result)
         if byref then
-          writer.stream.putc(TAG_ARGUMENT)
+          writer.stream.putc(TagArgument)
           writer.reset()
           writer.write_list(args, false)
         end
-      end while tag == TAG_CALL
-      writer.stream.putc(TAG_END)
+      end while tag == TagCall
+      writer.stream.putc(TagEnd)
     end
     def do_function_list(writer)
-      writer.stream.putc(TAG_FUNCTIONS)
+      writer.stream.putc(TagFunctions)
       writer.write_list(@funcNames.values, false)
-      writer.stream.putc(TAG_END)
+      writer.stream.putc(TagEnd)
     end
     def handle(reader, writer, session, env)
       begin
-        except_tags = [TAG_CALL, TAG_END]
+        except_tags = [TagCall, TagEnd]
         tag = reader.check_tags(except_tags)
         case tag
-        when TAG_CALL then do_invoke(reader, writer, session, env)
-        when TAG_END then do_function_list(writer)
+        when TagCall then do_invoke(reader, writer, session, env)
+        when TagEnd then do_function_list(writer)
         end
       rescue ::Exception => e
         error = @debug ? e.backtrace.unshift(e.message).join("\r\n") : e.message
-        stream.close();
         @on_send_error.call(env, error) until @on_send_error.nil?
-        stream = StringIO.new()
-        writer.stream = stream
+        writer.stream.seek(0)
+        writer.stream.truncate(0)
         writer.reset()
-        stream.putc(TAG_ERROR)
+        writer.stream.putc(TagError)
         writer.write_string(error, false)
-        stream.putc(TAG_END)
+        writer.stream.putc(TagEnd)
       end
     end
   end # class Service

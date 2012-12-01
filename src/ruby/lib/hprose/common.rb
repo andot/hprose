@@ -10,9 +10,9 @@
 
 ############################################################
 #                                                          #
-# hproseio.rb                                              #
+# hprose/common.rb                                         #
 #                                                          #
-# hprose io for ruby                                       #
+# hprose common library for ruby                           #
 #                                                          #
 # LastModified: Dec 1, 2012                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
@@ -20,15 +20,22 @@
 ############################################################
 
 module Hprose
-  autoload :Tags, 'hprose/io'
-  autoload :ClassManager, 'hprose/io'
-  autoload :Reader, 'hprose/io'
-  autoload :Writer, 'hprose/io'
-  autoload :Formatter, 'hprose/io'
-end
+  class Exception < Exception; end
+  
+  module ResultMode
+    Normal = 0
+    Serialized = 1
+    Raw = 2
+    RawWithEndTag = 3
+  end
 
-Object.const_set(:HproseTags, Hprose.const_get(:Tags))
-Object.const_set(:HproseClassManager, Hprose.const_get(:ClassManager))
-Object.const_set(:HproseReader, Hprose.const_get(:Reader))
-Object.const_set(:HproseWriter, Hprose.const_get(:Writer))
-Object.const_set(:HproseFormatter, Hprose.const_get(:Formatter))
+  class Filter
+    def input_filter(data)
+      return data
+    end
+    def output_filter(data)
+      return data
+    end
+  end
+
+end # module Hprose

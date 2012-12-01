@@ -14,7 +14,7 @@
 #                                                          #
 # hprose http service for ruby                             #
 #                                                          #
-# LastModified: Nov 4, 2012                                #
+# LastModified: Dec 1, 2012                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -30,6 +30,7 @@ module Hprose
     attr_accessor :get
     def initialize()
       super()
+      @crossdomain = false
       @p3p = false
       @get = true
     end
@@ -41,7 +42,7 @@ module Hprose
         'PUBi IND PHY ONL UNI PUR FIN COM NAV INT DEM CNT ' +
         'STA POL HEA PRE GOV"' if @p3p
       if @crossdomain then
-        origin = env["HTTP_ORIGIN"];
+        origin = env["HTTP_ORIGIN"]
         if (origin and origin != "null") then
           header['Access-Control-Allow-Origin'] = origin
           header['Access-Control-Allow-Credentials'] = 'true' 
@@ -55,13 +56,13 @@ module Hprose
         if (env['REQUEST_METHOD'] == 'GET') and @get then
           do_function_list(writer)
         elsif (env['REQUEST_METHOD'] == 'POST') then
-          reader = Reader.new(StringIO.new(env['rack.input'].read, 'rb'))
+          reader = Reader.new(StringIO.new(@filter.input_filter(env['rack.input'].read), 'rb'))
           handle(reader, writer, session, env)
           reader.stream.close()
         end
       ensure
         stream = writer.stream
-        body = stream.string
+        body = @filter.output_filter(stream.string)
         stream.close()
         header['Content-Length'] = body.size.to_s
         return [200, header, [body]]

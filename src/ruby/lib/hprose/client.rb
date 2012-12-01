@@ -14,11 +14,12 @@
 #                                                          #
 # hprose client for ruby                                   #
 #                                                          #
-# LastModified: Jun 20, 2011                               #
+# LastModified: Dec 1, 2012                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
 
+require "hprose/common"
 require "hprose/io"
 
 module Hprose
@@ -26,9 +27,11 @@ module Hprose
     include Tags
     public
     def initialize(uri = nil)
-      @onerror = nil;
-      self.uri = uri;
+      @onerror = nil
+      @filter = Filter.new()
+      self.uri = uri
     end
+    attr_accessor :filter
     def onerror(&block)
       @onerror = block if block_given?
       @onerror
@@ -41,7 +44,7 @@ module Hprose
       @onerror = error_handler
     end
     def use_service(uri = nil, namespace = nil)
-      self.uri = uri;
+      self.uri = uri
       Proxy.new(self, namespace)
     end
     def [](namespace)
@@ -91,30 +94,30 @@ module Hprose
       context = self.get_invoke_context()
       stream = self.get_output_stream(context)
       writer = Writer.new(stream)
-      stream.putc(TAG_CALL)
+      stream.putc(TagCall)
       writer.write_string(methodname.to_s, false)
       if (args.size > 0 or byref) then
         writer.reset()
         writer.write_list(args, false)
         writer.write_boolean(true) if byref
       end
-      stream.putc(TAG_END)
+      stream.putc(TagEnd)
       self.send_data(context)
       result = nil
       stream = self.get_input_stream(context)
       reader = Reader.new(stream)
       loop do
-        tag = reader.check_tags([TAG_RESULT, TAG_ARGUMENT, TAG_ERROR, TAG_END])
-        break if tag == TAG_END
+        tag = reader.check_tags([TagResult, TagArgument, TagError, TagEnd])
+        break if tag == TagEnd
         case tag
-        when TAG_RESULT then
+        when TagResult then
           reader.reset()
           result = reader.unserialize()
-        when TAG_ARGUMENT then
+        when TagArgument then
           reader.reset()
           a = reader.read_list()
           args.each_index { |i| args[i] = a[i] }
-        when TAG_ERROR then
+        when TagError then
           reader.reset()
           result = Exception.new(reader.read_string())
         end
@@ -128,16 +131,16 @@ module Hprose
     end
 
     class Proxy
-      def initialize(phprpc_client, namespace = nil)
-        @phprpc_client = phprpc_client
+      def initialize(client, namespace = nil)
+        @client = client
         @namespace = namespace
       end
       def [](namespace)
-        Proxy.new(@phprpc_client, @namespace.to_s + '_' + namespace.to_s)
+        Proxy.new(@client, @namespace.to_s + '_' + namespace.to_s)
       end
       def method_missing(methodname, *args, &block)
         methodname = @namespace.to_s + '_' + methodname.to_s unless @namespace.nil?
-        @phprpc_client.invoke(methodname, args, &block)
+        @client.invoke(methodname, args, &block)
       end
     end # class Proxy
   end # class Client
