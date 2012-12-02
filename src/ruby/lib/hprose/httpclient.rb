@@ -14,7 +14,7 @@
 #                                                          #
 # hprose http client for ruby                              #
 #                                                          #
-# LastModified: Dec 1, 2012                                #
+# LastModified: Dec 2, 2012                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -61,14 +61,14 @@ module Hprose
       attr_accessor :instream, :outstream
     end    
     def get_invoke_context
-      context = HttpInvokeContext.new()
+      context = HttpInvokeContext.new
     end
     def get_output_stream(context)
-      context.outstream = StringIO.new()
+      context.outstream = StringIO.new
     end
     def send_data(context)
       request = @filter.output_filter(context.outstream.string)
-      context.outstream.close()
+      context.outstream.close
       context.outstream = nil
       context.instream = StringIO.new(@filter.input_filter(_post(request)), 'rb')      
     end
@@ -76,7 +76,7 @@ module Hprose
       context.instream      
     end
     def end_invoke(context)
-      context.instream.close()
+      context.instream.close
       context.instream = nil
     end
     private

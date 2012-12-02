@@ -14,7 +14,7 @@
 #                                                          #
 # hprose service for ruby                                  #
 #                                                          #
-# LastModified: Dec 1, 2012                                #
+# LastModified: Dec 2, 2012                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -25,14 +25,19 @@ require "thread"
 
 module Hprose
   class Service
+    private
+    include Tags
+    include ResultMode
+    public
     attr_accessor :debug, :filter
     attr_accessor :on_before_invoke, :on_after_invoke
     attr_accessor :on_send_header, :on_send_error
-    def initialize()
+    def initialize
       @functions = {}
       @funcNames = {}
+      @resultMode = {}
       @debug = $DEBUG
-      @filter = Filter.new()
+      @filter = Filter.new
       @on_before_invoke = nil
       @on_after_invoke = nil
       @on_send_header = nil
@@ -123,20 +128,21 @@ module Hprose
       else raise Exception, 'wrong arguments'
       end
     end
-    def add_missing_function(function)
-      add_function(function, '*')
+    def add_missing_function(function, resultMode = Normal)
+      add_function(function, '*', resultMode)
     end
-    def add_block(methodname, &block)
+    def add_block(methodname, resultMode = Normal, &block)
       if block_given? then
         methodname = methodname.to_s if methodname.is_a?(Symbol)
         aliasname = methodname.downcase
         @functions[aliasname] = block
-        @funcNames[aliasname] = methodname        
+        @funcNames[aliasname] = methodname
+        @resultMode[aliasname] = resultMode
       else
         raise Exception, 'block must be given'
       end
     end
-    def add_function(function, aliasname = nil)
+    def add_function(function, aliasname = nil, resultMode = Normal)
       function = function.to_s if function.is_a?(Symbol)
       aliasname = aliasname.to_s if aliasname.is_a?(Symbol)
       if function.is_a?(String) then
@@ -159,8 +165,9 @@ module Hprose
       name = aliasname.downcase
       @functions[name] = function
       @funcNames[name] = aliasname
+      @resultMode[name] = resultMode
     end
-    def add_functions(functions, aliases = nil)
+    def add_functions(functions, aliases = nil, resultMode = Normal)
       unless functions.is_a?(Array) then
         raise Exception, 'argument functions is not an array'
       end
@@ -171,17 +178,17 @@ module Hprose
       count.times do |i|
         function = functions[i]
         if aliases.nil? then
-          add_function(function)
+          add_function(function, nil, resultMode)
         else
-          add_function(function, aliases[i])
+          add_function(function, aliases[i], resultMode)
         end
       end
     end
-    def add_method(methodname, belongto, aliasname = nil)
+    def add_method(methodname, belongto, aliasname = nil, resultMode = Normal)
       function = belongto.method(methodname)
-      add_function(function, aliasname.nil? ? methodname : aliasname)
+      add_function(function, (aliasname.nil? ? methodname : aliasname), resultMode)
     end
-    def add_methods(methods, belongto, aliases = nil)
+    def add_methods(methods, belongto, aliases = nil, resultMode = Normal)
       unless methods.is_a?(Array) then
         raise Exception, 'argument methods is not an array'
       end
@@ -197,10 +204,10 @@ module Hprose
       count.times do |i|
         method = methods[i]
         function = belongto.method(method)
-        add_function(function, aliases.nil? ? method : aliases[i])
+        add_function(function, (aliases.nil? ? method : aliases[i]), resultMode)
       end
     end
-    def add_instance_methods(obj, cls = nil, alias_prefix = nil)
+    def add_instance_methods(obj, cls = nil, alias_prefix = nil, resultMode = Normal)
       alias_prefix = alias_prefix.to_s if alias_prefix.is_a?(Symbol)
       cls = obj.class if cls.nil?
       methods = cls.public_instance_methods(false)
@@ -212,9 +219,9 @@ module Hprose
         end
       end
       methods.map! { |method| cls.instance_method(method).bind(obj) }
-      add_functions(methods, aliases)
+      add_functions(methods, aliases, resultMode)
     end
-    def add_class_methods(cls, execcls = nil, alias_prefix = nil)
+    def add_class_methods(cls, execcls = nil, alias_prefix = nil, resultMode = Normal)
       alias_prefix = alias_prefix.to_s if alias_prefix.is_a?(Symbol)
       execcls = cls if execcls.nil?
       methods = cls.singleton_methods(false)
@@ -226,13 +233,12 @@ module Hprose
         end
       end
       methods.map! { |method| execcls.method(method) }
-      add_functions(methods, aliases)
+      add_functions(methods, aliases, resultMode)
     end
     protected
-    include Tags
     def do_invoke(reader, writer, session, env)
       begin
-        reader.reset()
+        reader.reset
         name = reader.read_string
         aliasname = name.downcase
         args = []
@@ -240,7 +246,7 @@ module Hprose
         result = nil
         tag = reader.check_tags([TagList, TagCall, TagEnd])
         if tag == TagList then
-          reader.reset()
+          reader.reset
           args = reader.read_list(false)
           tag = reader.check_tags([TagTrue, TagCall, TagEnd])
           if tag == TagTrue then
@@ -252,22 +258,35 @@ module Hprose
         result = nil
         if @functions.has_key?(aliasname) then
           function = @functions[aliasname]
+          resultMode = @resultMode[aliasname]
           result = function.call(*(((function.arity > 0) and
                   (args.length + 1 == function.arity))? args + [session] : args))
         elsif @functions.has_key?('*') then
           function = @functions['*']
+          resultMode = @resultMode['*']
           result = function.call(name, args)
         else
           raise Exception, "Can't find this function " << name
         end
         @on_after_invoke.call(env, name, args, byref, result) until @on_after_invoke.nil?
-        writer.stream.putc(TagResult)
-        writer.reset()
-        writer.serialize(result)
-        if byref then
-          writer.stream.putc(TagArgument)
-          writer.reset()
-          writer.write_list(args, false)
+        if resultMode == RawWithEndTag then
+          writer.stream.write(result)
+          return
+        elsif resultMode == Raw then
+          writer.stream.write(result)            
+        else
+          writer.stream.putc(TagResult)
+          if resultMode == Serialized then
+            writer.stream.write(result)
+          else
+            writer.reset
+            writer.serialize(result)
+            if byref then
+              writer.stream.putc(TagArgument)
+              writer.reset
+              writer.write_list(args, false)
+            end
+          end
         end
       end while tag == TagCall
       writer.stream.putc(TagEnd)
@@ -290,7 +309,7 @@ module Hprose
         @on_send_error.call(env, error) until @on_send_error.nil?
         writer.stream.seek(0)
         writer.stream.truncate(0)
-        writer.reset()
+        writer.reset
         writer.stream.putc(TagError)
         writer.write_string(error, false)
         writer.stream.putc(TagEnd)

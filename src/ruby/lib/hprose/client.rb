@@ -14,7 +14,7 @@
 #                                                          #
 # hprose client for ruby                                   #
 #                                                          #
-# LastModified: Dec 1, 2012                                #
+# LastModified: Dec 2, 2012                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -25,10 +25,11 @@ require "hprose/io"
 module Hprose
   class Client
     include Tags
+    include ResultMode
     public
     def initialize(uri = nil)
       @onerror = nil
-      @filter = Filter.new()
+      @filter = Filter.new
       self.uri = uri
     end
     attr_accessor :filter
@@ -50,11 +51,11 @@ module Hprose
     def [](namespace)
       Proxy.new(self, namespace)
     end
-    def invoke(methodname, args = [], byref = false, &block)
+    def invoke(methodname, args = [], byref = false, resultMode = Normal, &block)
       if block_given? then
         Thread.start do
           begin
-            result = _invoke(methodname, args, byref)
+            result = _invoke(methodname, args, byref, resultMode)
             case block.arity
             when 0 then yield
             when 1 then yield result
@@ -67,7 +68,7 @@ module Hprose
           end
         end
       else
-        return _invoke(methodname, args, byref)
+        return _invoke(methodname, args, byref, resultMode)
       end
     end
     def uri=(uri)
@@ -90,39 +91,56 @@ module Hprose
       raise NotImplementedError.new("#{self.class.name}#end_invoke is an abstract method")      
     end
     private
-    def _invoke(methodname, args, byref = false)
-      context = self.get_invoke_context()
+    def _invoke(methodname, args, byref = false, resultMode = Normal)
+      context = self.get_invoke_context
       stream = self.get_output_stream(context)
       writer = Writer.new(stream)
       stream.putc(TagCall)
       writer.write_string(methodname.to_s, false)
       if (args.size > 0 or byref) then
-        writer.reset()
+        writer.reset
         writer.write_list(args, false)
         writer.write_boolean(true) if byref
       end
       stream.putc(TagEnd)
-      self.send_data(context)
       result = nil
-      stream = self.get_input_stream(context)
-      reader = Reader.new(stream)
-      loop do
-        tag = reader.check_tags([TagResult, TagArgument, TagError, TagEnd])
-        break if tag == TagEnd
-        case tag
-        when TagResult then
-          reader.reset()
-          result = reader.unserialize()
-        when TagArgument then
-          reader.reset()
-          a = reader.read_list()
-          args.each_index { |i| args[i] = a[i] }
-        when TagError then
-          reader.reset()
-          result = Exception.new(reader.read_string())
+      begin
+        self.send_data(context)
+        stream = self.get_input_stream(context)
+        if resultMode == RawWithEndTag then
+          result = stream.string
+          return result
         end
+        if resultMode == Raw then
+          result = stream.string.chop!
+          return result
+        end
+        reader = Reader.new(stream)
+        loop do
+          tag = reader.check_tags([TagResult, TagArgument, TagError, TagEnd])
+          break if tag == TagEnd
+          case tag
+          when TagResult then
+            if resultMode == Serialized then
+              s = reader.read_raw
+              result = s.string
+              s.close
+            else
+              reader.reset
+              result = reader.unserialize
+            end
+          when TagArgument then
+            reader.reset
+            a = reader.read_list
+            args.each_index { |i| args[i] = a[i] }
+          when TagError then
+            reader.reset
+            result = Exception.new(reader.read_string())
+          end
+        end
+      ensure
+        self.end_invoke(context)
       end
-      self.end_invoke(context)
       raise result if result.is_a?(Exception)
       return result
     end

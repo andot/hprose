@@ -14,7 +14,7 @@
 #                                                          #
 # hprose io stream library for ruby                        #
 #                                                          #
-# LastModified: Dec 1, 2012                                #
+# LastModified: Dec 2, 2012                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -82,14 +82,14 @@ module Hprose
 
   module Stream
     def readuntil(stream, char)
-      s = StringIO.new()
+      s = StringIO.new
       while true do
-        c = stream.getbyte()
+        c = stream.getbyte
         break if c.nil? or (c == char)
         s.putc(c)
       end
-      result = s.string()
-      s.close()
+      result = s.string
+      s.close
       return result
     end
     def readint(stream, char)
@@ -174,28 +174,28 @@ module Hprose
     private
     include Tags
     include Stream
-    def read_ref()
+    def read_ref
       return @ref[readint(@stream, TagSemicolon)]
     end
-    def read_class()
+    def read_class
       cls = ClassManager.getClass(read_string(false, false))
       count = readint(@stream, TagOpenbrace)
-      fields = Array.new(count) { read_string() }
-      @stream.getbyte()
+      fields = Array.new(count) { read_string }
+      @stream.getbyte
       @classref << [cls, count, fields]
     end
-    def read_usec()
+    def read_usec
       usec = 0
-      tag = @stream.getbyte()
+      tag = @stream.getbyte
       if tag == TagPoint then
         usec = @stream.read(3).to_i * 1000
-        tag = @stream.getbyte()
+        tag = @stream.getbyte
         if (TagZero..TagNine) === tag then
           usec = usec + (tag << @stream.read(2)).to_i
-          tag = @stream.getbyte()
+          tag = @stream.getbyte
           if (TagZero..TagNine) === tag then
             @stream.read(2)
-            tag = @stream.getbyte()
+            tag = @stream.getbyte
           end
         end
       end
@@ -209,14 +209,14 @@ module Hprose
     def read_datetime_raw(ostream, tag)
       ostream.putc(tag)
       while true
-        c = @stream.getbyte()
+        c = @stream.getbyte
         ostream.putc(c)
         break if (c == TagSemicolon) or (c == TagUTC)
       end
     end
     def read_utf8char_raw(ostream, tag)
       ostream.putc(tag)
-      c = @stream.getbyte()
+      c = @stream.getbyte
       ostream.putc(c)
       if (c & 0xE0) == 0xC0 then
         ostream.putc(@stream.getbyte())
@@ -242,7 +242,7 @@ module Hprose
       count = ((count == '') ? 0 : count.to_i)
       i = 0
       while i < count
-        c = @stream.getbyte()
+        c = @stream.getbyte
         ostream.putc(c)
         if (c & 0xE0) == 0xC0 then
           ostream.putc(@stream.getbyte())
@@ -264,10 +264,10 @@ module Hprose
       ostream.putc(tag)
       ostream.write(readuntil(@stream, TagOpenbrace))
       ostream.write(TagOpenbrace)
-      tag = @stream.getbyte()
+      tag = @stream.getbyte
       while tag != TagClosebrace
         read_raw(ostream, tag)
-        tag = @stream.getbyte()
+        tag = @stream.getbyte
       end
       ostream.putc(tag)
     end
@@ -279,7 +279,7 @@ module Hprose
     end
     attr_accessor :stream
     def unserialize(tag = nil)
-      tag = @stream.getbyte() if tag.nil?
+      tag = @stream.getbyte if tag.nil?
       return case tag
       when TagZero..TagNine then tag - TagZero
       when TagInteger then read_integer(false)
@@ -299,21 +299,21 @@ module Hprose
       when TagGuid then read_guid(false)
       when TagList then read_list(false)
       when TagMap then read_map(false)
-      when TagClass then read_class(); unserialize()
+      when TagClass then read_class(); unserialize
       when TagObject then read_object(false)
-      when TagRef then read_ref()
-      when TagError then raise Exception, read_string()
+      when TagRef then read_ref
+      when TagError then raise Exception, read_string
       when nil then raise Exception, "No byte found in stream"
       else raise Exception, "Unexpected serialize tag '#{tag.chr}' in stream"
       end
     end
     def check_tag(expect_tag)
-      tag = @stream.getbyte()
+      tag = @stream.getbyte
       raise Exception, "No byte found in stream" if tag.nil?
       raise Exception, "Tag '#{expect_tag.chr}' expected, but '#{tag.chr}' found in stream" if tag != expect_tag
     end
     def check_tags(expect_tags)
-      tag = @stream.getbyte()
+      tag = @stream.getbyte
       raise Exception, "No byte found in stream" if tag.nil?
       raise Exception, "Tag '#{expect_tags.pack('c*')}' expected, but '#{tag.chr}' found in stream" if not expect_tags.include?(tag)
       return tag
@@ -330,40 +330,40 @@ module Hprose
       check_tag(TagDouble) if include_tag
       return readuntil(@stream, TagSemicolon).to_f
     end
-    def read_nan()
+    def read_nan
       check_tag(TagNaN)
       return 0.0/0.0
     end
     def read_infinity(include_tag = true)
       check_tag(TagInfinity) if (include_tag)
-      return (@stream.getbyte() == TagPos) ? 1.0/0.0 : -1.0/0.0
+      return (@stream.getbyte == TagPos) ? 1.0/0.0 : -1.0/0.0
     end
-    def read_null()
+    def read_null
       check_tag(TagNull)
       return nil
     end
-    def read_empty()
+    def read_empty
       check_tag(TagEmpty)
       return ""
     end
-    def read_boolean()
+    def read_boolean
       tag = check_tags([TagTrue, TagFalse])
       return tag == TagTrue
     end
     def read_date(include_tag = true)
       if include_tag then
         tag = check_tags([TagDate, TagRef])
-        return read_ref() if tag == TagRef
+        return read_ref if tag == TagRef
       end
       year = @stream.read(4).to_i
       month = @stream.read(2).to_i
       day = @stream.read(2).to_i
-      tag = @stream.getbyte()
+      tag = @stream.getbyte
       if tag == TagTime then
         hour = @stream.read(2).to_i
         min = @stream.read(2).to_i
         sec = @stream.read(2).to_i
-        tag, usec = read_usec()
+        tag, usec = read_usec
         if tag == TagUTC then
           date = Time.utc(year, month, day, hour, min, sec, usec)
         else
@@ -380,12 +380,12 @@ module Hprose
     def read_time(include_tag = true)
       if include_tag then
         tag = check_tags([TagTime, TagRef])
-        return read_ref() if (tag == TagRef)
+        return read_ref if (tag == TagRef)
       end
       hour = @stream.read(2).to_i
       min = @stream.read(2).to_i
       sec = @stream.read(2).to_i
-      tag, usec = read_usec()
+      tag, usec = read_usec
       if tag == TagUTC then
         time = Time.utc(1970, 1, 1, hour, min, sec, usec)
       else
@@ -397,17 +397,17 @@ module Hprose
     def read_bytes(include_tag = true)
       if include_tag then
         tag = check_tags([TagBytes, TagRef])
-        return read_ref() if tag == TagRef
+        return read_ref if tag == TagRef
       end
       s = @stream.read(readint(@stream, TagQuote))
-      @stream.getbyte()
+      @stream.getbyte
       @ref << s
       return s
     end
     def read_utf8char(include_tag = true)
       check_tag(TagUTF8Char) if include_tag
-      c = @stream.getbyte()
-      sio = StringIO.new()
+      c = @stream.getbyte
+      sio = StringIO.new
       sio.putc(c)
       if ((c & 0xE0) == 0xC0) then
         sio.putc(@stream.getbyte())
@@ -416,20 +416,20 @@ module Hprose
       elsif c > 0x7F then
         raise Exception, "Bad utf-8 encoding"
       end
-      s = sio.string()
-      sio.close()
+      s = sio.string
+      sio.close
       return s
     end
     def read_string(include_tag = true, include_ref = true)
       if include_tag then
         tag = check_tags([TagString, TagRef])
-        return read_ref() if tag == TagRef
+        return read_ref if tag == TagRef
       end
-      sio = StringIO.new()
+      sio = StringIO.new
       count = readint(@stream, TagQuote)
       i = 0
       while i < count do
-        c = @stream.getbyte()
+        c = @stream.getbyte
         sio.putc(c)
         if ((c & 0xE0) == 0xC0) then
           sio.putc(@stream.getbyte())
@@ -441,46 +441,46 @@ module Hprose
         end
         i += 1
       end
-      @stream.getbyte()
-      s = sio.string()
-      sio.close()
+      @stream.getbyte
+      s = sio.string
+      sio.close
       @ref << s if (include_ref)
       return s
     end
     def read_list(include_tag = true)
       if include_tag then
         tag = check_tags([TagList, TagRef])
-        return read_ref() if tag == TagRef
+        return read_ref if tag == TagRef
       end
       count = readint(@stream, TagOpenbrace)
       list = Array.new(count)
       @ref << list
-      count.times { |i| list[i] = unserialize() }
-      @stream.getbyte()
+      count.times { |i| list[i] = unserialize }
+      @stream.getbyte
       return list
     end
     def read_map(include_tag = true)
       if include_tag then
         tag = check_tags([TagMap, TagRef])
-        return read_ref() if tag == TagRef
+        return read_ref if tag == TagRef
       end
       map = {}
       @ref << map
       readint(@stream, TagOpenbrace).times do
-        k = unserialize()
-        v = unserialize()
+        k = unserialize
+        v = unserialize
         map[k] = v
       end
-      @stream.getbyte()
+      @stream.getbyte
       return map
     end
     def read_object(include_tag = true)
       if include_tag then
         tag = check_tags([TagClass, TagObject, TagRef])
-        return read_ref() if tag == TagRef
+        return read_ref if tag == TagRef
         if tag == TagClass then
-          read_class()
-          return read_object()
+          read_class
+          return read_object
         end
       end
       (cls, count, fields) = @classref[readint(@stream, TagOpenbrace)]
@@ -490,7 +490,7 @@ module Hprose
       count.times do |i|
         key = fields[i]
         var = '@' << key
-        value = unserialize()
+        value = unserialize
         begin
           obj[key] = value
         rescue
@@ -501,13 +501,13 @@ module Hprose
           obj.instance_variable_set(var.to_sym, value)
         end
       end
-      @stream.getbyte()
+      @stream.getbyte
       return obj
     end
     def read_raw(ostream = nil, tag = nil)
-      ostream = StringIO.new() if ostream.nil?
-      tag = @stream.getbyte() if tag.nil?
-      return case tag
+      ostream = StringIO.new if ostream.nil?
+      tag = @stream.getbyte if tag.nil?
+      case tag
       when TagZero..TagNine, TagNull, TagEmpty, TagTrue, TagFalse, TagNaN then ostream.putc(tag)
       when TagInfinity then ostream.putc(tag); ostream.putc(@stream.getbyte())
       when TagInteger, TagLong, TagDouble, TagRef then read_number_raw(ostream, tag)
@@ -525,8 +525,8 @@ module Hprose
       return ostream
     end
     def reset
-      @classref.clear()
-      @ref.clear()
+      @classref.clear
+      @ref.clear
     end
   end # class Reader
   class Writer
@@ -623,7 +623,7 @@ module Hprose
     end
     def write_double(double)
       if double.nan? then
-        write_nan()
+        write_nan
       elsif double.finite? then
         @stream.putc(TagDouble)
         @stream.write(double.to_s)
@@ -632,17 +632,17 @@ module Hprose
         write_infinity(double > 0)
       end
     end
-    def write_nan()
+    def write_nan
       @stream.putc(TagNaN)
     end
     def write_infinity(positive = true)
       @stream.putc(TagInfinity)
       @stream.putc(positive ? TagPos : TagNeg)
     end
-    def write_null()
+    def write_null
       @stream.putc(TagNull)
     end
-    def write_empty()
+    def write_empty
       @stream.putc(TagEmpty)
     end
     def write_boolean(bool)
@@ -762,26 +762,26 @@ module Hprose
       end
     end
     def reset
-      @classref.clear()
-      @ref.clear()
+      @classref.clear
+      @ref.clear
     end
   end # class Writer
 
   class Formatter
     class << self
       def serialize(variable)
-        stream = StringIO.new()
+        stream = StringIO.new
         writer = Writer.new(stream)
         writer.serialize(variable)
         s = stream.string
-        stream.close()
+        stream.close
         return s
       end
       def unserialize(variable_representation)
         stream = StringIO.new(variable_representation, 'rb')
         reader = Reader.new(stream)
-        obj = reader.unserialize()
-        stream.close()
+        obj = reader.unserialize
+        stream.close
         return obj
       end
     end # class

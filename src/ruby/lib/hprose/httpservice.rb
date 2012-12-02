@@ -14,7 +14,7 @@
 #                                                          #
 # hprose http service for ruby                             #
 #                                                          #
-# LastModified: Dec 1, 2012                                #
+# LastModified: Dec 2, 2012                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -28,8 +28,8 @@ module Hprose
     attr_accessor :crossdomain
     attr_accessor :p3p
     attr_accessor :get
-    def initialize()
-      super()
+    def initialize
+      super
       @crossdomain = false
       @p3p = false
       @get = true
@@ -58,12 +58,12 @@ module Hprose
         elsif (env['REQUEST_METHOD'] == 'POST') then
           reader = Reader.new(StringIO.new(@filter.input_filter(env['rack.input'].read), 'rb'))
           handle(reader, writer, session, env)
-          reader.stream.close()
+          reader.stream.close
         end
       ensure
         stream = writer.stream
         body = @filter.output_filter(stream.string)
-        stream.close()
+        stream.close
         header['Content-Length'] = body.size.to_s
         return [200, header, [body]]
       end
