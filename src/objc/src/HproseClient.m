@@ -13,7 +13,7 @@
  *                                                        *
  * hprose client for Objective-C.                         *
  *                                                        *
- * LastModified: Jul 2, 2011                              *
+ * LastModified: Dec 3, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -62,6 +62,7 @@
 @property BOOL byRef;
 @property BOOL utc;
 @property HproseCallback callback;
+@property (retain) id context;
 @property (retain) id delegate;
 @property (retain) id defaultDelegate;
 @property SEL selector;
@@ -88,6 +89,7 @@
 @synthesize byRef;
 @synthesize utc;
 @synthesize callback;
+@synthesize context;
 @synthesize delegate;
 @synthesize defaultDelegate;
 @synthesize selector;
@@ -102,6 +104,7 @@
     [client release];
     [name release];
     [args release];
+    [context release];
     [delegate release];
     [defaultDelegate release];
 #if defined(Block_copy) && defined(Block_release)
@@ -112,10 +115,10 @@
 }
 
 - (void) invoke {
-    NSOutputStream *ostream = nil;
     BOOL success = NO;
     @try {
-        ostream = [client getOutputStreamAsync:nil];
+        [self setContext:[client getInvokeContextAsync: self]];
+        NSOutputStream *ostream = [client getOutputStreamAsync:context];
         [client doOutput:ostream withName:name withArgs:args byRef:byRef UTC:utc];
         success = YES;
     }
@@ -123,15 +126,13 @@
         [self errorCallback:e];
     }
     @finally {
-        context = [client sendDataAsync:ostream withContext:self isSuccess:success];
-        
+        [client sendDataAsync:context isSuccess:success];
     }
 }
 
 - (void) successCallback {
     BOOL success = NO;
     id result = nil;
-    NSInputStream *istream = nil;
     @try {
         NSInputStream *istream = [client getInputStreamAsync:context];
         result = [client doInput:istream withArgs:args resultClass:cls resultType:type resultMode:mode];
@@ -142,7 +143,7 @@
         return;
     }
     @finally {
-        [client endInvokeAsync:istream withContext:context isSuccess:success];
+        [client endInvokeAsync:context isSuccess:success];
     }
     if ([result isMemberOfClass:[HproseException class]]) {
         [self errorCallback:result];
@@ -354,6 +355,7 @@
 
 @synthesize uri;
 @synthesize utc=defaultUTC;
+@synthesize filter;
 @synthesize delegate=defaultDelegate;
 @synthesize onError;
 #if defined(Block_copy) && defined(Block_release)
@@ -377,6 +379,7 @@
 
 - (void) dealloc {
     [uri release];
+    [filter release];
 #if defined(Block_copy) && defined(Block_release)
     [errorHandler release];
 #endif
@@ -760,7 +763,7 @@
                         [reader reset];
                         NSArray *arguments = [reader readArray];
                         if (args != nil) {
-                            for (int i = 0, n = [args count]; i < n; i++) {
+                            for (int i = 0, n = (int)[args count]; i < n; i++) {
                                 [args replaceObjectAtIndex:i withObject:[arguments objectAtIndex:i]];
                             }
                         }
@@ -801,7 +804,7 @@
 @implementation HproseClient(PrivateMethods)
 
 - (id) invoke:(NSString *)name withArgs:(NSMutableArray *)args byRef:(BOOL)byRef resultClass:(Class)cls resultType:(char)type resultMode:(HproseResultMode)mode UTC:(BOOL)utc {
-    id context = nil;
+    id context = [self getInvokeContext:self];
     NSOutputStream *ostream = [self getOutputStream:context];
     BOOL success = NO;
     @try {
@@ -809,7 +812,7 @@
         success = YES;
     }
     @finally {
-        context = [self sendData:ostream withContext:context isSuccess:success];
+        [self sendData:context isSuccess:success];
     }
     NSInputStream *istream = [self getInputStream:context];
     success = NO;
@@ -819,7 +822,7 @@
         success = YES;
     }
     @finally {
-        [self endInvoke:istream withContext:context isSuccess:success];
+        [self endInvoke:context isSuccess:success];
     }
     if ([result isMemberOfClass:[HproseException class]]) {
         @throw result;

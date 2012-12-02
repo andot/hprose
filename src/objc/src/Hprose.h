@@ -13,7 +13,7 @@
  *                                                        *
  * hprose header for Objective-C.                         *
  *                                                        *
- * LastModified: Jul 2, 2011                              *
+ * LastModified: Dec 3, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -25,5 +25,6 @@
 #import "HproseHelper.h"
 #import "HproseClassManager.h"
 #import "HproseResultMode.h"
+#import "HproseFilter.h"
 #import "HproseClient.h"
 #import "HproseHttpClient.h"

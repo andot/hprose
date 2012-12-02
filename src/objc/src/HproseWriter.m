@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for Objective-C.                   *
  *                                                        *
- * LastModified: Jul 2, 2011                              *
+ * LastModified: Dec 3, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -28,7 +28,7 @@
 @interface HproseWriter(PrivateMethods)
 
 - (NSUInteger) writeClass:(Class)cls;
-- (void) writeRef:(NSUInteger)r;
+- (void) writeRef:(int)r;
 - (BOOL) writeRef:(id)o checkRef:(BOOL)b;
 - (void) writeProperty:(HproseProperty *)property forObject:(id)o;
 
@@ -91,9 +91,7 @@ static Class classOfNSCFBoolean;
 
 - (id) initWithStream:(NSOutputStream *)dataStream {
     if ((self = [self init])) {
-        [dataStream retain];
-        [stream release];
-        stream = dataStream;
+        [self setStream: dataStream];
     }
     return (self);
 }
@@ -455,7 +453,7 @@ static Class classOfNSCFBoolean;
 - (void) writeData:(NSData *)data checkRef:(BOOL)b {
     if ([self writeRef:data checkRef:b]) {
         [stream writeByte:HproseTagBytes];
-        int length = [data length];
+        int length = (int)[data length];
         if (length > 0) {
             [self writeInt32:length withStream:stream];            
         }
@@ -490,7 +488,7 @@ static Class classOfNSCFBoolean;
 - (void) writeString:(NSString *)s checkRef:(BOOL)b {
     if ([self writeRef:s checkRef:b]) {
         [stream writeByte:HproseTagString];
-        int length = [s length];
+        int length = (int)[s length];
         if (length > 0) {
             [self writeInt32:length withStream:stream];            
         }
@@ -510,7 +508,7 @@ static Class classOfNSCFBoolean;
 - (void) writeArray:(NSArray *)a checkRef:(BOOL)b {
     if ([self writeRef:a checkRef:b]) {
         [stream writeByte:HproseTagList];
-        int count = [a count];
+        int count = (int)[a count];
         if (count > 0) {
             [self writeInt32:count withStream:stream];            
         }
@@ -531,7 +529,7 @@ static Class classOfNSCFBoolean;
 - (void) writeDict:(NSDictionary *)m checkRef:(BOOL)b {
     if ([self writeRef:m checkRef:b]) {
         [stream writeByte:HproseTagMap];
-        int count = [m count];
+        int count = (int)[m count];
         if (count) {
             [self writeInt32:count withStream:stream];
         }
@@ -553,7 +551,7 @@ static Class classOfNSCFBoolean;
 - (void) writeObject:(id)o checkRef:(BOOL)b {
     NSUInteger r = [ref indexOfObjectIdenticalTo:o];
     if (b && (r != NSNotFound)) {
-        [self writeRef:r];
+        [self writeRef:(int)r];
     }
     else {
         Class cls = [o class];
@@ -564,7 +562,7 @@ static Class classOfNSCFBoolean;
         [ref addObject:o];
         NSDictionary * properties = [HproseHelper getHproseProperties:cls];
         [stream writeByte:HproseTagObject];
-        [self writeInt32:cr withStream:stream];
+        [self writeInt32:(int)cr withStream:stream];
         [stream writeByte:HproseTagOpenbrace];
         if ([properties count] > 0) {
             for (id name in properties) {
@@ -588,14 +586,14 @@ static Class classOfNSCFBoolean;
     NSDictionary * properties = [HproseHelper getHproseProperties:cls];
     [stream writeByte:HproseTagClass];
     NSString *className = [HproseHelper getClassName:cls];
-    int len = [className length];
+    int len = (int)[className length];
     [self writeInt32:len withStream:stream];
     [stream writeByte:HproseTagQuote];
     if (len > 0) {
         [stream writeBuffer:(void *)[className UTF8String] maxLength:len];
     }
     [stream writeByte:HproseTagQuote];
-    int count = [properties count];
+    int count = (int)[properties count];
     if (count > 0) {
         [self writeInt32:count withStream:stream];
     }
@@ -608,7 +606,7 @@ static Class classOfNSCFBoolean;
     return [classref count] - 1;
 }
 
-- (void) writeRef:(NSUInteger)r {
+- (void) writeRef:(int)r {
     [stream writeByte:HproseTagRef];
     [self writeInt32:r withStream:stream];
     [stream writeByte:HproseTagSemicolon];
@@ -617,7 +615,7 @@ static Class classOfNSCFBoolean;
 - (BOOL) writeRef:(id)o checkRef:(BOOL)b {
     NSUInteger r = [ref indexOfObject:o];
     if (b && (r != NSNotFound)) {
-        [self writeRef:r];
+        [self writeRef:(int)r];
         return NO;
     }
     else {

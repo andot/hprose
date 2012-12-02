@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for Objective-C.                   *
  *                                                        *
- * LastModified: Nov 2, 2012                              *
+ * LastModified: Dec 3, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -168,9 +168,7 @@ static double NaN, Infinity, NegInfinity;
 
 - (id) initWithStream:(NSInputStream *)dataStream {
     if ((self = [self init])) {
-        [dataStream retain];
-        [stream release];
-        stream = dataStream;
+        [self setStream: dataStream];
     }
     return (self);
 }
@@ -1143,7 +1141,7 @@ static double NaN, Infinity, NegInfinity;
         tag = [self checkTags:expectedTags];
         if (tag == HproseTagRef) return [self readRef];
     }
-    NSUInteger count = [self readUI32:HproseTagOpenbrace];
+    int count = (int)[self readUI32:HproseTagOpenbrace];
     if (cls != Nil &&
         cls != [NSDictionary class] &&
         cls != [NSMutableDictionary class] &&
@@ -1232,14 +1230,14 @@ static double NaN, Infinity, NegInfinity;
         tag = [self checkTags:expectedTags];
         if (tag == HproseTagRef) return [self readRef];
     }
-    NSUInteger len = [self readUI32:HproseTagQuote];
+    int len = (int)[self readUI32:HproseTagQuote];
     id data = nil;
     if (cls == [NSData class] || cls == [NSMutableData class]) {
         data = [NSMutableData dataWithCapacity:len * 3];
         uint8_t bytes[4];
-        NSUInteger i;
+        int i;
         for (i = 0; i < len; ++i) {
-            int l = [stream read:&bytes[0] maxLength:1];
+            int l = (int)[stream read:&bytes[0] maxLength:1];
             switch (bytes[0] >> 4) {
                 case 0:
                 case 1:
@@ -1280,7 +1278,7 @@ static double NaN, Infinity, NegInfinity;
     else {
         unichar *buffer = malloc(len * sizeof(unichar));
         int c, c2, c3, c4;
-        for (NSUInteger i = 0; i < len; ++i) {
+        for (int i = 0; i < len; ++i) {
             c = [stream readByte];
             switch (c >> 4) {
                 case 0:
@@ -1323,6 +1321,7 @@ static double NaN, Infinity, NegInfinity;
                     }
                     // no break here!! here need throw exception.
                 default:
+                    free(buffer);
                     @throw [HproseException exceptionWithReason:
                             [NSString stringWithString:
                              ((c < 0) ? @"end of stream" : @"bad utf-8 encoding")]];
@@ -1353,6 +1352,7 @@ static double NaN, Infinity, NegInfinity;
                      freeWhenDone:YES] autorelease];
         }
         else {
+            free(buffer);
             _throwCastException(@"String", cls);
         }        
     }

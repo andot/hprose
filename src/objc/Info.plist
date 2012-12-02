@@ -5,7 +5,7 @@
 	<key>CFBundleGetInfoString</key>
 	<string>Hprose for Objective-C</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.hprfc.hprose</string>
+	<string>org.coolcode.hprose</string>
 	<key>CFBundleName</key>
 	<string>Hprose</string>
 	<key>CFBundlePackageType</key>
@@ -15,6 +15,6 @@
 	<key>CFBundleVersion</key>
 	<string>5</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright HPRFC Software Co.,Ltd. All rights reserved.</string>
+	<string>Copyright CoolCode Studio. All rights reserved.</string>
 </dict>
 </plist>

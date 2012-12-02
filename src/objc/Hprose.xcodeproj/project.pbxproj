@@ -18,6 +18,7 @@
 		9B3E98F4111C9DF300C617E2 /* HproseWriter.m in Sources */ = {isa = PBXBuildFile; fileRef = 9B3E98EB111C9DF300C617E2 /* HproseWriter.m */; };
 		9B9AF6B710F607B20043DFBD /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9B9AF6B610F607B20043DFBD /* Foundation.framework */; };
 		9BAA671213BEEDCA00FE3678 /* HproseResultMode.h in Headers */ = {isa = PBXBuildFile; fileRef = 9BAA671113BEEDC900FE3678 /* HproseResultMode.h */; };
+		9BC12FE5166BC1DA0097CD3C /* HproseFilter.h in Headers */ = {isa = PBXBuildFile; fileRef = 9BC12FE4166BC1DA0097CD3C /* HproseFilter.h */; };
 		9BC8E0F51189AD4100F886FF /* Hprose.h in Headers */ = {isa = PBXBuildFile; fileRef = 9BC8E0E71189AD4100F886FF /* Hprose.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		9BC8E0F61189AD4100F886FF /* HproseAsyncInvoke.h in Headers */ = {isa = PBXBuildFile; fileRef = 9BC8E0E81189AD4100F886FF /* HproseAsyncInvoke.h */; settings = {ATTRIBUTES = (); }; };
 		9BC8E0F71189AD4100F886FF /* HproseClassManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 9BC8E0E91189AD4100F886FF /* HproseClassManager.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -48,6 +49,7 @@
 		9B3E98EB111C9DF300C617E2 /* HproseWriter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = HproseWriter.m; path = src/HproseWriter.m; sourceTree = "<group>"; };
 		9B9AF6B610F607B20043DFBD /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		9BAA671113BEEDC900FE3678 /* HproseResultMode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HproseResultMode.h; path = src/HproseResultMode.h; sourceTree = "<group>"; };
+		9BC12FE4166BC1DA0097CD3C /* HproseFilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HproseFilter.h; path = src/HproseFilter.h; sourceTree = "<group>"; };
 		9BC8E0E71189AD4100F886FF /* Hprose.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Hprose.h; path = src/Hprose.h; sourceTree = "<group>"; };
 		9BC8E0E81189AD4100F886FF /* HproseAsyncInvoke.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HproseAsyncInvoke.h; path = src/HproseAsyncInvoke.h; sourceTree = "<group>"; };
 		9BC8E0E91189AD4100F886FF /* HproseClassManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HproseClassManager.h; path = src/HproseClassManager.h; sourceTree = "<group>"; };
@@ -126,6 +128,7 @@
 				9BC8E0EF1189AD4100F886FF /* HproseConnection.h */,
 				9BC8E0F01189AD4100F886FF /* HproseException.h */,
 				9BC8E0F11189AD4100F886FF /* HproseException.m */,
+				9BC12FE4166BC1DA0097CD3C /* HproseFilter.h */,
 				9BC8E0F21189AD4100F886FF /* HproseHttpClient.h */,
 				9BC8E0F31189AD4100F886FF /* HproseHttpClient.m */,
 				9BC8E0F41189AD4100F886FF /* HproseInvoker.h */,
@@ -188,6 +191,7 @@
 				9BC8E1001189AD4100F886FF /* HproseHttpClient.h in Headers */,
 				9BC8E1021189AD4100F886FF /* HproseInvoker.h in Headers */,
 				9BAA671213BEEDCA00FE3678 /* HproseResultMode.h in Headers */,
+				9BC12FE5166BC1DA0097CD3C /* HproseFilter.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

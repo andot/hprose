@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http client for Objective-C.                    *
  *                                                        *
- * LastModified: Jun 20, 2011                             *
+ * LastModified: Dec 3, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -23,26 +23,30 @@
 #import "HproseConnection.h"
 #import "HproseAsyncInvoke.h"
 
-@interface AsyncInvokeDelegate : NSObject {
+@interface AsyncInvokeContext: NSObject {
     NSMutableData *buffer;
     id <HproseAsyncInvoke, NSObject> asyncInvoke;
+    NSOutputStream *ostream;
+    NSInputStream *istream;
 }
 
-@property (retain) id <HproseAsyncInvoke, NSObject> asyncInvoke;
 @property (readonly) NSMutableData *buffer;
+@property (retain) id <HproseAsyncInvoke, NSObject> asyncInvoke;
+@property (retain) NSOutputStream *ostream;
+@property (retain) NSInputStream *istream;
 
-- (id) init:(id <HproseAsyncInvoke, NSObject>)invoke;
 - (void)connection:(NSURLConnection *)theConnection didReceiveResponse:(NSURLResponse *)response;
 - (void)connection:(NSURLConnection *)theConnection didReceiveData:(NSData *)data;
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error;
 - (void)connectionDidFinishLoading:(NSURLConnection *)theConnection;
-
 @end
 
-@implementation AsyncInvokeDelegate
+@implementation AsyncInvokeContext
 
-@synthesize asyncInvoke;
 @synthesize buffer;
+@synthesize asyncInvoke;
+@synthesize ostream;
+@synthesize istream;
 
 - (id) init {
     if ((self = [super init])) {
@@ -51,22 +55,17 @@
     return (self);
 }
 
-- (id) init:(id <HproseAsyncInvoke, NSObject>)invoke {
-    if ((self = [self init])) {
-        [self setAsyncInvoke:invoke];
-    }
-    return (self);
-}
-
 - (void) dealloc {
-    [buffer release];
     [asyncInvoke release];
+    [ostream release];
+    [istream release];
     [super dealloc];
 }
 
+
 - (void)connection:(NSURLConnection *)theConnection didReceiveResponse:(NSURLResponse *)response {
 #pragma unused(theConnection)
-    NSHTTPURLResponse * httpResponse = (NSHTTPURLResponse *) response;    
+    NSHTTPURLResponse * httpResponse = (NSHTTPURLResponse *) response;
     if ([httpResponse statusCode] != 200) {
         [asyncInvoke errorCallback:[HproseException exceptionWithReason:
                                     [NSString stringWithFormat:@"Http error %d: %@",
@@ -93,21 +92,53 @@
 
 @end
 
+@interface SyncInvokeContext: NSObject {
+    NSOutputStream *ostream;
+    NSInputStream *istream;
+}
+
+@property (retain) NSOutputStream *ostream;
+@property (retain) NSInputStream *istream;
+
+@end
+
+@implementation SyncInvokeContext
+
+@synthesize ostream;
+@synthesize istream;
+
+- (void) dealloc {
+    [ostream release];
+    [istream release];
+    [super dealloc];
+}
+@end
+
 @interface HproseHttpClient(HproseConnection)<HproseConnection>
 @end
 
 @implementation HproseHttpClient(HproseConnection)
 
+- (id) getInvokeContext:(id)invoke {
+    SyncInvokeContext *context = [[[SyncInvokeContext alloc] init] autorelease];
+    return context;
+}
+
 - (NSOutputStream *) getOutputStream:(id)context {
-    NSOutputStream *ostream = [[NSOutputStream alloc] initToMemory];
+    NSOutputStream *ostream = [[[NSOutputStream alloc] initToMemory] autorelease];
+    [context setOstream: ostream];
     [ostream open];
     return ostream;
 }
 
-- (id) sendData:(NSOutputStream *)ostream withContext:(id)context isSuccess:(BOOL)success {
-    @try { 
+- (void) sendData:(id)context isSuccess:(BOOL)success {
+    NSOutputStream *ostream = [context ostream];
+    @try {
         if (success) {
             NSData *data = [ostream propertyForKey:NSStreamDataWrittenToMemoryStreamKey];
+            if (filter != nil) {
+                data = [filter outputFilter:data];
+            }
             NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
             [request setTimeoutInterval:timeout];
             for (id field in header) {
@@ -125,7 +156,7 @@
             [request setHTTPBody:data];
             NSHTTPURLResponse *response;
             NSError *error;
-            context = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
+            data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
             NSInteger statusCode = [response statusCode];
             if (statusCode != 200 && statusCode != 0) {
                 @throw [HproseException exceptionWithReason:
@@ -133,45 +164,53 @@
                          (int)statusCode,
                          [NSHTTPURLResponse localizedStringForStatusCode:statusCode]]];                
             }
-            if (context == nil) {
+            if (data == nil) {
                 @throw [HproseException exceptionWithReason:[error localizedDescription]];
             }
-            return context;
+            if (filter != nil) {
+                data = [filter inputFilter: data];
+            }
+            NSInputStream *istream = [[[NSInputStream alloc] initWithData:data] autorelease];
+            [context setIstream: istream];
         }
     }
     @finally {
         [ostream close];
-        [ostream release];
     }
-    return nil;
 }
 
 - (NSInputStream *) getInputStream:(id)context {
-    NSInputStream *istream = [[NSInputStream alloc] initWithData:context];
+    NSInputStream *istream = [context istream];
     [istream open];
     return istream;
 }
 
-- (void) endInvoke:(NSInputStream *)istream withContext:(id)context isSuccess:(BOOL)success {
-    @try { 
-        [istream close];
-        [istream release];
-    }
-    @catch (NSException *e) {
-    }
+- (void) endInvoke:(id)context isSuccess:(BOOL)success {
+    NSInputStream *istream = [context istream];
+    [istream close];
+}
+
+- (id) getInvokeContextAsync:(id)invoke {
+    AsyncInvokeContext *context = [[[AsyncInvokeContext alloc] init] autorelease];
+    [context setAsyncInvoke: invoke];
+    return context;
 }
 
 - (NSOutputStream *) getOutputStreamAsync:(id)context {
-    NSOutputStream *ostream = [[NSOutputStream alloc] initToMemory];
+    NSOutputStream *ostream = [[[NSOutputStream alloc] initToMemory] autorelease];
+    [context setOstream: ostream];
     [ostream open];
     return ostream;
 }
 
-- (id) sendDataAsync:(NSOutputStream *)ostream withContext:(id)context isSuccess:(BOOL)success {
-    id delegate = nil;
+- (void) sendDataAsync:(id)context isSuccess:(BOOL)success {
+    NSOutputStream *ostream = [context ostream];
     @try { 
         if (success) {
             NSData *data = [ostream propertyForKey:NSStreamDataWrittenToMemoryStreamKey];
+            if (filter != nil) {
+                data = [filter outputFilter:data];
+            }
             NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
             [request setTimeoutInterval:timeout];
             for (id field in header) {
@@ -187,33 +226,35 @@
             [request setHTTPShouldHandleCookies:YES];
             [request setHTTPMethod:@"POST"];
             [request setHTTPBody:data];
-            delegate = [[[AsyncInvokeDelegate alloc] init:context] autorelease];
-            [NSURLConnection connectionWithRequest:request delegate:delegate];
+            [NSURLConnection connectionWithRequest:request delegate:context];
         }
     }
     @catch (NSException *e) {
-        [context errorCallback:e];
+        [[context asyncInvoke] errorCallback:e];
     }
     @finally {
         [ostream close];
-        [ostream release];
     }
-    return delegate;
 }
 
 - (NSInputStream *) getInputStreamAsync:(id)context {
-    NSInputStream *istream = [[NSInputStream alloc] initWithData:[context buffer]];
+    NSData *data = [context buffer];
+    if (filter != nil) {
+        data = [filter inputFilter: data];
+    }
+    NSInputStream *istream = [[[NSInputStream alloc] initWithData:data] autorelease];
+    [context setIstream: istream];
     [istream open];
     return istream;
 }
 
-- (void) endInvokeAsync:(NSInputStream *)istream withContext:(id)context isSuccess:(BOOL)success {
+- (void) endInvokeAsync:(id)context isSuccess:(BOOL)success {
     @try { 
+        NSInputStream *istream = [context istream];
         [istream close];
-        [istream release];
     }
     @catch (NSException *e) {
-        [context errorCallback:e];
+        [[context asyncInvoke] errorCallback:e];
     }
 }
 
