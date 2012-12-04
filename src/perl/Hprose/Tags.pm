@@ -18,10 +18,10 @@
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
+package Hprose::Tags;
+
 use strict;
 use warnings;
-
-package Hprose::Tags;
 
 use constant {
 # Serialize Tags #

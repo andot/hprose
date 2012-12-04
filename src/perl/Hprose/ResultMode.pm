@@ -14,14 +14,14 @@
 #                                                          #
 # Hprose ResultMode enum for perl                          #
 #                                                          #
-# LastModified: Dec 3, 2012                                #
+# LastModified: Dec 4, 2012                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
+package Hprose::ResultMode;
+
 use strict;
 use warnings;
-
-package Hprose::ResultMode;
 
 use constant {
     Normal => 0,

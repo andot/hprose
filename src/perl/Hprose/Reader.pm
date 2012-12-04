@@ -18,13 +18,13 @@
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
+package Hprose::Reader;
+
 use strict;
 use warnings;
 use Encode;
 use Error qw(:try);
 use Hprose::Tags;
-
-package Hprose::Reader;
 
 sub new {
     my $class = shift;

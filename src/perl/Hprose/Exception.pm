@@ -18,12 +18,11 @@
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
+package Hprose::Exception;
+
 use strict;
 use warnings;
 use Error;
-
-package Hprose::Exception;
-
 use base qw(Error);
 
 sub new {

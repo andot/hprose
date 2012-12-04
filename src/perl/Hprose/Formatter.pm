@@ -18,10 +18,10 @@
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
+package Hprose::Formatter;
+
 use strict;
 use warnings;
-
-package Hprose::Formatter;
 
 
 

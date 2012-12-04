@@ -18,18 +18,12 @@
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
-use strict;
-use warnings;
-
 package Hprose::Numeric;
 
-require Exporter;
-our (@ISA, @EXPORT);
-
-BEGIN {
-    @ISA = qw(Exporter);
-    @EXPORT = qw(isnumeric isnan isinf isninf);
-}
+use strict;
+use warnings;
+use Exporter 'import';
+our @EXPORT = qw(isnumeric isnan isinf isninf);
 
 use constant {
     Inf => 'inf' + 0,

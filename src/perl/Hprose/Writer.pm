@@ -18,13 +18,12 @@
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
+package Hprose::Writer;
+
 use strict;
 use warnings;
 use Encode;
 use Error;
-
-package Hprose::Writer;
-
 use Hprose::Numeric;
 use Hprose::Exception;
 use Hprose::Tags;
@@ -32,10 +31,12 @@ use Hprose::Tags;
 sub new {
     my $class = shift;
     my ($stream) = @_;
+    use Tie::RefHash;
+    tie my %ref, 'Tie::RefHash';
     my $self = bless {
         'stream' => $stream,
         'classref' => {},
-        'ref' => {},
+        'ref' => \%ref,
     }, $class;
 }
 
@@ -44,7 +45,7 @@ sub serialize {
     my ($val) = @_;
     my $stream = $self->{'stream'};
     if (!defined($val)) {
-        $stream->write(Hprose::Tags->Null, 1);
+        $stream->print(Hprose::Tags->Null);
     }
     elsif (!ref($val)) {
         if (isnumeric($val)) {
@@ -61,13 +62,12 @@ sub serialize {
             }
         }
         elsif ($val eq '') {
-            $stream->write(Hprose::Tags->Empty, 1);
+            $stream->print(Hprose::Tags->Empty);
         }
         elsif (Encode::is_utf8($val)) {
             if (length($val) == 1) {
-                $stream->write(Hprose::Tags->UTF8Char, 1);
                 Encode::_utf8_off($val);
-                $stream->write($val, length($val));
+                $stream->print(Hprose::Tags->UTF8Char, $val);
                 Encode::_utf8_on($val);
             }
             else {
@@ -78,9 +78,8 @@ sub serialize {
             Encode::_utf8_on($val);
             if (Encode::is_utf8($val, 1)) {
                 if (length($val) == 1) {
-                    $stream->write(Hprose::Tags->UTF8Char, 1);
                     Encode::_utf8_off($val);
-                    $stream->write($val, length($val));
+                    $stream->print(Hprose::Tags->UTF8Char, $val);
                 }
                 else {
                     $self->write_string($val);
@@ -105,15 +104,6 @@ sub serialize {
         elsif ($type eq 'HASH') {
             $self->write_hash($val);
         }
-        elsif ($type eq 'CODE' ||
-               $type eq 'GLOB' ||
-               $type eq 'LVALUE' ||
-               $type eq 'FORMAT' ||
-               $type eq 'IO' ||
-               $type eq 'IO::Handle' ||
-               $type eq 'Regexp') {
-            throw Hprose::Exception('Not support to serialize this type: '. $type);
-        }
         elsif ($type eq 'Math::BigInt') {
             $self->write_long($val);
         }
@@ -125,6 +115,21 @@ sub serialize {
         }
         elsif ($type eq 'Data::GUID') {
             $self->write_guid($val);
+        }
+        elsif ($type eq 'IO::String') {
+            $self->write_bytes(${$val->string_ref});
+        }
+        elsif ($type eq 'IO::Scalar') {
+            $self->write_bytes(${$val->sref});
+        }
+        elsif ($type eq 'CODE' ||
+               $type eq 'GLOB' ||
+               $type eq 'LVALUE' ||
+               $type eq 'FORMAT' ||
+               $type eq 'Regexp' ||
+               $type eq 'IO' ||
+               $type =~ /^IO::.*+$/i) {
+            throw Hprose::Exception('Not support to serialize this type: '. $type);
         }
         else {
             $self->write_object($val);
@@ -138,12 +143,10 @@ sub write_integer {
     $val = int($val);
     my $stream = $self->{'stream'};
     if ($val >= 0 && $val <= 9) {
-        return $stream->write($val, 1);
+        return $stream->print($val);
     }
     else {
-        $stream->write(Hprose::Tags->Integer, 1);
-        $stream->write($val, length($val));
-        $stream->write(Hprose::Tags->Semicolon, 1);
+        $stream->print(Hprose::Tags->Integer, $val, Hprose::Tags->Semicolon);
     }
 }
 
@@ -152,20 +155,16 @@ sub write_long {
     my ($val) = @_;
     my $stream = $self->{'stream'};
     if (isnan($val)) {
-        $stream->write(Hprose::Tags->NaN, 1);
+        $stream->print(Hprose::Tags->NaN);
     }
     elsif (isinf($val)) {
-        $stream->write(Hprose::Tags->Infinity, 1);
-        $stream->write(Hprose::Tags->Pos, 1);
+        $stream->print(Hprose::Tags->Infinity, Hprose::Tags->Pos);
     }
     elsif (isninf($val)) {
-        $stream->write(Hprose::Tags->Infinity, 1);
-        $stream->write(Hprose::Tags->Neg, 1);
+        $stream->print(Hprose::Tags->Infinity, Hprose::Tags->Neg);
     }
     else {
-        $stream->write(Hprose::Tags->Long, 1);
-        $stream->write($val, length($val));
-        $stream->write(Hprose::Tags->Semicolon, 1);
+        $stream->print(Hprose::Tags->Long, $val, Hprose::Tags->Semicolon);
     }
 }
 
@@ -174,60 +173,54 @@ sub write_double {
     my ($val) = @_;
     my $stream = $self->{'stream'};
     if (isnan($val)) {
-        $stream->write(Hprose::Tags->NaN, 1);
+        $stream->print(Hprose::Tags->NaN);
     }
     elsif (isinf($val)) {
-        $stream->write(Hprose::Tags->Infinity, 1);
-        $stream->write(Hprose::Tags->Pos, 1);
+        $stream->print(Hprose::Tags->Infinity, Hprose::Tags->Pos);
     }
     elsif (isninf($val)) {
-        $stream->write(Hprose::Tags->Infinity, 1);
-        $stream->write(Hprose::Tags->Neg, 1);
+        $stream->print(Hprose::Tags->Infinity, Hprose::Tags->Neg);
     }
     else {
-        $stream->write(Hprose::Tags->Double, 1);
-        $stream->write($val, length($val));
-        $stream->write(Hprose::Tags->Semicolon, 1);
+        $stream->print(Hprose::Tags->Double, $val, Hprose::Tags->Semicolon);
     }
 }
 
 sub write_null {
     my $self = shift;
     my $stream = $self->{'stream'};
-    $stream->write(Hprose::Tags->Null, 1);
+    $stream->print(Hprose::Tags->Null);
 }
 
 sub write_nan {
     my $self = shift;
     my $stream = $self->{'stream'};
-    $stream->write(Hprose::Tags->NaN, 1);
+    $stream->print(Hprose::Tags->NaN);
 }
 
 sub write_inf {
     my $self = shift;
     my $stream = $self->{'stream'};
-    $stream->write(Hprose::Tags->Infinity, 1);
-    $stream->write(Hprose::Tags->Pos, 1);
+    $stream->print(Hprose::Tags->Infinity, Hprose::Tags->Pos);
 }
 
 sub write_ninf {
     my $self = shift;
     my $stream = $self->{'stream'};
-    $stream->write(Hprose::Tags->Infinity, 1);
-    $stream->write(Hprose::Tags->Neg, 1);
+    $stream->print(Hprose::Tags->Infinity, Hprose::Tags->Neg);
 }
 
 sub write_boolean {
     my $self = shift;
     my ($val) = @_;
     my $stream = $self->{'stream'};
-    $stream->write($val ? Hprose::Tags->True : Hprose::Tags->False, 1);
+    $stream->print($val ? Hprose::Tags->True : Hprose::Tags->False);
 }
 
 sub write_empty {
     my $self = shift;
     my $stream = $self->{'stream'};
-    $stream->write(Hprose::Tags->Empty, 1);
+    $stream->print(Hprose::Tags->Empty);
 }
 
 sub write_string {
@@ -238,14 +231,15 @@ sub write_string {
     return $self->write_ref($ref->{$val}) if ($check_ref && exists($ref->{$val}));
     $ref->{$val} = scalar(keys(%$ref));
     my $stream = $self->{'stream'};
-    $stream->write(Hprose::Tags->String, 1);
     my $length = length($val);
-    $stream->write($length, length($length)) if ($length > 0);
-    $stream->write(Hprose::Tags->Quote, 1);
-    Encode::_utf8_off($val);
-    $stream->write($val, length($val));
-    Encode::_utf8_on($val) if ($utf8);
-    $stream->write(Hprose::Tags->Quote, 1);
+    if ($length > 0) {
+        Encode::_utf8_off($val);
+        $stream->print(Hprose::Tags->String, $length, Hprose::Tags->Quote, $val, Hprose::Tags->Quote);
+        Encode::_utf8_on($val) if ($utf8);
+    }
+    else {
+        $stream->print(Hprose::Tags->String, Hprose::Tags->Quote, Hprose::Tags->Quote);
+    }
 }
 
 sub write_bytes {
@@ -256,46 +250,14 @@ sub write_bytes {
     return $self->write_ref($ref->{$val}) if ($check_ref && exists($ref->{$val}));
     $ref->{$val} = scalar(keys(%$ref));
     my $stream = $self->{'stream'};
-    $stream->write(Hprose::Tags->Bytes, 1);
     my $length = length($val);
-    $stream->write($length, length($length)) if ($length > 0);
-    $stream->write(Hprose::Tags->Quote, 1);
-    $stream->write($val, length($val));
-    $stream->write(Hprose::Tags->Quote, 1);
-}
-
-my $write_nanosecond = sub {
-    my $self = shift;
-    my ($val) = @_;
-    my $stream = $self->{'stream'};
-    if ($val->nanosecond > 0) {
-        $stream->write(Hprose::Tags->Point, 1);
-        if ($val->microsecond * 1000 == $val->nanosecond) {
-            if ($val->millisecond * 1000 == $val->microsecond) {
-                $stream->write($val->strftime('%3N'), 3);
-            }
-            else {
-                $stream->write($val->strftime('%6N'), 6);
-            }
-        }
-        else {
-            $stream->write($val->strftime('%9N'), 9);
-        }
-    }
-};
-
-my $write_time_zone = sub {
-    my $self = shift;
-    my ($val, $utc, $time_zone) = @_;
-    my $stream = $self->{'stream'};
-    if ($utc) {
-        $stream->write(Hprose::Tags->UTC, 1);
-        $val->set_time_zone($time_zone);
+    if ($length > 0) {
+        $stream->print(Hprose::Tags->Bytes, $length, Hprose::Tags->Quote, $val, Hprose::Tags->Quote);
     }
     else {
-        $stream->write(Hprose::Tags->Semicolon, 1);
+        $stream->print(Hprose::Tags->Bytes, Hprose::Tags->Quote, Hprose::Tags->Quote);
     }
-};
+}
 
 sub write_date {
     my $self = shift;
@@ -308,29 +270,35 @@ sub write_date {
     my $time_zone = $val->time_zone;
     my $utc = ref($time_zone) ne 'DateTime::TimeZone::Floating';
     $val->set_time_zone('UTC') if ($utc);
-    if ($val->hour == 0 &&
-        $val->minute == 0 &&
-        $val->second == 0 &&
-        $val->nanosecond == 0) {
-        $stream->write(Hprose::Tags->Date, 1);
-        $stream->write($val->ymd(''), 8);
-        $self->$write_time_zone($val, $utc, $time_zone);
-    }
-    elsif ($val->year == 1970 &&
-           $val->month == 1 &&
-           $val->day == 1) {
-        $stream->write(Hprose::Tags->Time, 1);
-        $stream->write($val->hms(''), 6);
-        $self->$write_nanosecond($val);
-        $self->$write_time_zone($val, $utc, $time_zone);
+    if ($val->hour == 0 && $val->minute == 0 && $val->second == 0 && $val->nanosecond == 0) {
+        $stream->print(Hprose::Tags->Date, $val->ymd(''));
     }
     else {
-        $stream->write(Hprose::Tags->Date, 1);
-        $stream->write($val->ymd(''), 8);
-        $stream->write(Hprose::Tags->Time, 1);
-        $stream->write($val->hms(''), 6);
-        $self->$write_nanosecond($val);
-        $self->$write_time_zone($val, $utc, $time_zone);
+        if ($val->year != 1970 || $val->month != 1 || $val->day != 1) {
+            $stream->print(Hprose::Tags->Date, $val->ymd(''));
+        }
+        $stream->print(Hprose::Tags->Time, $val->hms(''));
+        if ($val->nanosecond > 0) {
+            $stream->print(Hprose::Tags->Point);
+            if ($val->microsecond * 1000 == $val->nanosecond) {
+                if ($val->millisecond * 1000 == $val->microsecond) {
+                    $stream->print($val->strftime('%3N'));
+                }
+                else {
+                    $stream->print($val->strftime('%6N'));
+                }
+            }
+            else {
+                $stream->print($val->strftime('%9N'));
+            }
+        }
+    }
+    if ($utc) {
+        $stream->print(Hprose::Tags->UTC);
+        $val->set_time_zone($time_zone);
+    }
+    else {
+        $stream->print(Hprose::Tags->Semicolon);
     }
 }
 
@@ -342,10 +310,7 @@ sub write_guid {
     return $self->write_ref($ref->{$val}) if ($check_ref && exists($ref->{$val}));
     $ref->{$val} = scalar(keys(%$ref));
     my $stream = $self->{'stream'};
-    $stream->write(Hprose::Tags->Guid, 1);
-    $stream->write(Hprose::Tags->Openbrace, 1);
-    $stream->write($val->as_string, 36);
-    $stream->write(Hprose::Tags->Closebrace, 1);
+    $stream->print(Hprose::Tags->Guid, Hprose::Tags->Openbrace, $val->as_string, Hprose::Tags->Closebrace);
 }
 
 sub write_array {
@@ -357,11 +322,9 @@ sub write_array {
     $ref->{$val} = scalar(keys(%$ref));
     my $stream = $self->{'stream'};
     my $count = scalar(@$val);
-    $stream->write(Hprose::Tags->List, 1);
-    $stream->write($count, length($count)) if ($count > 0);
-    $stream->write(Hprose::Tags->Openbrace, 1);
+    $stream->print(Hprose::Tags->List, $count || '', Hprose::Tags->Openbrace);
     $self->serialize($_) foreach (@$val);
-    $stream->write(Hprose::Tags->Closebrace, 1);    
+    $stream->print(Hprose::Tags->Closebrace);    
 }
 
 sub write_hash {
@@ -374,14 +337,12 @@ sub write_hash {
     my $stream = $self->{'stream'};
     my @keys = keys(%$val);
     my $count = scalar(@keys);
-    $stream->write(Hprose::Tags->Map, 1);
-    $stream->write($count, length($count)) if ($count > 0);
-    $stream->write(Hprose::Tags->Openbrace, 1);
+    $stream->print(Hprose::Tags->Map, $count || '', Hprose::Tags->Openbrace);
     foreach (@keys) {
         $self->serialize($_);
         $self->serialize($val->{$_});        
     }
-    $stream->write(Hprose::Tags->Closebrace, 1);    
+    $stream->print(Hprose::Tags->Closebrace);    
 }
 
 sub write_object {
@@ -404,11 +365,9 @@ sub write_object {
         $cr = $self->write_class($classname, \@fields, $count);
     }
     $ref->{$val} = scalar(keys(%$ref));
-    $stream->write(Hprose::Tags->Object, 1);
-    $stream->write($cr, length($cr));
-    $stream->write(Hprose::Tags->Openbrace, 1);
+    $stream->print(Hprose::Tags->Object, $cr, Hprose::Tags->Openbrace);
     $self->serialize($val->{$_}) foreach (@fields);
-    $stream->write(Hprose::Tags->Closebrace, 1);
+    $stream->print(Hprose::Tags->Closebrace);
 }
 
 sub write_class {
@@ -416,15 +375,12 @@ sub write_class {
     my ($classname, $fields, $count) = @_;
     my $stream = $self->{'stream'};
     my $length = length($classname);
-    $stream->write(Hprose::Tags->Class, 1);
-    $stream->write($length, length($length));
-    $stream->write(Hprose::Tags->Quote, 1);
-    $stream->write($classname, $length);
-    $stream->write(Hprose::Tags->Quote, 1);
-    $stream->write($count, length($count)) if $count > 0;
-    $stream->write(Hprose::Tags->Openbrace, 1);
+    $stream->print(Hprose::Tags->Class, $length,
+                   Hprose::Tags->Quote, $classname,
+                   Hprose::Tags->Quote, $count || '',
+                   Hprose::Tags->Openbrace);
     $self->write_string($_) foreach (@$fields);
-    $stream->write(Hprose::Tags->Closebrace, 1);
+    $stream->print(Hprose::Tags->Closebrace);
     my $classref = $self->{'classref'};
     my $cr = scalar(keys(%$classref));
     $classref->{$classname} = $cr;
@@ -435,9 +391,7 @@ sub write_ref {
     my $self = shift;
     my ($val) = @_;
     my $stream = $self->{'stream'};
-    $stream->write(Hprose::Tags->Ref, 1);
-    $stream->write($val, length($val));
-    $stream->write(Hprose::Tags->Semicolon, 1);
+    $stream->print(Hprose::Tags->Ref, $val, Hprose::Tags->Semicolon);
 }
 
 1;

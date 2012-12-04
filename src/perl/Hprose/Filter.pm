@@ -18,10 +18,10 @@
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
+package Hprose::Filter;
+
 use strict;
 use warnings;
-
-package Hprose::Filter;
 
 sub new {
     my $class = shift;
