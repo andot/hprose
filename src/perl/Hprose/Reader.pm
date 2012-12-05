@@ -14,7 +14,7 @@
 #                                                          #
 # Hprose Reader class for perl                             #
 #                                                          #
-# LastModified: Dec 4, 2012                                #
+# LastModified: Dec 5, 2012                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -27,8 +27,7 @@ use Error qw(:try);
 use Hprose::Tags;
 
 sub new {
-    my $class = shift;
-    my ($stream) = @_;
+    my ($class, $stream) = @_;
     my $self = bless {
         'stream' => $stream,
         'classref' => [],

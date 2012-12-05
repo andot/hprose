@@ -14,7 +14,7 @@
 #                                                          #
 # Hprose Filter class for perl                             #
 #                                                          #
-# LastModified: Dec 4, 2012                                #
+# LastModified: Dec 5, 2012                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -24,8 +24,7 @@ use strict;
 use warnings;
 
 sub new {
-    my $class = shift;
-    my $self = bless {}, $class;
+    bless {}, shift;
 }
 
 sub input_filter { $_[1] }
