@@ -14,7 +14,7 @@
  *                                                        *
  * HproseHttpService for Node.js.                         *
  *                                                        *
- * LastModified: Dec 1, 2012                              *
+ * LastModified: Dec 6, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -27,6 +27,7 @@ function HproseHttpService() {
     var m_crossDomain = false;
     var m_P3P = false;
     var m_get = true;
+    var m_timeout = 120000;
     var m_crossDomainXmlFile = null;
     var m_crossDomainXmlContent = null;
     var m_clientAccessPolicyXmlFile = null;
@@ -124,6 +125,14 @@ function HproseHttpService() {
         m_get = enable;
     }
 
+    this.getTimeout = function() {
+        return m_timeout;
+    }
+    
+    this.setTimeout = function(timeout) {
+        m_timeout = timeout;
+    }
+    
     this.getCrossDomainXmlFile = function() {
         return m_crossDomainXmlFile;
     }
@@ -163,6 +172,7 @@ function HproseHttpService() {
     }
 
     this.handle = function(request, response) {
+        request.socket.setTimeout(m_timeout);
         var bufferList = [];
         var bufferLength = 0;
         request.on("data", function(chunk) {
