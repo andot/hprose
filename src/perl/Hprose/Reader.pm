@@ -50,6 +50,7 @@ my $check_tags = sub {
 my $getc = sub {
     my $buffer;
     return $buffer if shift->read($buffer, 1, 0);
+    undef;
 };
 
 my $readuntil = sub {
@@ -278,20 +279,16 @@ sub read_date {
     $stream->read($month, 2, 0);
     $stream->read($day, 2, 0);
     my $tag;
-    $stream->read($tag, 1, 0);
-    if ($tag eq Hprose::Tags->Time) {
+    if ($stream->read($tag, 1, 0) && $tag eq Hprose::Tags->Time) {
         $stream->read($hour, 2, 0);
         $stream->read($minute, 2, 0);
         $stream->read($second, 2, 0);
-        $stream->read($tag, 1, 0);
-        if ($tag eq Hprose::Tags->Point) {
+        if ($stream->read($tag, 1, 0) && $tag eq Hprose::Tags->Point) {
             $stream->read($nanosecond, 3, 0);
-            $stream->read($tag, 1, 0);
-            if (($tag ge '0') && ($tag le '9')) {
+            if ($stream->read($tag, 1, 0) && ($tag ge '0') && ($tag le '9')) {
                 $nanosecond .= $tag;
                 $stream->read($nanosecond, 2, 4);
-                $stream->read($tag, 1, 0);
-                if (($tag ge '0') && ($tag le '9')) {
+                if ($stream->read($tag, 1, 0) && ($tag ge '0') && ($tag le '9')) {
                     $nanosecond .= $tag;
                     $stream->read($nanosecond, 2, 7);
                     $stream->read($tag, 1, 0);
@@ -335,15 +332,12 @@ sub read_time {
     $stream->read($minute, 2, 0);
     $stream->read($second, 2, 0);
     my $tag;
-    $stream->read($tag, 1, 0);
-    if ($tag eq Hprose::Tags->Point) {
+    if ($stream->read($tag, 1, 0) && $tag eq Hprose::Tags->Point) {
         $stream->read($nanosecond, 3, 0);
-        $stream->read($tag, 1, 0);
-        if (($tag ge '0') && ($tag le '9')) {
+        if ($stream->read($tag, 1, 0) && ($tag ge '0') && ($tag le '9')) {
             $nanosecond .= $tag;
             $stream->read($nanosecond, 2, 4);
-            $stream->read($tag, 1, 0);
-            if (($tag ge '0') && ($tag le '9')) {
+            if ($stream->read($tag, 1, 0) && ($tag ge '0') && ($tag le '9')) {
                 $nanosecond .= $tag;
                 $stream->read($nanosecond, 2, 7);
                 $stream->read($tag, 1, 0);
@@ -406,7 +400,6 @@ sub read_utf8char_with_tag {
     $self->read_utf8char;
 }
 
-
 sub read_string {
     my $self = shift;
     my $str = $read_string->($self->{stream});
@@ -419,7 +412,8 @@ sub read_string_with_tag {
     ($self->check_tags(ExpectString) eq Hprose::Tags->Ref) ?
     $self->read_ref :
     $self->read_string;
-}
+}
+
 sub read_guid {
     my $self = shift;
     my $stream = $self->{stream};
@@ -430,7 +424,8 @@ sub read_guid {
     my $ref = $self->{ref};
     $ref->[scalar(@$ref)] = $guid;
 }
-sub read_guid_with_tag {
+
+sub read_guid_with_tag {
     my $self = shift;
     ($self->check_tags(ExpectGuid) eq Hprose::Tags->Ref) ?
     $self->read_ref :
@@ -475,7 +470,8 @@ sub read_hash_with_tag {
     $self->read_ref :
     $self->read_hash;
 }
-sub read_class {
+
+sub read_class {
     my $self = shift;
     my $stream = $self->{stream};
     my $classname = $read_string->($stream);
@@ -500,7 +496,8 @@ sub read_object {
     $getc->($stream);
     $object;
 }
-sub read_object_with_tag {
+
+sub read_object_with_tag {
     my $self = shift;
     my $tag = $self->check_tags(ExpectObject);
     return $self->read_ref if ($tag eq Hprose::Tags->Ref);
@@ -512,7 +509,8 @@ sub read_object {
         $self->read_object;
     }
 }
-sub read_ref {
+
+sub read_ref {
     my $self = shift;
     $self->{ref}->[$readint->($self->{stream}, Hprose::Tags->Semicolon)];
 }
@@ -521,6 +519,154 @@ sub reset {
     my $self = shift;
     undef @{$self->{ref}};
     undef @{$self->{classref}};
+}
+
+my %readRawMethod;
+
+my $read_raw = sub {
+    my ($self, $sref, $tag) = @_;
+    my $stream = $self->{stream};
+    if (defined($tag)) {
+        if (exists($readRawMethod{$tag})) {
+            $readRawMethod{$tag}($self, $sref, $tag);
+        }
+        else {
+            throw Hprose::Exception("Unexpected serialize tag '$tag' in stream");
+        }
+    }
+    else {
+        throw Hprose::Exception("No byte found in stream");
+    }
+};
+
+my $read_tag_raw = sub {
+    my ($self, $sref, $tag) = @_;
+    $$sref .= $tag;
+};
+
+my $read_number_raw = sub {
+    my ($self, $sref, $tag) = @_;
+    my $stream = $self->{stream};
+    for ($$sref .= $tag;
+         $stream->read($tag, 1, 0);
+         last if ($tag eq Hprose::Tags->Semicolon)) {
+        $$sref .= $tag;
+    }
+};
+
+my $read_infinity_raw = sub {
+    my ($self, $sref, $tag) = @_;
+    $$sref .= $tag . $getc->($self->{stream});
+};
+
+my $read_datetime_raw = sub {
+    my ($self, $sref, $tag) = @_;
+    my $stream = $self->{stream};
+    for ($$sref .= $tag;
+         $stream->read($tag, 1, 0);
+         last if ($tag eq Hprose::Tags->Semicolon ||
+                  $tag eq Hprose::Tags->UTC)) {
+        $$sref .= $tag;
+    }
+};
+
+my $read_utf8char_raw = sub {
+    my ($self, $sref, $tag) = @_;
+    $$sref .= $tag . $readutf8->($self->{stream}, 1);
+};
+
+my $read_bytes_raw = sub {
+    my ($self, $sref, $tag) = @_;
+    my $stream = $self->{stream};
+    $$sref .= $tag;
+    my $count = $readuntil->($stream, Hprose::Tags->Quote);
+    $$sref .= $count . Hprose::Tags->Quote;
+    $count = 0 if $count eq '';
+    $stream->read($$sref, $count + 1, length($$sref));
+};
+
+my $read_string_raw = sub {
+    my ($self, $sref, $tag) = @_;
+    my $stream = $self->{stream};
+    $$sref .= $tag;
+    my $count = $readuntil->($stream, Hprose::Tags->Quote);
+    $$sref .= $count . Hprose::Tags->Quote;
+    $count = 0 if $count eq '';
+    $$sref .= $readutf8->($stream, $count + 1);
+};
+
+my $read_guid_raw = sub {
+    my ($self, $sref, $tag) = @_;
+    $$sref .= $tag;
+    $self->{stream}->read($$sref, 38, length($$sref));
+};
+
+my $read_complex_raw = sub {
+    my ($self, $sref, $tag) = @_;
+    my $stream = $self->{stream};
+    for ($$sref .= $tag;
+         $stream->read($tag, 1, 0);
+         last if ($tag eq Hprose::Tags->Openbrace)) {
+        $$sref .= $tag;
+    }
+    while (($tag = $getc->($stream)) &&
+           $tag ne Hprose::Tags->Closebrace) {
+        $self->$read_raw($sref, $tag);
+    }
+    $$sref .= $tag if (defined($tag));
+};
+
+my $read_class_raw = sub {
+    my ($self, $sref, $tag) = @_;
+    $self->$read_complex_raw($sref, $tag);
+    $self->$read_raw($sref, $getc->($self->{stream}));
+};
+
+my $read_error_raw = sub {
+    my ($self, $sref, $tag) = @_;
+    $$sref .= $tag;
+    $self->$read_raw($sref, $getc->($self->{stream}));
+};
+
+%readRawMethod = (
+    '0' => $read_tag_raw,
+    '1' => $read_tag_raw,
+    '2' => $read_tag_raw,
+    '3' => $read_tag_raw,
+    '4' => $read_tag_raw,
+    '5' => $read_tag_raw,
+    '6' => $read_tag_raw,
+    '7' => $read_tag_raw,
+    '8' => $read_tag_raw,
+    '9' => $read_tag_raw,
+    Hprose::Tags->Null => $read_tag_raw,
+    Hprose::Tags->Empty => $read_tag_raw,
+    Hprose::Tags->True => $read_tag_raw,
+    Hprose::Tags->False => $read_tag_raw,
+    Hprose::Tags->NaN => $read_tag_raw,
+    Hprose::Tags->Infinity => $read_infinity_raw,
+    Hprose::Tags->Integer => $read_number_raw,
+    Hprose::Tags->Long => $read_number_raw,
+    Hprose::Tags->Double => $read_number_raw,
+    Hprose::Tags->Ref => $read_number_raw,
+    Hprose::Tags->Date => $read_datetime_raw,
+    Hprose::Tags->Time => $read_datetime_raw,
+    Hprose::Tags->UTF8Char => $read_utf8char_raw,
+    Hprose::Tags->Bytes => $read_bytes_raw,
+    Hprose::Tags->String => $read_string_raw,
+    Hprose::Tags->Guid => $read_guid_raw,
+    Hprose::Tags->List => $read_complex_raw,
+    Hprose::Tags->Map => $read_complex_raw,
+    Hprose::Tags->Object => $read_complex_raw,
+    Hprose::Tags->Class => $read_class_raw,
+    Hprose::Tags->Error => $read_error_raw,
+);
+
+sub read_raw {
+    my $self = shift;
+    my $str = '';
+    $self->$read_raw(\$str, $getc->($self->{stream}));
+    $str;
 }
 
 1;
