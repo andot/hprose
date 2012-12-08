@@ -13,7 +13,7 @@
  *                                                        *
  * Object Serializer class for C#.                        *
  *                                                        *
- * LastModified: Nov 9, 2012                              *
+ * LastModified: Dec 8, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -106,7 +106,7 @@ namespace Hprose.IO {
                 else {
                     gen.Emit(OpCodes.Ldarg_0);
                 }
-                MethodInfo getMethod = propertyInfo.GetGetMethod();
+                MethodInfo getMethod = propertyInfo.GetGetMethod(true);
                 if (getMethod.IsVirtual) {
                     gen.Emit(OpCodes.Callvirt, getMethod);
                 }
@@ -162,7 +162,7 @@ namespace Hprose.IO {
                 }
                 else {
                     PropertyInfo propertyInfo = (PropertyInfo)member;
-                    MethodInfo getMethod = propertyInfo.GetGetMethod();
+                    MethodInfo getMethod = propertyInfo.GetGetMethod(true);
                     if (getMethod.IsVirtual) {
                         gen.Emit(OpCodes.Callvirt, getMethod);
                     }

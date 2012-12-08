@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http listener server class for C#.              *
  *                                                        *
- * LastModified: Dec 1, 2012                              *
+ * LastModified: Dec 8, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -130,6 +130,15 @@ namespace Hprose.Server {
             }
         }
 
+        public IHproseFilter Filter {
+            get {
+                return service.Filter;
+            }
+            set {
+                service.Filter = value;
+            }
+        }
+        
         public bool IsStarted {
             get {
                 return Listener.IsListening;

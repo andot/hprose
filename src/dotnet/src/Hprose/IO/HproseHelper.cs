@@ -307,8 +307,7 @@ namespace Hprose.IO {
             foreach (PropertyInfo pi in piarray) {
                 string name;
                 if (pi.CanRead && pi.CanWrite &&
-                    pi.GetMethod.IsPublic && pi.SetMethod.IsPublic &&
-                    !pi.GetMethod.IsStatic && !pi.SetMethod.IsStatic &&
+                    pi.GetMethod.IsPublic && !pi.GetMethod.IsStatic && !pi.SetMethod.IsStatic &&
                     pi.GetIndexParameters().GetLength(0) == 0 &&
                     !members.ContainsKey(name = pi.Name)) {
                     name = char.ToLower(name[0]) + name.Substring(1);
@@ -324,17 +323,19 @@ namespace Hprose.IO {
             }
 #else
             BindingFlags bindingflags = BindingFlags.Public |
+                                        BindingFlags.NonPublic |
                                         BindingFlags.Instance;
             PropertyInfo[] piarray = type.GetProperties(bindingflags);
             foreach (PropertyInfo pi in piarray) {
                 string name;
-                if (pi.CanRead && pi.CanWrite &&
+                if (pi.CanRead && pi.CanWrite && pi.GetGetMethod() != null &&
                     pi.GetIndexParameters().GetLength(0) == 0 &&
                     !members.ContainsKey(name = pi.Name)) {
                     name = char.ToLower(name[0]) + name.Substring(1);
                     members[name] = pi;
                 }
             }
+            bindingflags = BindingFlags.Public | BindingFlags.Instance;
             FieldInfo[] fiarray = type.GetFields(bindingflags);
             foreach (FieldInfo fi in fiarray) {
                 string name;

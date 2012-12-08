@@ -13,7 +13,7 @@
  *                                                        *
  * Object Unserializer class for C#.                      *
  *                                                        *
- * LastModified: Nov 8, 2012                              *
+ * LastModified: Dec 8, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -228,7 +228,7 @@ namespace Hprose.IO {
                     if (propertyInfo.PropertyType.IsValueType) {
                         gen.Emit(OpCodes.Unbox_Any, propertyInfo.PropertyType);
                     }
-                    MethodInfo setMethod = propertyInfo.GetSetMethod();
+                    MethodInfo setMethod = propertyInfo.GetSetMethod(true);
                     if (setMethod.IsVirtual) {
                         gen.Emit(OpCodes.Callvirt, setMethod);
                     }
@@ -294,7 +294,7 @@ namespace Hprose.IO {
                         if (propertyInfo.PropertyType.IsValueType) {
                             gen.Emit(OpCodes.Unbox_Any, propertyInfo.PropertyType);
                         }
-                        MethodInfo setMethod = propertyInfo.GetSetMethod();
+                        MethodInfo setMethod = propertyInfo.GetSetMethod(true);
                         if (setMethod.IsVirtual) {
                             gen.Emit(OpCodes.Callvirt, setMethod);
                         }
