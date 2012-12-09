@@ -15,7 +15,7 @@
  *                                                        *
  * hprose http server library for php5.                   *
  *                                                        *
- * LastModified: Nov 27, 2012                             *
+ * LastModified: Dec 9, 2012                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -67,9 +67,6 @@ class HproseHttpServer {
         $this->onAfterInvoke = NULL;
         $this->onSendHeader = NULL;
         $this->onSendError = NULL;
-        set_error_handler(array(&$this, '__errorHandler'));
-        ob_start(array(&$this, "__filterHandler"));
-        ob_implicit_flush(0);
     }
     /*
       __filterHandler & __errorHandler must be public,
@@ -433,6 +430,9 @@ class HproseHttpServer {
         $this->reader = new HproseReader($this->input);
         $this->output = new HproseFileStream(fopen('php://output', 'wb'));
         $this->writer = new HproseWriter($this->output);
+        set_error_handler(array(&$this, '__errorHandler'));
+        ob_start(array(&$this, "__filterHandler"));
+        ob_implicit_flush(0);
         ob_clean();
         $this->sendHeader();
         if (($_SERVER['REQUEST_METHOD'] == 'GET') and $this->get) {
