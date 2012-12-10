@@ -15,7 +15,7 @@
  *                                                        *
  * Hprose Client library for AAuto Quicker                *
  *                                                        *
- * LastModified: Nov 26, 2012                             *
+ * LastModified: Dec 11, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -24,19 +24,11 @@ import hprose.common;
 import hprose.io;
 import inet.whttp;
 import inet.urlpart;
-import web.script;
-import thread;
+import thread.table;
+import thread.command;
+import thread.manage;
 
 namespace hprose.client {
-    var HproseResultMode = ..hprose.common.HproseResultMode;
-    var HproseFilter = ..hprose.common.HproseFilter;
-    var InputStream = ..hprose.io.InputStream;
-    var OutputStream = ..hprose.io.OutputStream;
-    var HproseReader = ..hprose.io.HproseReader;
-    var HproseWriter = ..hprose.io.HproseWriter;
-    var HproseTags = ..hprose.io.HproseTags;
-    var jseval = ..web.script("JavaScript").Eval;
-    
     class DynamicMethod {
         ctor(invoker, funcname) {
         };
@@ -58,78 +50,104 @@ namespace hprose.client {
             }
         }
     }
+    
+    var threadManager = ..thread.manage();
+    
     class HproseClient {
         ctor() {
-            this.filter = HproseFilter();
+            this.filter =  ..hprose.common.HproseFilter();
             this.onerror = function(){};
             this.send = null;
-            _expectTags = HproseTags._TagResult ++
-                          HproseTags._TagArgument ++
-                          HproseTags._TagError ++
-                          HproseTags._TagEnd;
         };
         invoke = function(name, args = {}, callback = null, onerror = null, byRef = false, resultMode = 0) {
             if (callback == null) {
-                return this.syncInvoke(name, args, byRef, resultMode);
+                var ok, result = call(owner.syncInvoke, owner, name, args, byRef, resultMode, owner.send, owner.filter.inputFilter, owner.filter.outputFilter);
+                if (ok) {
+                    return result;
+                }
+                else {
+                    error(result);
+                }
             }
             else {
-                if (callback != null && type(callback) != type.function) {
-                    error("callback must be a function or null.");
+                if (type(callback) != type.function) {
+                    error("callback must be a function.");
                 }
-                onerror := this.onerror;
-                if (type(onerror) != type.null && type(onerror) != type.function) {
-                    error("onerror must be a function or null.");
+                onerror := owner.onerror;
+                if (type(onerror) != type.function) {
+                    error("onerror must be a function.");
                 }
-                var me = this;
-                return ..thread.create(function() {
+                var tab = ..thread.table("f9ccdb4e-61c8-4dc3-8bbb-0963910e42de"); 
+                tab.set('hproseClient', owner);
+                tab.set('syncInvoke', owner.syncInvoke);
+                tab.set('send', owner.send);
+                tab.set('inputFilter', owner.filter.inputFilter);
+                tab.set('outputFilter', owner.filter.outputFilter);
+                var command = ..thread.command();
+                command.callback = callback;
+                command.onerror = onerror;
+                threadManager.create(function(name, args, callback, onerror, byRef, resultMode, hwnd) {
+                    import hprose.common;
+                    import hprose.io;
+                    import hprose.client;
+                    import inet.whttp;
+                    import inet.urlpart;
+                    import thread.table;
+                    import thread.command;
+
                     var errstr = null;
-                    try {
-                        var result = me.syncInvoke(name, args, byRef, resultMode);
-                        callback(result, args);
+                    var tab = ..thread.table('f9ccdb4e-61c8-4dc3-8bbb-0963910e42de');
+                    var ok, result = call(tab.get('syncInvoke'), tab.get('hproseClient'), name, args, byRef, resultMode, tab.get('send'), tab.get('inputFilter'), tab.get('outputFilter'));
+                    if (ok) {
+                        ..thread.command.post(hwnd, "callback", result, args);
                     }
-                    catch(e) {
-                        errstr = e;
+                    else {
+                        ..thread.command.post(hwnd, "onerror", name, result);
                     }
-                    if (type(onerror) == type.function) onerror(name, errstr);
-                });
+                }, name, args, callback, onerror, byRef, resultMode, command._form.hwnd);
             }
         };
         useService = function(uri = null) {
             if (uri != null) this.uri = uri;
             return ..hprose.client.DynamicProxy(this);
         };
-        syncInvoke = function(name, args, byRef, resultMode) {
-            var stream = OutputStream();
-            stream.write(HproseTags._TagCall);
-            var hproseWriter = HproseWriter(stream);
-            hproseWriter.writeString(name, ,false);
+        syncInvoke = function(name, args, byRef, resultMode, send, inputFilter, outputFilter) {
+            var stream = ..hprose.io.OutputStream();
+            stream.write(..hprose.io.HproseTags._TagCall);
+            var hproseWriter = ..hprose.io.HproseWriter(stream);
+            hproseWriter.writeString(name, ..hprose.io.ulen(name));
             if ((#args > 0) || byRef) {
                 hproseWriter.reset();
-                hproseWriter.writeList(args, false);
+                hproseWriter.writeList(args);
                 if (byRef) hproseWriter.writeBoolean(true);
             }
-            stream.write(HproseTags._TagEnd);
+            stream.write(..hprose.io.HproseTags._TagEnd);
             var result = null;
             var errstr = null;
             try {
-                var data = this.filter.outputFilter(tostring(stream));
-                data = this.filter.inputFilter(this.send(data));
-                stream = InputStream(data);
-                if (resultMode == HproseResultMode._RawWithEndTag) {
+                var ok, data = call(outputFilter, owner.filter, tostring(stream));
+                ok, data = call(send, owner, data);
+                ok, data = call(inputFilter, owner.filter, data);
+                stream = ..hprose.io.InputStream(data);
+                if (resultMode == ..hprose.common.HproseResultMode._RawWithEndTag) {
                     result = stream.readall();
                     return;
                 }
-                if (resultMode == HproseResultMode.Raw) {
+                if (resultMode == ..hprose.common.HproseResultMode.Raw) {
                     result = stream.readall();
                     result = ..string.left(result, #result - 1);
                     return;
                 }
-                hproseReader = HproseReader(stream);
+                var hproseReader = ..hprose.io.HproseReader(stream);
                 var tag;
+                var expectTags = ..hprose.io.HproseTags._TagResult ++
+                                 ..hprose.io.HproseTags._TagArgument ++
+                                 ..hprose.io.HproseTags._TagError ++
+                                 ..hprose.io.HproseTags._TagEnd;
                 do {
-                    tag = hproseReader.checkTags(_expectTags);
-                    if (tag == HproseTags._TagResult) {
-                        if (resultMode == HproseResultMode._Serialized) {
+                    tag = hproseReader.checkTags(expectTags);
+                    if (tag == ..hprose.io.HproseTags._TagResult) {
+                        if (resultMode == ..hprose.common.HproseResultMode._Serialized) {
                             s = hproseReader.readRaw()
                             result = tostring(s);
                         }
@@ -138,18 +156,20 @@ namespace hprose.client {
                             result = hproseReader.unserialize();
                         }
                     }
-                    if (tag == HproseTags._TagArgument) {
+                    if (tag == ..hprose.io.HproseTags._TagArgument) {
                         hproseReader.reset();
+                        stream.skip(1);
                         a = hproseReader.readList();
                         for (i = 1; #args; 1) {
                             args[[i]] = a[[i]];
                         }
                     }
-                    if (tag == HproseTags._TagError) {
+                    if (tag == ..hprose.io.HproseTags._TagError) {
                         hproseReader.reset()
+                        stream.skip(1);
                         errstr = hproseReader.readString();
                     }
-                } while (tag != HproseTags._TagEnd);
+                } while (tag != ..hprose.io.HproseTags._TagEnd);
             }
             catch(e) {
                 errstr = e;
@@ -163,73 +183,89 @@ namespace hprose.client {
             }
         }
     }
-    var cookieManager = {};
-    var setCookie = function(cookieList, host) {
-        for (i = 1; #cookieList; 1) {
-            var cookies = ..string.split(..string.trim(cookieList[[i]]), ';');
-            var cookie = {};
-            var cookieStr = ..string.trim(cookies[[1]]);
-            var pos = ..string.indexAny(cookieStr, '=');
-            cookie[['name']] = ..string.left(cookieStr, pos - 1);
-            cookie[['value']] = ..string.right(cookieStr, #cookieStr - pos);
-            for (i = 2; #cookies; 1) {
-                cookieStr = ..string.trim(cookies[[i]]);
-                pos = ..string.indexAny(cookieStr, '=');
-                cookie[[..string.upper(string.left(cookieStr, pos - 1))]] = ..string.right(cookieStr, #cookieStr - pos);
-            }
-            // Tomcat can return SetCookie2 with path wrapped in "
-            if (cookie[['PATH']]) {
-                if (cookie[['PATH']][[1]] == '"') {
-                    cookie[['PATH']] = string.right(cookie[['PATH']], #cookie[['PATH']] - 1);
-                }
-                if (cookie[['PATH']][[#cookie[['PATH']] - 1]] == '"') {
-                    cookie[['PATH']] = string.left(cookie[['PATH']], #cookie[['PATH']] - 1);
-                }
-            }
-            else {
-                cookie[['PATH']] = '/';
-            }
-            if (cookie[['EXPIRES']]) {
-                cookie[['EXPIRES']] = jseval("Date.parse('" ++ cookie[['EXPIRES']] ++ "')");
-            }
-            if (cookie[['DOMAIN']]) {
-                cookie[['DOMAIN']] = ..string.lower(cookie[['DOMAIN']]);
-            }
-            else {
-                cookie[['DOMAIN']] = host;
-            }
-            cookie[['SECURE']] = (cookie[['SECURE']] !== null);
-            if (!cookieManager[[cookie[['DOMAIN']]]]) {
-                cookieManager[[cookie[['DOMAIN']]]] = {};
-            }
-            cookieManager[[cookie[['DOMAIN']]]][[cookie[['name']]]] = cookie;
-        }
-    }
-    var getCookie = function(host, path, secure) {
-        var cookies = {};
-        for (domain, domainCookie in cookieManager) {
-            if (string.indexAny(host, domain)) {
-                var names = {};
-                for (name, cookie in domainCookie) {
-                    if (cookie[['EXPIRES']] && (jseval("(new Date()).getTime()") > cookie[['EXPIRES']])) {
-                        names.push(name);
-                    }
-                    else if (string.indexAny(path, cookie[['PATH']]) === 1) {
-                        if (((secure && cookie[['SECURE']]) ||
-                             !cookie[['SECURE']]) && (cookie[['value']] !== null)) {
-                            cookies.push(cookie[['name']] + '=' + cookie[['value']]);
+
+    var cookieManager = ..thread.table("a6e9e45d-5cee-4695-9b60-8645fa63ea9a");
+    if (!cookieManager.data) {
+        cookieManager.data = ..table.tostring({});
+        cookieManager.getCookie = function(host, path, secure) {
+            import thread.table;
+            var cookies = {};
+            ..thread.lock("a6e9e45d-5cee-4695-9b60-8645fa63ea9a");
+            var cookieManager = ..thread.table("a6e9e45d-5cee-4695-9b60-8645fa63ea9a");
+            var data = eval(cookieManager.data);
+            for (domain, domainCookie in data) {
+                if (..string.indexAny(host, domain)) {
+                    var names = {};
+                    for (name, cookie in domainCookie) {
+                        if (cookie['EXPIRES'] && (tonumber(..time())) > (tonumber(cookie['EXPIRES']))) {
+                            ..table.push(names, name);
+                        }
+                        else if (..string.indexAny(path, cookie['PATH']) === 1) {
+                            if (((secure && cookie['SECURE']) ||
+                                 !cookie['SECURE']) && (cookie['value'] !== null)) {
+                                ..table.push(cookies, cookie['name'] + '=' + cookie['value']);
+                            }
                         }
                     }
-                }
-                for (i = 1; #names; 1) {
-                    cookieManager[[domain]][[names[[i]]]] = null;
+                    for (i = 1; #names; 1) {
+                        data[domain][names[i]] = null;
+                    }
                 }
             }
-        }
-        if (#cookies > 0) {
-            return cookies.join('; ');
-        }
-        return '';
+            cookieManager.data = ..table.tostring(data);
+            ..thread.unlock("a6e9e45d-5cee-4695-9b60-8645fa63ea9a");
+            if (#cookies > 0) {
+                return ..string.join(cookies, '; ');
+            }
+            return '';
+        };
+        cookieManager.setCookie = function(cookieList, host) {
+            import thread.table;
+            ..thread.lock("a6e9e45d-5cee-4695-9b60-8645fa63ea9a");
+            var cookieManager = ..thread.table("a6e9e45d-5cee-4695-9b60-8645fa63ea9a");
+            var data = eval(cookieManager.data);
+            for (i = 1; #cookieList; 1) {
+                var cookies = ..string.split(..string.trim(cookieList[i]), ';');
+                var cookie = {};
+                var cookieStr = ..string.trim(cookies[[1]]);
+                var pos = ..string.indexAny(cookieStr, '=');
+                cookie['name'] = ..string.left(cookieStr, pos - 1);
+                cookie['value'] = ..string.right(cookieStr, #cookieStr - pos);
+                for (i = 2; #cookies; 1) {
+                    cookieStr = ..string.trim(cookies[[i]]);
+                    pos = ..string.indexAny(cookieStr, '=');
+                    cookie[..string.upper(..string.left(cookieStr, pos - 1))] = ..string.right(cookieStr, #cookieStr - pos);
+                }
+                // Tomcat can return SetCookie2 with path wrapped in "
+                if (cookie['PATH']) {
+                    if (cookie['PATH'][1] == '"') {
+                        cookie['PATH'] = string.right(cookie['PATH'], #cookie['PATH'] - 1);
+                    }
+                    if (cookie['PATH'][#cookie['PATH'] - 1] == '"') {
+                        cookie['PATH'] = string.left(cookie['PATH'], #cookie['PATH'] - 1);
+                    }
+                }
+                else {
+                    cookie['PATH'] = '/';
+                }
+                if (cookie['EXPIRES']) {
+                    cookie['EXPIRES'] = ..time(cookie['EXPIRES'], '%a, %d-%b-%Y %H:%M:%S %Z');
+                }
+                if (cookie['DOMAIN']) {
+                    cookie['DOMAIN'] = ..string.lower(cookie['DOMAIN']);
+                }
+                else {
+                    cookie['DOMAIN'] = host;
+                }
+                cookie['SECURE'] = (cookie['SECURE'] !== null);
+                if (!data[cookie['DOMAIN']]) {
+                    data[cookie['DOMAIN']] = {};
+                }
+                data[cookie['DOMAIN']][cookie['name']] = cookie;
+            }
+            cookieManager.data = ..table.tostring(data);
+            ..thread.unlock("a6e9e45d-5cee-4695-9b60-8645fa63ea9a");
+        };
     }
 
     class HproseHttpClient {
@@ -242,46 +278,50 @@ namespace hprose.client {
             this.timeout = 30000;
             this.keepAlive = false;
             this.keepAliveTimeout = 300;
-            this.user = null;
-            this.pass = null;
+            this.user = '';
+            this.pass = '';
         };
         send = function(data) {
-        	var scheme = ..inet.urlpart.getScheme(uri);
-        	var host = ..inet.urlpart.getHost(uri);
-        	var user = ..inet.urlpart.getUser(uri);
-        	var pass = ..inet.urlpart.getPassword(uri);
-        	var schemeandhost = scheme ++ "://" ++ host;
-        	var path = ..string.sub(uri, #schemeandhost, #uri - #schemeandhost);
+            var cookieManager = ..thread.table("a6e9e45d-5cee-4695-9b60-8645fa63ea9a");
+            var getCookie = cookieManager.get('getCookie');
+            var setCookie = cookieManager.get('setCookie');
+            var uri = owner.uri;
+            var scheme = ..string.trim(..inet.urlpart.getScheme(uri), '\0');
+            var host = ..string.trim(..inet.urlpart.getHost(uri), '\0');
+            var user = ..string.trim(..inet.urlpart.getUser(uri) || '', '\0');
+            var pass = ..string.trim(..inet.urlpart.getPassword(uri) || '', '\0');
+            var schemeandhost = scheme ++ '://' ++ host;
+            var path = ..string.sub(uri, #schemeandhost + 1, #uri);
             var http = ..inet.whttp( ,proxy, proxyBypass);
-            var ok, err, code = http.beginRequest(this.uri, "POST");
-            if (!ok) error(code ++ ":" ++ err);
-            http.addHeaders = "Content-Type: application/hprose\r\n";
+            var ok, err, code = http.beginRequest(uri, 'POST');
+            if (!ok) error(code ++ ':' ++ err);
+            http.headers = ..string.join(owner.headers, '\r\n');
+            http.headers += 'Content-Type: application/hprose\r\n';
             var cookie = getCookie(host, path, scheme == "https");
             if (cookie) {
-            	http.addHeaders += "Cookie: " ++ cookie ++ "\r\n";
+                http.headers += 'Cookie: ' ++ cookie ++ '\r\n';
             }
-            if (this.keepAlive) {
-                http.addHeaders += "Connection: keep-alive\r\nKeep-Alive: " ++ this.keepAliveTimeout + "\r\n";
+            if (owner.keepAlive) {
+                http.headers += 'Connection: keep-alive\r\nKeep-Alive: ' ++ owner.keepAliveTimeout + '\r\n';
             }
             else {
-                http.addHeaders += "Connection: close\r\n";
+                http.headers += 'Connection: close\r\n';
             }
-            http.setTimeouts(this.timeout, this.timeout, this.timeout);
-            if (this.user) {
-            	http.setAuth(this.user, this.pass);
+            http.setTimeouts(owner.timeout, owner.timeout, owner.timeout);
+            if (owner.user) {
+                http.setAuth(owner.user, owner.pass);
             }
             elseif (user) {
-            	http.setAuth(user, pass);
+                http.setAuth(user, pass);
             }
-            http.headers = ..string.join(this.headers);
             var ok, status, total = http.send(data);
             if (!ok) error(total ++ ":" + status);
             if (status == 200) {
-            	var cookies = {};
-            	do {
-            		var next = 1;
-                	var cookie, next = http.readHeader("Set-Cookie", next);
-                	..table.push(cookies, cookie);
+                var cookies = {};
+                do {
+                    var next = 1;
+                    var cookie, next = http.readHeader('Set-Cookie', next);
+                    ..table.push(cookies, cookie);
                 } while (next);
                 setCookie(cookies, host);
             }

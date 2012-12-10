@@ -28,7 +28,7 @@ namespace hprose.common {
         _RawWithEndTag = 3;
     }
     class HproseFilter {
-    	//ctor() {};
+    	ctor() {};
     	inputFilter = function(data) {
     		return data;
     	};
