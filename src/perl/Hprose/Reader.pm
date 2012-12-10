@@ -14,7 +14,7 @@
 #                                                          #
 # Hprose Reader class for perl                             #
 #                                                          #
-# LastModified: Dec 7, 2012                                #
+# LastModified: Dec 10, 2012                               #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -477,7 +477,7 @@ sub read_class {
     my $classname = $read_string->($stream);
     my $count = $readint->($stream, Hprose::Tags->Openbrace);
     my $fields = [];
-    $fields->[$_] = $self->read_string foreach (0..$count - 1);
+    $fields->[$_] = $self->read_string_with_tag foreach (0..$count - 1);
     $getc->($stream);
     my $class = Hprose::ClassManager->get_class($classname);
     my $classref = $self->{classref};
