@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http invoker class for ActionScript 2.0.        *
  *                                                        *
- * LastModified: Jun 26, 2012                             *
+ * LastModified: Dec 11, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -157,10 +157,10 @@ class hprose.client.HproseHttpInvoker {
         var stream:HproseStringOutputStream = new HproseStringOutputStream();
         stream.write(HproseTags.TagCall);
         var writer:HproseWriter = new HproseWriter(stream);
-        writer.writeString(func, false);
+        writer.writeString(func);
         if (args.length > 0) {
             writer.reset();
-            writer.writeList(args, false);
+            writer.writeList(args);
         }
         if (byref) {
             writer.writeBoolean(true);
@@ -181,11 +181,7 @@ class hprose.client.HproseHttpInvoker {
                 var tag;
                 var error = null;
                 try {
-                    while ((tag = reader.checkTags(
-                        [HproseTags.TagResult,
-                         HproseTags.TagArgument,
-                         HproseTags.TagError,
-                         HproseTags.TagEnd])) !== HproseTags.TagEnd) {
+                    while ((tag = stream.getc()) !== HproseTags.TagEnd) {
                         switch (tag) {
                             case HproseTags.TagResult:
                                 if (invoker.resultMode == HproseResultMode.Serialized) {
@@ -197,11 +193,14 @@ class hprose.client.HproseHttpInvoker {
                                 break;
                             case HproseTags.TagArgument:
                                 reader.reset();
-                                invoker.args = reader.readList();
+                                invoker.args = reader.readListWithTag();
                                 break;
                             case HproseTags.TagError:
                                 reader.reset();
-                                error = new HproseException(reader.readString());
+                                error = new HproseException(reader.readStringWithTag());
+                                break;
+                            default:
+                                reader.unexpectedTag(tag);
                                 break;
                         }
                     }

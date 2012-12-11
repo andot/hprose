@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for ActionScript 2.0.              *
  *                                                        *
- * LastModified: Jun 7, 2011                              *
+ * LastModified: Dec 11, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -24,55 +24,6 @@ import hprose.io.HproseStringOutputStream;
 import hprose.io.HproseTags;
 
 class hprose.io.HproseReader {
-    private static var classCache:Object = {};
-    private static function findClass(cn:Array, poslist:Array, i:Number, c:String):Function {
-        if (i < poslist.length) {
-            var pos:Number = poslist[i];
-            cn[pos] = c;
-            var classReference:Function = findClass(cn, poslist, i + 1, '.');
-            if (i + 1 < poslist.length) {
-                if (classReference == null) {
-                    classReference = findClass(cn, poslist, i + 1, '_');
-                }
-            }
-            return classReference;
-        }
-        return eval(cn.join(''));
-    }
-    public static function getClass(classname:String):Function {
-        var classReference = ClassManager.getClass(classname);
-        if (classReference) {
-            return classReference;
-        }
-        classReference = eval(classname);
-        if (classReference) {
-            ClassManager.register(classReference, classname);
-            return classReference;
-        }
-        var poslist:Array = [];
-        var pos:Number = classname.indexOf("_");
-        while (pos > -1) {
-            poslist[poslist.length] = pos;
-            pos = classname.indexOf("_", pos + 1);
-        }
-        if (poslist.length > 0) {
-            var cn:Array = classname.split('');
-            classReference = findClass(cn, poslist, 0, '.');
-            if (classReference == null) {
-                classReference = findClass(cn, poslist, 0, '_');
-            }
-        }
-        if (classReference == null) {
-            classReference = function () {
-                this.getClassName = function ():String {
-                    return classname;
-                }
-            }
-        }
-        ClassManager.register(classReference, classname);
-        return classReference;
-    }
-
     private var ref:Array;
     private var classref:Array;
     private var stream:HproseStringInputStream;
@@ -87,62 +38,70 @@ class hprose.io.HproseReader {
         return stream;
     }
 
-    public function unserialize(tag:String) {
-        if (tag === undefined) {
-            tag = stream.getc();
-        }
+    public function unserialize() {
+        var tag = stream.getc();
         switch (tag) {
-            case '0':
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9': return parseInt(tag);
-            case HproseTags.TagInteger: return readInteger(false);
-            case HproseTags.TagLong: return readLong(false);
-            case HproseTags.TagDouble: return readDouble(false);
+            case '0': return 0;
+            case '1': return 1;
+            case '2': return 2;
+            case '3': return 3;
+            case '4': return 4;
+            case '5': return 5;
+            case '6': return 6;
+            case '7': return 7;
+            case '8': return 8;
+            case '9': return 9;
+            case HproseTags.TagInteger: return readInteger();
+            case HproseTags.TagLong: return readLong();
+            case HproseTags.TagDouble: return readDouble();
             case HproseTags.TagNull: return null;
             case HproseTags.TagTrue: return true;
             case HproseTags.TagFalse: return false;
             case HproseTags.TagNaN: return NaN;
             case HproseTags.TagEmpty: return "";
-            case HproseTags.TagInfinity: return readInfinity(false);
-            case HproseTags.TagDate: return readDate(false);
-            case HproseTags.TagTime: return readTime(false);
+            case HproseTags.TagInfinity: return readInfinity();
+            case HproseTags.TagDate: return readDate();
+            case HproseTags.TagTime: return readTime();
             case HproseTags.TagUTF8Char: return stream.getc();
-            case HproseTags.TagString: return readString(false);
-            case HproseTags.TagGuid: return readGuid(false);
-            case HproseTags.TagList: return readList(false);
-            case HproseTags.TagMap: return readMap(false);
+            case HproseTags.TagString: return readString();
+            case HproseTags.TagGuid: return readGuid();
+            case HproseTags.TagList: return readList();
+            case HproseTags.TagMap: return readMap();
             case HproseTags.TagClass: readClass(); return unserialize();
-            case HproseTags.TagObject: return readObject(false);
+            case HproseTags.TagObject: return readObject();
             case HproseTags.TagRef: return readRef();
-            case HproseTags.TagError: throw new HproseException(readString());
-            case '': throw new HproseException('No byte found in stream');
-            default: throw new HproseException("Unexpected serialize tag '" +
-                                                          tag + "' in stream");
+            case HproseTags.TagError: throw new HproseException(readStringWithTag());
+            default: unexpectedTag(tag);
         }
     }
-        
-    public function checkTag(expectTag:String, tag:String):Void {
-        if (tag === undefined) tag = stream.getc();
-        if (tag != expectTag) {
-            throw new HproseException("Tag '" + expectTag + 
-                "' expected, but '" + tag + "' found in stream");
+
+    public function unexpectedTag(tag:String, expectTags:String):Void {
+        if (tag && expectTags) {
+            throw new HproseException("Tag '" + expectTags + "' expected, but '" + tag + "' found in stream");
+        }
+        else if (tag) {
+            throw new HproseException("Unexpected serialize tag '" + tag + "' in stream")
+        }
+        else {
+            throw new HproseException('No byte found in stream');
         }
     }
-    
-    public function checkTags(expectTags:Array, tag:String):String {
-        if (tag === undefined) tag = stream.getc();
-        if (expectTags.indexOf(tag) < 0) {
-            throw new HproseException("unexpected tag '" +
-                                      tag + "' found in stream");
-        }
+
+    private function _checkTag(tag:String, expectTag:String):Void {
+        if (tag != expectTag) unexpectedTag(tag, expectTag);
+    }
+
+    public function checkTag(expectTag:String):Void {
+         _checkTag(stream.getc(), expectTag);
+    }
+
+    private function _checkTags(tag:String, expectTags:Array):String {
+        if (expectTags.indexOf(tag) < 0) unexpectedTag(tag, expectTags.join(''));
         return tag;
+    }
+
+    public function checkTags(expectTags:Array):String {
+        return _checkTags(stream.getc(), expectTags);
     }
 
     private function readInt(tag) {
@@ -151,76 +110,135 @@ class hprose.io.HproseReader {
         return parseInt(s);
     }
 
-    public function readInteger(includeTag:Boolean):Number {
-        if (includeTag === undefined) includeTag = true;
-        if (includeTag) {
-            var tag = stream.getc();
-            if ((tag >= '0') && (tag <= '9')) return parseInt(tag);
-            checkTag(HproseTags.TagInteger, tag);
-        }
+    public function readInteger():Number {
         return readInt(HproseTags.TagSemicolon);
     }
 
-    public function readLong(includeTag:Boolean):String {
-        if (includeTag === undefined) includeTag = true;
-        if (includeTag) {
-            var tag = stream.getc();
-            if ((tag >= '0') && (tag <= '9')) return tag;
-            checkTag(HproseTags.TagLong, tag);
+    public function readIntegerWithTag():Number {
+        var tag = stream.getc();
+        switch (tag) {
+            case '0': return 0;
+            case '1': return 1;
+            case '2': return 2;
+            case '3': return 3;
+            case '4': return 4;
+            case '5': return 5;
+            case '6': return 6;
+            case '7': return 7;
+            case '8': return 8;
+            case '9': return 9;
+            case HproseTags.TagInteger: return readInteger();
+            default: unexpectedTag(tag);
         }
+    }
+
+    public function readLong():String {
         return stream.readuntil(HproseTags.TagSemicolon);
     }
 
-    public function readDouble(includeTag:Boolean):Number {
-        if (includeTag === undefined) includeTag = true;
-        if (includeTag) {
-            var tag = stream.getc();
-            if ((tag >= '0') && (tag <= '9')) return parseFloat(tag);
-            checkTag(HproseTags.TagDouble, tag);
+    public function readLongWithTag():String {
+        var tag = stream.getc();
+        switch (tag) {
+            case '0': return '0';
+            case '1': return '1';
+            case '2': return '2';
+            case '3': return '3';
+            case '4': return '4';
+            case '5': return '5';
+            case '6': return '6';
+            case '7': return '7';
+            case '8': return '8';
+            case '9': return '9';
+            case HproseTags.TagLong: return readLong();
+            default: unexpectedTag(tag);
         }
+    }
+
+    public function readDouble():Number {
         return parseFloat(stream.readuntil(HproseTags.TagSemicolon));
     }
     
+    public function readDoubleWithTag():Number {
+        var tag = stream.getc();
+        switch (tag) {
+            case '0': return 0;
+            case '1': return 1;
+            case '2': return 2;
+            case '3': return 3;
+            case '4': return 4;
+            case '5': return 5;
+            case '6': return 6;
+            case '7': return 7;
+            case '8': return 8;
+            case '9': return 9;
+            case HproseTags.TagDouble: return readDouble();
+            default: unexpectedTag(tag);
+        }
+    }
+
     public function readNaN():Number {
-        checkTag(HproseTags.TagNaN);
         return NaN;
     }
     
-    public function readInfinity(includeTag:Boolean):Number {
-        if (includeTag === undefined) includeTag = true;
-        if (includeTag) checkTag(HproseTags.TagInfinity);
+    public function readNaNWithTag():Number {
+        var tag = stream.getc();
+        switch (tag) {
+            case HproseTags.TagNaN: return NaN;
+            default: unexpectedTag(tag);
+        }
+    }
+
+    public function readInfinity():Number {
         return ((stream.getc() == HproseTags.TagNeg) ? -Infinity : Infinity);
+    }
+
+    public function readInfinityWithTag():Number {
+        var tag = stream.getc();
+        switch (tag) {
+            case HproseTags.TagInfinity: return readInfinity();
+            default: unexpectedTag(tag);
+        }
     }
     
     public function readNull():Object {
-        checkTag(HproseTags.TagNull);
         return null;
     }
 
+    public function readNullWithTag():Object {
+        var tag = stream.getc();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            default: unexpectedTag(tag);
+        }
+    }
+
     public function readEmpty():Object {
-        checkTag(HproseTags.TagEmpty);
         return "";
     }
     
-    public function readBoolean():Boolean {
-        var tag = checkTags([HproseTags.TagTrue,
-                             HproseTags.TagFalse]);
-        return (tag == HproseTags.TagTrue);
-    }
-    
-    public function readDate(includeTag:Boolean):Date {
-        if (includeTag === undefined) includeTag = true;
-        var tag;
-        if (includeTag) {
-             tag = checkTags([HproseTags.TagDate,
-                              HproseTags.TagRef]);
-              if (tag == HproseTags.TagRef) return readRef();
+    public function readEmptyWithTag():Object {
+        var tag = stream.getc();
+        switch (tag) {
+            case HproseTags.TagEmpty: return '';
+            default: unexpectedTag(tag);
         }
+    }
+
+    public function readBooleanWithTag():Boolean {
+        var tag = stream.getc();
+        switch (tag) {
+            case HproseTags.TagTrue: return true;
+            case HproseTags.TagFalse: return false;
+            default: unexpectedTag(tag);
+        }
+    }
+
+    public function readDate():Date {
         var year = parseInt(stream.read(4));
         var month = parseInt(stream.read(2)) - 1;
         var day = parseInt(stream.read(2));
         var date;
-        tag = stream.getc();
+        var tag = stream.getc();
         if (tag == HproseTags.TagTime) {
             var hour = parseInt(stream.read(2));
             var minute = parseInt(stream.read(2));
@@ -252,24 +270,25 @@ class hprose.io.HproseReader {
         else {
             date = new Date(year, month, day);
         }
-        ref[ref.length] = date;
-        return date;
+        return ref[ref.length] = date;
     }
 
-    public function readTime(includeTag:Boolean):Date {
-        if (includeTag === undefined) includeTag = true;
-        var tag;
-        if (includeTag) {
-            tag = checkTags([HproseTags.TagTime,
-                             HproseTags.TagRef]);
-            if (tag == HproseTags.TagRef) return readRef();
+    public function readDateWithTag():Date {
+        var tag = stream.getc();
+        switch (tag) {
+            case HproseTags.TagDate: return readDate();
+            case HproseTags.TagRef: return readRef();
+            default: unexpectedTag(tag);
         }
+    }
+
+    public function readTime():Date {
         var time;
         var hour = parseInt(stream.read(2));
         var minute = parseInt(stream.read(2));
         var second = parseInt(stream.read(2));
         var millisecond = 0;
-        tag = stream.getc();
+        var tag = stream.getc();
         if (tag == HproseTags.TagPoint) {
             millisecond = parseInt(stream.read(3));
             tag = stream.getc();
@@ -288,51 +307,66 @@ class hprose.io.HproseReader {
         else {
             time = new Date(1970, 0, 1, hour, minute, second, millisecond);
         }
-        ref[ref.length] = time;
-        return time;
+        return ref[ref.length] = time;
     }
 
-    public function readUTF8Char(includeTag:Boolean) {
-        if (includeTag === undefined) includeTag = true;
-        if (includeTag) checkTag(HproseTags.TagUTF8Char);
+    public function readTimeWithTag():Date {
+        var tag = stream.getc();
+        switch (tag) {
+            case HproseTags.TagTime: return readTime();
+            case HproseTags.TagRef: return readRef();
+            default: unexpectedTag(tag);
+        }
+    }
+
+    public function readUTF8Char() {
         return stream.getc();
     }
 
-    public function readString(includeTag:Boolean, includeRef:Boolean):String {
-        if (includeTag === undefined) includeTag = true;
-        if (includeRef === undefined) includeRef = true;
-        if (includeTag) {
-            var tag = checkTags([HproseTags.TagString,
-                                 HproseTags.TagRef]);
-            if (tag == HproseTags.TagRef) return readRef();
+    public function readUTF8CharWithTag() {
+        var tag = stream.getc();
+        switch (tag) {
+            case HproseTags.TagUTF8Char: return readUTF8Char();
+            default: unexpectedTag(tag);
         }
-        var s = stream.read(readInt(HproseTags.TagQuote));
-        stream.skip(1);
-        if (includeRef) ref[ref.length] = s;
-        return s;
     }
 
-    public function readGuid(includeTag:Boolean):String {
-        if (includeTag === undefined) includeTag = true;
-        if (includeTag) {
-            var tag = checkTags([HproseTags.TagGuid,
-                                 HproseTags.TagRef]);
-            if (tag == HproseTags.TagRef) return readRef();
-        }
+    private function _readString():String {
+        var str = stream.read(readInt(HproseTags.TagQuote));
         stream.skip(1);
-        var s = stream.read(36);
-        stream.skip(1);
-        ref[ref.length] = s;
-        return s;
+        return str;
     }
 
-    public function readList(includeTag:Boolean):Array {
-        if (includeTag === undefined) includeTag = true;
-        if (includeTag) {
-            var tag = checkTags([HproseTags.TagList,
-                                 HproseTags.TagRef]);
-            if (tag == HproseTags.TagRef) return readRef();
+    public function readString():String {
+        return ref[ref.length] = _readString();
+    }
+
+    public function readStringWithTag():String {
+        var tag = stream.getc();
+        switch (tag) {
+            case HproseTags.TagString: return readString();
+            case HproseTags.TagRef: return readRef();
+            default: unexpectedTag(tag);
         }
+    }
+
+    public function readGuid():String {
+        stream.skip(1);
+        var guid = stream.read(36);
+        stream.skip(1);
+        return ref[ref.length] = guid;
+    }
+
+    public function readGuidWithTag():String {
+        var tag = stream.getc();
+        switch (tag) {
+            case HproseTags.TagGuid: return readGuid();
+            case HproseTags.TagRef: return readRef();
+            default: unexpectedTag(tag);
+        }
+    }
+    
+    public function readList():Array {
         var list = [];
         ref[ref.length] = list;
         var count = readInt(HproseTags.TagOpenbrace);
@@ -343,37 +377,36 @@ class hprose.io.HproseReader {
         return list;
     }
 
-    public function readMap(includeTag:Boolean):Object {
-        if (includeTag === undefined) includeTag = true;
-        if (includeTag) {
-            var tag = checkTags([HproseTags.TagMap,
-                                 HproseTags.TagRef]);
-            if (tag == HproseTags.TagRef) return readRef();
+    public function readListWithTag():Array {
+        var tag = stream.getc();
+        switch (tag) {
+            case HproseTags.TagList: return readList();
+            case HproseTags.TagRef: return readRef();
+            default: unexpectedTag(tag);
         }
+    }
+    
+    public function readMap():Object {
         var map = {};
         ref[ref.length] = map;
         var count = readInt(HproseTags.TagOpenbrace);
         for (var i = 0; i < count; i++) {
-            var key = unserialize();
-            var value = unserialize();
-            map[key] = value;
+            map[unserialize()] = unserialize();
         }
         stream.skip(1);
         return map;
     }
 
-    public function readObject(includeTag:Boolean) {
-        if (includeTag === undefined) includeTag = true;
-        if (includeTag) {
-            var tag = checkTags([HproseTags.TagClass,
-                                 HproseTags.TagObject,
-                                 HproseTags.TagRef]);
-            if (tag == HproseTags.TagRef) return readRef();
-            if (tag == HproseTags.TagClass) {
-                readClass();
-                return readObject();
-            }
+    public function readMapWithTag():Object {
+        var tag = stream.getc();
+        switch (tag) {
+            case HproseTags.TagMap: return readMap();
+            case HproseTags.TagRef: return readRef();
+            default: unexpectedTag(tag);
         }
+    }
+
+    public function readObject() {
         var cls = classref[readInt(HproseTags.TagOpenbrace)];
         var obj = new cls.classname();
         ref[ref.length] = obj;
@@ -384,17 +417,26 @@ class hprose.io.HproseReader {
         return obj;
     }
 
+    public function readObjectWithTag():Array {
+        var tag = stream.getc();
+        switch(tag) {
+            case HproseTags.TagClass: readClass(); return readObjectWithTag();
+            case HproseTags.TagObject: return readObject();
+            case HproseTags.TagRef: return readRef();
+            default: unexpectedTag(tag);
+        }
+    }
+
     private function readClass():Void {
-        var classname = readString(false, false);
+        var classname = _readString();
         var count = readInt(HproseTags.TagOpenbrace);
         var fields = [];
         for (var i = 0; i < count; i++) {
-            fields[i] = readString();
+            fields[i] = readStringWithTag();
         }
         stream.skip(1);
-        classname = getClass(classname);
         classref[classref.length] = {
-            classname: classname,
+            classname: ClassManager.getClass(classname),
             count: count,
             fields: fields
         };
