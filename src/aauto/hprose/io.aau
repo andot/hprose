@@ -15,7 +15,7 @@
  *                                                        *
  * Hprose IO library for AAuto Quicker                    *
  *                                                        *
- * LastModified: Dec 11, 2012                             *
+ * LastModified: Dec 12, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -267,33 +267,31 @@ namespace hprose.io {
             var ref = { @{ _weak = "v" } };
             var classref = {};
             var tags = ..hprose.io.HproseTags;
-            _expectLongTags = tags._TagInteger ++ tags._TagLong;
-            _expectDoubleTags = _expectLongTags ++ tags._TagDouble;
-            _expectBooleanTags = tags._TagTrue ++ tags._TagFalse;
-            _expectDateTags = tags._TagDate ++ tags._TagRef;
-            _expectTimeTags = tags._TagTime ++ tags._TagRef;
-            _expectBytesTags = tags._TagBytes ++ tags._TagRef;
-            _expectStringTags = tags._TagString ++ tags._TagRef;
-            _expectGuidTags = tags._TagGuid ++ tags._TagRef;
-            _expectListTags = tags._TagList ++ tags._TagRef;
-            _expectMapTags = tags._TagMap ++ tags._TagRef;
-            _expectObjectTags = tags._TagClass ++ tags._TagObject ++ tags._TagRef;
+        };
+        unexpectedTag = function(tag, expectTags) {
+            select(tag) {
+                case null {
+                    error('No byte found in stream');
+                }
+                else {
+                    if (expectTags) {
+                        error("tag '" ++ expectTags ++ "' expected, but '" ++ tag ++ "' found in stream");
+                    }
+                    else {
+                        error("Unexpected serialize tag '" ++ tag ++ "' in stream");	
+                    }
+                }
+            }
         };
         _checkTag = function(expectTag, tag) {
-            if (tag != expectTag) {
-                error("tag '" ++ expectTag ++ "' expected, but '" ++ tag ++ "' found in stream");
-            }
+            if (tag != expectTag) unexpectedTag(tag, expectTag);
         };
         checkTag = function(expectTag) {
             this._checkTag(expectTag, stream.getc());
         };
         _checkTags = function(expectTags, tag) {
-            if (!indexAny(expectTags, tag)) {
-                error("tag '" ++ expectTags ++ "' expected, but '" ++ tag ++ "' found in stream");
-            }
-            else {
-                return tag;
-            }        	
+            if (!indexAny(expectTags, tag)) unexpectedTag(tag, expectTags);
+            return tag;
         };
         checkTags = function(expectTags) {
             return this._checkTags(expectTags, stream.getc());
@@ -368,11 +366,8 @@ namespace hprose.io {
                 case tags._TagError {
                     error(this.readStringWithTag());
                 }
-                case null {
-                    error('No byte found in stream');
-                }
                 else {
-                    error("Unexpected serialize tag '" ++ tag ++ "' in stream");
+                    unexpectedTag(tag);
                 }
             }
         };
@@ -381,34 +376,65 @@ namespace hprose.io {
         };
         readIntegerWithTag = function() {
             var tag = stream.getc();
-            if ((tag >= '0') && (tag <= '9')) return tag[1] - 48;
-            this._checkTag(tags._TagInteger, tag);
-        	return this.readInteger();
+            select(tag) {
+                case '0';'9' {
+                    return tag[1] - 48;
+                }
+                case tags._TagInteger {
+                    return this.readInteger();
+                }
+                else {
+                    unexpectedTag(tag);
+                }
+            }
         };
         readLong = function() {
             return stream.readuntil(tags._TagSemicolon);
         };
         readLongWithTag = function() {
             var tag = stream.getc();
-            if ((tag >= '0') && (tag <= '9')) return tag[1] - 48;
-            this._checkTags(_expectLongTags, tag);
-        	return this.readLong();
+            select(tag) {
+                case '0';'9' {
+                    return tag;
+                }
+                case tags._TagInteger, tags._TagLong {
+                    return this.readLong();
+                }
+                else {
+                    unexpectedTag(tag);
+                }
+            }
         };
         readDouble = function() {
             return readNumber(stream, tags._TagSemicolon);
         };
         readDoubleWithTag = function() {
             var tag = stream.getc();
-            if ((tag >= '0') && (tag <= '9')) return tag[1] - 48;
-            this._checkTags(_expectDoubleTags, tag);
-        	return this.readDouble();
-        };        
+            select(tag) {
+                case '0';'9' {
+                    return tag[1] - 48;
+                }
+                case tags._TagInteger, tags._TagLong, tags._TagDouble {
+                    return this.readDouble();
+                }
+                else {
+                    unexpectedTag(tag);
+                }
+            }
+        };
         readNaN = function() {
             return NaN;
         };
         readNaNWithTag = function() {
-            this.checkTag(tags._TagNaN);
-            return NaN;
+            var tag = stream.getc();
+            select(tag) {
+                case tags._TagNaN {
+                    return NaN;
+                }
+                else {
+                    unexpectedTag(tag);
+                }
+            }
         };        
         readInfinity = function() {
             if (stream.getc() == tags._TagNeg) {
@@ -419,24 +445,57 @@ namespace hprose.io {
             }
         };
         readInfinityWithTag = function() {
-        	this.checkTag(tags._TagInfinity);
-        	return this.readInfinity();
+            var tag = stream.getc();
+            select(tag) {
+                case tags._TagInfinity {
+                    return this.readInfinity();
+                }
+                else {
+                    unexpectedTag(tag);
+                }
+            }
         };
         readNull = function() {
             return null;
         };
         readNullWithTag = function() {
-            this.checkTag(tags._TagNull);
+            var tag = stream.getc();
+            select(tag) {
+                case tags._TagNull {
+                    return null;
+                }
+                else {
+                    unexpectedTag(tag);
+                }
+            }
         };
         readEmpty = function() {
             return '';
         };
         readEmptyWithTag = function() {
-            this.checkTag(tags._TagEmpty);
-            return '';
+            var tag = stream.getc();
+            select(tag) {
+                case tags._TagEmpty {
+                    return '';
+                }
+                else {
+                    unexpectedTag(tag);
+                }
+            }
         };
         readBooleanWithTag = function() {
-            return (this.checkTags(_expectBooleanTags) == tags._TagTrue);
+            var tag = stream.getc();
+            select(tag) {
+                case tags._TagTrue {
+                    return true;
+                }
+                case tags._TagFalse {
+                    return false;
+                }
+                else {
+                    unexpectedTag(tag);
+                }
+            }
         };
         readDate = function() {
             var year = tonumber(stream.read(4));
@@ -487,12 +546,18 @@ namespace hprose.io {
             return date;
         };
         readDateWithTag = function() {
-        	if (this.checkTags(_expectDateTags) == tags._TagRef) {
-        	    return this.readRef();
-        	}
-        	else {
-        	    return this.readDate();
-        	}
+            var tag = stream.getc();
+            select(tag) {
+                case tags._TagRef {
+                    return this.readRef();
+                }
+                case tags._TagDate {
+                    return this.readDate();
+                }
+                else {
+                    unexpectedTag(tag);
+                }
+            }
         };
         readTime = function() {
             var hour = tonumber(stream.read(2));
@@ -531,12 +596,18 @@ namespace hprose.io {
             return date;
         };
         readTimeWithTag = function() {
-        	if (this.checkTags(_expectTimeTags) == tags._TagRef) {
-        	    return this.readRef();
-        	}
-        	else {
-        	    return this.readTime();
-        	}
+            var tag = stream.getc();
+            select(tag) {
+                case tags._TagRef {
+                    return this.readRef();
+                }
+                case tags._TagTime {
+                    return this.readTime();
+                }
+                else {
+                    unexpectedTag(tag);
+                }
+            }
         };
         readBytes = function() {
             var count = readNumber(stream, tags._TagQuote);
@@ -546,19 +617,32 @@ namespace hprose.io {
             return bytes;
         };
         readBytesWithTag = function() {
-        	if (this.checkTags(_expectBytesTags) == tags._TagRef) {
-        	    return this.readRef();
-        	}
-        	else {
-        	    return this.readBytes();
-        	}
+            var tag = stream.getc();
+            select(tag) {
+                case tags._TagRef {
+                    return this.readRef();
+                }
+                case tags._TagBytes {
+                    return this.readBytes();
+                }
+                else {
+                    unexpectedTag(tag);
+                }
+            }
         };
         readUTF8Char = function() {
             return stream.readUTF8String(1);
         };
         readUTF8CharWithTag = function() {
-            this.checkTag(tags._TagUTF8Char);
-            return this.readUTF8Char();
+            var tag = stream.getc();
+            select(tag) {
+                case tags._TagUTF8Char {
+                    return this.readUTF8Char();
+                }
+                else {
+                    unexpectedTag(tag);
+                }
+            }
         };
         _readString = function() {
             var count = readNumber(stream, tags._TagQuote);
@@ -572,12 +656,18 @@ namespace hprose.io {
             return s;
         };
         readStringWithTag = function() {
-        	if (this.checkTags(_expectStringTags) == tags._TagRef) {
-        	    return this.readRef();
-        	}
-        	else {
-        	    return this.readString();
-        	}
+            var tag = stream.getc();
+            select(tag) {
+                case tags._TagRef {
+                    return this.readRef();
+                }
+                case tags._TagString {
+                    return this.readString();
+                }
+                else {
+                    unexpectedTag(tag);
+                }
+            }
         };
         readGuid = function() {
             stream.skip(1);
@@ -587,12 +677,18 @@ namespace hprose.io {
             return s;
         };
         readGuidWithTag = function() {
-        	if (this.checkTags(_expectGuidTags) == tags._TagRef) {
-        	    return this.readRef();
-        	}
-        	else {
-        	    return this.readGuid();
-        	}
+            var tag = stream.getc();
+            select(tag) {
+                case tags._TagRef {
+                    return this.readRef();
+                }
+                case tags._TagGuid {
+                    return this.readGuid();
+                }
+                else {
+                    unexpectedTag(tag);
+                }
+            }
         };
         readList = function() {
             var list = {};
@@ -605,12 +701,18 @@ namespace hprose.io {
             return list;
         };
         readListWithTag = function() {
-        	if (this.checkTags(_expectListTags) == tags._TagRef) {
-        	    return this.readRef();
-        	}
-        	else {
-        	    return this.readList();
-        	}
+            var tag = stream.getc();
+            select(tag) {
+                case tags._TagRef {
+                    return this.readRef();
+                }
+                case tags._TagList {
+                    return this.readList();
+                }
+                else {
+                    unexpectedTag(tag);
+                }
+            }
         };
         readMap = function() {
             var map = {};
@@ -625,12 +727,18 @@ namespace hprose.io {
             return map;
         };
         readMapWithTag = function() {
-        	if (this.checkTags(_expectMapTags) == tags._TagRef) {
-        	    return this.readRef();
-        	}
-        	else {
-        	    return this.readMap();
-        	}
+            var tag = stream.getc();
+            select(tag) {
+                case tags._TagRef {
+                    return this.readRef();
+                }
+                case tags._TagMap {
+                    return this.readMap();
+                }
+                else {
+                    unexpectedTag(tag);
+                }
+            }
         };
         readObject = function() {
             var clsinfo = classref[[readNumber(stream, tags._TagOpenbrace) + 1]];
@@ -643,7 +751,8 @@ namespace hprose.io {
             return obj;
         };
         readObjectWithTag = function() {
-        	select(this.checkTags(_expectObjectTags)) {
+            var tag = stream.getc();
+            select(tag) {
         		case tags._TagRef {
         			return this.readRef();
         		}
@@ -651,8 +760,11 @@ namespace hprose.io {
                     this.readClass();
                     return this.readObjectWithTag();
         		}
-        		else {
+        		case tags._TagObject {
                     return this.readObject();
+        		}
+        		else {
+                    unexpectedTag(tag);
         		}
         	}
         };
@@ -715,11 +827,8 @@ namespace hprose.io {
                     ostream.write(tag);
                     this.readRaw(ostream);
                 }
-                case null {
-                    error('No byte found in stream');
-                }
                 else {
-                    error("Unexpected serialize tag '" ++ tag ++ "' in stream");
+                    unexpectedTag(tag);
                 }
             }
             return ostream;

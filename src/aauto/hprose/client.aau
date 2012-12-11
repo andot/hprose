@@ -15,7 +15,7 @@
  *                                                        *
  * Hprose Client library for AAuto Quicker                *
  *                                                        *
- * LastModified: Dec 11, 2012                             *
+ * LastModified: Dec 12, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -144,32 +144,40 @@ namespace hprose.client {
                                  ..hprose.io.HproseTags._TagArgument ++
                                  ..hprose.io.HproseTags._TagError ++
                                  ..hprose.io.HproseTags._TagEnd;
-                do {
-                    tag = hproseReader.checkTags(expectTags);
-                    if (tag == ..hprose.io.HproseTags._TagResult) {
-                        if (resultMode == ..hprose.common.HproseResultMode._Serialized) {
-                            s = hproseReader.readRaw()
-                            result = tostring(s);
+                while (true) {
+                    tag = stream.getc();
+                    select(tag) {
+                        case ..hprose.io.HproseTags._TagResult {
+                            if (resultMode == ..hprose.common.HproseResultMode._Serialized) {
+                                s = hproseReader.readRaw()
+                                result = tostring(s);
+                            }
+                            else {
+                                hproseReader.reset();
+                                result = hproseReader.unserialize();
+                            }
+                        }
+                        case ..hprose.io.HproseTags._TagArgument {
+                            hproseReader.reset();
+                            stream.skip(1);
+                            a = hproseReader.readList();
+                            for (i = 1; #args; 1) {
+                                args[[i]] = a[[i]];
+                            }
+                        }
+                        case ..hprose.io.HproseTags._TagError {
+                            hproseReader.reset()
+                            stream.skip(1);
+                            errstr = hproseReader.readString();
+                        }
+                        case ..hprose.io.HproseTags._TagEnd {
+                            break;
                         }
                         else {
-                            hproseReader.reset();
-                            result = hproseReader.unserialize();
+                            hproseReader.unexpectedTag(tag);
                         }
                     }
-                    if (tag == ..hprose.io.HproseTags._TagArgument) {
-                        hproseReader.reset();
-                        stream.skip(1);
-                        a = hproseReader.readList();
-                        for (i = 1; #args; 1) {
-                            args[[i]] = a[[i]];
-                        }
-                    }
-                    if (tag == ..hprose.io.HproseTags._TagError) {
-                        hproseReader.reset()
-                        stream.skip(1);
-                        errstr = hproseReader.readString();
-                    }
-                } while (tag != ..hprose.io.HproseTags._TagEnd);
+                }
             }
             catch(e) {
                 errstr = e;
