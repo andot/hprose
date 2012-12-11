@@ -14,7 +14,7 @@
 #                                                          #
 # Hprose Numeric module for perl                           #
 #                                                          #
-# LastModified: Dec 5, 2012                                #
+# LastModified: Dec 11, 2012                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -29,13 +29,13 @@ use constant {
     MinInt32 => -2147483648,
     MaxInt32 => 2147483647,
     Inf => 'inf' + 0,
-    NInf => -'inf',
-    NaN => -'nan',
+    NInf => 0 - 'inf',
+    NaN => 'nan' + 0,
 };
 
 sub isnumeric {
     my $val = shift;
-    return length( do { no warnings "numeric"; $val & "" } ) > 0;
+    ($val ^ $val) eq '0';
 }
 
 sub isint {
