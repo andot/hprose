@@ -15,7 +15,7 @@
  *                                                        *
  * hprose io unit for delphi.                             *
  *                                                        *
- * LastModified: Nov 25, 2012                             *
+ * LastModified: Dec 12, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -1560,7 +1560,7 @@ begin
     end;
     htUTF8Char: begin
       case VType of
-        varOleStr, varVariant: Result := ReadUTF8Char(False);
+        varOleStr, varVariant: Result := WideString(ReadUTF8Char(False));
         varString: Result := AnsiString(ReadUTF8Char(False));
 {$IFDEF DELPHI2009_UP}
         varUString: Result := UnicodeString(ReadUTF8Char(False));
