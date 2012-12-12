@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for ActionScript 2.0.              *
  *                                                        *
- * LastModified: Dec 11, 2012                             *
+ * LastModified: Dec 12, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -227,7 +227,7 @@ class hprose.io.HproseWriter {
         var hour = ('00' + time.getHours()).slice(-2);
         var minute = ('00' + time.getMinutes()).slice(-2);
         var second = ('00' + time.getSeconds()).slice(-2);
-        var millisecond = ('000' + time.getUTCMilliseconds()).slice(-3);
+        var millisecond = ('000' + time.getMilliseconds()).slice(-3);
         stream.write(HproseTags.TagTime + hour + minute + second);
         if (millisecond != '000') {
             stream.write(HproseTags.TagPoint + millisecond);
