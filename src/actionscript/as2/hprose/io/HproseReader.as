@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for ActionScript 2.0.              *
  *                                                        *
- * LastModified: Dec 11, 2012                             *
+ * LastModified: Dec 12, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -149,6 +149,7 @@ class hprose.io.HproseReader {
             case '7': return '7';
             case '8': return '8';
             case '9': return '9';
+            case HproseTags.TagInteger: return readLong();
             case HproseTags.TagLong: return readLong();
             default: unexpectedTag(tag);
         }
@@ -171,7 +172,11 @@ class hprose.io.HproseReader {
             case '7': return 7;
             case '8': return 8;
             case '9': return 9;
+            case HproseTags.TagInteger: return readDouble();
+            case HproseTags.TagLong: return readDouble();
             case HproseTags.TagDouble: return readDouble();
+            case HproseTags.TagNaN: return NaN;
+            case HproseTags.TagInfinity: return readInfinity();
             default: unexpectedTag(tag);
         }
     }

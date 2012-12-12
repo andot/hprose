@@ -417,6 +417,12 @@ namespace hprose.io {
                 case tags._TagInteger, tags._TagLong, tags._TagDouble {
                     return this.readDouble();
                 }
+                case tags._TagNaN {
+                    return NaN;
+                }
+                case tags._TagInfinity {
+                    return this.readInfinity();
+                }
                 else {
                     unexpectedTag(tag);
                 }

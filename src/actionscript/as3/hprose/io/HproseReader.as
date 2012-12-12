@@ -183,6 +183,8 @@ package hprose.io {
                 case HproseTags.TagInteger: return readDouble();
                 case HproseTags.TagLong: return readDouble();
                 case HproseTags.TagDouble: return readDouble();
+                case HproseTags.TagNaN: return NaN;
+                case HproseTags.TagInfinity: return readInfinity();
                 default: throw unexpectedTag(tag);
             }
         }

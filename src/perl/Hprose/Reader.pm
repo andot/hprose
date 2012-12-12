@@ -260,6 +260,8 @@ my %readDoubleMethod = (
     Hprose::Tags->Integer => \&read_double,
     Hprose::Tags->Long => \&read_double,
     Hprose::Tags->Double => \&read_double,
+    Hprose::Tags->NaN => \&read_nan,
+    Hprose::Tags->Infinity => \&read_infinity,
 );
 
 sub read_double_with_tag {
