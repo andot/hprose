@@ -14,7 +14,7 @@
 #                                                          #
 # Hprose Reader class for perl                             #
 #                                                          #
-# LastModified: Dec 10, 2012                               #
+# LastModified: Dec 12, 2012                               #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -32,23 +32,32 @@ use Hprose::Exception;
 use Hprose::Tags;
 use Hprose::ClassManager;
 
-my $check_tag = sub {
-    my $tag = shift;
-    if ($tag != shift) {
+my $unexpected_tag = sub {
+    my ($tag, $expect_tags) = @_;
+    if (!defined($tag)) {
+        throw Hprose::Exception("No byte found in stream");
+    }
+    elsif (!defined($expect_tags)) {
         throw Hprose::Exception("'$tag' is not the expected tag");
     }
+    else {
+        throw Hprose::Exception("Tag '$expect_tags' expected, but '$tag' found in stream");
+    }
+};
+
+my $check_tag = sub {
+    my ($tag, $expect_tag) = @_;
+    $unexpected_tag->($tag, $expect_tag) if ($tag != $expect_tag);
 };
 
 my $check_tags = sub {
     my ($tag, $expect_tags) = @_;
-    if (index($expect_tags, $tag) < 0) {
-        throw Hprose::Exception("Tag '$expect_tags' expected, but '$tag' found in stream");
-    }
+    $unexpected_tag->($tag, $expect_tags) if (index($expect_tags, $tag) < 0);
     $tag;
 };
 
 my $getc = sub {
-    my $buffer;
+    my $buffer = '';
     return $buffer if shift->read($buffer, 1, 0);
     undef;
 };
@@ -141,18 +150,6 @@ my %unserializeMethod = (
     Hprose::Tags->Error => sub { throw Hprose::Exception(shift->read_string_with_tag); },
 );
 
-use constant {
-    ExpectBoolean => Hprose::Tags->True . Hprose::Tags->False,
-    ExpectDate => Hprose::Tags->Date . Hprose::Tags->Ref,
-    ExpectTime => Hprose::Tags->Time . Hprose::Tags->Ref,
-    ExpectBytes => Hprose::Tags->Bytes . Hprose::Tags->Ref,
-    ExpectString => Hprose::Tags->String . Hprose::Tags->Ref,
-    ExpectGuid => Hprose::Tags->Guid . Hprose::Tags->Ref,
-    ExpectList => Hprose::Tags->List . Hprose::Tags->Ref,
-    ExpectMap => Hprose::Tags->Map . Hprose::Tags->Ref,
-    ExpectObject => Hprose::Tags->Class . Hprose::Tags->Object . Hprose::Tags->Ref,
-};
-
 sub new {
     my ($class, $stream) = @_;
     my $self = bless {
@@ -160,6 +157,11 @@ sub new {
         classref => [],
         ref => [],
     }, $class;
+}
+
+sub unexpected_tag {
+    my ($self, $tag, $expect_tags) = @_;
+    $unexpected_tag->($tag, $expect_tags);
 }
 
 sub check_tag {
@@ -172,17 +174,12 @@ sub check_tags {
 
 sub unserialize {
     my $self = shift;
-    my $tag;
-    if ($self->{stream}->read($tag, 1, 0)) {
-        if (exists($unserializeMethod{$tag})) {
-            $unserializeMethod{$tag}($self);
-        }
-        else {
-            throw Hprose::Exception("Unexpected serialize tag '$tag' in stream");
-        }
+    my $tag = $getc->($self->{stream});
+    if (defined($tag) && exists($unserializeMethod{$tag})) {
+        $unserializeMethod{$tag}($self);
     }
     else {
-        throw Hprose::Exception("No byte found in stream");
+        $unexpected_tag->($tag);
     }
 }
 
@@ -190,49 +187,109 @@ sub read_integer {
     $readint->(shift->{stream}, Hprose::Tags->Semicolon);
 }
 
+my %readIntegerMethod = (
+    '0' => sub { 0; },
+    '1' => sub { 1; },
+    '2' => sub { 2; },
+    '3' => sub { 3; },
+    '4' => sub { 4; },
+    '5' => sub { 5; },
+    '6' => sub { 6; },
+    '7' => sub { 7; },
+    '8' => sub { 8; },
+    '9' => sub { 9; },
+    Hprose::Tags->Integer => \&read_integer,
+);
+
 sub read_integer_with_tag {
     my $self = shift;
-    my $tag;
-    $self->{stream}->read($tag, 1, 0);
-    return int($tag) if (($tag ge '0') && ($tag le '9'));
-    $check_tag->($tag, Hprose::Tags->Integer);
-    $self->read_integer;
+    my $tag = $getc->($self->{stream});
+    if (defined($tag) && exists($readIntegerMethod{$tag})) {
+        $readIntegerMethod{$tag}($self);
+    }
+    else {
+        $unexpected_tag->($tag);
+    }
 }
 
 sub read_long {
     Math::BigInt->new($readuntil->(shift->{stream}, Hprose::Tags->Semicolon));
 }
 
+my %readLongMethod = (
+    '0' => sub { Math::BigInt->new(0); },
+    '1' => sub { Math::BigInt->new(1); },
+    '2' => sub { Math::BigInt->new(2); },
+    '3' => sub { Math::BigInt->new(3); },
+    '4' => sub { Math::BigInt->new(4); },
+    '5' => sub { Math::BigInt->new(5); },
+    '6' => sub { Math::BigInt->new(6); },
+    '7' => sub { Math::BigInt->new(7); },
+    '8' => sub { Math::BigInt->new(8); },
+    '9' => sub { Math::BigInt->new(9); },
+    Hprose::Tags->Integer => \&read_long,
+    Hprose::Tags->Long => \&read_long,
+);
+
 sub read_long_with_tag {
     my $self = shift;
-    my $tag;
-    $self->{stream}->read($tag, 1, 0);
-    return Math::BigInt->new($tag) if (($tag ge '0') && ($tag le '9'));
-    $check_tag->($tag, Hprose::Tags->Long);
-    $self->read_long;
+    my $tag = $getc->($self->{stream});
+    if (defined($tag) && exists($readLongMethod{$tag})) {
+        $readLongMethod{$tag}($self);
+    }
+    else {
+        $unexpected_tag->($tag);
+    }
 }
 
 sub read_double {
     Math::BigFloat->new($readuntil->(shift->{stream}, Hprose::Tags->Semicolon));
 }
 
+my %readDoubleMethod = (
+    '0' => sub { Math::BigFloat->new(0); },
+    '1' => sub { Math::BigFloat->new(1); },
+    '2' => sub { Math::BigFloat->new(2); },
+    '3' => sub { Math::BigFloat->new(3); },
+    '4' => sub { Math::BigFloat->new(4); },
+    '5' => sub { Math::BigFloat->new(5); },
+    '6' => sub { Math::BigFloat->new(6); },
+    '7' => sub { Math::BigFloat->new(7); },
+    '8' => sub { Math::BigFloat->new(8); },
+    '9' => sub { Math::BigFloat->new(9); },
+    Hprose::Tags->Integer => \&read_double,
+    Hprose::Tags->Long => \&read_double,
+    Hprose::Tags->Double => \&read_double,
+);
+
 sub read_double_with_tag {
     my $self = shift;
-    my $tag;
-    $self->{stream}->read($tag, 1, 0);
-    return Math::BigFloat->new($tag) if (($tag ge '0') && ($tag le '9'));
-    $check_tag->($tag, Hprose::Tags->Double);
-    $self->read_double;
+    my $tag = $getc->($self->{stream});
+    if (defined($tag) && exists($readDoubleMethod{$tag})) {
+        $readDoubleMethod{$tag}($self);
+    }
+    else {
+        $unexpected_tag->($tag);
+    }
 }
 
 sub read_nan {
     Hprose::Numeric->NaN;
 }
 
+my %readNaNMethod = (
+    Hprose::Tags->NaN => \&read_nan,
+);
+
 sub read_nan_with_tag {
     my $self = shift;
-    $self->check_tag(Hprose::Tags->NaN);
-    $self->read_nan;
+    my $tag = $getc->($self->{stream});
+    if (defined($tag) && exists($readNaNMethod{$tag})) {
+        $readNaNMethod{$tag}($self);
+    }
+    else {
+        $unexpected_tag->($tag);
+    }
 }
 
 sub read_infinity {
@@ -241,34 +298,73 @@ sub read_infinity {
     Hprose::Numeric->Inf;
 }
 
+my %readInfinityMethod = (
+    Hprose::Tags->Infinity => \&read_infinity,
+);
+
 sub read_infinity_with_tag {
     my $self = shift;
-    $self->check_tag(Hprose::Tags->Infinity);
-    $self->read_infinity;
+    my $tag = $getc->($self->{stream});
+    if (defined($tag) && exists($readInfinityMethod{$tag})) {
+        $readInfinityMethod{$tag}($self);
+    }
+    else {
+        $unexpected_tag->($tag);
+    }
 }
 
 sub read_null {
     undef;
 }
 
+my %readNullMethod = (
+    Hprose::Tags->Null => \&read_null,
+);
+
 sub read_null_with_tag {
     my $self = shift;
-    $self->check_tag(Hprose::Tags->Null);
-    $self->read_null;
+    my $tag = $getc->($self->{stream});
+    if (defined($tag) && exists($readNullMethod{$tag})) {
+        $readNullMethod{$tag}($self);
+    }
+    else {
+        $unexpected_tag->($tag);
+    }
 }
 
 sub read_empty {
     '';
 }
 
+my %readEmptyMethod = (
+    Hprose::Tags->Empty => \&read_empty,
+);
+
 sub read_empty_with_tag {
     my $self = shift;
-    $self->check_tag(Hprose::Tags->Empty);
-    $self->read_empty;
+    my $tag = $getc->($self->{stream});
+    if (defined($tag) && exists($readEmptyMethod{$tag})) {
+        $readEmptyMethod{$tag}($self);
+    }
+    else {
+        $unexpected_tag->($tag);
+    }
 }
 
+my %readBooleanMethod = (
+    Hprose::Tags->True => sub { 1 == 1; },
+    Hprose::Tags->False => sub { 1 != 1; },
+);
+
 sub read_boolean_with_tag {
-    shift->check_tags(ExpectBoolean) eq Hprose::Tags->True;
+    my $self = shift;
+    my $tag = $getc->($self->{stream});
+    if (defined($tag) && exists($readBooleanMethod{$tag})) {
+        $readBooleanMethod{$tag}($self);
+    }
+    else {
+        $unexpected_tag->($tag);
+    }
 }
 
 sub read_date {
@@ -317,11 +413,20 @@ sub read_date {
     $ref->[scalar(@$ref)] = $date;
 }
 
+my %readDateMethod = (
+    Hprose::Tags->Ref => \&read_ref,
+    Hprose::Tags->Date => \&read_date,
+);
+
 sub read_date_with_tag {
     my $self = shift;
-    ($self->check_tags(ExpectDate) eq Hprose::Tags->Ref) ?
-    $self->read_ref :
-    $self->read_date;
+    my $tag = $getc->($self->{stream});
+    if (defined($tag) && exists($readDateMethod{$tag})) {
+        $readDateMethod{$tag}($self);
+    }
+    else {
+        $unexpected_tag->($tag);
+    }
 }
 
 sub read_time {
@@ -365,11 +470,20 @@ sub read_time {
     $ref->[scalar(@$ref)] = $time;
 }
 
+my %readTimeMethod = (
+    Hprose::Tags->Ref => \&read_ref,
+    Hprose::Tags->Time => \&read_time,
+);
+
 sub read_time_with_tag {
     my $self = shift;
-    ($self->check_tags(ExpectTime) eq Hprose::Tags->Ref) ?
-    $self->read_ref :
-    $self->read_time;
+    my $tag = $getc->($self->{stream});
+    if (defined($tag) && exists($readTimeMethod{$tag})) {
+        $readTimeMethod{$tag}($self);
+    }
+    else {
+        $unexpected_tag->($tag);
+    }
 }
 
 sub read_bytes {
@@ -383,21 +497,39 @@ sub read_bytes {
     $ref->[scalar(@$ref)] = $bytes;
 }
 
+my %readBytesMethod = (
+    Hprose::Tags->Ref => \&read_ref,
+    Hprose::Tags->Bytes => \&read_bytes,
+);
+
 sub read_bytes_with_tag {
     my $self = shift;
-    ($self->check_tags(ExpectBytes) eq Hprose::Tags->Ref) ?
-    $self->read_ref :
-    $self->read_bytes;
+    my $tag = $getc->($self->{stream});
+    if (defined($tag) && exists($readBytesMethod{$tag})) {
+        $readBytesMethod{$tag}($self);
+    }
+    else {
+        $unexpected_tag->($tag);
+    }
 }
 
 sub read_utf8char {
     $readutf8->(shift->{stream}, 1);
 }
 
+my %readUTF8CharMethod = (
+    Hprose::Tags->UTF8Char => \&read_utf8char,
+);
+
 sub read_utf8char_with_tag {
     my $self = shift;
-    $self->check_tag(Hprose::Tags->UTF8Char);
-    $self->read_utf8char;
+    my $tag = $getc->($self->{stream});
+    if (defined($tag) && exists($readUTF8CharMethod{$tag})) {
+        $readUTF8CharMethod{$tag}($self);
+    }
+    else {
+        $unexpected_tag->($tag);
+    }
 }
 
 sub read_string {
@@ -407,11 +539,20 @@ sub read_string {
     $ref->[scalar(@$ref)] = $str;
 }
 
+my %readStringMethod = (
+    Hprose::Tags->Ref => \&read_ref,
+    Hprose::Tags->String => \&read_string,
+);
+
 sub read_string_with_tag {
     my $self = shift;
-    ($self->check_tags(ExpectString) eq Hprose::Tags->Ref) ?
-    $self->read_ref :
-    $self->read_string;
+    my $tag = $getc->($self->{stream});
+    if (defined($tag) && exists($readStringMethod{$tag})) {
+        $readStringMethod{$tag}($self);
+    }
+    else {
+        $unexpected_tag->($tag);
+    }
 }
 
 sub read_guid {
@@ -425,11 +566,20 @@ sub read_guid {
     $ref->[scalar(@$ref)] = $guid;
 }
 
+my %readGuidMethod = (
+    Hprose::Tags->Ref => \&read_ref,
+    Hprose::Tags->Guid => \&read_guid,
+);
+
 sub read_guid_with_tag {
     my $self = shift;
-    ($self->check_tags(ExpectGuid) eq Hprose::Tags->Ref) ?
-    $self->read_ref :
-    $self->read_guid;
+    my $tag = $getc->($self->{stream});
+    if (defined($tag) && exists($readGuidMethod{$tag})) {
+        $readGuidMethod{$tag}($self);
+    }
+    else {
+        $unexpected_tag->($tag);
+    }
 }
 
 sub read_array {
@@ -444,11 +594,20 @@ sub read_array {
     $list;
 }
 
+my %readArrayMethod = (
+    Hprose::Tags->Ref => \&read_ref,
+    Hprose::Tags->List => \&read_array,
+);
+
 sub read_array_with_tag {
     my $self = shift;
-    ($self->check_tags(ExpectList) eq Hprose::Tags->Ref) ?
-    $self->read_ref :
-    $self->read_array;
+    my $tag = $getc->($self->{stream});
+    if (defined($tag) && exists($readArrayMethod{$tag})) {
+        $readArrayMethod{$tag}($self);
+    }
+    else {
+        $unexpected_tag->($tag);
+    }
 }
 
 sub read_hash {
@@ -464,11 +623,20 @@ sub read_hash {
     $hash;
 }
 
+my %readHashMethod = (
+    Hprose::Tags->Ref => \&read_ref,
+    Hprose::Tags->Map => \&read_hash,
+);
+
 sub read_hash_with_tag {
     my $self = shift;
-    ($self->check_tags(ExpectMap) eq Hprose::Tags->Ref) ?
-    $self->read_ref :
-    $self->read_hash;
+    my $tag = $getc->($self->{stream});
+    if (defined($tag) && exists($readHashMethod{$tag})) {
+        $readHashMethod{$tag}($self);
+    }
+    else {
+        $unexpected_tag->($tag);
+    }
 }
 
 sub read_class {
@@ -497,16 +665,20 @@ sub read_object {
     $object;
 }
 
+my %readObjectMethod = (
+    Hprose::Tags->Class => sub { my $self = shift; $self->read_class; $self->read_object_with_tag; },
+    Hprose::Tags->Object => \&read_object,
+    Hprose::Tags->Ref => \&read_ref,
+);
+
 sub read_object_with_tag {
     my $self = shift;
-    my $tag = $self->check_tags(ExpectObject);
-    return $self->read_ref if ($tag eq Hprose::Tags->Ref);
-    if ($tag eq Hprose::Tags->Class) {
-        $self->read_class;
-        $self->read_object_with_tag;
+    my $tag = $getc->($self->{stream});
+    if (defined($tag) && exists($readObjectMethod{$tag})) {
+        $readObjectMethod{$tag}($self);
     }
     else {
-        $self->read_object;
+        $unexpected_tag->($tag);
     }
 }
 
@@ -526,16 +698,11 @@ my %readRawMethod;
 my $read_raw = sub {
     my ($self, $sref, $tag) = @_;
     my $stream = $self->{stream};
-    if (defined($tag)) {
-        if (exists($readRawMethod{$tag})) {
-            $readRawMethod{$tag}($self, $sref, $tag);
-        }
-        else {
-            throw Hprose::Exception("Unexpected serialize tag '$tag' in stream");
-        }
+    if (defined($tag) && exists($readRawMethod{$tag})) {
+        $readRawMethod{$tag}($self, $sref, $tag);
     }
     else {
-        throw Hprose::Exception("No byte found in stream");
+        $unexpected_tag->($tag);
     }
 };
 
