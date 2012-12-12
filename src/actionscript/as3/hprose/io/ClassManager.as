@@ -1,4 +1,4 @@
-/**********************************************************\
+﻿/**********************************************************\
 |                                                          |
 |                          hprose                          |
 |                                                          |
@@ -13,12 +13,15 @@
  *                                                        *
  * hprose ClassManager for ActionScript 3.0.              *
  *                                                        *
- * LastModified: May 16, 2010                             *
+ * LastModified: Dec 12, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 
 package hprose.io {
+    import flash.utils.getDefinitionByName;
+    import flash.utils.getQualifiedClassName;
+
     public final class ClassManager {
         private static const classCache1:Object = {};
         private static const classCache2:Object = {};
@@ -28,12 +31,79 @@ package hprose.io {
             classCache2[alias] = classReference;
         }
 
-        public static function getClassAlias(classReference:*):String {
-            return classCache1[classReference];
+        public static function getClassAlias(o:*):String {
+            var classReference:* = o.constructor;
+            var alias:String = classCache1[classReference];
+            if (alias) {
+                return alias;
+            }
+            alias = getQualifiedClassName(o);
+            if (alias == 'Object') {
+                if (o.getClassName) {
+                    alias = o.getClassName();
+                }
+            }
+            if (alias == 'flash.utils::Dictionary') {
+                alias = 'Object';
+            }
+            alias = alias.replace(/\./g, '_').replace(/\:\:/g, '_');
+            ClassManager.register(classReference, alias);
+            return alias;
+        }
+
+        private static function findClass(cn:Array, poslist:Array, i:uint, c:String):Class {
+            if (i < poslist.length) {
+                var pos:uint = poslist[i];
+                cn[pos] = c;
+                var classReference:Class = findClass(cn, poslist, i + 1, '.');
+                if (i + 1 < poslist.length) {
+                    if (classReference == null) {
+                        classReference = findClass(cn, poslist, i + 1, '_');
+                    }
+                }
+                return classReference;
+            }
+            var alias:String = cn.join('');
+            try {
+                return getDefinitionByName(alias) as Class;
+            }
+            catch (e:ReferenceError) {};
+            return null;
         }
 
         public static function getClass(alias:String):* {
-            return classCache2[alias];
-        } 
+            var classReference:* = classCache2[alias];
+            if (classReference) {
+                return classReference;
+            }
+            try {
+                classReference = getDefinitionByName(alias) as Class;
+                register(classReference, alias);
+                return classReference;
+            }
+            catch (e:ReferenceError) {}
+            var poslist:Array = [];
+            var pos:int = alias.indexOf("_");
+            while (pos > -1) {
+                poslist[poslist.length] = pos;
+                pos = alias.indexOf("_", pos + 1);
+            }
+            if (poslist.length > 0) {
+                var cn:Array = alias.split('');
+                classReference = findClass(cn, poslist, 0, '.');
+                if (classReference == null) {
+                    classReference = findClass(cn, poslist, 0, '_');
+                }
+            }
+            if (classReference == null) {
+                classReference = function ():void {
+                    this.getClassName = function ():String {
+                        return alias;
+                    }
+                }
+            }
+            register(classReference, alias);
+            return classReference;
+        }
     }
 }

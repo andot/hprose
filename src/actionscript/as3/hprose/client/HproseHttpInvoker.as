@@ -93,10 +93,10 @@ package hprose.client {
             var stream:ByteArray = new ByteArray();
             stream.writeByte(HproseTags.TagCall);
             var writer:HproseWriter = new HproseWriter(stream);
-            writer.writeString(func, false);
+            writer.writeString(func);
             if (args.length > 0) {
                 writer.reset();
-                writer.writeList(args, false);
+                writer.writeList(args);
             }
             if (byref) {
                 writer.writeBoolean(true);
@@ -119,16 +119,11 @@ package hprose.client {
                     var tag:int;
                     var error:Error = null;
                     try {
-                        while ((tag = reader.checkTags(
-                            [HproseTags.TagResult,
-                             HproseTags.TagArgument,
-                             HproseTags.TagError,
-                             HproseTags.TagEnd])) !== HproseTags.TagEnd) {
+                        while ((tag = stream.readByte()) !== HproseTags.TagEnd) {
                             switch (tag) {
                                 case HproseTags.TagResult:
                                     if (invoker.resultMode == HproseResultMode.Serialized) {
                                         invoker.result = reader.readRaw();
-                                        invoker.result.position = 0;
                                     }
                                     else {
                                         invoker.result = reader.unserialize();
@@ -136,12 +131,14 @@ package hprose.client {
                                     break;
                                 case HproseTags.TagArgument:
                                     reader.reset();
-                                    invoker.args = reader.readList();
+                                    invoker.args = reader.readListWithTag();
                                     break;
                                 case HproseTags.TagError:
                                     reader.reset();
-                                    error = new HproseException(reader.readString());
+                                    error = new HproseException(reader.readStringWithTag());
                                     break;
+                                default:
+                                    throw reader.unexpectedTag(tag);
                             }
                         }
                     }

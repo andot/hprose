@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for ActionScript 3.0.              *
  *                                                        *
- * LastModified: Jun 7, 2011                              *
+ * LastModified: Dec 12, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -25,7 +25,7 @@ package hprose.io {
     import flash.utils.getDefinitionByName;
     import flash.utils.getQualifiedClassName;
 
-    public final class HproseWriter {        
+    public final class HproseWriter {
         private static var propertyCache:Object = {};
 
         private static function getPropertyNames(target:*):Array {
@@ -37,26 +37,6 @@ package hprose.io {
             for each (var propertyInfo:XML in properties) propertyNames.push(propertyInfo.@name.toString());
             propertyCache[className] = propertyNames;
             return propertyNames;
-        }
-        
-        private static function getClassName(o:*):String {
-            var classReference:* = o.constructor;
-            var className:String = ClassManager.getClassAlias(classReference);
-            if (className) {
-                return className;
-            }
-            className = getQualifiedClassName(o);
-            if (className == 'Object') {
-                if (o.getClassName) {
-                    className = o.getClassName();
-                }
-            }
-            if (className == 'flash.utils::Dictionary') {
-                className = 'Object';
-            }
-            className = className.replace(/\./g, '_').replace(/\:\:/g, '_');
-            ClassManager.register(classReference, className);
-            return className;
         }
 
         private static function isDigit(value:String):Boolean {
@@ -82,7 +62,7 @@ package hprose.io {
             }
             return (s != '-');
         }
-        
+
         private static function isInt32(value:Number):Boolean {
             var s:String = value.toString();
             return ((s.length < 12) &&
@@ -90,7 +70,7 @@ package hprose.io {
                     (value >= -2147483648) &&
                     (value <= 2147483647));
         }
-        
+
         private const ref:Dictionary = new Dictionary();
         private const classref:Object = {};
         private var refCount:int = 0;
@@ -138,38 +118,38 @@ package hprose.io {
                 writeEmpty() :
                 o.length == 1 ?
                 writeUTF8Char(o) :
-                writeString(o);
+                writeStringWithRef(o);
                 break;
             case ByteArray:
-                writeBytes(o);
+                writeBytesWithRef(o);
                 break;
             case Date:
-                writeDate(o);
+                writeDateWithRef(o);
                 break;
             case Array:
-                writeList(o);
+                writeListWithRef(o);
                 break;
             default:
-                var className:String = getClassName(o);
-                (className == "Object") ? writeMap(o) : 
-                (className == "mx_collections_ArrayCollection") ? writeList(o.source) :
-                 writeObject(o, className);
+                var alias:String = ClassManager.getClassAlias(o);
+                (alias == "Object") ? writeMapWithRef(o) :
+                (alias == "mx_collections_ArrayCollection") ? writeListWithRef(o.source) :
+                 _writeObjectWithRef(o, alias);
                 break;
             }
         }
-        
+
         public function writeInteger(i:int):void {
             stream.writeByte(HproseTags.TagInteger);
             stream.writeUTFBytes(i.toString());
             stream.writeByte(HproseTags.TagSemicolon);
         }
-        
+
         public function writeLong(i:*):void {
             stream.writeByte(HproseTags.TagLong);
             stream.writeUTFBytes(i.toString());
             stream.writeByte(HproseTags.TagSemicolon);
         }
-        
+
         public function writeDouble(d:Number):void {
             if (isNaN(d)) {
                 writeNaN();
@@ -183,16 +163,16 @@ package hprose.io {
                 writeInfinity(d > 0);
             }
         }
-        
+
         public function writeNaN():void {
             stream.writeByte(HproseTags.TagNaN);
         }
-        
+
         public function writeInfinity(positive:Boolean = true):void {
             stream.writeByte(HproseTags.TagInfinity);
             stream.writeByte(positive ? HproseTags.TagPos : HproseTags.TagNeg);
         }
-        
+
         public function writeNull():void {
             stream.writeByte(HproseTags.TagNull);
         }
@@ -204,8 +184,9 @@ package hprose.io {
         public function writeBoolean(bool:Boolean):void {
             stream.writeByte(bool ? HproseTags.TagTrue : HproseTags.TagFalse);
         }
-        
-        public function writeUTCDate(date:Date, checkRef:Boolean = true):void {
+
+        public function writeUTCDate(date:Date):void {
+            ref[date] = refCount++;
             var year:String = ('0000' + date.getUTCFullYear()).slice(-4);
             var month:String = ('00' + (date.getUTCMonth() + 1)).slice(-2);
             var day:String = ('00' + date.getUTCDate()).slice(-2);
@@ -213,212 +194,228 @@ package hprose.io {
             var minute:String = ('00' + date.getUTCMinutes()).slice(-2);
             var second:String = ('00' + date.getUTCSeconds()).slice(-2);
             var millisecond:String = ('000' + date.getUTCMilliseconds()).slice(-3);
-            var d:String = String.fromCharCode(HproseTags.TagDate) +
-                           year + month + day +
-                           String.fromCharCode(HproseTags.TagTime) +
-                           hour + minute + second;
-            if (millisecond != '000') {
-                d += String.fromCharCode(HproseTags.TagPoint) + millisecond;
+            if ((hour == '00') && (minute == '00') && (second == '00') && (millisecond == '000')) {
+                stream.writeByte(HproseTags.TagDate);
+                stream.writeUTFBytes(year + month + day);
+                stream.writeByte(HproseTags.TagUTC);
             }
-            d += String.fromCharCode(HproseTags.TagUTC);
-            var r:*;
-            if (checkRef && ((r = ref[d]) != null)) {
-                writeRef(r);
+            else if ((year == '1970') && (month == '01') && (day == '01')) {
+                stream.writeByte(HproseTags.TagTime);
+                stream.writeUTFBytes(hour + minute + second);
+                if (millisecond != '000') {
+                    stream.writeByte(HproseTags.TagPoint);
+                    stream.writeUTFBytes(millisecond);
+                }
+                stream.writeByte(HproseTags.TagUTC);
             }
             else {
-                ref[d] = refCount++;
-                stream.writeUTFBytes(d);
+                stream.writeByte(HproseTags.TagDate);
+                stream.writeUTFBytes(year + month + day);
+                stream.writeByte(HproseTags.TagTime);
+                stream.writeUTFBytes(hour + minute + second);
+                if (millisecond != '000') {
+                    stream.writeByte(HproseTags.TagPoint);
+                    stream.writeUTFBytes(millisecond);
+                }
+                stream.writeByte(HproseTags.TagUTC);
             }
         }
-        
-        public function writeDate(date:Date, checkRef:Boolean = true):void {
+
+        public function writeUTCDateWithRef(date:Date):void {
+            var r:* = ref[date];
+            (r != null) ? writeRef(r) : writeUTCDate(date);
+        }
+
+        public function writeDate(date:Date):void {
+            ref[date] = refCount++;
             var year:String = ('0000' + date.getFullYear()).slice(-4);
             var month:String = ('00' + (date.getMonth() + 1)).slice(-2);
             var day:String = ('00' + date.getDate()).slice(-2);
             var hour:String = ('00' + date.getHours()).slice(-2);
             var minute:String = ('00' + date.getMinutes()).slice(-2);
             var second:String = ('00' + date.getSeconds()).slice(-2);
-            var millisecond:String = ('000' + date.getUTCMilliseconds()).slice(-3);
-            var d:String;
+            var millisecond:String = ('000' + date.getMilliseconds()).slice(-3);
             if ((hour == '00') && (minute == '00') && (second == '00') && (millisecond == '000')) {
-                d = String.fromCharCode(HproseTags.TagDate) +
-                    year + month + day +
-                    String.fromCharCode(HproseTags.TagSemicolon);
+                stream.writeByte(HproseTags.TagDate);
+                stream.writeUTFBytes(year + month + day);
+                stream.writeByte(HproseTags.TagSemicolon);
             }
             else if ((year == '1970') && (month == '01') && (day == '01')) {
-                d = String.fromCharCode(HproseTags.TagTime) +
-                    hour + minute + second;
+                stream.writeByte(HproseTags.TagTime);
+                stream.writeUTFBytes(hour + minute + second);
                 if (millisecond != '000') {
-                    d += String.fromCharCode(HproseTags.TagPoint) + millisecond;
+                    stream.writeByte(HproseTags.TagPoint);
+                    stream.writeUTFBytes(millisecond);
                 }
-                d += String.fromCharCode(HproseTags.TagSemicolon);
+                stream.writeByte(HproseTags.TagSemicolon);
             }
             else {
-                d = String.fromCharCode(HproseTags.TagDate) +
-                    year + month + day +
-                    String.fromCharCode(HproseTags.TagTime) +
-                    hour + minute + second;
+                stream.writeByte(HproseTags.TagDate);
+                stream.writeUTFBytes(year + month + day);
+                stream.writeByte(HproseTags.TagTime);
+                stream.writeUTFBytes(hour + minute + second);
                 if (millisecond != '000') {
-                    d += String.fromCharCode(HproseTags.TagPoint) + millisecond;
+                    stream.writeByte(HproseTags.TagPoint);
+                    stream.writeUTFBytes(millisecond);
                 }
-                d += String.fromCharCode(HproseTags.TagSemicolon);
-            }
-            var r:*;
-            if (checkRef && ((r = ref[d]) != null)) {
-                writeRef(r);
-            }
-            else {
-                ref[d] = refCount++;
-                stream.writeUTFBytes(d);
-            }
-        }
-        
-        public function writeTime(time:Date, checkRef:Boolean = true):void {
-            var hour:String = ('00' + time.getHours()).slice(-2);
-            var minute:String = ('00' + time.getMinutes()).slice(-2);
-            var second:String = ('00' + time.getSeconds()).slice(-2);
-            var millisecond:String = ('000' + time.getUTCMilliseconds()).slice(-3);
-            var t:String = String.fromCharCode(HproseTags.TagTime) +
-                           hour + minute + second;
-            if (millisecond != '000') {
-                t += String.fromCharCode(HproseTags.TagPoint) + millisecond;
-                }
-            t += String.fromCharCode(HproseTags.TagSemicolon);
-            var r:*;
-            if (checkRef && ((r = ref[t]) != null)) {
-                writeRef(r);
-            }
-            else {
-                ref[t] = refCount++;
-                stream.writeUTFBytes(t);
+                stream.writeByte(HproseTags.TagSemicolon);
             }
         }
 
-        public function writeBytes(b:ByteArray, checkRef:Boolean = true):void {
-            var r:*;
-            if (checkRef && ((r = ref[b]) != null)) {
-                writeRef(r);
+        public function writeDateWithRef(date:Date):void {
+            var r:* = ref[date];
+            (r != null) ? writeRef(r) : writeDate(date);
+        }
+
+        public function writeTime(time:Date):void {
+            ref[time] = refCount++;
+            var hour:String = ('00' + time.getHours()).slice(-2);
+            var minute:String = ('00' + time.getMinutes()).slice(-2);
+            var second:String = ('00' + time.getSeconds()).slice(-2);
+            var millisecond:String = ('000' + time.getMilliseconds()).slice(-3);
+            stream.writeByte(HproseTags.TagTime);
+            stream.writeUTFBytes(hour + minute + second);
+            if (millisecond != '000') {
+                stream.writeByte(HproseTags.TagPoint)
+                stream.writeUTFBytes(millisecond);
             }
-            else {
-                ref[b] = refCount++;
-                stream.writeByte(HproseTags.TagBytes);
-                if (b.length > 0) {
-                    stream.writeUTFBytes(b.length.toString());
-                }
-                stream.writeByte(HproseTags.TagQuote);
-                stream.writeBytes(b);
-                stream.writeByte(HproseTags.TagQuote);
+            stream.writeByte(HproseTags.TagSemicolon);
+        }
+
+        public function writeTimeWithRef(time:Date):void {
+            var r:* = ref[time];
+            (r != null) ? writeRef(r) : writeTime(time);
+        }
+
+        public function writeBytes(b:ByteArray):void {
+            ref[b] = refCount++;
+            stream.writeByte(HproseTags.TagBytes);
+            if (b.length > 0) {
+                stream.writeUTFBytes(b.length.toString());
             }
+            stream.writeByte(HproseTags.TagQuote);
+            stream.writeBytes(b);
+            stream.writeByte(HproseTags.TagQuote);
+        }
+
+        public function writeBytesWithRef(b:ByteArray):void {
+            var r:* = ref[b];
+            (r != null) ? writeRef(r) : writeBytes(b);
         }
 
         public function writeUTF8Char(c:String):void {
             stream.writeByte(HproseTags.TagUTF8Char);
             stream.writeUTFBytes(c);
         }
-        
-        public function writeString(s:String, checkRef:Boolean = true):void {
-            s = String.fromCharCode(HproseTags.TagString) +
-                ((s.length > 0) ? s.length.toString() : '') +
-                String.fromCharCode(HproseTags.TagQuote) +
-                s +
-                String.fromCharCode(HproseTags.TagQuote);
-            var r:*;
-            if (checkRef && ((r = ref[s]) != null)) {
-                writeRef(r);
+
+        public function writeString(s:String):void {
+            ref[s] = refCount++;
+            stream.writeByte(HproseTags.TagString);
+            if (s.length > 0) {
+                stream.writeUTFBytes(s.length.toString());
             }
-            else {
-                ref[s] = refCount++;
-                stream.writeUTFBytes(s);
-            }
+            stream.writeByte(HproseTags.TagQuote);
+            stream.writeUTFBytes(s);
+            stream.writeByte(HproseTags.TagQuote);
         }
 
-        public function writeList(list:Array, checkRef:Boolean = true):void {
-            var r:*;
-            if (checkRef && ((r = ref[list]) != null)) {
-                writeRef(r);
-            }
-            else {
-                ref[list] = refCount++;
-                var count:uint = list.length;
-                stream.writeByte(HproseTags.TagList);
-                if (count > 0) {
-                    stream.writeUTFBytes(count.toString());
-                }
-                stream.writeByte(HproseTags.TagOpenbrace);
-                for (var i:uint = 0; i < count; i++) {
-                    serialize(list[i]);
-                }
-                stream.writeByte(HproseTags.TagClosebrace);
-            }
+        public function writeStringWithRef(s:String):void {
+            var r:* = ref[s];
+            (r != null) ? writeRef(r) : writeString(s);
         }
 
-        public function writeMap(map:*, checkRef:Boolean = true):void {
-            var r:*;
-            if (checkRef && ((r = ref[map]) != null)) {
-                writeRef(r);
+        public function writeList(list:Array):void {
+            ref[list] = refCount++;
+            var count:uint = list.length;
+            stream.writeByte(HproseTags.TagList);
+            if (count > 0) {
+                stream.writeUTFBytes(count.toString());
             }
-            else {
-                ref[map] = refCount++;
-                var fields:Array = [];
-                for (var key:* in map) {
-                    if (typeof(map[key]) != 'function') {
-                        fields[fields.length] = key;
-                    }
-                }
-                var count:uint = fields.length;
-                stream.writeByte(HproseTags.TagMap);
-                if (count > 0) {
-                    stream.writeUTFBytes(count.toString());
-                }
-                stream.writeByte(HproseTags.TagOpenbrace);
-                for (var i:uint = 0; i < count; i++) {
-                    serialize(fields[i]);
-                    serialize(map[fields[i]]);
-                }
-                stream.writeByte(HproseTags.TagClosebrace);
+            stream.writeByte(HproseTags.TagOpenbrace);
+            for (var i:uint = 0; i < count; i++) {
+                serialize(list[i]);
             }
+            stream.writeByte(HproseTags.TagClosebrace);
         }
 
-        public function writeObject(obj:*, classname:String = "", checkRef:Boolean = true):void {
-            var r:*;
-            if (checkRef && ((r = ref[obj]) != null)) {
-                writeRef(r);
-            }
-            else {
-                if (classname == '') classname = getClassName(obj);                
-                var fields:Array = getPropertyNames(obj);
-                for (var key:String in obj) {
-                    if (typeof(obj[key]) != 'function' &&
-                        fields.indexOf(key) < 0) {
-                        fields.push(key);
-                    }
-                }
-                var cr:uint;
-                classref[classname];
-                if (classname in classref) {
-                    cr = classref[classname];
-                }
-                else {
-                    cr = writeClass(classname, fields);
-                }
-                ref[obj] = refCount++;
-                var count:uint = fields.length;
-                stream.writeByte(HproseTags.TagObject);
-                stream.writeUTFBytes(cr.toString());
-                stream.writeByte(HproseTags.TagOpenbrace);
-                for (var i:uint = 0; i < count; i++) {
-                    serialize(obj[fields[i]]);
-                }
-                stream.writeByte(HproseTags.TagClosebrace);
-            }
+        public function writeListWithRef(list:Array):void {
+            var r:* = ref[list];
+            (r != null) ? writeRef(r) : writeList(list);
         }
 
-        private function writeClass(classname:String, fields:Array):uint {
+        public function writeMap(map:*):void {
+            ref[map] = refCount++;
+            var fields:Array = [];
+            for (var key:* in map) {
+                if (typeof(map[key]) != 'function') {
+                    fields[fields.length] = key;
+                }
+            }
+            var count:uint = fields.length;
+            stream.writeByte(HproseTags.TagMap);
+            if (count > 0) {
+                stream.writeUTFBytes(count.toString());
+            }
+            stream.writeByte(HproseTags.TagOpenbrace);
+            for (var i:uint = 0; i < count; i++) {
+                serialize(fields[i]);
+                serialize(map[fields[i]]);
+            }
+            stream.writeByte(HproseTags.TagClosebrace);
+        }
+
+        public function writeMapWithRef(map:*):void {
+            var r:* = ref[map];
+            (r != null) ? writeRef(r) : writeMap(map);
+        }
+
+        private function _writeObject(obj:*, alias:String):void {
+            var fields:Array = getPropertyNames(obj);
+            for (var key:String in obj) {
+                if (typeof(obj[key]) != 'function' &&
+                    fields.indexOf(key) < 0) {
+                    fields.push(key);
+                }
+            }
+            var cr:uint;
+            classref[alias];
+            if (alias in classref) {
+                cr = classref[alias];
+            }
+            else {
+                cr = writeClass(alias, fields);
+            }
+            ref[obj] = refCount++;
+            var count:uint = fields.length;
+            stream.writeByte(HproseTags.TagObject);
+            stream.writeUTFBytes(cr.toString());
+            stream.writeByte(HproseTags.TagOpenbrace);
+            for (var i:uint = 0; i < count; i++) {
+                serialize(obj[fields[i]]);
+            }
+            stream.writeByte(HproseTags.TagClosebrace);
+        }
+
+        private function _writeObjectWithRef(obj:*, alias:String):void {
+            var r:* = ref[obj];
+            (r != null) ? writeRef(r) : _writeObject(obj, alias);
+        }
+
+        public function writeObject(obj:*):void {
+            _writeObject(obj, ClassManager.getClassAlias(obj));
+        }
+
+        public function writeObjectWithRef(obj:*):void {
+            var r:* = ref[obj];
+            (r != null) ? writeRef(r) : writeObject(obj);
+        }
+
+        private function writeClass(alias:String, fields:Array):uint {
             var count:uint = fields.length;
             stream.writeByte(HproseTags.TagClass);
-            stream.writeUTFBytes(classname.length.toString());
+            stream.writeUTFBytes(alias.length.toString());
             stream.writeByte(HproseTags.TagQuote);
-            stream.writeUTFBytes(classname);
+            stream.writeUTFBytes(alias);
             stream.writeByte(HproseTags.TagQuote);
             if (count > 0) {
                 stream.writeUTFBytes(count.toString());
@@ -429,7 +426,7 @@ package hprose.io {
             }
             stream.writeByte(HproseTags.TagClosebrace);
             var cr:* = classrefCount++;
-            classref[classname] = cr;
+            classref[alias] = cr;
             return cr;
         }
 
@@ -438,7 +435,7 @@ package hprose.io {
             stream.writeUTFBytes(ref.toString());
             stream.writeByte(HproseTags.TagSemicolon);
         }
-        
+
         public function reset():void {
 			var key:*;
             for(key in ref) delete ref[key];
