@@ -14,7 +14,7 @@
 #                                                          #
 # Hprose Reader class for perl                             #
 #                                                          #
-# LastModified: Dec 12, 2012                               #
+# LastModified: Dec 13, 2012                               #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -116,6 +116,15 @@ my $read_string = sub {
     $str;
 };
 
+my $read_nan = sub { Hprose::Numeric->NaN; };
+my $read_null = sub { undef; };
+my $read_empty = sub { ''; };
+my $read_true = sub { 1 == 1; };
+my $read_false = sub { 1 != 1; };
+my $read_class = sub { my $self = shift; $self->read_class; $self->read_object; };
+my $read_ref = sub { my $self = shift; $self->{ref}->[$readint->($self->{stream}, Hprose::Tags->Semicolon)]; };
+my $read_error = sub { throw Hprose::Exception(shift->read_string); };
+
 my %unserializeMethod = (
     '0' => sub { 0; },
     '1' => sub { 1; },
@@ -127,27 +136,27 @@ my %unserializeMethod = (
     '7' => sub { 7; },
     '8' => sub { 8; },
     '9' => sub { 9; },
-    Hprose::Tags->Integer => \&read_integer,
-    Hprose::Tags->Long => \&read_long,
-    Hprose::Tags->Double => \&read_double,
-    Hprose::Tags->NaN => \&read_nan,
-    Hprose::Tags->Infinity => \&read_infinity,
-    Hprose::Tags->Null => \&read_null,
-    Hprose::Tags->Empty => \&read_empty,
-    Hprose::Tags->True => sub { 1 == 1; },
-    Hprose::Tags->False => sub { 1 != 1; },
-    Hprose::Tags->Date => \&read_date,
-    Hprose::Tags->Time => \&read_time,
-    Hprose::Tags->Bytes => \&read_bytes,
-    Hprose::Tags->UTF8Char => \&read_utf8char,
-    Hprose::Tags->String => \&read_string,
-    Hprose::Tags->Guid => \&read_guid,
-    Hprose::Tags->List => \&read_array,
-    Hprose::Tags->Map => \&read_hash,
-    Hprose::Tags->Class => sub { my $self = shift; $self->read_class; $self->read_object_with_tag; },
-    Hprose::Tags->Object => \&read_object,
-    Hprose::Tags->Ref => \&read_ref,
-    Hprose::Tags->Error => sub { throw Hprose::Exception(shift->read_string_with_tag); },
+    Hprose::Tags->Integer => \&read_integer_without_tag,
+    Hprose::Tags->Long => \&read_long_without_tag,
+    Hprose::Tags->Double => \&read_double_without_tag,
+    Hprose::Tags->NaN => $read_nan,
+    Hprose::Tags->Infinity => \&read_infinity_without_tag,
+    Hprose::Tags->Null => $read_null,
+    Hprose::Tags->Empty => $read_empty,
+    Hprose::Tags->True => $read_true,
+    Hprose::Tags->False => $read_false,
+    Hprose::Tags->Date => \&read_date_without_tag,
+    Hprose::Tags->Time => \&read_time_without_tag,
+    Hprose::Tags->Bytes => \&read_bytes_without_tag,
+    Hprose::Tags->UTF8Char => \&read_utf8char_without_tag,
+    Hprose::Tags->String => \&read_string_without_tag,
+    Hprose::Tags->Guid => \&read_guid_without_tag,
+    Hprose::Tags->List => \&read_array_without_tag,
+    Hprose::Tags->Map => \&read_hash_without_tag,
+    Hprose::Tags->Class => $read_class,
+    Hprose::Tags->Object => \&read_object_without_tag,
+    Hprose::Tags->Ref => $read_ref,
+    Hprose::Tags->Error => $read_error,
 );
 
 sub new {
@@ -183,7 +192,7 @@ sub unserialize {
     }
 }
 
-sub read_integer {
+sub read_integer_without_tag {
     $readint->(shift->{stream}, Hprose::Tags->Semicolon);
 }
 
@@ -198,10 +207,10 @@ my %readIntegerMethod = (
     '7' => sub { 7; },
     '8' => sub { 8; },
     '9' => sub { 9; },
-    Hprose::Tags->Integer => \&read_integer,
+    Hprose::Tags->Integer => \&read_integer_without_tag,
 );
 
-sub read_integer_with_tag {
+sub read_integer {
     my $self = shift;
     my $tag = $getc->($self->{stream});
     if (defined($tag) && exists($readIntegerMethod{$tag})) {
@@ -212,7 +221,7 @@ sub read_integer_with_tag {
     }
 }
 
-sub read_long {
+sub read_long_without_tag {
     Math::BigInt->new($readuntil->(shift->{stream}, Hprose::Tags->Semicolon));
 }
 
@@ -227,11 +236,11 @@ my %readLongMethod = (
     '7' => sub { Math::BigInt->new(7); },
     '8' => sub { Math::BigInt->new(8); },
     '9' => sub { Math::BigInt->new(9); },
-    Hprose::Tags->Integer => \&read_long,
-    Hprose::Tags->Long => \&read_long,
+    Hprose::Tags->Integer => \&read_long_without_tag,
+    Hprose::Tags->Long => \&read_long_without_tag,
 );
 
-sub read_long_with_tag {
+sub read_long {
     my $self = shift;
     my $tag = $getc->($self->{stream});
     if (defined($tag) && exists($readLongMethod{$tag})) {
@@ -242,7 +251,7 @@ sub read_long_with_tag {
     }
 }
 
-sub read_double {
+sub read_double_without_tag {
     Math::BigFloat->new($readuntil->(shift->{stream}, Hprose::Tags->Semicolon));
 }
 
@@ -257,14 +266,14 @@ my %readDoubleMethod = (
     '7' => sub { Math::BigFloat->new(7); },
     '8' => sub { Math::BigFloat->new(8); },
     '9' => sub { Math::BigFloat->new(9); },
-    Hprose::Tags->Integer => \&read_double,
-    Hprose::Tags->Long => \&read_double,
-    Hprose::Tags->Double => \&read_double,
-    Hprose::Tags->NaN => \&read_nan,
-    Hprose::Tags->Infinity => \&read_infinity,
+    Hprose::Tags->Integer => \&read_double_without_tag,
+    Hprose::Tags->Long => \&read_double_without_tag,
+    Hprose::Tags->Double => \&read_double_without_tag,
+    Hprose::Tags->NaN => $read_nan,
+    Hprose::Tags->Infinity => \&read_infinity_without_tag,
 );
 
-sub read_double_with_tag {
+sub read_double {
     my $self = shift;
     my $tag = $getc->($self->{stream});
     if (defined($tag) && exists($readDoubleMethod{$tag})) {
@@ -276,89 +285,41 @@ sub read_double_with_tag {
 }
 
 sub read_nan {
-    Hprose::Numeric->NaN;
-}
-
-my %readNaNMethod = (
-    Hprose::Tags->NaN => \&read_nan,
-);
-
-sub read_nan_with_tag {
     my $self = shift;
     my $tag = $getc->($self->{stream});
-    if (defined($tag) && exists($readNaNMethod{$tag})) {
-        $readNaNMethod{$tag}($self);
-    }
-    else {
-        $unexpected_tag->($tag);
-    }
+    ($tag eq Hprose::Tags->NaN) ? Hprose::Numeric->NaN : $unexpected_tag->($tag);
 }
 
-sub read_infinity {
+sub read_infinity_without_tag {
     ($getc->(shift->{stream}) eq Hprose::Tags->Neg) ?
     Hprose::Numeric->NInf :
     Hprose::Numeric->Inf;
 }
 
-my %readInfinityMethod = (
-    Hprose::Tags->Infinity => \&read_infinity,
-);
-
-sub read_infinity_with_tag {
+sub read_infinity {
     my $self = shift;
     my $tag = $getc->($self->{stream});
-    if (defined($tag) && exists($readInfinityMethod{$tag})) {
-        $readInfinityMethod{$tag}($self);
-    }
-    else {
-        $unexpected_tag->($tag);
-    }
+    ($tag eq Hprose::Tags->Infinity) ? $self->read_infinity_without_tag : $unexpected_tag->($tag);
 }
 
 sub read_null {
-    undef;
-}
-
-my %readNullMethod = (
-    Hprose::Tags->Null => \&read_null,
-);
-
-sub read_null_with_tag {
     my $self = shift;
     my $tag = $getc->($self->{stream});
-    if (defined($tag) && exists($readNullMethod{$tag})) {
-        $readNullMethod{$tag}($self);
-    }
-    else {
-        $unexpected_tag->($tag);
-    }
+    ($tag eq Hprose::Tags->Null) ? undef : $unexpected_tag->($tag);
 }
 
 sub read_empty {
-    '';
-}
-
-my %readEmptyMethod = (
-    Hprose::Tags->Empty => \&read_empty,
-);
-
-sub read_empty_with_tag {
     my $self = shift;
     my $tag = $getc->($self->{stream});
-    if (defined($tag) && exists($readEmptyMethod{$tag})) {
-        $readEmptyMethod{$tag}($self);
-    }
-    else {
-        $unexpected_tag->($tag);
-    }
+    ($tag eq Hprose::Tags->Empty) ? '' : $unexpected_tag->($tag);
 }
 
 my %readBooleanMethod = (
-    Hprose::Tags->True => sub { 1 == 1; },
-    Hprose::Tags->False => sub { 1 != 1; },
+    Hprose::Tags->True => $read_true,
+    Hprose::Tags->False => $read_false,
 );
 
-sub read_boolean_with_tag {
+sub read_boolean {
     my $self = shift;
     my $tag = $getc->($self->{stream});
     if (defined($tag) && exists($readBooleanMethod{$tag})) {
@@ -369,7 +330,7 @@ sub read_boolean_with_tag {
     }
 }
 
-sub read_date {
+sub read_date_without_tag {
     my $self = shift;
     my $stream = $self->{stream};
     my ($year, $month, $day, $hour, $minute, $second, $nanosecond) = (1970, 1, 1, 0, 0, 0, 0);
@@ -416,11 +377,11 @@ sub read_date {
 }
 
 my %readDateMethod = (
-    Hprose::Tags->Ref => \&read_ref,
-    Hprose::Tags->Date => \&read_date,
+    Hprose::Tags->Ref => $read_ref,
+    Hprose::Tags->Date => \&read_date_without_tag,
 );
 
-sub read_date_with_tag {
+sub read_date {
     my $self = shift;
     my $tag = $getc->($self->{stream});
     if (defined($tag) && exists($readDateMethod{$tag})) {
@@ -431,7 +392,7 @@ sub read_date_with_tag {
     }
 }
 
-sub read_time {
+sub read_time_without_tag {
     my $self = shift;
     my $stream = $self->{stream};
     my ($hour, $minute, $second, $nanosecond) = (0, 0, 0, 0);
@@ -473,11 +434,11 @@ sub read_time {
 }
 
 my %readTimeMethod = (
-    Hprose::Tags->Ref => \&read_ref,
-    Hprose::Tags->Time => \&read_time,
+    Hprose::Tags->Ref => $read_ref,
+    Hprose::Tags->Time => \&read_time_without_tag,
 );
 
-sub read_time_with_tag {
+sub read_time {
     my $self = shift;
     my $tag = $getc->($self->{stream});
     if (defined($tag) && exists($readTimeMethod{$tag})) {
@@ -488,7 +449,7 @@ sub read_time_with_tag {
     }
 }
 
-sub read_bytes {
+sub read_bytes_without_tag {
     my $self = shift;
     my $stream = $self->{stream};
     my $len = $readint->($stream, Hprose::Tags->Quote);
@@ -500,11 +461,11 @@ sub read_bytes {
 }
 
 my %readBytesMethod = (
-    Hprose::Tags->Ref => \&read_ref,
-    Hprose::Tags->Bytes => \&read_bytes,
+    Hprose::Tags->Ref => $read_ref,
+    Hprose::Tags->Bytes => \&read_bytes_without_tag,
 );
 
-sub read_bytes_with_tag {
+sub read_bytes {
     my $self = shift;
     my $tag = $getc->($self->{stream});
     if (defined($tag) && exists($readBytesMethod{$tag})) {
@@ -515,26 +476,17 @@ sub read_bytes_with_tag {
     }
 }
 
-sub read_utf8char {
+sub read_utf8char_without_tag {
     $readutf8->(shift->{stream}, 1);
 }
 
-my %readUTF8CharMethod = (
-    Hprose::Tags->UTF8Char => \&read_utf8char,
-);
-
-sub read_utf8char_with_tag {
+sub read_utf8char {
     my $self = shift;
     my $tag = $getc->($self->{stream});
-    if (defined($tag) && exists($readUTF8CharMethod{$tag})) {
-        $readUTF8CharMethod{$tag}($self);
-    }
-    else {
-        $unexpected_tag->($tag);
-    }
+    ($tag eq Hprose::Tags->UTF8Char) ? $self->read_utf8char_without_tag : $unexpected_tag->($tag);
 }
 
-sub read_string {
+sub read_string_without_tag {
     my $self = shift;
     my $str = $read_string->($self->{stream});
     my $ref = $self->{ref};
@@ -542,11 +494,11 @@ sub read_string {
 }
 
 my %readStringMethod = (
-    Hprose::Tags->Ref => \&read_ref,
-    Hprose::Tags->String => \&read_string,
+    Hprose::Tags->Ref => $read_ref,
+    Hprose::Tags->String => \&read_string_without_tag,
 );
 
-sub read_string_with_tag {
+sub read_string {
     my $self = shift;
     my $tag = $getc->($self->{stream});
     if (defined($tag) && exists($readStringMethod{$tag})) {
@@ -557,7 +509,7 @@ sub read_string_with_tag {
     }
 }
 
-sub read_guid {
+sub read_guid_without_tag {
     my $self = shift;
     my $stream = $self->{stream};
     $getc->($stream);
@@ -569,11 +521,11 @@ sub read_guid {
 }
 
 my %readGuidMethod = (
-    Hprose::Tags->Ref => \&read_ref,
-    Hprose::Tags->Guid => \&read_guid,
+    Hprose::Tags->Ref => $read_ref,
+    Hprose::Tags->Guid => \&read_guid_without_tag,
 );
 
-sub read_guid_with_tag {
+sub read_guid {
     my $self = shift;
     my $tag = $getc->($self->{stream});
     if (defined($tag) && exists($readGuidMethod{$tag})) {
@@ -584,7 +536,7 @@ sub read_guid_with_tag {
     }
 }
 
-sub read_array {
+sub read_array_without_tag {
     my $self = shift;
     my $stream = $self->{stream};
     my $ref = $self->{ref};
@@ -597,11 +549,11 @@ sub read_array {
 }
 
 my %readArrayMethod = (
-    Hprose::Tags->Ref => \&read_ref,
-    Hprose::Tags->List => \&read_array,
+    Hprose::Tags->Ref => $read_ref,
+    Hprose::Tags->List => \&read_array_without_tag,
 );
 
-sub read_array_with_tag {
+sub read_array {
     my $self = shift;
     my $tag = $getc->($self->{stream});
     if (defined($tag) && exists($readArrayMethod{$tag})) {
@@ -612,7 +564,7 @@ sub read_array_with_tag {
     }
 }
 
-sub read_hash {
+sub read_hash_without_tag {
     my $self = shift;
     my $stream = $self->{stream};
     my $ref = $self->{ref};
@@ -626,11 +578,11 @@ sub read_hash {
 }
 
 my %readHashMethod = (
-    Hprose::Tags->Ref => \&read_ref,
-    Hprose::Tags->Map => \&read_hash,
+    Hprose::Tags->Ref => $read_ref,
+    Hprose::Tags->Map => \&read_hash_without_tag,
 );
 
-sub read_hash_with_tag {
+sub read_hash {
     my $self = shift;
     my $tag = $getc->($self->{stream});
     if (defined($tag) && exists($readHashMethod{$tag})) {
@@ -647,14 +599,14 @@ sub read_class {
     my $classname = $read_string->($stream);
     my $count = $readint->($stream, Hprose::Tags->Openbrace);
     my $fields = [];
-    $fields->[$_] = $self->read_string_with_tag foreach (0..$count - 1);
+    $fields->[$_] = $self->read_string foreach (0..$count - 1);
     $getc->($stream);
     my $class = Hprose::ClassManager->get_class($classname);
     my $classref = $self->{classref};
     $classref->[scalar(@$classref)] = [$class, $fields, $count];
 }
 
-sub read_object {
+sub read_object_without_tag {
     my $self = shift;
     my $stream = $self->{stream};
     my $classref = $self->{classref};
@@ -668,12 +620,12 @@ sub read_object {
 }
 
 my %readObjectMethod = (
-    Hprose::Tags->Class => sub { my $self = shift; $self->read_class; $self->read_object_with_tag; },
-    Hprose::Tags->Object => \&read_object,
-    Hprose::Tags->Ref => \&read_ref,
+    Hprose::Tags->Class => $read_class,
+    Hprose::Tags->Object => \&read_object_without_tag,
+    Hprose::Tags->Ref => $read_ref,
 );
 
-sub read_object_with_tag {
+sub read_object {
     my $self = shift;
     my $tag = $getc->($self->{stream});
     if (defined($tag) && exists($readObjectMethod{$tag})) {
@@ -682,11 +634,6 @@ sub read_object_with_tag {
     else {
         $unexpected_tag->($tag);
     }
-}
-
-sub read_ref {
-    my $self = shift;
-    $self->{ref}->[$readint->($self->{stream}, Hprose::Tags->Semicolon)];
 }
 
 sub reset {

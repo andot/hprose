@@ -131,11 +131,11 @@ package hprose.client {
                                     break;
                                 case HproseTags.TagArgument:
                                     reader.reset();
-                                    invoker.args = reader.readListWithTag();
+                                    invoker.args = reader.readList();
                                     break;
                                 case HproseTags.TagError:
                                     reader.reset();
-                                    error = new HproseException(reader.readStringWithTag());
+                                    error = new HproseException(reader.readString());
                                     break;
                                 default:
                                     throw reader.unexpectedTag(tag);

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for ActionScript 2.0.              *
  *                                                        *
- * LastModified: Dec 12, 2012                             *
+ * LastModified: Dec 13, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -51,26 +51,26 @@ class hprose.io.HproseReader {
             case '7': return 7;
             case '8': return 8;
             case '9': return 9;
-            case HproseTags.TagInteger: return readInteger();
-            case HproseTags.TagLong: return readLong();
-            case HproseTags.TagDouble: return readDouble();
+            case HproseTags.TagInteger: return readIntegerWithoutTag();
+            case HproseTags.TagLong: return readLongWithoutTag();
+            case HproseTags.TagDouble: return readDoubleWithoutTag();
             case HproseTags.TagNull: return null;
             case HproseTags.TagTrue: return true;
             case HproseTags.TagFalse: return false;
             case HproseTags.TagNaN: return NaN;
             case HproseTags.TagEmpty: return "";
-            case HproseTags.TagInfinity: return readInfinity();
-            case HproseTags.TagDate: return readDate();
-            case HproseTags.TagTime: return readTime();
+            case HproseTags.TagInfinity: return readInfinityWithoutTag();
+            case HproseTags.TagDate: return readDateWithoutTag();
+            case HproseTags.TagTime: return readTimeWithoutTag();
             case HproseTags.TagUTF8Char: return stream.getc();
-            case HproseTags.TagString: return readString();
-            case HproseTags.TagGuid: return readGuid();
-            case HproseTags.TagList: return readList();
-            case HproseTags.TagMap: return readMap();
-            case HproseTags.TagClass: readClass(); return unserialize();
-            case HproseTags.TagObject: return readObject();
+            case HproseTags.TagString: return readStringWithoutTag();
+            case HproseTags.TagGuid: return readGuidWithoutTag();
+            case HproseTags.TagList: return readListWithoutTag();
+            case HproseTags.TagMap: return readMapWithoutTag();
+            case HproseTags.TagClass: readClass(); return readObject();
+            case HproseTags.TagObject: return readObjectWithoutTag();
             case HproseTags.TagRef: return readRef();
-            case HproseTags.TagError: throw new HproseException(readStringWithTag());
+            case HproseTags.TagError: throw new HproseException(readString());
             default: unexpectedTag(tag);
         }
     }
@@ -110,11 +110,11 @@ class hprose.io.HproseReader {
         return parseInt(s);
     }
 
-    public function readInteger():Number {
+    public function readIntegerWithoutTag():Number {
         return readInt(HproseTags.TagSemicolon);
     }
 
-    public function readIntegerWithTag():Number {
+    public function readInteger():Number {
         var tag = stream.getc();
         switch (tag) {
             case '0': return 0;
@@ -127,16 +127,16 @@ class hprose.io.HproseReader {
             case '7': return 7;
             case '8': return 8;
             case '9': return 9;
-            case HproseTags.TagInteger: return readInteger();
+            case HproseTags.TagInteger: return readIntegerWithoutTag();
             default: unexpectedTag(tag);
         }
     }
 
-    public function readLong():String {
+    public function readLongWithoutTag():String {
         return stream.readuntil(HproseTags.TagSemicolon);
     }
 
-    public function readLongWithTag():String {
+    public function readLong():String {
         var tag = stream.getc();
         switch (tag) {
             case '0': return '0';
@@ -149,17 +149,17 @@ class hprose.io.HproseReader {
             case '7': return '7';
             case '8': return '8';
             case '9': return '9';
-            case HproseTags.TagInteger: return readLong();
-            case HproseTags.TagLong: return readLong();
+            case HproseTags.TagInteger: return readLongWithoutTag();
+            case HproseTags.TagLong: return readLongWithoutTag();
             default: unexpectedTag(tag);
         }
     }
 
-    public function readDouble():Number {
+    public function readDoubleWithoutTag():Number {
         return parseFloat(stream.readuntil(HproseTags.TagSemicolon));
     }
     
-    public function readDoubleWithTag():Number {
+    public function readDouble():Number {
         var tag = stream.getc();
         switch (tag) {
             case '0': return 0;
@@ -172,20 +172,16 @@ class hprose.io.HproseReader {
             case '7': return 7;
             case '8': return 8;
             case '9': return 9;
-            case HproseTags.TagInteger: return readDouble();
-            case HproseTags.TagLong: return readDouble();
-            case HproseTags.TagDouble: return readDouble();
+            case HproseTags.TagInteger: return readDoubleWithoutTag();
+            case HproseTags.TagLong: return readDoubleWithoutTag();
+            case HproseTags.TagDouble: return readDoubleWithoutTag();
             case HproseTags.TagNaN: return NaN;
-            case HproseTags.TagInfinity: return readInfinity();
+            case HproseTags.TagInfinity: return readInfinityWithoutTag();
             default: unexpectedTag(tag);
         }
     }
 
     public function readNaN():Number {
-        return NaN;
-    }
-    
-    public function readNaNWithTag():Number {
         var tag = stream.getc();
         switch (tag) {
             case HproseTags.TagNaN: return NaN;
@@ -193,23 +189,19 @@ class hprose.io.HproseReader {
         }
     }
 
-    public function readInfinity():Number {
+    public function readInfinityWithoutTag():Number {
         return ((stream.getc() == HproseTags.TagNeg) ? -Infinity : Infinity);
     }
 
-    public function readInfinityWithTag():Number {
+    public function readInfinity():Number {
         var tag = stream.getc();
         switch (tag) {
-            case HproseTags.TagInfinity: return readInfinity();
+            case HproseTags.TagInfinity: return readInfinityWithoutTag();
             default: unexpectedTag(tag);
         }
     }
     
     public function readNull():Object {
-        return null;
-    }
-
-    public function readNullWithTag():Object {
         var tag = stream.getc();
         switch (tag) {
             case HproseTags.TagNull: return null;
@@ -218,10 +210,6 @@ class hprose.io.HproseReader {
     }
 
     public function readEmpty():Object {
-        return "";
-    }
-    
-    public function readEmptyWithTag():Object {
         var tag = stream.getc();
         switch (tag) {
             case HproseTags.TagEmpty: return '';
@@ -229,7 +217,7 @@ class hprose.io.HproseReader {
         }
     }
 
-    public function readBooleanWithTag():Boolean {
+    public function readBoolean():Boolean {
         var tag = stream.getc();
         switch (tag) {
             case HproseTags.TagTrue: return true;
@@ -238,7 +226,7 @@ class hprose.io.HproseReader {
         }
     }
 
-    public function readDate():Date {
+    public function readDateWithoutTag():Date {
         var year = parseInt(stream.read(4));
         var month = parseInt(stream.read(2)) - 1;
         var day = parseInt(stream.read(2));
@@ -278,16 +266,16 @@ class hprose.io.HproseReader {
         return ref[ref.length] = date;
     }
 
-    public function readDateWithTag():Date {
+    public function readDate():Date {
         var tag = stream.getc();
         switch (tag) {
-            case HproseTags.TagDate: return readDate();
+            case HproseTags.TagDate: return readDateWithoutTag();
             case HproseTags.TagRef: return readRef();
             default: unexpectedTag(tag);
         }
     }
 
-    public function readTime():Date {
+    public function readTimeWithoutTag():Date {
         var time;
         var hour = parseInt(stream.read(2));
         var minute = parseInt(stream.read(2));
@@ -315,23 +303,23 @@ class hprose.io.HproseReader {
         return ref[ref.length] = time;
     }
 
-    public function readTimeWithTag():Date {
+    public function readTime():Date {
         var tag = stream.getc();
         switch (tag) {
-            case HproseTags.TagTime: return readTime();
+            case HproseTags.TagTime: return readTimeWithoutTag();
             case HproseTags.TagRef: return readRef();
             default: unexpectedTag(tag);
         }
     }
 
-    public function readUTF8Char() {
+    public function readUTF8CharWithoutTag() {
         return stream.getc();
     }
 
-    public function readUTF8CharWithTag() {
+    public function readUTF8Char() {
         var tag = stream.getc();
         switch (tag) {
-            case HproseTags.TagUTF8Char: return readUTF8Char();
+            case HproseTags.TagUTF8Char: return stream.getc();
             default: unexpectedTag(tag);
         }
     }
@@ -342,36 +330,36 @@ class hprose.io.HproseReader {
         return str;
     }
 
-    public function readString():String {
+    public function readStringWithoutTag():String {
         return ref[ref.length] = _readString();
     }
 
-    public function readStringWithTag():String {
+    public function readString():String {
         var tag = stream.getc();
         switch (tag) {
-            case HproseTags.TagString: return readString();
+            case HproseTags.TagString: return readStringWithoutTag();
             case HproseTags.TagRef: return readRef();
             default: unexpectedTag(tag);
         }
     }
 
-    public function readGuid():String {
+    public function readGuidWithoutTag():String {
         stream.skip(1);
         var guid = stream.read(36);
         stream.skip(1);
         return ref[ref.length] = guid;
     }
 
-    public function readGuidWithTag():String {
+    public function readGuid():String {
         var tag = stream.getc();
         switch (tag) {
-            case HproseTags.TagGuid: return readGuid();
+            case HproseTags.TagGuid: return readGuidWithoutTag();
             case HproseTags.TagRef: return readRef();
             default: unexpectedTag(tag);
         }
     }
     
-    public function readList():Array {
+    public function readListWithoutTag():Array {
         var list = [];
         ref[ref.length] = list;
         var count = readInt(HproseTags.TagOpenbrace);
@@ -382,16 +370,16 @@ class hprose.io.HproseReader {
         return list;
     }
 
-    public function readListWithTag():Array {
+    public function readList():Array {
         var tag = stream.getc();
         switch (tag) {
-            case HproseTags.TagList: return readList();
+            case HproseTags.TagList: return readListWithoutTag();
             case HproseTags.TagRef: return readRef();
             default: unexpectedTag(tag);
         }
     }
     
-    public function readMap():Object {
+    public function readMapWithoutTag():Object {
         var map = {};
         ref[ref.length] = map;
         var count = readInt(HproseTags.TagOpenbrace);
@@ -402,16 +390,16 @@ class hprose.io.HproseReader {
         return map;
     }
 
-    public function readMapWithTag():Object {
+    public function readMap():Object {
         var tag = stream.getc();
         switch (tag) {
-            case HproseTags.TagMap: return readMap();
+            case HproseTags.TagMap: return readMapWithoutTag();
             case HproseTags.TagRef: return readRef();
             default: unexpectedTag(tag);
         }
     }
 
-    public function readObject() {
+    public function readObjectWithoutTag() {
         var cls = classref[readInt(HproseTags.TagOpenbrace)];
         var obj = new cls.classname();
         ref[ref.length] = obj;
@@ -422,11 +410,11 @@ class hprose.io.HproseReader {
         return obj;
     }
 
-    public function readObjectWithTag():Array {
+    public function readObject():Array {
         var tag = stream.getc();
         switch(tag) {
-            case HproseTags.TagClass: readClass(); return readObjectWithTag();
-            case HproseTags.TagObject: return readObject();
+            case HproseTags.TagClass: readClass(); return readObject();
+            case HproseTags.TagObject: return readObjectWithoutTag();
             case HproseTags.TagRef: return readRef();
             default: unexpectedTag(tag);
         }
@@ -437,7 +425,7 @@ class hprose.io.HproseReader {
         var count = readInt(HproseTags.TagOpenbrace);
         var fields = [];
         for (var i = 0; i < count; i++) {
-            fields[i] = readStringWithTag();
+            fields[i] = readString();
         }
         stream.skip(1);
         classref[classref.length] = {
