@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for C#.                            *
  *                                                        *
- * LastModified: Nov 8, 2012                              *
+ * LastModified: Dec 13, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -53,394 +53,38 @@ namespace Hprose.IO {
             this.mode = mode;
         }
 
-        public object Unserialize() {
-            return Unserialize(stream.ReadByte(), null);
+        public HproseException UnexpectedTag(int tag) {
+            return UnexpectedTag(tag, null);
         }
-
-#if !(dotNET10 || dotNET11 || dotNETCF10)
-        public T Unserialize<T>() {
-            return (T)Unserialize(stream.ReadByte(), typeof(T));
-        }
-#endif
-
-        public object Unserialize(Type type) {
-            return Unserialize(stream.ReadByte(), type);
-        }
-
-        private object Unserialize(int tag, Type type) {
-            switch (tag) {
-                case '0':
-                case '1':
-                case '2':
-                case '3':
-                case '4':
-                case '5':
-                case '6':
-                case '7':
-                case '8':
-                case '9':
-                    return ReadDigit(tag, type);
-                case HproseTags.TagInteger:
-                    return ReadInteger(type);
-                case HproseTags.TagLong:
-                    return ReadLong(type);
-                case HproseTags.TagDouble:
-                    return ReadDouble(type);
-                case HproseTags.TagNull:
-                    return ReadNull(type);
-                case HproseTags.TagEmpty:
-                    return ReadEmpty(type);
-                case HproseTags.TagTrue:
-                    return ReadTrue(type);
-                case HproseTags.TagFalse:
-                    return ReadFalse(type);
-                case HproseTags.TagNaN:
-                    return ReadNaN(type);
-                case HproseTags.TagInfinity:
-                    return ReadInfinity(type);
-                case HproseTags.TagDate:
-                    return ReadDate(false, type);
-                case HproseTags.TagTime:
-                    return ReadTime(false, type);
-                case HproseTags.TagBytes:
-                    return ReadBytes(type);
-                case HproseTags.TagUTF8Char:
-                    return ReadUTF8Char(type);
-                case HproseTags.TagString:
-                    return ReadString(false, type);
-                case HproseTags.TagGuid:
-                    return ReadGuid(false, type);
-                case HproseTags.TagList:
-                    return ReadList(false, type);
-                case HproseTags.TagMap:
-                    return ReadMap(false, type);
-                case HproseTags.TagClass:
-                    ReadClass();
-                    return Unserialize(stream.ReadByte(), type);
-                case HproseTags.TagObject:
-                    return ReadObject(false, type);
-                case HproseTags.TagRef:
-                    return ReadRef(type);
-                case HproseTags.TagError:
-                    throw new HproseException((string)ReadString());
-                case -1:
-                    throw new HproseException("No byte found in stream");
+        
+        public HproseException UnexpectedTag(int tag, string expectTags) {
+            if (tag == -1) {
+                return new HproseException("No byte found in stream");
             }
-            throw new HproseException("Unexpected serialize tag '" +
-                                      (char)tag + "' in stream");
-        }
-
-        private object ReadDigit(int tag, Type type) {
-            int b = tag - '0';
-            switch (HproseHelper.GetTypeEnum(type)) {
-                case TypeEnum.Null:
-                case TypeEnum.Int32:
-                case TypeEnum.Object: return b;
-                case TypeEnum.Byte: return (byte)b;
-                case TypeEnum.SByte: return (sbyte)b;
-                case TypeEnum.Int16: return (short)b;
-                case TypeEnum.UInt16: return (ushort)b;
-                case TypeEnum.UInt32: return (uint)b;
-                case TypeEnum.Int64: return (long)b;
-                case TypeEnum.UInt64: return (ulong)b;
-                case TypeEnum.Char: return (char)tag;
-                case TypeEnum.Single: return (float)b;
-                case TypeEnum.Double: return (double)b;
-                case TypeEnum.Decimal: return (decimal)b;
-                case TypeEnum.String: return new string((char)tag, 1);
-                case TypeEnum.Boolean: return (tag != '0');
-                case TypeEnum.DateTime: return new DateTime((long)b);
-                case TypeEnum.BigInteger: return new BigInteger(b);
-                case TypeEnum.TimeSpan: return new TimeSpan((long)b);
-                case TypeEnum.Enum: return Enum.ToObject(type, b);
-                case TypeEnum.StringBuilder: return new StringBuilder(1).Append((char)tag);
+            else if (expectTags == null) {
+                return new HproseException("Unexpected serialize tag '" + (char)tag + "' in stream");
             }
-            return CastError("Integer", type);
-        }
-
-        private object ReadInteger(Type type) {
-            int i = ReadInt(HproseTags.TagSemicolon);
-            switch (HproseHelper.GetTypeEnum(type)) {
-                case TypeEnum.Null:
-                case TypeEnum.Int32:
-                case TypeEnum.Object: return i;
-                case TypeEnum.Byte: return (byte)i;
-                case TypeEnum.SByte: return (sbyte)i;
-                case TypeEnum.Int16: return (short)i;
-                case TypeEnum.UInt16: return (ushort)i;
-                case TypeEnum.UInt32: return (uint)i;
-                case TypeEnum.Int64: return (long)i;
-                case TypeEnum.UInt64: return (ulong)i;
-                case TypeEnum.Char: return (char)i;
-                case TypeEnum.Single: return (float)i;
-                case TypeEnum.Double: return (double)i;
-                case TypeEnum.Decimal: return (decimal)i;
-                case TypeEnum.String: return i.ToString();
-                case TypeEnum.Boolean: return (i != 0);
-                case TypeEnum.DateTime: return new DateTime((long)i);
-                case TypeEnum.BigInteger: return new BigInteger(i);
-                case TypeEnum.TimeSpan: return new TimeSpan((long)i);
-                case TypeEnum.Enum: return Enum.ToObject(type, i);
-                case TypeEnum.StringBuilder: return new StringBuilder(i.ToString());
-            }
-            return CastError("Integer", type);
-        }
-
-        private object ReadLong(Type type) {
-            StringBuilder l = ReadUntil(HproseTags.TagSemicolon);
-            switch (HproseHelper.GetTypeEnum(type)) {
-                case TypeEnum.Null:
-                case TypeEnum.BigInteger:
-                case TypeEnum.Object: return BigInteger.Parse(l.ToString());
-                case TypeEnum.Byte: return byte.Parse(l.ToString());
-                case TypeEnum.SByte: return sbyte.Parse(l.ToString());
-                case TypeEnum.Int16: return short.Parse(l.ToString());
-                case TypeEnum.UInt16: return ushort.Parse(l.ToString());
-                case TypeEnum.Int32: return int.Parse(l.ToString());
-                case TypeEnum.UInt32: return uint.Parse(l.ToString());
-                case TypeEnum.Int64: return long.Parse(l.ToString());
-                case TypeEnum.UInt64: return ulong.Parse(l.ToString());
-                case TypeEnum.Char: return (char)int.Parse(l.ToString());
-                case TypeEnum.Single: return ParseFloat(l);
-                case TypeEnum.Double: return ParseDouble(l);
-                case TypeEnum.Decimal: return decimal.Parse(l.ToString());
-                case TypeEnum.String: return l.ToString();
-                case TypeEnum.Boolean: return (int.Parse(l.ToString()) != 0);
-                case TypeEnum.DateTime: return new DateTime(long.Parse(l.ToString()));
-                case TypeEnum.TimeSpan: return new TimeSpan(long.Parse(l.ToString()));
-                case TypeEnum.Enum: return Enum.ToObject(type, long.Parse(l.ToString()));
-                case TypeEnum.StringBuilder: return l;
-            }
-            return CastError("Long", type);
-        }
-
-        private object ReadDouble(Type type) {
-            StringBuilder value = ReadUntil(HproseTags.TagSemicolon);
-            switch (HproseHelper.GetTypeEnum(type)) {
-                case TypeEnum.Null:
-                case TypeEnum.Double:
-                case TypeEnum.Object: return ParseDouble(value);
-                case TypeEnum.Byte: return (byte)ParseDouble(value);
-                case TypeEnum.SByte: return (sbyte)ParseDouble(value);
-                case TypeEnum.Int16: return (short)ParseDouble(value);
-                case TypeEnum.UInt16: return (ushort)ParseDouble(value);
-                case TypeEnum.Int32: return (int)ParseDouble(value);
-                case TypeEnum.UInt32: return (uint)ParseDouble(value);
-                case TypeEnum.Int64: return (long)ParseDouble(value);
-                case TypeEnum.UInt64: return (ulong)ParseDouble(value);
-                case TypeEnum.Char: return (char)(int)ParseDouble(value);
-                case TypeEnum.Single: return ParseFloat(value);
-                case TypeEnum.Decimal: return decimal.Parse(value.ToString());
-                case TypeEnum.String: return value.ToString();
-                case TypeEnum.Boolean: return ((int)(ParseDouble(value)) != 0);
-                case TypeEnum.DateTime: return new DateTime((long)ParseDouble(value));
-                case TypeEnum.BigInteger: return new BigInteger(ParseDouble(value));
-                case TypeEnum.TimeSpan: return new TimeSpan((long)ParseDouble(value));
-                case TypeEnum.Enum: return Enum.ToObject(type, (long)ParseDouble(value));
-                case TypeEnum.StringBuilder: return value;
-            }
-            return CastError("Double", type);
-        }
-
-        private object ReadNull(Type type) {
-            switch (HproseHelper.GetTypeEnum(type)) {
-                case TypeEnum.Byte: return (byte)0;
-                case TypeEnum.SByte: return (sbyte)0;
-                case TypeEnum.Int16: return (short)0;
-                case TypeEnum.UInt16: return (ushort)0;
-                case TypeEnum.Int32: return 0;
-                case TypeEnum.UInt32: return (uint)0;
-                case TypeEnum.Int64: return (long)0;
-                case TypeEnum.UInt64: return (ulong)0;
-                case TypeEnum.Char: return (char)0;
-                case TypeEnum.Single: return (float)0;
-                case TypeEnum.Double: return (double)0;
-                case TypeEnum.Decimal: return (decimal)0;
-                case TypeEnum.Boolean: return false;
-                case TypeEnum.Enum: return Enum.ToObject(type, 0);
-#if !Core
-                case TypeEnum.DBNull: return DBNull.Value;
-#endif
-            }
-            return null;
-        }
-
-        private object ReadEmpty(Type type) {
-            switch (HproseHelper.GetTypeEnum(type)) {
-                case TypeEnum.Null:
-                case TypeEnum.String:
-                case TypeEnum.Object: return "";
-                case TypeEnum.Byte: return (byte)0;
-                case TypeEnum.SByte: return (sbyte)0;
-                case TypeEnum.Int16: return (short)0;
-                case TypeEnum.UInt16: return (ushort)0;
-                case TypeEnum.Int32: return 0;
-                case TypeEnum.UInt32: return (uint)0;
-                case TypeEnum.Int64: return (long)0;
-                case TypeEnum.UInt64: return (ulong)0;
-                case TypeEnum.Char: return (char)0;
-                case TypeEnum.Single: return (float)0;
-                case TypeEnum.Double: return (double)0;
-                case TypeEnum.Decimal: return (decimal)0;
-                case TypeEnum.Boolean: return false;
-                case TypeEnum.BigInteger: return BigInteger.Zero;
-                case TypeEnum.Enum: return Enum.ToObject(type, 0);
-                case TypeEnum.StringBuilder: return new StringBuilder();
-                case TypeEnum.CharArray: return new char[0];
-                case TypeEnum.ByteArray: return new byte[0];
-#if !Core
-                case TypeEnum.DBNull: return DBNull.Value;
-#endif
-            }
-            return CastError("Empty String", type);
-        }
-
-        private object ReadTrue(Type type) {
-            switch (HproseHelper.GetTypeEnum(type)) {
-                case TypeEnum.Null:
-                case TypeEnum.Boolean:
-                case TypeEnum.Object: return true;
-                case TypeEnum.Byte: return (byte)1;
-                case TypeEnum.SByte: return (sbyte)1;
-                case TypeEnum.Int16: return (short)1;
-                case TypeEnum.UInt16: return (ushort)1;
-                case TypeEnum.Int32: return 1;
-                case TypeEnum.UInt32: return (uint)1;
-                case TypeEnum.Int64: return (long)1;
-                case TypeEnum.UInt64: return (ulong)1;
-                case TypeEnum.Char: return 'T';
-                case TypeEnum.Single: return (float)1;
-                case TypeEnum.Double: return (double)1;
-                case TypeEnum.Decimal: return (decimal)1;
-                case TypeEnum.String: return bool.TrueString;
-                case TypeEnum.BigInteger: return BigInteger.One;
-                case TypeEnum.Enum: return Enum.ToObject(type, 1);
-                case TypeEnum.StringBuilder: return new StringBuilder(bool.TrueString);
-            }
-            return CastError("Boolean", type);
-        }
-
-        private object ReadFalse(Type type) {
-            switch (HproseHelper.GetTypeEnum(type)) {
-                case TypeEnum.Null:
-                case TypeEnum.Boolean:
-                case TypeEnum.Object: return false;
-                case TypeEnum.Byte: return (byte)0;
-                case TypeEnum.SByte: return (sbyte)0;
-                case TypeEnum.Int16: return (short)0;
-                case TypeEnum.UInt16: return (ushort)0;
-                case TypeEnum.Int32: return 0;
-                case TypeEnum.UInt32: return (uint)0;
-                case TypeEnum.Int64: return (long)0;
-                case TypeEnum.UInt64: return (ulong)0;
-                case TypeEnum.Char: return 'F';
-                case TypeEnum.Single: return (float)0;
-                case TypeEnum.Double: return (double)0;
-                case TypeEnum.Decimal: return (decimal)0;
-                case TypeEnum.String: return bool.FalseString;
-                case TypeEnum.BigInteger: return BigInteger.Zero;
-                case TypeEnum.Enum: return Enum.ToObject(type, 0);
-                case TypeEnum.StringBuilder: return new StringBuilder(bool.FalseString);
-            }
-            return CastError("Boolean", type);
-        }
-
-        private object ReadNaN(Type type) {
-            switch (HproseHelper.GetTypeEnum(type)) {
-                case TypeEnum.Null:
-                case TypeEnum.Double:
-                case TypeEnum.Object: return double.NaN;
-                case TypeEnum.Single: return float.NaN;
-                case TypeEnum.String: return "NaN";
-                case TypeEnum.StringBuilder: return new StringBuilder("NaN");
-            }
-            return CastError("NaN", type);
-        }
-
-        private object ReadInfinity(Type type) {
-            bool isPosInf = (stream.ReadByte() == HproseTags.TagPos);
-            switch (HproseHelper.GetTypeEnum(type)) {
-                case TypeEnum.Null:
-                case TypeEnum.Double:
-                case TypeEnum.Object: return (isPosInf ? double.PositiveInfinity : double.NegativeInfinity);
-                case TypeEnum.Single: return (isPosInf ? float.PositiveInfinity : float.NegativeInfinity);
-                case TypeEnum.String: return (isPosInf ? "Infinity" : "-Infinity");
-                case TypeEnum.StringBuilder: return new StringBuilder((isPosInf ? "Infinity" : "-Infinity"));
-            }
-            return CastError("Infinity", type);
-        }
-
-        private object ReadBytes(Type type) {
-            switch (HproseHelper.GetTypeEnum(type)) {
-                case TypeEnum.Null:
-                case TypeEnum.ByteArray:
-                case TypeEnum.Object: return ReadBytes(false);
-                case TypeEnum.Guid: return new Guid(ReadBytes(false));
-                case TypeEnum.Stream:
-                case TypeEnum.MemoryStream: return ReadStream(false);
-#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
-                case TypeEnum.String: {
-                    byte[] buf = ReadBytes(false);
-                    return Encoding.Default.GetString(buf, 0, buf.Length);
-                }
-                case TypeEnum.StringBuilder: {
-                    byte[] buf = ReadBytes(false);
-                    return new StringBuilder(Encoding.Default.GetString(buf, 0, buf.Length));
-                }
-#endif
-            }
-            return CastError("byte[]", type);
-        }
-
-        private object ReadUTF8Char(Type type) {
-            char c = ReadUTF8Char(false);
-            switch (HproseHelper.GetTypeEnum(type)) {
-                case TypeEnum.Null:
-                case TypeEnum.Char: return c;
-                case TypeEnum.Byte: return (byte)c;
-                case TypeEnum.SByte: return (sbyte)c;
-                case TypeEnum.Int16: return (short)c;
-                case TypeEnum.UInt16: return (ushort)c;
-                case TypeEnum.Int32: return (int)c;
-                case TypeEnum.UInt32: return (uint)c;
-                case TypeEnum.Int64: return (long)c;
-                case TypeEnum.UInt64: return (ulong)c;
-                case TypeEnum.Single: return (float)c;
-                case TypeEnum.Double: return (double)c;
-                case TypeEnum.Decimal: return (decimal)c;
-                case TypeEnum.Object:
-                case TypeEnum.String: return new string(c, 1);
-                case TypeEnum.Boolean: return "\00Ff".IndexOf(c) > -1;
-                case TypeEnum.BigInteger: return new BigInteger((int)c);
-                case TypeEnum.Enum: return Enum.ToObject(type, (int)c);
-                case TypeEnum.StringBuilder: return new StringBuilder(1).Append(c);
-            }
-            return CastError("Char", type);
-        }
-
-        public void CheckTag(int expectTag, int tag) {
-            if (tag != expectTag) {
-                throw new HproseException("Tag '" + (char)expectTag +
-                                          "' expected, but '" + (char)tag +
+            else {
+                return new HproseException("Tag '" + expectTags + "' expected, but '" + (char)tag +
                                           "' found in stream");
             }
+        }
+
+        private void CheckTag(int tag, int expectTag) {
+            if (tag != expectTag) throw UnexpectedTag(tag, new String((char)expectTag, 1));
         }
 
         public void CheckTag(int expectTag) {
-            CheckTag(expectTag, stream.ReadByte());
+            CheckTag(stream.ReadByte(), expectTag);
         }
 
-        public int CheckTags(string expectTags, int tag) {
-            if (expectTags.IndexOf((char)tag) == -1) {
-                throw new HproseException("Tag '" + expectTags +
-                                          "' expected, but '" + (char)tag +
-                                          "' found in stream");
-            }
+        private int CheckTags(int tag, string expectTags) {
+            if (expectTags.IndexOf((char)tag) == -1) throw UnexpectedTag(tag, expectTags);
             return tag;
         }
 
         public int CheckTags(string expectTags) {
-            return CheckTags(expectTags, stream.ReadByte());
+            return CheckTags(stream.ReadByte(), expectTags);
         }
 
         private StringBuilder ReadUntil(int tag) {
@@ -452,7 +96,7 @@ namespace Hprose.IO {
             }
             return sb;
         }
-        
+
         private void SkipUntil(int tag) {
             int i = stream.ReadByte();
             while ((i != tag) && (i != -1)) {
@@ -478,56 +122,6 @@ namespace Hprose.IO {
                 i = stream.ReadByte();
             }
             return result;
-        }
-
-        public int ReadInteger() {
-            return ReadInteger(true);
-        }
-
-        public int ReadInteger(bool includeTag) {
-            if (includeTag) {
-                int tag = stream.ReadByte();
-                if ((tag >= '0') && (tag <= '9')) {
-                    return tag - '0';
-                }
-                CheckTag(HproseTags.TagInteger, tag);
-            }
-            return ReadInt(HproseTags.TagSemicolon);
-        }
-
-        public BigInteger ReadBigInteger() {
-            return ReadBigInteger(true);
-        }
-
-        private static string expectLongTags = String.Concat(
-            (char)HproseTags.TagInteger,
-            (char)HproseTags.TagLong
-        );
-        
-        public BigInteger ReadBigInteger(bool includeTag) {
-            if (includeTag) {
-                int tag = stream.ReadByte();
-                if ((tag >= '0') && (tag <= '9')) {
-                    return new BigInteger(tag - '0');
-                }
-                CheckTags(expectLongTags, tag);
-            }
-            return BigInteger.Parse(ReadUntil(HproseTags.TagSemicolon).ToString());
-        }
-
-        public long ReadLong() {
-            return ReadLong(true);
-        }
-
-        public long ReadLong(bool includeTag) {
-            if (includeTag) {
-                int tag = stream.ReadByte();
-                if ((tag >= '0') && (tag <= '9')) {
-                    return (long)(tag - '0');
-                }
-                CheckTags(expectLongTags, tag);
-            }
-            return long.Parse(ReadUntil(HproseTags.TagSemicolon).ToString());
         }
 
         private float ParseFloat(StringBuilder value) {
@@ -566,94 +160,634 @@ namespace Hprose.IO {
             }
         }
 
-        public double ReadDouble() {
-            return ReadDouble(true);
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+        public T Unserialize<T>() {
+            return (T)Unserialize(typeof(T));
+        }
+#endif
+
+        public object Unserialize() {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                    return ReadDigit(tag);
+                case HproseTags.TagInteger:
+                    return ReadIntegerWithoutTag();
+                case HproseTags.TagLong:
+                    return ReadLongWithoutTag();
+                case HproseTags.TagDouble:
+                    return ReadDoubleWithoutTag();
+                case HproseTags.TagNull:
+                    return null;
+                case HproseTags.TagEmpty:
+                    return "";
+                case HproseTags.TagTrue:
+                    return true;
+                case HproseTags.TagFalse:
+                    return false;
+                case HproseTags.TagNaN:
+                    return double.NaN;
+                case HproseTags.TagInfinity:
+                    return ReadInfinityWithoutTag();
+                case HproseTags.TagDate:
+                    return ReadDateWithoutTag();
+                case HproseTags.TagTime:
+                    return ReadDateWithoutTag();
+                case HproseTags.TagBytes:
+                    return ReadBytesWithoutTag();
+                case HproseTags.TagUTF8Char:
+                    return ReadUTF8CharWithoutTag();
+                case HproseTags.TagString:
+                    return ReadStringWithoutTag();
+                case HproseTags.TagGuid:
+                    return ReadStringWithoutTag();
+                case HproseTags.TagList:
+                    return ReadListWithoutTag();
+                case HproseTags.TagMap:
+                    return ReadListWithoutTag();
+                case HproseTags.TagClass:
+                    ReadClass();
+                    return ReadObject(null);
+                case HproseTags.TagObject:
+                    return ReadObjectWithoutTag(null);
+                case HproseTags.TagRef:
+                    return ReadRef();
+                case HproseTags.TagError:
+                    throw new HproseException(ReadString());
+                default:
+                    throw UnexpectedTag(tag);
+            }
         }
 
-        private static string expectDoubleTags = String.Concat(
-            (char)HproseTags.TagInteger,
-            (char)HproseTags.TagLong,
-            (char)HproseTags.TagDouble,
-            (char)HproseTags.TagNaN,
-            (char)HproseTags.TagInfinity
-        );
-
-        public double ReadDouble(bool includeTag) {
-            if (includeTag) {
-                int tag = stream.ReadByte();
-                if ((tag >= '0') && (tag <= '9')) {
-                    return (double)(tag - '0');
-                }
-                CheckTags(expectDoubleTags, tag);
-                if (tag == HproseTags.TagNaN) {
-                    return double.NaN;
-                }
-                if (tag == HproseTags.TagInfinity) {
-                    return ReadInfinity(false);
-                }
+        public object Unserialize(Type type) {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                    return ReadDigit(tag, type);
+                case HproseTags.TagInteger:
+                    return ReadIntegerWithoutTag(type);
+                case HproseTags.TagLong:
+                    return ReadLongWithoutTag(type);
+                case HproseTags.TagDouble:
+                    return ReadDoubleWithoutTag(type);
+                case HproseTags.TagNull:
+                    return ReadNullWithoutTag(type);
+                case HproseTags.TagEmpty:
+                    return ReadEmptyWithoutTag(type);
+                case HproseTags.TagTrue:
+                    return ReadTrueWithoutTag(type);
+                case HproseTags.TagFalse:
+                    return ReadFalseWithoutTag(type);
+                case HproseTags.TagNaN:
+                    return ReadNaNWithoutTag(type);
+                case HproseTags.TagInfinity:
+                    return ReadInfinityWithoutTag(type);
+                case HproseTags.TagDate:
+                    return ReadDateWithoutTag(type);
+                case HproseTags.TagTime:
+                    return ReadDateWithoutTag(type);
+                case HproseTags.TagBytes:
+                    return ReadBytesWithoutTag(type);
+                case HproseTags.TagUTF8Char:
+                    return ReadUTF8CharWithoutTag(type);
+                case HproseTags.TagString:
+                    return ReadStringWithoutTag(type);
+                case HproseTags.TagGuid:
+                    return ReadStringWithoutTag(type);
+                case HproseTags.TagList:
+                    return ReadListWithoutTag(type);
+                case HproseTags.TagMap:
+                    return ReadListWithoutTag(type);
+                case HproseTags.TagClass:
+                    ReadClass();
+                    return ReadObject(type);
+                case HproseTags.TagObject:
+                    return ReadObjectWithoutTag(type);
+                case HproseTags.TagRef:
+                    return ReadRef(type);
+                case HproseTags.TagError:
+                    throw new HproseException(ReadString());
+                default:
+                    throw UnexpectedTag(tag);
             }
+        }
+
+        private int ReadDigit(int tag) {
+            return tag - '0';
+        }
+
+        private object ReadDigit(int tag, Type type) {
+            int b = tag - '0';
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.Int32:
+                case TypeEnum.Object: return b;
+                case TypeEnum.Byte: return (byte)b;
+                case TypeEnum.SByte: return (sbyte)b;
+                case TypeEnum.Int16: return (short)b;
+                case TypeEnum.UInt16: return (ushort)b;
+                case TypeEnum.UInt32: return (uint)b;
+                case TypeEnum.Int64: return (long)b;
+                case TypeEnum.UInt64: return (ulong)b;
+                case TypeEnum.Char: return (char)tag;
+                case TypeEnum.Single: return (float)b;
+                case TypeEnum.Double: return (double)b;
+                case TypeEnum.Decimal: return (decimal)b;
+                case TypeEnum.String: return new string((char)tag, 1);
+                case TypeEnum.Boolean: return (tag != '0');
+                case TypeEnum.DateTime: return new DateTime((long)b);
+                case TypeEnum.BigInteger: return new BigInteger(b);
+                case TypeEnum.TimeSpan: return new TimeSpan((long)b);
+                case TypeEnum.Enum: return Enum.ToObject(type, b);
+                case TypeEnum.StringBuilder: return new StringBuilder(1).Append((char)tag);
+            }
+            return CastError("Integer", type);
+        }
+
+        public int ReadIntegerWithoutTag() {
+            return ReadInt(HproseTags.TagSemicolon);
+        }
+
+        public int ReadInteger() {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case '0': return 0;
+                case '1': return 1;
+                case '2': return 2;
+                case '3': return 3;
+                case '4': return 4;
+                case '5': return 5;
+                case '6': return 6;
+                case '7': return 7;
+                case '8': return 8;
+                case '9': return 9;
+                case HproseTags.TagInteger: return ReadIntegerWithoutTag();
+                default: throw UnexpectedTag(tag);
+            }
+        }
+
+        private object ReadIntegerWithoutTag(Type type) {
+            int i = ReadInt(HproseTags.TagSemicolon);
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.Int32:
+                case TypeEnum.Object: return i;
+                case TypeEnum.Byte: return (byte)i;
+                case TypeEnum.SByte: return (sbyte)i;
+                case TypeEnum.Int16: return (short)i;
+                case TypeEnum.UInt16: return (ushort)i;
+                case TypeEnum.UInt32: return (uint)i;
+                case TypeEnum.Int64: return (long)i;
+                case TypeEnum.UInt64: return (ulong)i;
+                case TypeEnum.Char: return (char)i;
+                case TypeEnum.Single: return (float)i;
+                case TypeEnum.Double: return (double)i;
+                case TypeEnum.Decimal: return (decimal)i;
+                case TypeEnum.String: return i.ToString();
+                case TypeEnum.Boolean: return (i != 0);
+                case TypeEnum.DateTime: return new DateTime((long)i);
+                case TypeEnum.BigInteger: return new BigInteger(i);
+                case TypeEnum.TimeSpan: return new TimeSpan((long)i);
+                case TypeEnum.Enum: return Enum.ToObject(type, i);
+                case TypeEnum.StringBuilder: return new StringBuilder(i.ToString());
+            }
+            return CastError("Integer", type);
+        }
+
+        public object ReadInteger(Type type) {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9': return ReadDigit(tag, type);
+                case HproseTags.TagInteger: return ReadIntegerWithoutTag(type);
+                default: throw UnexpectedTag(tag);
+            }
+        }
+
+        public BigInteger ReadBigIntegerWithoutTag() {
+            return BigInteger.Parse(ReadUntil(HproseTags.TagSemicolon).ToString());
+        }
+
+        public BigInteger ReadBigInteger() {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case '0': return BigInteger.Zero;
+                case '1': return BigInteger.One;
+                case '2': return new BigInteger(2);
+                case '3': return new BigInteger(3);
+                case '4': return new BigInteger(4);
+                case '5': return new BigInteger(5);
+                case '6': return new BigInteger(6);
+                case '7': return new BigInteger(7);
+                case '8': return new BigInteger(8);
+                case '9': return new BigInteger(9);
+                case HproseTags.TagInteger:
+                case HproseTags.TagLong: return ReadBigIntegerWithoutTag();
+                default: throw UnexpectedTag(tag);
+            }
+        }
+
+        public long ReadLongWithoutTag() {
+            return long.Parse(ReadUntil(HproseTags.TagSemicolon).ToString());
+        }
+
+        public long ReadLong() {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case '0': return 0L;
+                case '1': return 1L;
+                case '2': return 2L;
+                case '3': return 3L;
+                case '4': return 4L;
+                case '5': return 5L;
+                case '6': return 6L;
+                case '7': return 7L;
+                case '8': return 8L;
+                case '9': return 9L;
+                case HproseTags.TagInteger:
+                case HproseTags.TagLong: return ReadLongWithoutTag();
+                default: throw UnexpectedTag(tag);
+            }
+        }
+
+        private object ReadLongWithoutTag(Type type) {
+            StringBuilder l = ReadUntil(HproseTags.TagSemicolon);
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.BigInteger:
+                case TypeEnum.Object: return BigInteger.Parse(l.ToString());
+                case TypeEnum.Byte: return byte.Parse(l.ToString());
+                case TypeEnum.SByte: return sbyte.Parse(l.ToString());
+                case TypeEnum.Int16: return short.Parse(l.ToString());
+                case TypeEnum.UInt16: return ushort.Parse(l.ToString());
+                case TypeEnum.Int32: return int.Parse(l.ToString());
+                case TypeEnum.UInt32: return uint.Parse(l.ToString());
+                case TypeEnum.Int64: return long.Parse(l.ToString());
+                case TypeEnum.UInt64: return ulong.Parse(l.ToString());
+                case TypeEnum.Char: return (char)int.Parse(l.ToString());
+                case TypeEnum.Single: return ParseFloat(l);
+                case TypeEnum.Double: return ParseDouble(l);
+                case TypeEnum.Decimal: return decimal.Parse(l.ToString());
+                case TypeEnum.String: return l.ToString();
+                case TypeEnum.Boolean: return (int.Parse(l.ToString()) != 0);
+                case TypeEnum.DateTime: return new DateTime(long.Parse(l.ToString()));
+                case TypeEnum.TimeSpan: return new TimeSpan(long.Parse(l.ToString()));
+                case TypeEnum.Enum: return Enum.ToObject(type, long.Parse(l.ToString()));
+                case TypeEnum.StringBuilder: return l;
+            }
+            return CastError("Long", type);
+        }
+
+        public object ReadLong(Type type) {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9': return ReadDigit(tag, type);
+                case HproseTags.TagInteger:
+                case HproseTags.TagLong: return ReadLongWithoutTag(type);
+                default: throw UnexpectedTag(tag);
+            }
+        }
+
+        public double ReadDoubleWithoutTag() {
             return ParseDouble(ReadUntil(HproseTags.TagSemicolon));
         }
 
-        public double ReadNaN() {
-            CheckTag(HproseTags.TagNaN);
-            return double.NaN;
-        }
-
-        public double ReadInfinity() {
-            return ReadInfinity(true);
-        }
-
-        public double ReadInfinity(bool includeTag) {
-            if (includeTag) {
-                CheckTag(HproseTags.TagInfinity);
+        public double ReadDouble() {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case '0': return 0.0;
+                case '1': return 1.0;
+                case '2': return 2.0;
+                case '3': return 3.0;
+                case '4': return 4.0;
+                case '5': return 5.0;
+                case '6': return 6.0;
+                case '7': return 7.0;
+                case '8': return 8.0;
+                case '9': return 9.0;
+                case HproseTags.TagInteger:
+                case HproseTags.TagLong:
+                case HproseTags.TagDouble: return ReadDoubleWithoutTag();
+                case HproseTags.TagNaN: return double.NaN;
+                case HproseTags.TagInfinity: return ReadInfinityWithoutTag();
+                default: throw UnexpectedTag(tag);
             }
+        }
+
+        private object ReadDoubleWithoutTag(Type type) {
+            StringBuilder value = ReadUntil(HproseTags.TagSemicolon);
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.Double:
+                case TypeEnum.Object: return ParseDouble(value);
+                case TypeEnum.Byte: return (byte)ParseDouble(value);
+                case TypeEnum.SByte: return (sbyte)ParseDouble(value);
+                case TypeEnum.Int16: return (short)ParseDouble(value);
+                case TypeEnum.UInt16: return (ushort)ParseDouble(value);
+                case TypeEnum.Int32: return (int)ParseDouble(value);
+                case TypeEnum.UInt32: return (uint)ParseDouble(value);
+                case TypeEnum.Int64: return (long)ParseDouble(value);
+                case TypeEnum.UInt64: return (ulong)ParseDouble(value);
+                case TypeEnum.Char: return (char)(int)ParseDouble(value);
+                case TypeEnum.Single: return ParseFloat(value);
+                case TypeEnum.Decimal: return decimal.Parse(value.ToString());
+                case TypeEnum.String: return value.ToString();
+                case TypeEnum.Boolean: return ((int)(ParseDouble(value)) != 0);
+                case TypeEnum.DateTime: return new DateTime((long)ParseDouble(value));
+                case TypeEnum.BigInteger: return new BigInteger(ParseDouble(value));
+                case TypeEnum.TimeSpan: return new TimeSpan((long)ParseDouble(value));
+                case TypeEnum.Enum: return Enum.ToObject(type, (long)ParseDouble(value));
+                case TypeEnum.StringBuilder: return value;
+            }
+            return CastError("Double", type);
+        }
+
+        public object ReadDouble(Type type) {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9': return ReadDigit(tag, type);
+                case HproseTags.TagInteger:
+                case HproseTags.TagLong:
+                case HproseTags.TagDouble: return ReadDoubleWithoutTag(type);
+                case HproseTags.TagNaN: return ReadNaNWithoutTag(type);
+                case HproseTags.TagInfinity: return ReadInfinityWithoutTag(type);
+                default: throw UnexpectedTag(tag);
+            }
+        }
+
+        public double ReadNaN() {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagNaN: return double.NaN;
+                default: throw UnexpectedTag(tag);
+            }
+        }
+
+        private object ReadNaNWithoutTag(Type type) {
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.Double:
+                case TypeEnum.Object: return double.NaN;
+                case TypeEnum.Single: return float.NaN;
+                case TypeEnum.String: return "NaN";
+                case TypeEnum.StringBuilder: return new StringBuilder("NaN");
+            }
+            return CastError("NaN", type);
+        }
+
+        public object ReadNaN(Type type) {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagNaN: return ReadNaNWithoutTag(type);
+                default: throw UnexpectedTag(tag);
+            }
+        }
+
+        public double ReadInfinityWithoutTag() {
             return ((stream.ReadByte() == HproseTags.TagNeg) ?
                 double.NegativeInfinity : double.PositiveInfinity);
         }
 
+        public double ReadInfinity() {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagInfinity: return ReadInfinityWithoutTag();
+                default: throw UnexpectedTag(tag);
+            }
+        }
+
+        private object ReadInfinityWithoutTag(Type type) {
+            bool isPosInf = (stream.ReadByte() == HproseTags.TagPos);
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.Double:
+                case TypeEnum.Object: return (isPosInf ? double.PositiveInfinity : double.NegativeInfinity);
+                case TypeEnum.Single: return (isPosInf ? float.PositiveInfinity : float.NegativeInfinity);
+                case TypeEnum.String: return (isPosInf ? "Infinity" : "-Infinity");
+                case TypeEnum.StringBuilder: return new StringBuilder((isPosInf ? "Infinity" : "-Infinity"));
+            }
+            return CastError("Infinity", type);
+        }
+
+        public object ReadInfinity(Type type) {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagInfinity: return ReadInfinityWithoutTag(type);
+                default: throw UnexpectedTag(tag);
+            }
+        }
+
         public object ReadNull() {
-            CheckTag(HproseTags.TagNull);
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagNull: return null;
+                default: throw UnexpectedTag(tag);
+            }
+        }
+
+        private object ReadNullWithoutTag(Type type) {
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Byte: return (byte)0;
+                case TypeEnum.SByte: return (sbyte)0;
+                case TypeEnum.Int16: return (short)0;
+                case TypeEnum.UInt16: return (ushort)0;
+                case TypeEnum.Int32: return 0;
+                case TypeEnum.UInt32: return (uint)0;
+                case TypeEnum.Int64: return (long)0;
+                case TypeEnum.UInt64: return (ulong)0;
+                case TypeEnum.Char: return (char)0;
+                case TypeEnum.Single: return (float)0;
+                case TypeEnum.Double: return (double)0;
+                case TypeEnum.Decimal: return (decimal)0;
+                case TypeEnum.Boolean: return false;
+                case TypeEnum.Enum: return Enum.ToObject(type, 0);
+#if !Core
+                case TypeEnum.DBNull: return DBNull.Value;
+#endif
+            }
             return null;
         }
 
-        public object ReadEmpty() {
-            CheckTag(HproseTags.TagEmpty);
-            return null;
+        public object ReadNull(Type type) {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagNull: return ReadNullWithoutTag(type);
+                default: throw UnexpectedTag(tag);
+            }
         }
 
-        private static string expectBooleanTags = String.Concat(
-            (char)HproseTags.TagTrue,
-            (char)HproseTags.TagFalse
-        );
+        public String ReadEmpty() {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagEmpty: return "";
+                default: throw UnexpectedTag(tag);
+            }
+        }
+
+        private object ReadEmptyWithoutTag(Type type) {
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.String:
+                case TypeEnum.Object: return "";
+                case TypeEnum.Byte: return (byte)0;
+                case TypeEnum.SByte: return (sbyte)0;
+                case TypeEnum.Int16: return (short)0;
+                case TypeEnum.UInt16: return (ushort)0;
+                case TypeEnum.Int32: return 0;
+                case TypeEnum.UInt32: return (uint)0;
+                case TypeEnum.Int64: return (long)0;
+                case TypeEnum.UInt64: return (ulong)0;
+                case TypeEnum.Char: return (char)0;
+                case TypeEnum.Single: return (float)0;
+                case TypeEnum.Double: return (double)0;
+                case TypeEnum.Decimal: return (decimal)0;
+                case TypeEnum.Boolean: return false;
+                case TypeEnum.BigInteger: return BigInteger.Zero;
+                case TypeEnum.Enum: return Enum.ToObject(type, 0);
+                case TypeEnum.StringBuilder: return new StringBuilder();
+                case TypeEnum.CharArray: return new char[0];
+                case TypeEnum.ByteArray: return new byte[0];
+#if !Core
+                case TypeEnum.DBNull: return DBNull.Value;
+#endif
+            }
+            return CastError("Empty String", type);
+        }
+
+        public object ReadEmpty(Type type) {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagEmpty: return ReadEmptyWithoutTag(type);
+                default: throw UnexpectedTag(tag);
+            }
+        }
 
         public bool ReadBoolean() {
-            return (CheckTags(expectBooleanTags) == HproseTags.TagTrue);
-        }
-
-        public object ReadDate() {
-            return ReadDate(true, null);
-        }
-
-        public object ReadDate(bool includeTag) {
-            return ReadDate(includeTag, null);
-        }
-
-        public object ReadDate(Type type) {
-            return ReadDate(true, type);
-        }
-
-        private static string expectDateTags = String.Concat(
-            (char)HproseTags.TagDate,
-            (char)HproseTags.TagRef
-        );
-
-        public object ReadDate(bool includeTag, Type type) {
-            if (includeTag) {
-                if (CheckTags(expectDateTags) == HproseTags.TagRef) {
-                    return ReadRef(type);
-                }
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagTrue: return true;
+                case HproseTags.TagFalse: return false;
+                default: throw UnexpectedTag(tag);
             }
+        }
+
+        private object ReadTrueWithoutTag(Type type) {
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.Boolean:
+                case TypeEnum.Object: return true;
+                case TypeEnum.Byte: return (byte)1;
+                case TypeEnum.SByte: return (sbyte)1;
+                case TypeEnum.Int16: return (short)1;
+                case TypeEnum.UInt16: return (ushort)1;
+                case TypeEnum.Int32: return 1;
+                case TypeEnum.UInt32: return (uint)1;
+                case TypeEnum.Int64: return (long)1;
+                case TypeEnum.UInt64: return (ulong)1;
+                case TypeEnum.Char: return 'T';
+                case TypeEnum.Single: return (float)1;
+                case TypeEnum.Double: return (double)1;
+                case TypeEnum.Decimal: return (decimal)1;
+                case TypeEnum.String: return bool.TrueString;
+                case TypeEnum.BigInteger: return BigInteger.One;
+                case TypeEnum.Enum: return Enum.ToObject(type, 1);
+                case TypeEnum.StringBuilder: return new StringBuilder(bool.TrueString);
+            }
+            return CastError("Boolean", type);
+        }
+
+        private object ReadFalseWithoutTag(Type type) {
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.Boolean:
+                case TypeEnum.Object: return false;
+                case TypeEnum.Byte: return (byte)0;
+                case TypeEnum.SByte: return (sbyte)0;
+                case TypeEnum.Int16: return (short)0;
+                case TypeEnum.UInt16: return (ushort)0;
+                case TypeEnum.Int32: return 0;
+                case TypeEnum.UInt32: return (uint)0;
+                case TypeEnum.Int64: return (long)0;
+                case TypeEnum.UInt64: return (ulong)0;
+                case TypeEnum.Char: return 'F';
+                case TypeEnum.Single: return (float)0;
+                case TypeEnum.Double: return (double)0;
+                case TypeEnum.Decimal: return (decimal)0;
+                case TypeEnum.String: return bool.FalseString;
+                case TypeEnum.BigInteger: return BigInteger.Zero;
+                case TypeEnum.Enum: return Enum.ToObject(type, 0);
+                case TypeEnum.StringBuilder: return new StringBuilder(bool.FalseString);
+            }
+            return CastError("Boolean", type);
+        }
+
+        public object ReadBoolean(Type type) {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagTrue: return ReadTrueWithoutTag(type);
+                case HproseTags.TagFalse: return ReadFalseWithoutTag(type);
+                default: throw UnexpectedTag(tag);
+            }
+        }
+
+        private object ChangeCalendarType(DateTime datetime, Type type) {
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.DateTime:
+                case TypeEnum.Object: return datetime;
+                case TypeEnum.TimeSpan: return new TimeSpan(datetime.Ticks);
+                case TypeEnum.Int64: return datetime.Ticks;
+                case TypeEnum.String: return datetime.ToString();
+                case TypeEnum.StringBuilder: return new StringBuilder(datetime.ToString());
+            }
+            return CastError(datetime, type);
+        }
+
+        private DateTime _ReadDate() {
             DateTime datetime;
             int year = stream.ReadByte() - '0';
             year = year * 10 + stream.ReadByte() - '0';
@@ -704,34 +838,41 @@ namespace Hprose.IO {
                 datetime = new DateTime(year, month, day);
 #endif
             }
+            return datetime;
+        }
+
+        public DateTime ReadDateWithoutTag() {
+            DateTime datetime = _ReadDate();
+            references.Add(datetime);
+            return datetime;
+        }
+
+        public DateTime ReadDate() {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagDate: return ReadDateWithoutTag();
+                case HproseTags.TagRef: return (DateTime)ReadRef();
+                default: throw UnexpectedTag(tag);
+            }
+        }
+
+        public object ReadDateWithoutTag(Type type) {
+            DateTime datetime = _ReadDate();
             object o = ChangeCalendarType(datetime, type);
             references.Add(o);
             return o;
         }
 
-        public object ReadTime() {
-            return ReadTime(true, null);
-        }
-
-        public object ReadTime(bool includeTag) {
-            return ReadTime(includeTag, null);
-        }
-
-        public object ReadTime(Type type) {
-            return ReadTime(true, type);
-        }
-
-        private static string expectTimeTags = String.Concat(
-            (char)HproseTags.TagTime,
-            (char)HproseTags.TagRef
-        );
-
-        public object ReadTime(bool includeTag, Type type) {
-            if (includeTag) {
-                if (CheckTags(expectTimeTags) == HproseTags.TagRef) {
-                    return ReadRef(type);
-                }
+        public object ReadDate(Type type) {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagDate: return ReadDateWithoutTag(type);
+                case HproseTags.TagRef: return ReadRef(type);
+                default: throw UnexpectedTag(tag);
             }
+        }
+
+        private DateTime _ReadTime() {
             int hour = stream.ReadByte() - '0';
             hour = hour * 10 + stream.ReadByte() - '0';
             int minute = stream.ReadByte() - '0';
@@ -762,57 +903,61 @@ namespace Hprose.IO {
 #else
             DateTime datetime = new DateTime(1, 1, 1, hour, minute, second, millisecond);
 #endif
+            return datetime;
+        }
+
+        public DateTime ReadTimeWithoutTag() {
+            DateTime datetime = _ReadTime();
+            references.Add(datetime);
+            return datetime;
+        }
+
+        public DateTime ReadTime() {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagTime: return ReadTimeWithoutTag();
+                case HproseTags.TagRef: return (DateTime)ReadRef();
+                default: throw UnexpectedTag(tag);
+            }
+        }
+
+        public object ReadTimeWithoutTag(Type type) {
+            DateTime datetime = _ReadTime();
             object o = ChangeCalendarType(datetime, type);
             references.Add(o);
             return o;
         }
 
-        public object ReadDateTime() {
-            return ReadDateTime(null);
+        public object ReadTime(Type type) {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagTime: return ReadTimeWithoutTag(type);
+                case HproseTags.TagRef: return ReadRef(type);
+                default: throw UnexpectedTag(tag);
+            }
         }
 
-        private static string expectDateTimeTags = String.Concat(
-            (char)HproseTags.TagDate,
-            (char)HproseTags.TagTime,
-            (char)HproseTags.TagRef
-        );
+        public DateTime ReadDateTime() {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagDate: return ReadDateWithoutTag();
+                case HproseTags.TagTime: return ReadTimeWithoutTag();
+                case HproseTags.TagRef: return (DateTime)ReadRef();
+                default: throw UnexpectedTag(tag);
+            }
+        }
 
         public object ReadDateTime(Type type) {
-            switch (CheckTags(expectDateTimeTags)) {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagDate: return ReadDateWithoutTag(type);
+                case HproseTags.TagTime: return ReadTimeWithoutTag(type);
                 case HproseTags.TagRef: return ReadRef(type);
-                case HproseTags.TagDate: return ReadDate(false, type);
-                default: return ReadTime(false, type);
+                default: throw UnexpectedTag(tag);
             }
         }
 
-        private object ChangeCalendarType(DateTime datetime, Type type) {
-            switch (HproseHelper.GetTypeEnum(type)) {
-                case TypeEnum.Null:
-                case TypeEnum.DateTime:
-                case TypeEnum.Object: return datetime;
-                case TypeEnum.TimeSpan: return new TimeSpan(datetime.Ticks);
-                case TypeEnum.Int64: return datetime.Ticks;
-                case TypeEnum.String: return datetime.ToString();
-                case TypeEnum.StringBuilder: return new StringBuilder(datetime.ToString());
-            }
-            return CastError(datetime, type);
-        }
-
-        public byte[] ReadBytes() {
-            return ReadBytes(true);
-        }
-
-        private static string expectBytesTags = String.Concat(
-            (char)HproseTags.TagBytes,
-            (char)HproseTags.TagRef
-        );
-
-        public byte[] ReadBytes(bool includeTag) {
-            if (includeTag) {
-                if (CheckTags(expectBytesTags) == HproseTags.TagRef) {
-                    return (byte[])ReadRef(HproseHelper.typeofByteArray);
-                }
-            }
+        public byte[] ReadBytesWithoutTag() {
             int len = ReadInt(HproseTags.TagQuote);
             int off = 0;
             byte[] b = new byte[len];
@@ -821,21 +966,22 @@ namespace Hprose.IO {
                 off += size;
                 len -= size;
             }
-            CheckTag(HproseTags.TagQuote);
+            stream.ReadByte();
+            //CheckTag(HproseTags.TagQuote);
             references.Add(b);
             return b;
         }
 
-        public MemoryStream ReadStream() {
-            return ReadStream(true);
+        public byte[] ReadBytes() {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagBytes: return ReadBytesWithoutTag();
+                case HproseTags.TagRef: return (byte[])ReadRef();
+                default: throw UnexpectedTag(tag);
+            }
         }
 
-        public MemoryStream ReadStream(bool includeTag) {
-            if (includeTag) {
-                if (CheckTags(expectBytesTags) == HproseTags.TagRef) {
-                    return (MemoryStream)ReadRef(HproseHelper.typeofMemoryStream);
-                }
-            }
+        public MemoryStream ReadStreamWithoutTag() {
             int len = ReadInt(HproseTags.TagQuote);
             int size = 0;
             MemoryStream ms = new MemoryStream(len);
@@ -853,16 +999,54 @@ namespace Hprose.IO {
             len = stream.Read(buffer, 0, len);
             ms.Write(buffer, 0, len);
             buffer = null;
-            CheckTag(HproseTags.TagQuote);
+            stream.ReadByte();
+            //CheckTag(HproseTags.TagQuote);
             ms.Position = 0;
             references.Add(ms);
             return ms;
         }
 
-        public char ReadUTF8Char(bool includeTag) {
-            if (includeTag) {
-                CheckTag(HproseTags.TagUTF8Char);
+        public MemoryStream ReadStream() {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagBytes: return ReadStreamWithoutTag();
+                case HproseTags.TagRef: return (MemoryStream)ReadRef();
+                default: throw UnexpectedTag(tag);
             }
+        }
+
+        private object ReadBytesWithoutTag(Type type) {
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.ByteArray:
+                case TypeEnum.Object: return ReadBytesWithoutTag();
+                case TypeEnum.Guid: return new Guid(ReadBytesWithoutTag());
+                case TypeEnum.Stream:
+                case TypeEnum.MemoryStream: return ReadStreamWithoutTag();
+#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
+                case TypeEnum.String: {
+                    byte[] buf = ReadBytesWithoutTag();
+                    return Encoding.Default.GetString(buf, 0, buf.Length);
+                }
+                case TypeEnum.StringBuilder: {
+                    byte[] buf = ReadBytesWithoutTag();
+                    return new StringBuilder(Encoding.Default.GetString(buf, 0, buf.Length));
+                }
+#endif
+            }
+            return CastError("byte[]", type);
+        }
+
+        public object ReadBytes(Type type) {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagBytes: return ReadBytesWithoutTag(type);
+                case HproseTags.TagRef: return ReadRef(type);
+                default: throw UnexpectedTag(tag);
+            }
+        }
+
+        private char ReadUTF8CharAsChar() {
             char u;
             int c = stream.ReadByte();
             switch (c >> 4) {
@@ -903,75 +1087,50 @@ namespace Hprose.IO {
             return u;
         }
 
-        public object ReadString() {
-            return ReadString(true, null, true);
+        public string ReadUTF8CharWithoutTag() {
+            return new string(ReadUTF8CharAsChar(), 1);
         }
 
-        public object ReadString(bool includeTag) {
-            return ReadString(includeTag, null, true);
-        }
-
-        public object ReadString(Type type) {
-            return ReadString(true, type, true);
-        }
-
-        public object ReadString(bool includeTag, Type type) {
-            return ReadString(includeTag, type, true);
-        }
-
-        private static string expectStringTags = String.Concat(
-            (char)HproseTags.TagString,
-            (char)HproseTags.TagRef
-        );
-
-        private object ReadString(bool includeTag, Type type, bool includeRef) {
-            if (includeTag) {
-                if (CheckTags(expectStringTags) == HproseTags.TagRef) {
-                    return ReadRef(type);
-                }
+        public string ReadUTF8Char() {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagUTF8Char: return ReadUTF8CharWithoutTag();
+                default: throw UnexpectedTag(tag);
             }
-            object o;
+        }
+
+        private object ReadUTF8CharWithoutTag(Type type) {
+            char c = ReadUTF8CharAsChar();
             switch (HproseHelper.GetTypeEnum(type)) {
                 case TypeEnum.Null:
-                case TypeEnum.String:
-                case TypeEnum.Object: o = ReadCharsAsString(); break;
-                case TypeEnum.Stream:
-                case TypeEnum.MemoryStream: o = ReadCharsAsStream(); break;
-                case TypeEnum.ByteArray: o = ReadCharsAsStream().ToArray(); break;
-                case TypeEnum.CharArray: o = ReadChars(); break;
-                case TypeEnum.StringBuilder: o = new StringBuilder(ReadCharsAsString()); break;
-                case TypeEnum.BigInteger: o = BigInteger.Parse(ReadCharsAsString()); break;
-                case TypeEnum.Byte: o = byte.Parse(ReadCharsAsString()); break;
-                case TypeEnum.SByte: o = sbyte.Parse(ReadCharsAsString()); break;
-                case TypeEnum.Int16: o = short.Parse(ReadCharsAsString()); break;
-                case TypeEnum.UInt16: o = ushort.Parse(ReadCharsAsString()); break;
-                case TypeEnum.Int32: o = int.Parse(ReadCharsAsString()); break;
-                case TypeEnum.UInt32: o = uint.Parse(ReadCharsAsString()); break;
-                case TypeEnum.Int64: o = long.Parse(ReadCharsAsString()); break;
-                case TypeEnum.UInt64: o = ulong.Parse(ReadCharsAsString()); break;
-                case TypeEnum.Single: o = ParseFloat(ReadCharsAsString()); break;
-                case TypeEnum.Double: o = ParseDouble(ReadCharsAsString()); break;
-                case TypeEnum.Decimal: o = decimal.Parse(ReadCharsAsString()); break;
-                case TypeEnum.Boolean: o = bool.Parse(ReadCharsAsString()); break;
-                case TypeEnum.Guid: o = new Guid(ReadCharsAsString()); break;
-                case TypeEnum.DateTime: o = DateTime.Parse(ReadCharsAsString()); break;
-                case TypeEnum.TimeSpan: o = TimeSpan.Parse(ReadCharsAsString()); break;
-                case TypeEnum.Char: {
-                    char[] chars = ReadChars();
-                    o = (chars.Length == 1) ? chars[0] : (char)int.Parse(new String(chars));
-                    break;
-                }
-                default:
-                    return CastError("String", type);
+                case TypeEnum.String: return new string(c, 1);
+                case TypeEnum.Object:
+                case TypeEnum.Char: return c;
+                case TypeEnum.Byte: return (byte)c;
+                case TypeEnum.SByte: return (sbyte)c;
+                case TypeEnum.Int16: return (short)c;
+                case TypeEnum.UInt16: return (ushort)c;
+                case TypeEnum.Int32: return (int)c;
+                case TypeEnum.UInt32: return (uint)c;
+                case TypeEnum.Int64: return (long)c;
+                case TypeEnum.UInt64: return (ulong)c;
+                case TypeEnum.Single: return (float)c;
+                case TypeEnum.Double: return (double)c;
+                case TypeEnum.Decimal: return (decimal)c;
+                case TypeEnum.Boolean: return "\00Ff".IndexOf(c) > -1;
+                case TypeEnum.BigInteger: return new BigInteger((int)c);
+                case TypeEnum.Enum: return Enum.ToObject(type, (int)c);
+                case TypeEnum.StringBuilder: return new StringBuilder(1).Append(c);
             }
-            if (includeRef) {
-                references.Add(o);
-            }
-            return o;
+            return CastError("Char", type);
         }
 
-        private String ReadCharsAsString() {
-            return new String(ReadChars());
+        public object ReadUTF8Char(Type type) {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagUTF8Char: return ReadUTF8CharWithoutTag(type);
+                default: throw UnexpectedTag(tag);
+            }
         }
 
         private char[] ReadChars() {
@@ -1034,7 +1193,8 @@ namespace Hprose.IO {
                                                   "0x" + (c & 0xff).ToString("x2")));
                 }
             }
-            CheckTag(HproseTags.TagQuote);
+            stream.ReadByte();
+            //CheckTag(HproseTags.TagQuote);
             return buf;
         }
 
@@ -1098,40 +1258,108 @@ namespace Hprose.IO {
                                                   "0x" + (c & 0xff).ToString("x2")));
                 }
             }
-            CheckTag(HproseTags.TagQuote);
+            stream.ReadByte();
+            //CheckTag(HproseTags.TagQuote);
             ms.Position = 0;
             return ms;
         }
 
-        public object ReadGuid()  {
-            return ReadGuid(true, null);
+        private String ReadCharsAsString() {
+            return new String(ReadChars());
         }
 
-        public object ReadGuid(bool includeTag) {
-            return ReadGuid(includeTag, null);
+        public String ReadStringWithoutTag() {
+            String str = ReadCharsAsString();
+            references.Add(str);
+            return str;
         }
 
-        public object ReadGuid(Type type) {
-            return ReadGuid(true, type);
-        }
-
-        private static string expectGuidTags = String.Concat(
-            (char)HproseTags.TagGuid,
-            (char)HproseTags.TagRef
-        );
-
-        public object ReadGuid(bool includeTag, Type type) {
-            if (includeTag) {
-                if (CheckTags(expectGuidTags) == HproseTags.TagRef) {
-                    return ReadRef(type);
-                }
+        public String ReadString() {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagString: return ReadStringWithoutTag();
+                case HproseTags.TagRef: return (String)ReadRef();
+                default: throw UnexpectedTag(tag);
             }
-            CheckTag(HproseTags.TagOpenbrace);
+        }
+
+        public object ReadStringWithoutTag(Type type) {
+            object o;
+            switch (HproseHelper.GetTypeEnum(type)) {
+                case TypeEnum.Null:
+                case TypeEnum.String:
+                case TypeEnum.Object: o = ReadCharsAsString(); break;
+                case TypeEnum.Stream:
+                case TypeEnum.MemoryStream: o = ReadCharsAsStream(); break;
+                case TypeEnum.ByteArray: o = ReadCharsAsStream().ToArray(); break;
+                case TypeEnum.CharArray: o = ReadChars(); break;
+                case TypeEnum.StringBuilder: o = new StringBuilder(ReadCharsAsString()); break;
+                case TypeEnum.BigInteger: o = BigInteger.Parse(ReadCharsAsString()); break;
+                case TypeEnum.Byte: o = byte.Parse(ReadCharsAsString()); break;
+                case TypeEnum.SByte: o = sbyte.Parse(ReadCharsAsString()); break;
+                case TypeEnum.Int16: o = short.Parse(ReadCharsAsString()); break;
+                case TypeEnum.UInt16: o = ushort.Parse(ReadCharsAsString()); break;
+                case TypeEnum.Int32: o = int.Parse(ReadCharsAsString()); break;
+                case TypeEnum.UInt32: o = uint.Parse(ReadCharsAsString()); break;
+                case TypeEnum.Int64: o = long.Parse(ReadCharsAsString()); break;
+                case TypeEnum.UInt64: o = ulong.Parse(ReadCharsAsString()); break;
+                case TypeEnum.Single: o = ParseFloat(ReadCharsAsString()); break;
+                case TypeEnum.Double: o = ParseDouble(ReadCharsAsString()); break;
+                case TypeEnum.Decimal: o = decimal.Parse(ReadCharsAsString()); break;
+                case TypeEnum.Boolean: o = bool.Parse(ReadCharsAsString()); break;
+                case TypeEnum.Guid: o = new Guid(ReadCharsAsString()); break;
+                case TypeEnum.DateTime: o = DateTime.Parse(ReadCharsAsString()); break;
+                case TypeEnum.TimeSpan: o = TimeSpan.Parse(ReadCharsAsString()); break;
+                case TypeEnum.Char: {
+                    char[] chars = ReadChars();
+                    o = (chars.Length == 1) ? chars[0] : (char)int.Parse(new String(chars));
+                    break;
+                }
+                default:
+                    return CastError("String", type);
+            }
+            references.Add(o);
+            return o;
+        }
+
+        public object ReadString(Type type) {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagString: return ReadStringWithoutTag(type);
+                case HproseTags.TagRef: return ReadRef(type);
+                default: throw UnexpectedTag(tag);
+            }
+        }
+
+        private char[] ReadGuidAsChars() {
+            stream.ReadByte();
+            //CheckTag(HproseTags.TagOpenbrace);
             char[] buf = new char[36];
             for (int i = 0; i < 36; i++) {
                 buf[i] = (char)stream.ReadByte();
             }
-            CheckTag(HproseTags.TagClosebrace);
+            stream.ReadByte();
+            //CheckTag(HproseTags.TagClosebrace);
+            return buf;
+        }
+
+        public Guid ReadGuidWithoutTag() {
+            Guid guid = new Guid(new String(ReadGuidAsChars()));
+            references.Add(guid);
+            return guid;
+        }
+
+        public Guid ReadGuid()  {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagGuid: return ReadGuidWithoutTag();
+                case HproseTags.TagRef: return (Guid)ReadRef();
+                default: throw UnexpectedTag(tag);
+            }
+        }
+
+        public object ReadGuidWithoutTag(Type type) {
+            char[] buf = ReadGuidAsChars();
             object o;
             switch (HproseHelper.GetTypeEnum(type)) {
                 case TypeEnum.CharArray: o = buf; break;
@@ -1145,6 +1373,15 @@ namespace Hprose.IO {
             }
             references.Add(o);
             return o;
+        }
+
+        public object ReadGuid(Type type)  {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagGuid: return ReadGuidWithoutTag(type);
+                case HproseTags.TagRef: return ReadRef(type);
+                default: throw UnexpectedTag(tag);
+            }
         }
 
         private sbyte[] ReadSByteArray(int count) {
@@ -1341,7 +1578,8 @@ namespace Hprose.IO {
                 int maxrank = rank - 1;
                 len[0] = count;
                 for (i = 1; i < rank; i++) {
-                    CheckTag(HproseTags.TagList);
+                    stream.ReadByte();
+                    //CheckTag(HproseTags.TagList);
                     len[i] = ReadInt(HproseTags.TagOpenbrace);
                 }
                 Array a = Array.CreateInstance(elementType, len);
@@ -1359,7 +1597,8 @@ namespace Hprose.IO {
                         if (loc[i] >= len[i]) {
                             loc[i] = 0;
                             loc[i - 1]++;
-                            CheckTag(HproseTags.TagClosebrace);
+                            stream.ReadByte();
+                            //CheckTag(HproseTags.TagClosebrace);
                         }
                     }
                     if (loc[0] >= len[0]) {
@@ -1375,7 +1614,8 @@ namespace Hprose.IO {
                         }
                     }
                     for (i = rank - n; i < rank; i++) {
-                        CheckTag(HproseTags.TagList);
+                        stream.ReadByte();
+                        //CheckTag(HproseTags.TagList);
                         references.Add(null);
                         SkipUntil(HproseTags.TagOpenbrace);
                     }
@@ -1396,7 +1636,7 @@ namespace Hprose.IO {
             object[] a = new object[count];
             references.Add(a);
             for (int i = 0; i < count; i++) {
-                a[i] = Unserialize(HproseHelper.typeofObject);
+                a[i] = Unserialize();
             }
             return a;
         }
@@ -1415,7 +1655,7 @@ namespace Hprose.IO {
             ArrayList a = new ArrayList(count);
             references.Add(a);
             for (int i = 0; i < count; i++) {
-                a.Add(Unserialize(HproseHelper.typeofObject));
+                a.Add(Unserialize());
             }
             return a;
         }
@@ -1424,7 +1664,7 @@ namespace Hprose.IO {
             Queue a = new Queue(count);
             references.Add(a);
             for (int i = 0; i < count; i++) {
-                a.Enqueue(Unserialize(HproseHelper.typeofObject));
+                a.Enqueue(Unserialize());
             }
             return a;
         }
@@ -1437,7 +1677,7 @@ namespace Hprose.IO {
 #endif
             references.Add(a);
             for (int i = 0; i < count; i++) {
-                a.Push(Unserialize(HproseHelper.typeofObject));
+                a.Push(Unserialize());
             }
             return a;
         }
@@ -1451,7 +1691,7 @@ namespace Hprose.IO {
 #endif
             references.Add(a);
             for (int i = 0; i < count; i++) {
-                a.Add(Unserialize(HproseHelper.typeofObject));
+                a.Add(Unserialize());
             }
             return a;
         }
@@ -1463,6 +1703,15 @@ namespace Hprose.IO {
             Type t = typeof(T);
             for (int i = 0; i < count; i++) {
                 a.Add((T)Unserialize(t));
+            }
+            return a;
+        }
+
+        internal List<object> ReadList(int count) {
+            List<object> a = new List<object>(count);
+            references.Add(a);
+            for (int i = 0; i < count; i++) {
+                a.Add(Unserialize());
             }
             return a;
         }
@@ -1495,30 +1744,28 @@ namespace Hprose.IO {
             return a;
         }
 #endif
-
-        public object ReadList() {
-            return ReadList(true, null);
+        public IList ReadListWithoutTag() {
+            int count = ReadInt(HproseTags.TagOpenbrace);
+#if (dotNET10 || dotNET11 || dotNETCF10)
+            IList list = ReadArrayList(count);
+#else
+            IList list = ReadList(count);
+#endif
+            stream.ReadByte();
+            //CheckTag(HproseTags.TagClosebrace);
+            return list;
         }
 
-        public object ReadList(bool includeTag) {
-            return ReadList(includeTag, null);
-        }
-
-        public object ReadList(Type type) {
-            return ReadList(true, type);
-        }
-
-        private static string expectListTags = String.Concat(
-            (char)HproseTags.TagList,
-            (char)HproseTags.TagRef
-        );
-
-        public object ReadList(bool includeTag, Type type) {
-            if (includeTag) {
-                if (CheckTags(expectListTags) == HproseTags.TagRef) {
-                    return ReadRef(type);
-                }
+        public IList ReadList() {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagList: return ReadListWithoutTag();
+                case HproseTags.TagRef: return (IList)ReadRef();
+                default: throw UnexpectedTag(tag);
             }
+        }
+
+        public object ReadListWithoutTag(Type type) {
             int count = ReadInt(HproseTags.TagOpenbrace);
             object list = null;
             switch (HproseHelper.GetTypeEnum(type)) {
@@ -1528,7 +1775,7 @@ namespace Hprose.IO {
 #if (dotNET10 || dotNET11 || dotNETCF10)
                 case TypeEnum.IList: list = ReadArrayList(count); break;
 #else
-                case TypeEnum.IList: list = ReadList<object>(count); break;
+                case TypeEnum.IList: list = ReadList(count); break;
 #endif
                 case TypeEnum.SByteArray: list = ReadSByteArray(count); break;
                 case TypeEnum.Int16Array: list = ReadInt16Array(count); break;
@@ -1597,16 +1844,27 @@ namespace Hprose.IO {
             if (list == null) {
                 CastError("List", type);
             }
-            CheckTag(HproseTags.TagClosebrace);
+            stream.ReadByte();
+            //CheckTag(HproseTags.TagClosebrace);
             return list;
         }
+
+        public object ReadList(Type type) {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagList: return ReadListWithoutTag(type);
+                case HproseTags.TagRef: return ReadRef(type);
+                default: throw UnexpectedTag(tag);
+            }
+        }
+
 #if !(SILVERLIGHT || WINDOWS_PHONE || Core)
         private HashMap ReadHashMap(int count) {
             HashMap map = new HashMap(count);
             references.Add(map);
             for (int i = 0; i < count; i++) {
-                object key = Unserialize(HproseHelper.typeofObject);
-                object value = Unserialize(HproseHelper.typeofObject);
+                object key = Unserialize();
+                object value = Unserialize();
                 map[key] = value;
             }
             return map;
@@ -1620,8 +1878,8 @@ namespace Hprose.IO {
 #endif
             references.Add(map);
             for (int i = 0; i < count; i++) {
-                object key = Unserialize(HproseHelper.typeofObject);
-                object value = Unserialize(HproseHelper.typeofObject);
+                object key = Unserialize();
+                object value = Unserialize();
                 map[key] = value;
             }
             return map;
@@ -1636,6 +1894,17 @@ namespace Hprose.IO {
             for (int i = 0; i < count; i++) {
                 TKey key = (TKey)Unserialize(k);
                 TValue value = (TValue)Unserialize(v);
+                map[key] = value;
+            }
+            return map;
+        }
+
+        internal HashMap<object, object> ReadGHashMap(int count) {
+            HashMap<object, object> map = new HashMap<object, object>(count);
+            references.Add(map);
+            for (int i = 0; i < count; i++) {
+                object key = Unserialize();
+                object value = Unserialize();
                 map[key] = value;
             }
             return map;
@@ -1691,12 +1960,12 @@ namespace Hprose.IO {
             FieldInfo field;
             for (int i = 0; i < count; i++) {
 #if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
-                names[i] = (string)ReadString();
+                names[i] = ReadString();
                 if (fields.TryGetValue(names[i], out field)) {
 #elif !(dotNET10 || dotNET11 || dotNETCF10)
-                if (fields.TryGetValue((string)ReadString(), out field)) {
+                if (fields.TryGetValue(ReadString(), out field)) {
 #else
-                if ((field = (FieldInfo)fields[(string)ReadString()]) != null) {
+                if ((field = (FieldInfo)fields[ReadString()]) != null) {
 #endif
 #if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
                     values[i] = Unserialize(field.FieldType);
@@ -1733,12 +2002,12 @@ namespace Hprose.IO {
             PropertyInfo property;
             for (int i = 0; i < count; i++) {
 #if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
-                names[i] = (string)ReadString();
+                names[i] = ReadString();
                 if (properties.TryGetValue(names[i], out property)) {
 #elif !(dotNET10 || dotNET11 || dotNETCF10)
-                if (properties.TryGetValue((string)ReadString(), out property)) {
+                if (properties.TryGetValue(ReadString(), out property)) {
 #else
-                if ((property = (PropertyInfo)properties[(string)ReadString()]) != null) {
+                if ((property = (PropertyInfo)properties[ReadString()]) != null) {
 #endif
 #if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
                     values[i] = Unserialize(property.PropertyType);
@@ -1778,12 +2047,12 @@ namespace Hprose.IO {
             MemberInfo member;
             for (int i = 0; i < count; i++) {
 #if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
-                names[i] = (string)ReadString();
+                names[i] = ReadString();
                 if (members.TryGetValue(names[i], out member)) {
 #elif !(dotNET10 || dotNET11 || dotNETCF10)
-                if (members.TryGetValue((string)ReadString(), out member)) {
+                if (members.TryGetValue(ReadString(), out member)) {
 #else
-                if ((member = (MemberInfo)members[(string)ReadString()]) != null) {
+                if ((member = (MemberInfo)members[ReadString()]) != null) {
 #endif
                     Type memberType;
                     if (member is FieldInfo) {
@@ -1816,37 +2085,37 @@ namespace Hprose.IO {
             return obj;
         }
 
-        public object ReadMap() {
-            return ReadMap(true, null);
+        public IDictionary ReadMapWithoutTag() {
+            int count = ReadInt(HproseTags.TagOpenbrace);
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+            IDictionary map = ReadGHashMap(count);
+#else
+            IDictionary map = ReadHashMap(count);
+#endif
+            stream.ReadByte();
+            //CheckTag(HproseTags.TagClosebrace);
+            return map;
         }
 
-        public object ReadMap(bool includeTag) {
-            return ReadMap(includeTag, null);
-        }
-
-        public object ReadMap(Type type) {
-            return ReadMap(true, type);
-        }
-
-        private static string expectMapTags = String.Concat(
-            (char)HproseTags.TagMap,
-            (char)HproseTags.TagRef
-        );
-        public object ReadMap(bool includeTag, Type type) {
-            if (includeTag) {
-                if (CheckTags(expectMapTags) == HproseTags.TagRef) {
-                    return ReadRef(type);
-                }
+        public IDictionary ReadMap() {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagMap: return ReadMapWithoutTag();
+                case HproseTags.TagRef: return (IDictionary)ReadRef();
+                default: throw UnexpectedTag(tag);
             }
+        }
+
+        public object ReadMapWithoutTag(Type type) {
             int count = ReadInt(HproseTags.TagOpenbrace);
             object map = null;
             switch (HproseHelper.GetTypeEnum(type)) {
                 case TypeEnum.Null:
                 case TypeEnum.Object:
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                case TypeEnum.IDictionary: map = ReadHashMap<object, object>(count); break;
+                case TypeEnum.IDictionary: map = ReadGHashMap(count); break;
 #else
-                case TypeEnum.IDictionary:
+                case TypeEnum.IDictionary: map = ReadHashMap(count); break;
 #endif
 #if !(SILVERLIGHT || WINDOWS_PHONE || Core)
                 case TypeEnum.Hashtable:
@@ -1898,38 +2167,21 @@ namespace Hprose.IO {
                     break;
                 }
             }
-            CheckTag(HproseTags.TagClosebrace);
+            stream.ReadByte();
+            //CheckTag(HproseTags.TagClosebrace);
             return map;
         }
 
-        public object ReadObject() {
-            return ReadObject(true, null);
-        }
-
-        public object ReadObject(bool includeTag) {
-            return ReadObject(includeTag, null);
-        }
-
-        public object ReadObject(Type type) {
-            return ReadObject(true, type);
-        }
-
-        private static string expectObjectTags = String.Concat(
-            (char)HproseTags.TagObject,
-            (char)HproseTags.TagClass,
-            (char)HproseTags.TagRef
-        );
-
-        public object ReadObject(bool includeTag, Type type) {
-            if (includeTag) {
-                switch (CheckTags(expectObjectTags)) {
-                    case HproseTags.TagRef: return ReadRef(type);
-                    case HproseTags.TagClass: {
-                        ReadClass();
-                        return ReadObject(type);
-                    }
-                }
+        public object ReadMap(Type type) {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagMap: return ReadMapWithoutTag(type);
+                case HproseTags.TagRef: return ReadRef(type);
+                default: throw UnexpectedTag(tag);
             }
+        }
+
+        public object ReadObjectWithoutTag(Type type) {
             object c = classref[ReadInt(HproseTags.TagOpenbrace)];
 #if !(dotNET10 || dotNET11 || dotNETCF10)
             string[] memberNames = membersref[c];
@@ -2073,18 +2325,30 @@ namespace Hprose.IO {
 #endif
                 }
             }
-            CheckTag(HproseTags.TagClosebrace);
+            stream.ReadByte();
+            //CheckTag(HproseTags.TagClosebrace);
             return obj;
         }
 
+        public object ReadObject(Type type) {
+            int tag = stream.ReadByte();
+            switch (tag) {
+                case HproseTags.TagClass: ReadClass(); return ReadObject(type);
+                case HproseTags.TagObject: return ReadObjectWithoutTag(type);
+                case HproseTags.TagRef: return ReadRef(type);
+                default: throw UnexpectedTag(tag);
+            }
+        }
+
         private void ReadClass() {
-            string className = (string)ReadString(false, null, false);
+            string className = ReadCharsAsString();
             int count = ReadInt(HproseTags.TagOpenbrace);
             string[] memberNames = new string[count];
             for (int i = 0; i < count; i++) {
-                memberNames[i] = (string)ReadString(true);
+                memberNames[i] = ReadString();
             }
-            CheckTag(HproseTags.TagClosebrace);
+            stream.ReadByte();
+            //CheckTag(HproseTags.TagClosebrace);
             Type type = HproseHelper.GetClass(className);
             if (type == null) {
                 object key = new object();
@@ -2095,6 +2359,10 @@ namespace Hprose.IO {
                 classref.Add(type);
                 membersref[type] = memberNames;
             }
+        }
+
+        private object ReadRef() {
+            return references[ReadInt(HproseTags.TagSemicolon)];
         }
 
         private object ReadRef(Type type) {

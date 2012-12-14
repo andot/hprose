@@ -390,11 +390,7 @@ namespace Hprose.Client {
             if (resultMode == HproseResultMode.RawWithEndTag || resultMode == HproseResultMode.Raw) {
                 memstream = new MemoryStream();
             }
-            while ((tag = hproseReader.CheckTags(
-                    (char)HproseTags.TagResult + "" +
-                    (char)HproseTags.TagArgument + "" +
-                    (char)HproseTags.TagError + "" +
-                    (char)HproseTags.TagEnd)) != HproseTags.TagEnd) {
+            while ((tag = istream.ReadByte()) != HproseTags.TagEnd) {
                 switch (tag) {
                     case HproseTags.TagResult:
                         if (resultMode == HproseResultMode.Normal) {
@@ -429,9 +425,14 @@ namespace Hprose.Client {
                         }
                         else {
                             hproseReader.Reset();
-                            result = new HproseException((string)hproseReader.ReadString());
+                            result = new HproseException(hproseReader.ReadString());
                         }
                         break;
+                    default:
+                        throw hproseReader.UnexpectedTag(tag, (char)HproseTags.TagResult + "" +
+                                                              (char)HproseTags.TagArgument + "" +
+                                                              (char)HproseTags.TagError + "" +
+                                                              (char)HproseTags.TagEnd);
                 }
             }
             if (resultMode == HproseResultMode.RawWithEndTag || resultMode == HproseResultMode.Raw) {

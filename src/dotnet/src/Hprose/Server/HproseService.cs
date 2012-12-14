@@ -305,7 +305,7 @@ namespace Hprose.Server {
             int tag;
             do {
                 reader.Reset();
-                string name = ((string)reader.ReadString());
+                string name = reader.ReadString();
                 HproseMethod remoteMethod = null;
                 int count = 0;
                 object[] args = null;
