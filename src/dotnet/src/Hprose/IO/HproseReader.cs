@@ -213,7 +213,7 @@ namespace Hprose.IO {
                 case HproseTags.TagList:
                     return ReadListWithoutTag();
                 case HproseTags.TagMap:
-                    return ReadListWithoutTag();
+                    return ReadMapWithoutTag();
                 case HproseTags.TagClass:
                     ReadClass();
                     return ReadObject(null);
