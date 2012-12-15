@@ -13,7 +13,7 @@
  *                                                        *
  * hprose helper class for C#.                            *
  *                                                        *
- * LastModified: Nov 11, 2012                             *
+ * LastModified: Dec 16, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -133,30 +133,6 @@ namespace Hprose.IO {
         public static readonly Type typeofUInt32Array = typeof(UInt32[]);
         public static readonly Type typeofUInt64 = typeof(UInt64);
         public static readonly Type typeofUInt64Array = typeof(UInt64[]);
-#if !(dotNET10 || dotNET11 || dotNETCF10)
-        public static readonly Type typeofBooleanList = typeof(List<Boolean>);
-        public static readonly Type typeofBigIntegerList = typeof(List<BigInteger>);
-        public static readonly Type typeofByteList = typeof(List<Byte>);
-        public static readonly Type typeofBytesList = typeof(List<Byte[]>);
-        public static readonly Type typeofCharList = typeof(List<Char>);
-        public static readonly Type typeofCharsList = typeof(List<Char[]>);
-        public static readonly Type typeofDateTimeList = typeof(List<DateTime>);
-        public static readonly Type typeofDecimalList = typeof(List<Decimal>);
-        public static readonly Type typeofDoubleList = typeof(List<Double>);
-        public static readonly Type typeofGuidList = typeof(List<Guid>);
-        public static readonly Type typeofInt16List = typeof(List<Int16>);
-        public static readonly Type typeofInt32List = typeof(List<Int32>);
-        public static readonly Type typeofInt64List = typeof(List<Int64>);
-        public static readonly Type typeofObjectList = typeof(List<Object>);
-        public static readonly Type typeofSByteList = typeof(List<SByte>);
-        public static readonly Type typeofSingleList = typeof(List<Single>);
-        public static readonly Type typeofStringList = typeof(List<String>);
-        public static readonly Type typeofStringBuilderList = typeof(List<StringBuilder>);
-        public static readonly Type typeofTimeSpanList = typeof(List<TimeSpan>);
-        public static readonly Type typeofUInt16List = typeof(List<UInt16>);
-        public static readonly Type typeofUInt32List = typeof(List<UInt32>);
-        public static readonly Type typeofUInt64List = typeof(List<UInt64>);
-#endif
 
 #if !(dotNET10 || dotNET11 || dotNETCF10)
         internal static readonly Dictionary<Type, TypeEnum> typeMap = new Dictionary<Type, TypeEnum>();
@@ -164,48 +140,50 @@ namespace Hprose.IO {
         internal static readonly Hashtable typeMap = new Hashtable();
 #endif
         static HproseHelper() {
+#if Core
             typeMap[typeofBoolean] = TypeEnum.Boolean;
-            typeMap[typeofBooleanArray] = TypeEnum.BooleanArray;
-            typeMap[typeofBigInteger] = TypeEnum.BigInteger;
-            typeMap[typeofBigIntegerArray] = TypeEnum.BigIntegerArray;
-            typeMap[typeofByte] = TypeEnum.Byte;
-            typeMap[typeofByteArray] = TypeEnum.ByteArray;
-            typeMap[typeofBytesArray] = TypeEnum.BytesArray;
             typeMap[typeofChar] = TypeEnum.Char;
-            typeMap[typeofCharArray] = TypeEnum.CharArray;
-            typeMap[typeofCharsArray] = TypeEnum.CharsArray;
-            typeMap[typeofDateTime] = TypeEnum.DateTime;
-            typeMap[typeofDateTimeArray] = TypeEnum.DateTimeArray;
-            typeMap[typeofDecimal] = TypeEnum.Decimal;
-            typeMap[typeofDecimalArray] = TypeEnum.DecimalArray;
-            typeMap[typeofDouble] = TypeEnum.Double;
-            typeMap[typeofDoubleArray] = TypeEnum.DoubleArray;
-            typeMap[typeofGuid] = TypeEnum.Guid;
-            typeMap[typeofGuidArray] = TypeEnum.GuidArray;
-            typeMap[typeofInt16] = TypeEnum.Int16;
-            typeMap[typeofInt16Array] = TypeEnum.Int16Array;
-            typeMap[typeofInt32] = TypeEnum.Int32;
-            typeMap[typeofInt32Array] = TypeEnum.Int32Array;
-            typeMap[typeofInt64] = TypeEnum.Int64;
-            typeMap[typeofInt64Array] = TypeEnum.Int64Array;
-            typeMap[typeofObject] = TypeEnum.Object;
-            typeMap[typeofObjectArray] = TypeEnum.ObjectArray;
             typeMap[typeofSByte] = TypeEnum.SByte;
-            typeMap[typeofSByteArray] = TypeEnum.SByteArray;
-            typeMap[typeofSingle] = TypeEnum.Single;
-            typeMap[typeofSingleArray] = TypeEnum.SingleArray;
-            typeMap[typeofString] = TypeEnum.String;
-            typeMap[typeofStringArray] = TypeEnum.StringArray;
-            typeMap[typeofStringBuilder] = TypeEnum.StringBuilder;
-            typeMap[typeofStringBuilderArray] = TypeEnum.StringBuilderArray;
-            typeMap[typeofTimeSpan] = TypeEnum.TimeSpan;
-            typeMap[typeofTimeSpanArray] = TypeEnum.TimeSpanArray;
+            typeMap[typeofByte] = TypeEnum.Byte;
+            typeMap[typeofInt16] = TypeEnum.Int16;
             typeMap[typeofUInt16] = TypeEnum.UInt16;
-            typeMap[typeofUInt16Array] = TypeEnum.UInt16Array;
+            typeMap[typeofInt32] = TypeEnum.Int32;
             typeMap[typeofUInt32] = TypeEnum.UInt32;
-            typeMap[typeofUInt32Array] = TypeEnum.UInt32Array;
+            typeMap[typeofInt64] = TypeEnum.Int64;
             typeMap[typeofUInt64] = TypeEnum.UInt64;
+            typeMap[typeofSingle] = TypeEnum.Single;
+            typeMap[typeofDouble] = TypeEnum.Double;
+            typeMap[typeofDecimal] = TypeEnum.Decimal;
+            typeMap[typeofDateTime] = TypeEnum.DateTime;
+            typeMap[typeofString] = TypeEnum.String;
+#endif            
+            typeMap[typeofBigInteger] = TypeEnum.BigInteger;
+            typeMap[typeofGuid] = TypeEnum.Guid;
+            typeMap[typeofStringBuilder] = TypeEnum.StringBuilder;
+            typeMap[typeofTimeSpan] = TypeEnum.TimeSpan;
+            typeMap[typeofObject] = TypeEnum.Object;
+            typeMap[typeofBooleanArray] = TypeEnum.BooleanArray;
+            typeMap[typeofCharArray] = TypeEnum.CharArray;
+            typeMap[typeofSByteArray] = TypeEnum.SByteArray;
+            typeMap[typeofByteArray] = TypeEnum.ByteArray;
+            typeMap[typeofInt16Array] = TypeEnum.Int16Array;
+            typeMap[typeofUInt16Array] = TypeEnum.UInt16Array;
+            typeMap[typeofInt32Array] = TypeEnum.Int32Array;
+            typeMap[typeofUInt32Array] = TypeEnum.UInt32Array;
+            typeMap[typeofInt64Array] = TypeEnum.Int64Array;
             typeMap[typeofUInt64Array] = TypeEnum.UInt64Array;
+            typeMap[typeofSingleArray] = TypeEnum.SingleArray;
+            typeMap[typeofDoubleArray] = TypeEnum.DoubleArray;
+            typeMap[typeofDecimalArray] = TypeEnum.DecimalArray;
+            typeMap[typeofDateTimeArray] = TypeEnum.DateTimeArray;
+            typeMap[typeofStringArray] = TypeEnum.StringArray;
+            typeMap[typeofBigIntegerArray] = TypeEnum.BigIntegerArray;
+            typeMap[typeofGuidArray] = TypeEnum.GuidArray;
+            typeMap[typeofObjectArray] = TypeEnum.ObjectArray;
+            typeMap[typeofStringBuilderArray] = TypeEnum.StringBuilderArray;
+            typeMap[typeofTimeSpanArray] = TypeEnum.TimeSpanArray;
+            typeMap[typeofBytesArray] = TypeEnum.BytesArray;
+            typeMap[typeofCharsArray] = TypeEnum.CharsArray;
             typeMap[typeofMemoryStream] = TypeEnum.MemoryStream;
             typeMap[typeofStream] = TypeEnum.Stream;
             typeMap[typeofBitArray] = TypeEnum.BitArray;
@@ -219,37 +197,15 @@ namespace Hprose.IO {
             typeMap[typeofQueue] = TypeEnum.Queue;
             typeMap[typeofStack] = TypeEnum.Stack;
 #endif
-#if !Core
-            typeMap[typeofDBNull] = TypeEnum.DBNull;
-#endif
-#if !(dotNET10 || dotNET11 || dotNETCF10)
-            typeMap[typeofBooleanList] = TypeEnum.BooleanList;
-            typeMap[typeofBigIntegerList] = TypeEnum.BigIntegerList;
-            typeMap[typeofByteList] = TypeEnum.ByteList;
-            typeMap[typeofBytesList] = TypeEnum.BytesList;
-            typeMap[typeofCharList] = TypeEnum.CharList;
-            typeMap[typeofCharsList] = TypeEnum.CharsList;
-            typeMap[typeofDateTimeList] = TypeEnum.DateTimeList;
-            typeMap[typeofDecimalList] = TypeEnum.DecimalList;
-            typeMap[typeofDoubleList] = TypeEnum.DoubleList;
-            typeMap[typeofGuidList] = TypeEnum.GuidList;
-            typeMap[typeofInt16List] = TypeEnum.Int16List;
-            typeMap[typeofInt32List] = TypeEnum.Int32List;
-            typeMap[typeofInt64List] = TypeEnum.Int64List;
-            typeMap[typeofObjectList] = TypeEnum.ObjectList;
-            typeMap[typeofSByteList] = TypeEnum.SByteList;
-            typeMap[typeofSingleList] = TypeEnum.SingleList;
-            typeMap[typeofStringList] = TypeEnum.StringList;
-            typeMap[typeofStringBuilderList] = TypeEnum.StringBuilderList;
-            typeMap[typeofTimeSpanList] = TypeEnum.TimeSpanList;
-            typeMap[typeofUInt16List] = TypeEnum.UInt16List;
-            typeMap[typeofUInt32List] = TypeEnum.UInt32List;
-            typeMap[typeofUInt64List] = TypeEnum.UInt64List;
-#endif
         }
 
         internal static TypeEnum GetTypeEnum(Type type) {
             if (type == null) return TypeEnum.Null;
+            if (type == typeofObject) return TypeEnum.Object;
+#if !Core
+            TypeCode typeCode = Type.GetTypeCode(type);
+            if (typeCode != TypeCode.Object) return (TypeEnum)typeCode;
+#endif
 #if !(dotNET10 || dotNET11 || dotNETCF10)
             TypeEnum t;
             if (typeMap.TryGetValue(type, out t)) return t;
@@ -259,11 +215,10 @@ namespace Hprose.IO {
 #endif
 #if Core
             TypeInfo typeInfo = type.GetTypeInfo();
-            if (typeInfo.IsEnum) return TypeEnum.Enum;
             if (typeInfo.IsArray) return TypeEnum.OtherTypeArray;
             if (typeInfo.IsByRef) return GetTypeEnum(typeInfo.GetElementType());
+            if (typeInfo.IsEnum) return GetTypeEnum(Enum.GetUnderlyingType(type));
 #else
-            if (type.IsEnum) return TypeEnum.Enum;
             if (type.IsArray) return TypeEnum.OtherTypeArray;
             if (type.IsByRef) return GetTypeEnum(type.GetElementType());
 #endif

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose service class for C#.                           *
  *                                                        *
- * LastModified: Dec 15, 2012                             *
+ * LastModified: Dec 16, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -422,10 +422,10 @@ namespace Hprose.Server {
             HproseWriter writer = new HproseWriter(ostream, mode);
             ostream.WriteByte(HproseTags.TagFunctions);
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            writer.WriteIList(names);
+            writer.WriteList((IList<string>)names);
 #else
-            writer.WriteList(names);
-#endif            
+            writer.WriteList((IList)names);
+#endif
             ostream.WriteByte(HproseTags.TagEnd);
             ostream.Flush();
         }

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for C#.                            *
  *                                                        *
- * LastModified: Dec 15, 2012                             *
+ * LastModified: Dec 16, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -134,195 +134,112 @@ namespace Hprose.IO {
 
         
         public void Serialize(object obj) {
-            if (obj == null) {
-                WriteNull();
+            if (obj == null) WriteNull();
+            else if (obj is ValueType) {
+                if (obj is int) WriteInteger((int)obj);
+                else if (obj is double) WriteDouble((double)obj);
+                else if (obj is bool) WriteBoolean((bool)obj);
+                else if (obj is char) WriteUTF8Char((char)obj);
+                else if (obj is sbyte) WriteInteger((sbyte)obj);
+                else if (obj is byte) WriteInteger((byte)obj);
+                else if (obj is short) WriteInteger((short)obj);
+                else if (obj is ushort) WriteInteger((ushort)obj);
+                else if (obj is uint) WriteLong((uint)obj);
+                else if (obj is long) WriteLong((long)obj);
+                else if (obj is ulong) WriteLong((ulong)obj);
+                else if (obj is float) WriteDouble((float)obj);
+                else if (obj is decimal) WriteDouble((decimal)obj);
+                else if (obj is DateTime) WriteDateWithRef((DateTime)obj);
+                else if (obj is Enum) WriteEnum(obj, obj.GetType());
+                else if (obj is TimeSpan) WriteLong(((TimeSpan)obj).Ticks);
+                else if (obj is BigInteger) WriteLong((BigInteger)obj);
+                else if (obj is Guid) WriteGuidWithRef((Guid)obj);
+                else WriteObjectWithRef(obj);
             }
-            else {
-                Serialize(obj, obj.GetType());
-            }
-        }
-
-        private void Serialize(object obj, Type type) {
-            if (obj == null) {
-                WriteNull();
-            }
-            else {
-                switch (HproseHelper.GetTypeEnum(type)) {
-#if !Core
-                    case TypeEnum.DBNull:
-#endif
-                    case TypeEnum.Null: WriteNull(); break;
-                    case TypeEnum.Int32: WriteInteger((int)obj); break;
-                    case TypeEnum.Char: WriteUTF8Char((char)obj); break;
-                    case TypeEnum.Byte: WriteInteger((byte)obj); break;
-                    case TypeEnum.SByte: WriteInteger((sbyte)obj); break;
-                    case TypeEnum.Int16: WriteInteger((short)obj); break;
-                    case TypeEnum.UInt16: WriteInteger((ushort)obj); break;
-                    case TypeEnum.UInt32: WriteLong((uint)obj); break;
-                    case TypeEnum.Int64: WriteLong((long)obj); break;
-                    case TypeEnum.UInt64: WriteLong((ulong)obj); break;
-                    case TypeEnum.Single: WriteDouble((float)obj); break;
-                    case TypeEnum.Double: WriteDouble((double)obj); break;
-                    case TypeEnum.Decimal: WriteDouble((decimal)obj); break;
-                    case TypeEnum.Boolean: WriteBoolean((bool)obj); break;
-                    case TypeEnum.BigInteger: WriteLong((BigInteger)obj); break;
-                    case TypeEnum.Enum: WriteEnum(obj, type); break;
-                    case TypeEnum.TimeSpan: WriteLong(((TimeSpan)obj).Ticks); break;
-
-                    case TypeEnum.DateTime: WriteDateWithRef((DateTime)obj); break;
-                    case TypeEnum.Guid: WriteGuidWithRef((Guid)obj); break;
-
-                    case TypeEnum.BooleanArray: WriteArrayWithRef((bool[])obj); break;
-                    case TypeEnum.BigIntegerArray: WriteArrayWithRef((BigInteger[])obj); break;
-                    case TypeEnum.BytesArray: WriteArrayWithRef((byte[][])obj); break;
-                    case TypeEnum.CharsArray: WriteArrayWithRef((char[][])obj); break;
-                    case TypeEnum.DateTimeArray: WriteArrayWithRef((DateTime[])obj); break;
-                    case TypeEnum.DecimalArray: WriteArrayWithRef((decimal[])obj); break;
-                    case TypeEnum.DoubleArray: WriteArrayWithRef((double[])obj); break;
-                    case TypeEnum.GuidArray: WriteArrayWithRef((Guid[])obj); break;
-                    case TypeEnum.Int16Array: WriteArrayWithRef((short[])obj); break;
-                    case TypeEnum.Int32Array: WriteArrayWithRef((int[])obj); break;
-                    case TypeEnum.Int64Array: WriteArrayWithRef((long[])obj); break;
-                    case TypeEnum.ObjectArray: WriteArrayWithRef((object[])obj); break;
-                    case TypeEnum.OtherTypeArray: WriteArrayWithRef((Array)obj); break;
-                    case TypeEnum.SByteArray: WriteArrayWithRef((sbyte[])obj); break;
-                    case TypeEnum.SingleArray: WriteArrayWithRef((float[])obj); break;
-                    case TypeEnum.StringArray: WriteArrayWithRef((string[])obj); break;
-                    case TypeEnum.StringBuilderArray: WriteArrayWithRef((StringBuilder[])obj); break;
-                    case TypeEnum.TimeSpanArray: WriteArrayWithRef((TimeSpan[])obj); break;
-                    case TypeEnum.UInt16Array: WriteArrayWithRef((ushort[])obj); break;
-                    case TypeEnum.UInt32Array: WriteArrayWithRef((uint[])obj); break;
-                    case TypeEnum.UInt64Array: WriteArrayWithRef((ulong[])obj); break;
-                    case TypeEnum.BitArray: WriteBitArrayWithRef((BitArray)obj); break;
-#if !(dotNET10 || dotNET11 || dotNETCF10)
-                    case TypeEnum.BooleanList: WriteIListWithRef((List<bool>)obj); break;
-                    case TypeEnum.BigIntegerList: WriteIListWithRef((List<BigInteger>)obj); break;
-                    case TypeEnum.ByteList: WriteIListWithRef((List<byte>)obj); break;
-                    case TypeEnum.BytesList: WriteIListWithRef((List<byte[]>)obj); break;
-                    case TypeEnum.CharList: WriteIListWithRef((List<char>)obj); break;
-                    case TypeEnum.CharsList: WriteIListWithRef((List<char[]>)obj); break;
-                    case TypeEnum.DateTimeList: WriteIListWithRef((List<DateTime>)obj); break;
-                    case TypeEnum.DecimalList: WriteIListWithRef((List<decimal>)obj); break;
-                    case TypeEnum.DoubleList: WriteIListWithRef((List<double>)obj); break;
-                    case TypeEnum.GuidList: WriteIListWithRef((List<Guid>)obj); break;
-                    case TypeEnum.Int16List: WriteIListWithRef((List<short>)obj); break;
-                    case TypeEnum.Int32List: WriteIListWithRef((List<int>)obj); break;
-                    case TypeEnum.Int64List: WriteIListWithRef((List<long>)obj); break;
-                    case TypeEnum.ObjectList: WriteIListWithRef((List<Object>)obj); break;
-                    case TypeEnum.SByteList: WriteIListWithRef((List<sbyte>)obj); break;
-                    case TypeEnum.SingleList: WriteIListWithRef((List<float>)obj); break;
-                    case TypeEnum.StringList: WriteIListWithRef((List<string>)obj); break;
-                    case TypeEnum.StringBuilderList: WriteIListWithRef((List<StringBuilder>)obj); break;
-                    case TypeEnum.TimeSpanList: WriteIListWithRef((List<TimeSpan>)obj); break;
-                    case TypeEnum.UInt16List: WriteIListWithRef((List<ushort>)obj); break;
-                    case TypeEnum.UInt32List: WriteIListWithRef((List<uint>)obj); break;
-                    case TypeEnum.UInt64List: WriteIListWithRef((List<ulong>)obj); break;
-#endif
-                    case TypeEnum.Stream: 
-                    case TypeEnum.MemoryStream: WriteStreamWithRef((Stream)obj); break;
-#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
-                    case TypeEnum.ArrayList:
-#endif
-                    case TypeEnum.IList: WriteListWithRef((IList)obj); break;
-#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
-                    case TypeEnum.Stack:
-                    case TypeEnum.Queue:
-#endif
-                    case TypeEnum.ICollection: WriteCollectionWithRef((ICollection)obj); break;
-#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
-                    case TypeEnum.Hashtable:
-                    case TypeEnum.HashMap:
-#endif
-                    case TypeEnum.IDictionary: WriteMapWithRef((IDictionary)obj); break;
-                    case TypeEnum.String:
-                        switch (((string)obj).Length) {
-                            case 0: WriteEmpty(); break;
-                            case 1: WriteUTF8Char(((string)obj)[0]); break;
-                            default: WriteStringWithRef((string)obj); break;
-                        }
-                        break;
-                    case TypeEnum.StringBuilder:
-                        switch (((StringBuilder)obj).Length) {
-                            case 0: WriteEmpty(); break;
-                            case 1: WriteUTF8Char(((StringBuilder)obj)[0]); break;
-                            default: WriteStringWithRef((StringBuilder)obj); break;
-                        }
-                        break;
-                    case TypeEnum.CharArray:
-                        if (((char[])obj).Length == 0) {
-                            WriteEmpty();
-                        }
-                        else {
-                            WriteStringWithRef((char[])obj);
-                        }
-                        break;
-                    case TypeEnum.ByteArray:
-                        if (((byte[])obj).Length == 0) {
-                            WriteEmpty();
-                        }
-                        else {
-                            WriteBytesWithRef((byte[])obj);
-                        }
-                        break;
-                    case TypeEnum.Object: 
-                        type = obj.GetType();
-                        if (type != HproseHelper.typeofObject) {
-                            Serialize(obj, type);
-                        }
-                        else {
-                            throw new HproseException("Hprose can't serialize Object type.");
-                        }
-                        break;
-                     default: {
-#if Core
-                        TypeInfo typeInfo = type.GetTypeInfo();
-                        if (HproseHelper.typeofStream.GetTypeInfo().IsAssignableFrom(typeInfo)) {
-                            WriteStreamWithRef((Stream)obj);
-                        }
-                        else if (HproseHelper.typeofIList.GetTypeInfo().IsAssignableFrom(typeInfo)) {
-                            WriteListWithRef((IList)obj);
-                        }
-                        else if (HproseHelper.typeofIDictionary.GetTypeInfo().IsAssignableFrom(typeInfo)) {
-                            WriteMapWithRef((IDictionary)obj);
-                        }
-                        else if (HproseHelper.typeofICollection.GetTypeInfo().IsAssignableFrom(typeInfo)) {
-                            WriteCollectionWithRef((ICollection)obj);
-                        }
-                        else if (typeInfo.IsGenericType && type.Name.StartsWith("<>f__AnonymousType")) {
-                            WriteAnonymousTypeWithRef(obj);
-                            return;
-                        }
-#else
-                        if (type.IsSubclassOf(HproseHelper.typeofStream)) {
-                            WriteStreamWithRef((Stream)obj);
-                        }
-                        else if (HproseHelper.typeofIList.IsAssignableFrom(type)) {
-                            WriteListWithRef((IList)obj);
-                        }
-                        else if (HproseHelper.typeofIDictionary.IsAssignableFrom(type)) {
-                            WriteMapWithRef((IDictionary)obj);
-                        }
-                        else if (HproseHelper.typeofICollection.IsAssignableFrom(type)) {
-                            WriteCollectionWithRef((ICollection)obj);
-                        }
-#if !(dotNET10 || dotNET11 || dotNETCF10)
-                        else if (type.IsGenericType && type.Name.StartsWith("<>f__AnonymousType")) {
-                            WriteAnonymousTypeWithRef(obj);
-                            return;
-                        }
-#endif
-#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT || WINDOWS_PHONE)
-                        else if (HproseHelper.typeofISerializable.IsAssignableFrom(type)) {
-                            throw new HproseException(type.Name + " is a ISerializable type, hprose can't support it.");
-                        }
-#endif
-#endif
-                        else {
-                            WriteObjectWithRef(obj);
-                        }
-                        break;
-                    }
+            else if (obj is String) {
+                switch (((string)obj).Length) {
+                    case 0: WriteEmpty(); break;
+                    case 1: WriteUTF8Char(((string)obj)[0]); break;
+                    default: WriteStringWithRef((string)obj); break;
                 }
+            }
+            else if (obj is StringBuilder) {
+                switch (((StringBuilder)obj).Length) {
+                    case 0: WriteEmpty(); break;
+                    case 1: WriteUTF8Char(((StringBuilder)obj)[0]); break;
+                    default: WriteStringWithRef((StringBuilder)obj); break;
+                }
+            }
+            else if (obj is Stream) {
+                WriteStreamWithRef((Stream)obj);
+            }
+            else if (obj is Array) {
+                if (obj is int[]) WriteArrayWithRef((int[])obj);
+                else if (obj is string[]) WriteArrayWithRef((string[])obj);
+                else if (obj is double[]) WriteArrayWithRef((double[])obj);
+                else if (obj is object[]) WriteArrayWithRef((object[])obj);
+                else if (obj is bool[]) WriteArrayWithRef((bool[])obj);
+                else if (obj is char[]) WriteStringWithRef((char[])obj);
+                else if (obj is sbyte[]) WriteArrayWithRef((sbyte[])obj);
+                else if (obj is byte[]) WriteBytesWithRef((byte[])obj);
+                else if (obj is short[]) WriteArrayWithRef((short[])obj);
+                else if (obj is ushort[]) WriteArrayWithRef((ushort[])obj);
+                else if (obj is uint[]) WriteArrayWithRef((uint[])obj);
+                else if (obj is long[]) WriteArrayWithRef((long[])obj);
+                else if (obj is ulong[]) WriteArrayWithRef((ulong[])obj);
+                else if (obj is float[]) WriteArrayWithRef((float[])obj);
+                else if (obj is decimal[]) WriteArrayWithRef((decimal[])obj);
+                else if (obj is DateTime[]) WriteArrayWithRef((DateTime[])obj);
+                else if (obj is TimeSpan[]) WriteArrayWithRef((TimeSpan[])obj);
+                else if (obj is BigInteger[]) WriteArrayWithRef((BigInteger[])obj);
+                else if (obj is Guid[]) WriteArrayWithRef((Guid[])obj);
+                else if (obj is StringBuilder[]) WriteArrayWithRef((StringBuilder[])obj);
+                else if (obj is byte[][]) WriteArrayWithRef((byte[][])obj);
+                else if (obj is char[][]) WriteArrayWithRef((char[][])obj);
+                else WriteArrayWithRef((Array)obj);
+            }
+#if !(SILVERLIGHT || WINDOWS_PHONE || Core)
+            else if (obj is ArrayList) WriteListWithRef((IList)obj);
+#endif
+            else if (obj is IList) {
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+                if (obj is IList<int>) WriteListWithRef((IList<int>)obj);
+                else if (obj is IList<string>) WriteListWithRef((IList<string>)obj);
+                else if (obj is IList<double>) WriteListWithRef((IList<double>)obj);
+                else
+#endif
+                WriteListWithRef((IList)obj);
+            }
+            else if (obj is IDictionary) {
+                WriteMapWithRef((IDictionary)obj);
+            }
+            else if (obj is ICollection) {
+                WriteCollectionWithRef((ICollection)obj);
+            }
+#if !Core
+            else if (obj is DBNull) {
+                WriteNull();
+            }
+#endif
+            else {
+                Type type = obj.GetType();
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+#if !Core
+                Type typeinfo = type;
+#else
+                TypeInfo typeinfo = type.GetTypeInfo();
+#endif
+                if (typeinfo.IsGenericType && type.Name.StartsWith("<>f__AnonymousType")) {
+                    WriteAnonymousTypeWithRef(obj);
+                    return;
+                }
+#endif
+#if !(PocketPC || Smartphone || WindowsCE || SILVERLIGHT || WINDOWS_PHONE || Core)
+                if (HproseHelper.typeofISerializable.IsAssignableFrom(type)) {
+                    throw new HproseException(type.Name + " is a ISerializable type, hprose can't support it.");
+                }
+#endif
+                WriteObjectWithRef(obj);
             }
         }
 
@@ -1252,148 +1169,7 @@ namespace Hprose.IO {
         }
 
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-        public void WriteIList<T>(IList<T> list) {
-            references[list] = lastref++;
-            int length = list.Count;
-            stream.WriteByte(HproseTags.TagList);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            Type type = typeof(T);
-            for (int i = 0; i < length; i++) {
-                Serialize(list[i], type);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteIListWithRef<T>(IList<T> list) {
-            if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList<T>(list);
-        }
-
-        public void WriteIList(IList<Boolean> list) {
-            references[list] = lastref++;
-            int length = list.Count;
-            stream.WriteByte(HproseTags.TagList);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            for (int i = 0; i < length; i++) {
-                WriteBoolean(list[i]);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteIListWithRef(IList<Boolean> list) {
-            if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
-        }
-
-        public void WriteIList(IList<BigInteger> list) {
-            references[list] = lastref++;
-            int length = list.Count;
-            stream.WriteByte(HproseTags.TagList);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            for (int i = 0; i < length; i++) {
-                WriteLong(list[i]);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteIListWithRef(IList<BigInteger> list) {
-            if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
-        }
-
-        public void WriteIList(IList<Byte> list) {
-            references[list] = lastref++;
-            int length = list.Count;
-            stream.WriteByte(HproseTags.TagList);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            for (int i = 0; i < length; i++) {
-                WriteInteger(list[i]);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteIListWithRef(IList<Byte> list) {
-            if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
-        }
-
-        public void WriteIList(IList<Byte[]> list) {
-            references[list] = lastref++;
-            int length = list.Count;
-            stream.WriteByte(HproseTags.TagList);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            for (int i = 0; i < length; i++) {
-                byte[] value = list[i];
-                if (value == null) WriteNull();
-                else WriteBytesWithRef(value);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteIListWithRef(IList<Byte[]> list) {
-            if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
-        }
-
-        public void WriteIList(IList<Char> list) {
-            references[list] = lastref++;
-            int length = list.Count;
-            stream.WriteByte(HproseTags.TagList);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            for (int i = 0; i < length; i++) {
-                WriteUTF8Char(list[i]);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteIListWithRef(IList<Char> list) {
-            if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
-        }
-
-        public void WriteIList(IList<Char[]> list) {
-            references[list] = lastref++;
-            int length = list.Count;
-            stream.WriteByte(HproseTags.TagList);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            for (int i = 0; i < length; i++) {
-                char[] value = list[i];
-                if (value == null) WriteNull();
-                else WriteStringWithRef(value);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteIListWithRef(IList<Char[]> list) {
-            if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
-        }
-
-        public void WriteIList(IList<DateTime> list) {
-            references[list] = lastref++;
-            int length = list.Count;
-            stream.WriteByte(HproseTags.TagList);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            for (int i = 0; i < length; i++) {
-                WriteDateWithRef(list[i]);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteIListWithRef(IList<DateTime> list) {
-            if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
-        }
-
-        public void WriteIList(IList<Decimal> list) {
+        public void WriteList(IList<double> list) {
             references[list] = lastref++;
             int length = list.Count;
             stream.WriteByte(HproseTags.TagList);
@@ -1405,46 +1181,12 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
-        public void WriteIListWithRef(IList<Decimal> list) {
+        public void WriteListWithRef(IList<double> list) {
             if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
+            else WriteList(list);
         }
 
-        public void WriteIList(IList<Double> list) {
-            references[list] = lastref++;
-            int length = list.Count;
-            stream.WriteByte(HproseTags.TagList);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            for (int i = 0; i < length; i++) {
-                WriteDouble(list[i]);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteIListWithRef(IList<Double> list) {
-            if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
-        }
-
-        public void WriteIList(IList<Guid> list) {
-            references[list] = lastref++;
-            int length = list.Count;
-            stream.WriteByte(HproseTags.TagList);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            for (int i = 0; i < length; i++) {
-                WriteGuidWithRef(list[i]);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteIListWithRef(IList<Guid> list) {
-            if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
-        }
-
-        public void WriteIList(IList<Int16> list) {
+        public void WriteList(IList<int> list) {
             references[list] = lastref++;
             int length = list.Count;
             stream.WriteByte(HproseTags.TagList);
@@ -1456,97 +1198,12 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
-        public void WriteIListWithRef(IList<Int16> list) {
+        public void WriteListWithRef(IList<int> list) {
             if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
+            else WriteList(list);
         }
 
-        public void WriteIList(IList<Int32> list) {
-            references[list] = lastref++;
-            int length = list.Count;
-            stream.WriteByte(HproseTags.TagList);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            for (int i = 0; i < length; i++) {
-                WriteInteger(list[i]);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteIListWithRef(IList<Int32> list) {
-            if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
-        }
-
-        public void WriteIList(IList<Int64> list) {
-            references[list] = lastref++;
-            int length = list.Count;
-            stream.WriteByte(HproseTags.TagList);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            for (int i = 0; i < length; i++) {
-                WriteLong(list[i]);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteIListWithRef(IList<Int64> list) {
-            if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
-        }
-
-        public void WriteIList(IList<Object> list) {
-            references[list] = lastref++;
-            int length = list.Count;
-            stream.WriteByte(HproseTags.TagList);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            for (int i = 0; i < length; i++) {
-                Serialize(list[i]);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteIListWithRef(IList<Object> list) {
-            if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
-        }
-
-        public void WriteIList(IList<SByte> list) {
-            references[list] = lastref++;
-            int length = list.Count;
-            stream.WriteByte(HproseTags.TagList);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            for (int i = 0; i < length; i++) {
-                WriteInteger(list[i]);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteIListWithRef(IList<SByte> list) {
-            if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
-        }
-
-        public void WriteIList(IList<Single> list) {
-            references[list] = lastref++;
-            int length = list.Count;
-            stream.WriteByte(HproseTags.TagList);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            for (int i = 0; i < length; i++) {
-                WriteDouble(list[i]);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteIListWithRef(IList<Single> list) {
-            if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
-        }
-
-        public void WriteIList(IList<String> list) {
+        public void WriteList(IList<string> list) {
             references[list] = lastref++;
             int length = list.Count;
             stream.WriteByte(HproseTags.TagList);
@@ -1560,134 +1217,9 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
-        public void WriteIListWithRef(IList<String> list) {
+        public void WriteListWithRef(IList<string> list) {
             if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
-        }
-
-        public void WriteIList(IList<StringBuilder> list) {
-            references[list] = lastref++;
-            int length = list.Count;
-            stream.WriteByte(HproseTags.TagList);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            for (int i = 0; i < length; i++) {
-                StringBuilder value = list[i];
-                if (value == null) WriteNull();
-                else WriteStringWithRef(value);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteIListWithRef(IList<StringBuilder> list) {
-            if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
-        }
-
-        public void WriteIList(IList<TimeSpan> list) {
-            references[list] = lastref++;
-            int length = list.Count;
-            stream.WriteByte(HproseTags.TagList);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            for (int i = 0; i < length; i++) {
-                WriteLong(list[i].Ticks);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteIListWithRef(IList<TimeSpan> list) {
-            if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
-        }
-
-        public void WriteIList(IList<UInt16> list) {
-            references[list] = lastref++;
-            int length = list.Count;
-            stream.WriteByte(HproseTags.TagList);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            for (int i = 0; i < length; i++) {
-                WriteInteger(list[i]);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteIListWithRef(IList<UInt16> list) {
-            if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
-        }
-
-        public void WriteIList(IList<UInt32> list) {
-            references[list] = lastref++;
-            int length = list.Count;
-            stream.WriteByte(HproseTags.TagList);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            for (int i = 0; i < length; i++) {
-                WriteLong(list[i]);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteIListWithRef(IList<UInt32> list) {
-            if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
-        }
-
-        public void WriteIList(IList<UInt64> list) {
-            references[list] = lastref++;
-            int length = list.Count;
-            stream.WriteByte(HproseTags.TagList);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            for (int i = 0; i < length; i++) {
-                WriteLong(list[i]);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteIListWithRef(IList<UInt64> list) {
-            if (references.ContainsKey(list)) WriteRef(list);
-            else WriteIList(list);
-        }
-
-        public void WriteIMap<TKey, TValue>(IDictionary<TKey, TValue> map) {
-            references[map] = lastref++;
-            int length = map.Count;
-            stream.WriteByte(HproseTags.TagMap);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            Type keyType = typeof(TKey);
-            Type valueType = typeof(TValue);
-            foreach (KeyValuePair<TKey, TValue> e in map) {
-                Serialize(e.Key, keyType);
-                Serialize(e.Value, valueType);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteIMapWithRef<TKey, TValue>(IDictionary<TKey, TValue> map) {
-            if (references.ContainsKey(map)) WriteRef(map);
-            else WriteIMap<TKey, TValue>(map);
-        }
-
-        public void WriteICollection<T>(ICollection<T> collection) {
-            references[collection] = lastref++;
-            int length = collection.Count;
-            stream.WriteByte(HproseTags.TagList);
-            if (length > 0) WriteInt(length, stream);
-            stream.WriteByte(HproseTags.TagOpenbrace);
-            Type type = typeof(T);
-            foreach (object e in collection) {
-                Serialize(e, type);
-            }
-            stream.WriteByte(HproseTags.TagClosebrace);
-        }
-
-        public void WriteICollectionWithRef<T>(ICollection<T> collection) {
-            if (references.ContainsKey(collection)) WriteRef(collection);
-            else WriteICollection<T>(collection);
+            else WriteList(list);
         }
 
         public void WriteAnonymousType(object obj) {

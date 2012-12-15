@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for C#.                            *
  *                                                        *
- * LastModified: Dec 13, 2012                             *
+ * LastModified: Dec 16, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -316,7 +316,6 @@ namespace Hprose.IO {
                 case TypeEnum.DateTime: return new DateTime((long)b);
                 case TypeEnum.BigInteger: return new BigInteger(b);
                 case TypeEnum.TimeSpan: return new TimeSpan((long)b);
-                case TypeEnum.Enum: return Enum.ToObject(type, b);
                 case TypeEnum.StringBuilder: return new StringBuilder(1).Append((char)tag);
             }
             return CastError("Integer", type);
@@ -366,7 +365,6 @@ namespace Hprose.IO {
                 case TypeEnum.DateTime: return new DateTime((long)i);
                 case TypeEnum.BigInteger: return new BigInteger(i);
                 case TypeEnum.TimeSpan: return new TimeSpan((long)i);
-                case TypeEnum.Enum: return Enum.ToObject(type, i);
                 case TypeEnum.StringBuilder: return new StringBuilder(i.ToString());
             }
             return CastError("Integer", type);
@@ -458,7 +456,6 @@ namespace Hprose.IO {
                 case TypeEnum.Boolean: return (int.Parse(l.ToString()) != 0);
                 case TypeEnum.DateTime: return new DateTime(long.Parse(l.ToString()));
                 case TypeEnum.TimeSpan: return new TimeSpan(long.Parse(l.ToString()));
-                case TypeEnum.Enum: return Enum.ToObject(type, long.Parse(l.ToString()));
                 case TypeEnum.StringBuilder: return l;
             }
             return CastError("Long", type);
@@ -531,7 +528,6 @@ namespace Hprose.IO {
                 case TypeEnum.DateTime: return new DateTime((long)ParseDouble(value));
                 case TypeEnum.BigInteger: return new BigInteger(ParseDouble(value));
                 case TypeEnum.TimeSpan: return new TimeSpan((long)ParseDouble(value));
-                case TypeEnum.Enum: return Enum.ToObject(type, (long)ParseDouble(value));
                 case TypeEnum.StringBuilder: return value;
             }
             return CastError("Double", type);
@@ -644,7 +640,6 @@ namespace Hprose.IO {
                 case TypeEnum.Double: return (double)0;
                 case TypeEnum.Decimal: return (decimal)0;
                 case TypeEnum.Boolean: return false;
-                case TypeEnum.Enum: return Enum.ToObject(type, 0);
 #if !Core
                 case TypeEnum.DBNull: return DBNull.Value;
 #endif
@@ -687,7 +682,6 @@ namespace Hprose.IO {
                 case TypeEnum.Decimal: return (decimal)0;
                 case TypeEnum.Boolean: return false;
                 case TypeEnum.BigInteger: return BigInteger.Zero;
-                case TypeEnum.Enum: return Enum.ToObject(type, 0);
                 case TypeEnum.StringBuilder: return new StringBuilder();
                 case TypeEnum.CharArray: return new char[0];
                 case TypeEnum.ByteArray: return new byte[0];
@@ -734,7 +728,6 @@ namespace Hprose.IO {
                 case TypeEnum.Decimal: return (decimal)1;
                 case TypeEnum.String: return bool.TrueString;
                 case TypeEnum.BigInteger: return BigInteger.One;
-                case TypeEnum.Enum: return Enum.ToObject(type, 1);
                 case TypeEnum.StringBuilder: return new StringBuilder(bool.TrueString);
             }
             return CastError("Boolean", type);
@@ -759,7 +752,6 @@ namespace Hprose.IO {
                 case TypeEnum.Decimal: return (decimal)0;
                 case TypeEnum.String: return bool.FalseString;
                 case TypeEnum.BigInteger: return BigInteger.Zero;
-                case TypeEnum.Enum: return Enum.ToObject(type, 0);
                 case TypeEnum.StringBuilder: return new StringBuilder(bool.FalseString);
             }
             return CastError("Boolean", type);
@@ -1119,7 +1111,6 @@ namespace Hprose.IO {
                 case TypeEnum.Decimal: return (decimal)c;
                 case TypeEnum.Boolean: return "\00Ff".IndexOf(c) > -1;
                 case TypeEnum.BigInteger: return new BigInteger((int)c);
-                case TypeEnum.Enum: return Enum.ToObject(type, (int)c);
                 case TypeEnum.StringBuilder: return new StringBuilder(1).Append(c);
             }
             return CastError("Char", type);
