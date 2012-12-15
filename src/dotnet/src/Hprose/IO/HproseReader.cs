@@ -275,7 +275,7 @@ namespace Hprose.IO {
                 case HproseTags.TagList:
                     return ReadListWithoutTag(type);
                 case HproseTags.TagMap:
-                    return ReadListWithoutTag(type);
+                    return ReadMapWithoutTag(type);
                 case HproseTags.TagClass:
                     ReadClass();
                     return ReadObject(type);
