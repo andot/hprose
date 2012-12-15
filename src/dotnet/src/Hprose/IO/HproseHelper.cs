@@ -133,7 +133,31 @@ namespace Hprose.IO {
         public static readonly Type typeofUInt32Array = typeof(UInt32[]);
         public static readonly Type typeofUInt64 = typeof(UInt64);
         public static readonly Type typeofUInt64Array = typeof(UInt64[]);
-        
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+        public static readonly Type typeofBooleanList = typeof(List<Boolean>);
+        public static readonly Type typeofBigIntegerList = typeof(List<BigInteger>);
+        public static readonly Type typeofByteList = typeof(List<Byte>);
+        public static readonly Type typeofBytesList = typeof(List<Byte[]>);
+        public static readonly Type typeofCharList = typeof(List<Char>);
+        public static readonly Type typeofCharsList = typeof(List<Char[]>);
+        public static readonly Type typeofDateTimeList = typeof(List<DateTime>);
+        public static readonly Type typeofDecimalList = typeof(List<Decimal>);
+        public static readonly Type typeofDoubleList = typeof(List<Double>);
+        public static readonly Type typeofGuidList = typeof(List<Guid>);
+        public static readonly Type typeofInt16List = typeof(List<Int16>);
+        public static readonly Type typeofInt32List = typeof(List<Int32>);
+        public static readonly Type typeofInt64List = typeof(List<Int64>);
+        public static readonly Type typeofObjectList = typeof(List<Object>);
+        public static readonly Type typeofSByteList = typeof(List<SByte>);
+        public static readonly Type typeofSingleList = typeof(List<Single>);
+        public static readonly Type typeofStringList = typeof(List<String>);
+        public static readonly Type typeofStringBuilderList = typeof(List<StringBuilder>);
+        public static readonly Type typeofTimeSpanList = typeof(List<TimeSpan>);
+        public static readonly Type typeofUInt16List = typeof(List<UInt16>);
+        public static readonly Type typeofUInt32List = typeof(List<UInt32>);
+        public static readonly Type typeofUInt64List = typeof(List<UInt64>);
+#endif
+
 #if !(dotNET10 || dotNET11 || dotNETCF10)
         internal static readonly Dictionary<Type, TypeEnum> typeMap = new Dictionary<Type, TypeEnum>();
 #else
@@ -198,7 +222,30 @@ namespace Hprose.IO {
 #if !Core
             typeMap[typeofDBNull] = TypeEnum.DBNull;
 #endif
-
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+            typeMap[typeofBooleanList] = TypeEnum.BooleanList;
+            typeMap[typeofBigIntegerList] = TypeEnum.BigIntegerList;
+            typeMap[typeofByteList] = TypeEnum.ByteList;
+            typeMap[typeofBytesList] = TypeEnum.BytesList;
+            typeMap[typeofCharList] = TypeEnum.CharList;
+            typeMap[typeofCharsList] = TypeEnum.CharsList;
+            typeMap[typeofDateTimeList] = TypeEnum.DateTimeList;
+            typeMap[typeofDecimalList] = TypeEnum.DecimalList;
+            typeMap[typeofDoubleList] = TypeEnum.DoubleList;
+            typeMap[typeofGuidList] = TypeEnum.GuidList;
+            typeMap[typeofInt16List] = TypeEnum.Int16List;
+            typeMap[typeofInt32List] = TypeEnum.Int32List;
+            typeMap[typeofInt64List] = TypeEnum.Int64List;
+            typeMap[typeofObjectList] = TypeEnum.ObjectList;
+            typeMap[typeofSByteList] = TypeEnum.SByteList;
+            typeMap[typeofSingleList] = TypeEnum.SingleList;
+            typeMap[typeofStringList] = TypeEnum.StringList;
+            typeMap[typeofStringBuilderList] = TypeEnum.StringBuilderList;
+            typeMap[typeofTimeSpanList] = TypeEnum.TimeSpanList;
+            typeMap[typeofUInt16List] = TypeEnum.UInt16List;
+            typeMap[typeofUInt32List] = TypeEnum.UInt32List;
+            typeMap[typeofUInt64List] = TypeEnum.UInt64List;
+#endif
         }
 
         internal static TypeEnum GetTypeEnum(Type type) {

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose service class for C#.                           *
  *                                                        *
- * LastModified: Nov 27, 2012                             *
+ * LastModified: Dec 15, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -290,7 +290,7 @@ namespace Hprose.Server {
             if (filter != null) ostream = filter.OutputFilter(ostream);
             HproseWriter writer = new HproseWriter(ostream, mode);
             ostream.WriteByte(HproseTags.TagError);
-            writer.WriteString(error, false);
+            writer.WriteString(error);
             ostream.WriteByte(HproseTags.TagEnd);
             ostream.Flush();
         }
@@ -400,7 +400,7 @@ namespace Hprose.Server {
                     if (byRef) {
                         ostream.WriteByte(HproseTags.TagArgument);
                         writer.Reset();
-                        writer.WriteArray(arguments, false);
+                        writer.WriteArray(arguments);
                     }
                 }
             } while (tag == HproseTags.TagCall);
@@ -409,7 +409,11 @@ namespace Hprose.Server {
         }
 
         protected void DoFunctionList(HproseMethods methods) {
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+            List<string> names = new List<string>(GlobalMethods.AllNames);
+#else
             ArrayList names = new ArrayList(GlobalMethods.AllNames);
+#endif            
             if (methods != null) {
                 names.AddRange(methods.AllNames);
             }
@@ -417,7 +421,11 @@ namespace Hprose.Server {
             if (filter != null) ostream = filter.OutputFilter(ostream);
             HproseWriter writer = new HproseWriter(ostream, mode);
             ostream.WriteByte(HproseTags.TagFunctions);
-            writer.WriteList(names, false);
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+            writer.WriteIList(names);
+#else
+            writer.WriteList(names);
+#endif            
             ostream.WriteByte(HproseTags.TagEnd);
             ostream.Flush();
         }

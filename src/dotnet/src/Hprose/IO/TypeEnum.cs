@@ -82,5 +82,29 @@ namespace Hprose.IO {
 #if !Core
         DBNull,
 #endif
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+        BooleanList,
+        BigIntegerList,
+        ByteList,
+        BytesList,
+        CharList,
+        CharsList,
+        DateTimeList,
+        DecimalList,
+        DoubleList,
+        GuidList,
+        Int16List,
+        Int32List,
+        Int64List,
+        ObjectList,
+        SByteList,
+        SingleList,
+        StringList,
+        StringBuilderList,
+        TimeSpanList,
+        UInt16List,
+        UInt32List,
+        UInt64List,
+#endif
     }
 }

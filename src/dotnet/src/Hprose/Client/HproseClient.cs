@@ -13,7 +13,7 @@
  *                                                        *
  * hprose client class for C#.                            *
  *                                                        *
- * LastModified: Nov 27, 2012                             *
+ * LastModified: Dec 15, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -449,10 +449,10 @@ namespace Hprose.Client {
             if (filter != null) ostream = filter.OutputFilter(ostream);
             HproseWriter hproseWriter = new HproseWriter(ostream, mode);
             ostream.WriteByte(HproseTags.TagCall);
-            hproseWriter.WriteString(functionName, false);
+            hproseWriter.WriteString(functionName);
             if ((arguments != null) && (arguments.Length > 0 || byRef)) {
                 hproseWriter.Reset();
-                hproseWriter.WriteArray(arguments, false);
+                hproseWriter.WriteArray(arguments);
                 if (byRef) {
                     hproseWriter.WriteBoolean(true);
                 }

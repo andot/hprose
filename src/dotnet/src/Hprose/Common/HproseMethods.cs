@@ -13,7 +13,7 @@
  *                                                        *
  * hprose remote methods class for C#.                    *
  *                                                        *
- * LastModified: Nov 6, 2012                              *
+ * LastModified: Dec 15, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -56,7 +56,11 @@ namespace Hprose.Common {
 #endif
         }
 
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+        public ICollection<string> AllNames {
+#else
         public ICollection AllNames {
+#endif
             get {
                 return remoteMethods.Keys;
             }
