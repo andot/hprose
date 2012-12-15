@@ -140,7 +140,9 @@ namespace Hprose.IO {
         internal static readonly Hashtable typeMap = new Hashtable();
 #endif
         static HproseHelper() {
-#if Core
+#if !Core
+            typeMap[typeofDBNull] = TypeEnum.DBNull;
+#endif
             typeMap[typeofBoolean] = TypeEnum.Boolean;
             typeMap[typeofChar] = TypeEnum.Char;
             typeMap[typeofSByte] = TypeEnum.SByte;
@@ -156,7 +158,6 @@ namespace Hprose.IO {
             typeMap[typeofDecimal] = TypeEnum.Decimal;
             typeMap[typeofDateTime] = TypeEnum.DateTime;
             typeMap[typeofString] = TypeEnum.String;
-#endif            
             typeMap[typeofBigInteger] = TypeEnum.BigInteger;
             typeMap[typeofGuid] = TypeEnum.Guid;
             typeMap[typeofStringBuilder] = TypeEnum.StringBuilder;
@@ -201,11 +202,6 @@ namespace Hprose.IO {
 
         internal static TypeEnum GetTypeEnum(Type type) {
             if (type == null) return TypeEnum.Null;
-            if (type == typeofObject) return TypeEnum.Object;
-#if !Core
-            TypeCode typeCode = Type.GetTypeCode(type);
-            if (typeCode != TypeCode.Object) return (TypeEnum)typeCode;
-#endif
 #if !(dotNET10 || dotNET11 || dotNETCF10)
             TypeEnum t;
             if (typeMap.TryGetValue(type, out t)) return t;
@@ -217,10 +213,11 @@ namespace Hprose.IO {
             TypeInfo typeInfo = type.GetTypeInfo();
             if (typeInfo.IsArray) return TypeEnum.OtherTypeArray;
             if (typeInfo.IsByRef) return GetTypeEnum(typeInfo.GetElementType());
-            if (typeInfo.IsEnum) return GetTypeEnum(Enum.GetUnderlyingType(type));
+            if (typeInfo.IsEnum) return TypeEnum.Enum;
 #else
             if (type.IsArray) return TypeEnum.OtherTypeArray;
             if (type.IsByRef) return GetTypeEnum(type.GetElementType());
+            if (type.IsEnum) return TypeEnum.Enum;
 #endif
             return TypeEnum.OtherType;
         }

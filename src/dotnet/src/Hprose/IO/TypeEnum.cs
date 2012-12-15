@@ -20,26 +20,10 @@
 namespace Hprose.IO {
     using System;
     internal enum TypeEnum {
-#if !Core
-        Null = TypeCode.Empty,
-        DBNull = TypeCode.DBNull,
-        Boolean = TypeCode.Boolean,
-        Char = TypeCode.Char,
-        SByte = TypeCode.SByte,
-        Byte = TypeCode.Byte,
-        Int16 = TypeCode.Int16,
-        UInt16 = TypeCode.UInt16,
-        Int32 = TypeCode.Int32,
-        UInt32 = TypeCode.UInt32,
-        Int64 = TypeCode.Int64,
-        UInt64 = TypeCode.UInt64,
-        Single = TypeCode.Single,
-        Double = TypeCode.Double,
-        Decimal = TypeCode.Decimal,
-        DateTime = TypeCode.DateTime,
-        String = TypeCode.String,
-#else
         Null,
+#if !Core
+        DBNull,
+#endif
         Boolean,
         Char,
         SByte,
@@ -55,7 +39,6 @@ namespace Hprose.IO {
         Decimal,
         DateTime,
         String,
-#endif
         BigInteger,
         Guid,
         StringBuilder,
@@ -98,5 +81,6 @@ namespace Hprose.IO {
         Queue,
         Stack,
 #endif
+        Enum,
     }
 }
