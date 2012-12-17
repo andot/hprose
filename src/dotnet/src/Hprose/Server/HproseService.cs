@@ -330,7 +330,6 @@ namespace Hprose.Server {
                         arguments = new object[count];
                         reader.ReadArray(remoteMethod.paramTypes, arguments, count);
                     }
-                    reader.CheckTag(HproseTags.TagClosebrace);
                     tag = reader.CheckTags((char)HproseTags.TagTrue + "" +
                                            (char)HproseTags.TagEnd + "" +
                                            (char)HproseTags.TagCall);

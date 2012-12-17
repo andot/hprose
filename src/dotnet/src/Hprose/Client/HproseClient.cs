@@ -412,7 +412,7 @@ namespace Hprose.Client {
                         }
                         else {
                             hproseReader.Reset();
-                            Object[] args = (Object[])hproseReader.ReadList(HproseHelper.typeofObjectArray);
+                            Object[] args = hproseReader.ReadObjectArray();
                             int length = arguments.Length;
                             if (length > args.Length) length = args.Length;
                             Array.Copy(args, 0, arguments, 0, length);

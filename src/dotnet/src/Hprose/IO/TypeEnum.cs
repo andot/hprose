@@ -13,7 +13,7 @@
  *                                                        *
  * type enum for C#.                                      *
  *                                                        *
- * LastModified: Dec 16, 2012                             *
+ * LastModified: Dec 17, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -21,6 +21,7 @@ namespace Hprose.IO {
     using System;
     internal enum TypeEnum {
         Null,
+        Object,
 #if !Core
         DBNull,
 #endif
@@ -39,11 +40,15 @@ namespace Hprose.IO {
         Decimal,
         DateTime,
         String,
-        BigInteger,
-        Guid,
         StringBuilder,
+        Guid,
+        BigInteger,
         TimeSpan,
-        Object,
+
+        MemoryStream,
+        Stream,
+
+        ObjectArray,
         BooleanArray,
         CharArray,
         SByteArray,
@@ -59,18 +64,19 @@ namespace Hprose.IO {
         DecimalArray,
         DateTimeArray,
         StringArray,
-        BigIntegerArray,
-        GuidArray,
         StringBuilderArray,
+        GuidArray,
+        BigIntegerArray,
         TimeSpanArray,
-        ObjectArray,
-        BytesArray,
         CharsArray,
-        MemoryStream,
-        Stream,
+        BytesArray,
+
         ICollection,
         IDictionary,
         IList,
+        Dictionary,
+        List,
+
         BitArray,
         OtherType,
         OtherTypeArray,
@@ -81,6 +87,70 @@ namespace Hprose.IO {
         Queue,
         Stack,
 #endif
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+        GenericList,
+        GenericDictionary,
+        GenericQueue,
+        GenericStack,
+        GenericHashMap,
+        GenericICollection,
+        GenericIDictionary,
+        GenericIList,
+        
+        ObjectList,
+        BooleanList,
+        CharList,
+        SByteList,
+        ByteList,
+        Int16List,
+        UInt16List,
+        Int32List,
+        UInt32List,
+        Int64List,
+        UInt64List,
+        SingleList,
+        DoubleList,
+        DecimalList,
+        DateTimeList,
+        StringList,
+        StringBuilderList,
+        GuidList,
+        BigIntegerList,
+        TimeSpanList,
+        CharsList,
+        BytesList,
+
+        ObjectIList,
+        BooleanIList,
+        CharIList,
+        SByteIList,
+        ByteIList,
+        Int16IList,
+        UInt16IList,
+        Int32IList,
+        UInt32IList,
+        Int64IList,
+        UInt64IList,
+        SingleIList,
+        DoubleIList,
+        DecimalIList,
+        DateTimeIList,
+        StringIList,
+        StringBuilderIList,
+        GuidIList,
+        BigIntegerIList,
+        TimeSpanIList,
+        CharsIList,
+        BytesIList,
+        
+        StringObjectHashMap,
+        ObjectObjectHashMap,
+        IntObjectHashMap,
+        StringObjectDictionary,
+        ObjectObjectDictionary,
+        IntObjectDictionary,
+#endif
         Enum,
+        UnSupportedType,
     }
 }
