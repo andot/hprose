@@ -13,7 +13,7 @@
  *                                                        *
  * Object Serializer class for C#.                        *
  *                                                        *
- * LastModified: Dec 8, 2012                              *
+ * LastModified: Dec 19, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -47,7 +47,7 @@ namespace Hprose.IO {
         private static readonly Dictionary<Type, ObjectSerializer> serializersCache = new Dictionary<Type, ObjectSerializer>();
 
         private void InitSerializeFieldsDelegate(Type type) {
-            ICollection<FieldInfo> fields = HproseHelper.GetFields(type).Values;
+            ICollection<FieldTypeInfo> fields = HproseHelper.GetFields(type).Values;
             DynamicMethod dynamicMethod = new DynamicMethod("$SerializeFields",
                 typeofVoid,
                 typeofArgs,
@@ -56,7 +56,7 @@ namespace Hprose.IO {
             ILGenerator gen = dynamicMethod.GetILGenerator();
             LocalBuilder value = gen.DeclareLocal(typeofObject);
             LocalBuilder e = gen.DeclareLocal(typeofException);
-            foreach (FieldInfo fieldInfo in fields) {
+            foreach (FieldTypeInfo field in fields) {
                 Label exTryCatch = gen.BeginExceptionBlock();
                 if (type.IsValueType) {
                     gen.Emit(OpCodes.Ldarg_0);
@@ -65,9 +65,9 @@ namespace Hprose.IO {
                 else {
                     gen.Emit(OpCodes.Ldarg_0);
                 }
-                gen.Emit(OpCodes.Ldfld, fieldInfo);
-                if (fieldInfo.FieldType.IsValueType) {
-                    gen.Emit(OpCodes.Box, fieldInfo.FieldType);
+                gen.Emit(OpCodes.Ldfld, field.info);
+                if (field.type.IsValueType) {
+                    gen.Emit(OpCodes.Box, field.type);
                 }
                 gen.Emit(OpCodes.Stloc_S, value);
                 gen.Emit(OpCodes.Leave_S, exTryCatch);
@@ -88,7 +88,7 @@ namespace Hprose.IO {
         }
 
         private void InitSerializePropertiesDelegate(Type type) {
-            ICollection<PropertyInfo> properties = HproseHelper.GetProperties(type).Values;
+            ICollection<PropertyTypeInfo> properties = HproseHelper.GetProperties(type).Values;
             DynamicMethod dynamicMethod = new DynamicMethod("$SerializeProperties",
                 typeofVoid,
                 typeofArgs,
@@ -97,7 +97,7 @@ namespace Hprose.IO {
             ILGenerator gen = dynamicMethod.GetILGenerator();
             LocalBuilder value = gen.DeclareLocal(typeofObject);
             LocalBuilder e = gen.DeclareLocal(typeofException);
-            foreach (PropertyInfo propertyInfo in properties) {
+            foreach (PropertyTypeInfo property in properties) {
                 Label exTryCatch = gen.BeginExceptionBlock();
                 if (type.IsValueType) {
                     gen.Emit(OpCodes.Ldarg_0);
@@ -106,15 +106,15 @@ namespace Hprose.IO {
                 else {
                     gen.Emit(OpCodes.Ldarg_0);
                 }
-                MethodInfo getMethod = propertyInfo.GetGetMethod(true);
+                MethodInfo getMethod = property.info.GetGetMethod(true);
                 if (getMethod.IsVirtual) {
                     gen.Emit(OpCodes.Callvirt, getMethod);
                 }
                 else {
                     gen.Emit(OpCodes.Call, getMethod);
                 }
-                if (propertyInfo.PropertyType.IsValueType) {
-                    gen.Emit(OpCodes.Box, propertyInfo.PropertyType);
+                if (property.type.IsValueType) {
+                    gen.Emit(OpCodes.Box, property.type);
                 }
                 gen.Emit(OpCodes.Stloc_S, value);
                 gen.Emit(OpCodes.Leave_S, exTryCatch);
@@ -135,7 +135,7 @@ namespace Hprose.IO {
         }
 
         private void InitSerializeMembersDelegate(Type type) {
-            ICollection<MemberInfo> members = HproseHelper.GetMembers(type).Values;
+            ICollection<MemberTypeInfo> members = HproseHelper.GetMembers(type).Values;
             DynamicMethod dynamicMethod = new DynamicMethod("$SerializeFields",
                 typeofVoid,
                 typeofArgs,
@@ -144,7 +144,7 @@ namespace Hprose.IO {
             ILGenerator gen = dynamicMethod.GetILGenerator();
             LocalBuilder value = gen.DeclareLocal(typeofObject);
             LocalBuilder e = gen.DeclareLocal(typeofException);
-            foreach (MemberInfo member in members) {
+            foreach (MemberTypeInfo member in members) {
                 Label exTryCatch = gen.BeginExceptionBlock();
                 if (type.IsValueType) {
                     gen.Emit(OpCodes.Ldarg_0);
@@ -153,15 +153,15 @@ namespace Hprose.IO {
                 else {
                     gen.Emit(OpCodes.Ldarg_0);
                 }
-                if (member is FieldInfo) {
-                    FieldInfo fieldInfo = (FieldInfo)member;
+                if (member.info is FieldInfo) {
+                    FieldInfo fieldInfo = (FieldInfo)member.info;
                     gen.Emit(OpCodes.Ldfld, fieldInfo);
-                    if (fieldInfo.FieldType.IsValueType) {
-                        gen.Emit(OpCodes.Box, fieldInfo.FieldType);
+                    if (member.type.IsValueType) {
+                        gen.Emit(OpCodes.Box, member.type);
                     }
                 }
                 else {
-                    PropertyInfo propertyInfo = (PropertyInfo)member;
+                    PropertyInfo propertyInfo = (PropertyInfo)member.info;
                     MethodInfo getMethod = propertyInfo.GetGetMethod(true);
                     if (getMethod.IsVirtual) {
                         gen.Emit(OpCodes.Callvirt, getMethod);
@@ -169,8 +169,8 @@ namespace Hprose.IO {
                     else {
                         gen.Emit(OpCodes.Call, getMethod);
                     }
-                    if (propertyInfo.PropertyType.IsValueType) {
-                        gen.Emit(OpCodes.Box, propertyInfo.PropertyType);
+                    if (member.type.IsValueType) {
+                        gen.Emit(OpCodes.Box, member.type);
                     }
                 }
                 gen.Emit(OpCodes.Stloc_S, value);

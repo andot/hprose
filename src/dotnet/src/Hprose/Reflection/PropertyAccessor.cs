@@ -13,7 +13,7 @@
  *                                                        *
  * PropertyAccessor class for C#.                         *
  *                                                        *
- * LastModified: May 28, 2011                             *
+ * LastModified: Dec 19, 2012                             *
  * Authors: Ma Bingyao <andot@hprfc.com>                  *
  *                                                        *
 \**********************************************************/
@@ -90,7 +90,7 @@ namespace Hprose.Reflection {
             if (propertyInfo.ReflectedType.IsValueType) {
                 gen.Emit(OpCodes.Unbox, propertyInfo.ReflectedType);
             }
-            MethodInfo getMethod = propertyInfo.GetGetMethod();
+            MethodInfo getMethod = propertyInfo.GetGetMethod(true);
             if (getMethod.IsVirtual) {
                 gen.Emit(OpCodes.Callvirt, getMethod);
             }
@@ -118,7 +118,7 @@ namespace Hprose.Reflection {
                 gen.Emit(OpCodes.Unbox, propertyInfo.PropertyType);
                 gen.Emit(OpCodes.Ldobj, propertyInfo.PropertyType);
             }
-            MethodInfo setMethod = propertyInfo.GetSetMethod();
+            MethodInfo setMethod = propertyInfo.GetSetMethod(true);
             if (setMethod.IsVirtual) {
                 gen.Emit(OpCodes.Callvirt, setMethod);
             }

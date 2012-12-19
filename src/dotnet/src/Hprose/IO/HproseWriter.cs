@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for C#.                            *
  *                                                        *
- * LastModified: Dec 17, 2012                             *
+ * LastModified: Dec 19, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -132,7 +132,6 @@ namespace Hprose.IO {
 #endif
         }
 
-        
         public void Serialize(object obj) {
             if (obj == null) WriteNull();
             else if (obj is ValueType) {
@@ -1287,18 +1286,16 @@ namespace Hprose.IO {
                 ObjectSerializer.Get(type).SerializeFields(obj, this);
 #else
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                ICollection<FieldInfo> fields = HproseHelper.GetFields(type).Values;
-                foreach (FieldInfo field in fields) {
-                    object value;
-                    try {
-                        value = field.GetValue(obj);
+                ICollection<FieldTypeInfo> fields = HproseHelper.GetFields(type).Values;
+                foreach (FieldTypeInfo field in fields) {
 #else
                 ICollection fields = HproseHelper.GetFields(type).Values;
-                foreach (object field in fields) {
+                foreach (object _field in fields) {
+                    FieldTypeInfo field = (FieldTypeInfo)_field;
+#endif
                     object value;
                     try {
-                        value = ((FieldInfo)field).GetValue(obj);
-#endif
+                        value = field.info.GetValue(obj);
                     }
                     catch (Exception e) {
                         throw new HproseException("The field value can't be serialized.", e);
@@ -1312,21 +1309,21 @@ namespace Hprose.IO {
                 ObjectSerializer.Get(type).SerializeProperties(obj, this);
 #else
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                ICollection<PropertyInfo> properties = HproseHelper.GetProperties(type).Values;
-                foreach (PropertyInfo property in properties) {
-                    object value;
-                    try {
-                        value = property.GetValue(obj, null);
+                ICollection<PropertyTypeInfo> properties = HproseHelper.GetProperties(type).Values;
+                foreach (PropertyTypeInfo property in properties) {
 #else
                 ICollection properties = HproseHelper.GetProperties(type).Values;
-                foreach (object property in properties) {
+                foreach (object _property in properties) {
+                    PropertyTypeInfo property = (PropertyTypeInfo)_property;
+#endif
                     object value;
                     try {
 #if (dotNET10 || dotNET11)
-                        value = PropertyAccessor.Get((PropertyInfo)property).GetValue(obj);
+                        value = PropertyAccessor.Get(property.info).GetValue(obj);
+#elif Core
+                        value = property.info.GetValue(obj);
 #else
-                        value = ((PropertyInfo)property).GetValue(obj, null);
-#endif
+                        value = property.info.GetGetMethod(true).Invoke(obj, null);
 #endif
                     }
                     catch (Exception e) {
@@ -1343,22 +1340,25 @@ namespace Hprose.IO {
             ObjectSerializer.Get(type).SerializeMembers(obj, this);
 #else
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            ICollection<MemberInfo> members = HproseHelper.GetMembers(type).Values;
-            foreach (MemberInfo member in members) {
+            ICollection<MemberTypeInfo> members = HproseHelper.GetMembers(type).Values;
+            foreach (MemberTypeInfo member in members) {
 #else
             ICollection members = HproseHelper.GetMembers(type).Values;
-            foreach (object member in members) {
+            foreach (object _member in members) {
+                MemberTypeInfo member = (MemberTypeInfo)_member;
 #endif
                 object value;
                 try {
-                    if (member is FieldInfo) {
-                        value = ((FieldInfo)member).GetValue(obj);
+                    if (member.info is FieldInfo) {
+                        value = ((FieldInfo)member.info).GetValue(obj);
                     }
                     else {
 #if (dotNET10 || dotNET11)
-                        value = PropertyAccessor.Get((PropertyInfo)member).GetValue(obj);
+                        value = PropertyAccessor.Get((PropertyInfo)member.info).GetValue(obj);
+#elif Core
+                        value = ((PropertyInfo)member.info).GetValue(obj);
 #else
-                        value = ((PropertyInfo)member).GetValue(obj, null);
+                        value = ((PropertyInfo)member.info).GetGetMethod(true).Invoke(obj, null);
 #endif
                     }
                 }
@@ -1470,24 +1470,24 @@ namespace Hprose.IO {
                 cache = new SerializeCache();
                 MemoryStream cachestream = new MemoryStream();
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                Dictionary<string, MemberInfo> members;
+                ICollection<string> keys;
 #else
-                Hashtable members;
+                ICollection keys;
 #endif
-                members = HproseHelper.GetMembers(type);
-                int count = members.Count;
+                keys = HproseHelper.GetMembers(type).Keys;
+                int count = keys.Count;
                 cachestream.WriteByte(HproseTags.TagClass);
                 WriteUTF8String(HproseHelper.GetClassName(type), cachestream);
                 if (count > 0) WriteInt(count, cachestream);
                 cachestream.WriteByte(HproseTags.TagOpenbrace);
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                foreach (KeyValuePair<string, MemberInfo> member in members) {
+                foreach (string key in keys) {
                     cachestream.WriteByte(HproseTags.TagString);
-                    WriteUTF8String(member.Key, cachestream);
+                    WriteUTF8String(key, cachestream);
 #else
-                foreach (DictionaryEntry member in members) {
+                foreach (object key in keys) {
                     cachestream.WriteByte(HproseTags.TagString);
-                    WriteUTF8String((string)member.Key, cachestream);
+                    WriteUTF8String((string)key, cachestream);
 #endif
                     cache.refcount++;
                 }

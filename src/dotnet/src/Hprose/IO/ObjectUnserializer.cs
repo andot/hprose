@@ -13,7 +13,7 @@
  *                                                        *
  * Object Unserializer class for C#.                      *
  *                                                        *
- * LastModified: Dec 8, 2012                              *
+ * LastModified: Dec 19, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -156,13 +156,13 @@ namespace Hprose.IO {
         }
 
         protected override void InitUnserializeDelegate(Type type, string[] names, DynamicMethod dynamicMethod) {
-            Dictionary<string, FieldInfo> fields = HproseHelper.GetFields(type);
+            Dictionary<string, FieldTypeInfo> fields = HproseHelper.GetFields(type);
             ILGenerator gen = dynamicMethod.GetILGenerator();
             LocalBuilder e = gen.DeclareLocal(typeofException);
             int count = names.Length;
             for (int i = 0; i < count; i++) {
-                FieldInfo fieldInfo;
-                if (fields.TryGetValue(names[i], out fieldInfo)) {
+                FieldTypeInfo field;
+                if (fields.TryGetValue(names[i], out field)) {
                     Label exTryCatch = gen.BeginExceptionBlock();
                     if (type.IsValueType) {
                         gen.Emit(OpCodes.Ldarg_0);
@@ -174,10 +174,10 @@ namespace Hprose.IO {
                     gen.Emit(OpCodes.Ldarg_1);
                     gen.Emit(OpCodes.Ldc_I4, i);
                     gen.Emit(OpCodes.Ldelem_Ref);
-                    if (fieldInfo.FieldType.IsValueType) {
-                        gen.Emit(OpCodes.Unbox_Any, fieldInfo.FieldType);
+                    if (field.type.IsValueType) {
+                        gen.Emit(OpCodes.Unbox_Any, field.type);
                     }
-                    gen.Emit(OpCodes.Stfld, fieldInfo);
+                    gen.Emit(OpCodes.Stfld, field.info);
                     gen.Emit(OpCodes.Leave_S, exTryCatch);
                     gen.BeginCatchBlock(typeofException);
                     gen.Emit(OpCodes.Stloc_S, e);
@@ -207,13 +207,13 @@ namespace Hprose.IO {
         }
 
         protected override void InitUnserializeDelegate(Type type, string[] names, DynamicMethod dynamicMethod) {
-            Dictionary<string, PropertyInfo> properties = HproseHelper.GetProperties(type);
+            Dictionary<string, PropertyTypeInfo> properties = HproseHelper.GetProperties(type);
             ILGenerator gen = dynamicMethod.GetILGenerator();
             LocalBuilder e = gen.DeclareLocal(typeofException);
             int count = names.Length;
             for (int i = 0; i < count; i++) {
-                PropertyInfo propertyInfo;
-                if (properties.TryGetValue(names[i], out propertyInfo)) {
+                PropertyTypeInfo property;
+                if (properties.TryGetValue(names[i], out property)) {
                     Label exTryCatch = gen.BeginExceptionBlock();
                     if (type.IsValueType) {
                         gen.Emit(OpCodes.Ldarg_0);
@@ -225,10 +225,10 @@ namespace Hprose.IO {
                     gen.Emit(OpCodes.Ldarg_1);
                     gen.Emit(OpCodes.Ldc_I4, i);
                     gen.Emit(OpCodes.Ldelem_Ref);
-                    if (propertyInfo.PropertyType.IsValueType) {
-                        gen.Emit(OpCodes.Unbox_Any, propertyInfo.PropertyType);
+                    if (property.type.IsValueType) {
+                        gen.Emit(OpCodes.Unbox_Any, property.type);
                     }
-                    MethodInfo setMethod = propertyInfo.GetSetMethod(true);
+                    MethodInfo setMethod = property.info.GetSetMethod(true);
                     if (setMethod.IsVirtual) {
                         gen.Emit(OpCodes.Callvirt, setMethod);
                     }
@@ -264,13 +264,13 @@ namespace Hprose.IO {
         }
 
         protected override void InitUnserializeDelegate(Type type, string[] names, DynamicMethod dynamicMethod) {
-            Dictionary<string, MemberInfo> members = HproseHelper.GetMembers(type);
+            Dictionary<string, MemberTypeInfo> members = HproseHelper.GetMembers(type);
             ILGenerator gen = dynamicMethod.GetILGenerator();
             LocalBuilder e = gen.DeclareLocal(typeofException);
             int count = names.Length;
             for (int i = 0; i < count; i++) {
-                MemberInfo memberInfo;
-                if (members.TryGetValue(names[i], out memberInfo)) {
+                MemberTypeInfo member;
+                if (members.TryGetValue(names[i], out member)) {
                     Label exTryCatch = gen.BeginExceptionBlock();
                     if (type.IsValueType) {
                         gen.Emit(OpCodes.Ldarg_0);
@@ -282,17 +282,17 @@ namespace Hprose.IO {
                     gen.Emit(OpCodes.Ldarg_1);
                     gen.Emit(OpCodes.Ldc_I4, i);
                     gen.Emit(OpCodes.Ldelem_Ref);
-                    if (members[names[i]] is FieldInfo) {
-                        FieldInfo fieldInfo = (FieldInfo)memberInfo;
-                        if (fieldInfo.FieldType.IsValueType) {
-                            gen.Emit(OpCodes.Unbox_Any, fieldInfo.FieldType);
+                    if (member.info is FieldInfo) {
+                        FieldInfo fieldInfo = (FieldInfo)member.info;
+                        if (member.type.IsValueType) {
+                            gen.Emit(OpCodes.Unbox_Any, member.type);
                         }
                         gen.Emit(OpCodes.Stfld, fieldInfo);
                     }
                     else {
-                        PropertyInfo propertyInfo = (PropertyInfo)memberInfo;
-                        if (propertyInfo.PropertyType.IsValueType) {
-                            gen.Emit(OpCodes.Unbox_Any, propertyInfo.PropertyType);
+                        PropertyInfo propertyInfo = (PropertyInfo)member.info;
+                        if (member.type.IsValueType) {
+                            gen.Emit(OpCodes.Unbox_Any, member.type);
                         }
                         MethodInfo setMethod = propertyInfo.GetSetMethod(true);
                         if (setMethod.IsVirtual) {

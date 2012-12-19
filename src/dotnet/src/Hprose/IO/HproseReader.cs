@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for C#.                            *
  *                                                        *
- * LastModified: Dec 17, 2012                             *
+ * LastModified: Dec 19, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -498,7 +498,7 @@ namespace Hprose.IO {
 
         private void ReadMapAsObjectFields(object obj, Type type, int count) {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            Dictionary<string, FieldInfo> fields = HproseHelper.GetFields(type);
+            Dictionary<string, FieldTypeInfo> fields = HproseHelper.GetFields(type);
 #else
             Hashtable fields = HproseHelper.GetFields(type);
 #endif
@@ -506,7 +506,7 @@ namespace Hprose.IO {
             string[] names = new string[count];
             object[] values = new object[count];
 #endif
-            FieldInfo field;
+            FieldTypeInfo field;
             for (int i = 0; i < count; i++) {
 #if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
                 names[i] = ReadString();
@@ -514,12 +514,14 @@ namespace Hprose.IO {
 #elif !(dotNET10 || dotNET11 || dotNETCF10)
                 if (fields.TryGetValue(ReadString(), out field)) {
 #else
-                if ((field = (FieldInfo)fields[ReadString()]) != null) {
+                string name = ReadString();
+                if (fields.ContainsKey(name)) {
+                    field = (FieldTypeInfo)fields[name];
 #endif
 #if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
-                    values[i] = Unserialize(field.FieldType);
+                    values[i] = Unserialize(field.type, field.typeEnum);
 #else
-                    field.SetValue(obj, Unserialize(field.FieldType));
+                    field.info.SetValue(obj, Unserialize(field.type, field.typeEnum));
 #endif
                 }
                 else {
@@ -533,7 +535,7 @@ namespace Hprose.IO {
 
         private void ReadMapAsObjectProperties(object obj, Type type, int count) {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            Dictionary<string, PropertyInfo> properties = HproseHelper.GetProperties(type);
+            Dictionary<string, PropertyTypeInfo> properties = HproseHelper.GetProperties(type);
 #else
             Hashtable properties = HproseHelper.GetProperties(type);
 #endif
@@ -541,7 +543,7 @@ namespace Hprose.IO {
             string[] names = new string[count];
             object[] values = new object[count];
 #endif
-            PropertyInfo property;
+            PropertyTypeInfo property;
             for (int i = 0; i < count; i++) {
 #if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
                 names[i] = ReadString();
@@ -549,14 +551,18 @@ namespace Hprose.IO {
 #elif !(dotNET10 || dotNET11 || dotNETCF10)
                 if (properties.TryGetValue(ReadString(), out property)) {
 #else
-                if ((property = (PropertyInfo)properties[ReadString()]) != null) {
+                string name = ReadString();
+                if (properties.ContainsKey(name)) {
+                    property = (PropertyTypeInfo)properties[name];
 #endif
 #if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
-                    values[i] = Unserialize(property.PropertyType);
+                    values[i] = Unserialize(property.type, property.typeEnum);
 #elif (dotNET10 || dotNET11)
-                    PropertyAccessor.Get(property).SetValue(obj, Unserialize(property.PropertyType));
+                    PropertyAccessor.Get(property.info).SetValue(obj, Unserialize(property.type, property.typeEnum));
+#elif Core
+                    property.info.SetValue(obj, Unserialize(property.type, property.typeEnum));
 #else
-                    property.SetValue(obj, Unserialize(property.PropertyType), null);
+                    property.info.GetSetMethod(true).Invoke(obj, new object[] { Unserialize(property.type, property.typeEnum)});
 #endif
                 }
                 else {
@@ -570,7 +576,7 @@ namespace Hprose.IO {
 
         private void ReadMapAsObjectMembers(object obj, Type type, int count) {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            Dictionary<string, MemberInfo> members = HproseHelper.GetMembers(type);
+            Dictionary<string, MemberTypeInfo> members = HproseHelper.GetMembers(type);
 #else
             Hashtable members = HproseHelper.GetMembers(type);
 #endif
@@ -578,7 +584,7 @@ namespace Hprose.IO {
             string[] names = new string[count];
             object[] values = new object[count];
 #endif
-            MemberInfo member;
+            MemberTypeInfo member;
             for (int i = 0; i < count; i++) {
 #if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
                 names[i] = ReadString();
@@ -586,27 +592,27 @@ namespace Hprose.IO {
 #elif !(dotNET10 || dotNET11 || dotNETCF10)
                 if (members.TryGetValue(ReadString(), out member)) {
 #else
-                if ((member = (MemberInfo)members[ReadString()]) != null) {
+                string name = ReadString();
+                if (members.ContainsKey(name)) {
+                    member = (MemberTypeInfo)members[name];
 #endif
-                    Type memberType;
-                    if (member is FieldInfo) {
-                        FieldInfo field = (FieldInfo)member;
-                        memberType = field.FieldType;
 #if (PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
-                        field.SetValue(obj, Unserialize(memberType));
-#endif
+                    if (member.info is FieldInfo) {
+                        FieldInfo field = (FieldInfo)member.info;
+                        field.SetValue(obj, Unserialize(member.type, member.typeEnum));
                     }
                     else {
-                        PropertyInfo property = (PropertyInfo)member;
-                        memberType = property.PropertyType;
+                        PropertyInfo property = (PropertyInfo)member.info;
 #if (dotNET10 || dotNET11)
-                        PropertyAccessor.Get(property).SetValue(obj, Unserialize(memberType));
-#elif (PocketPC || Smartphone || WindowsCE || SILVERLIGHT || WINDOWS_PHONE || Core)
-                        property.SetValue(obj, Unserialize(memberType), null);
+                        PropertyAccessor.Get(property).SetValue(obj, Unserialize(member.type, member.typeEnum));
+#elif (PocketPC || Smartphone || WindowsCE || SILVERLIGHT || WINDOWS_PHONE)
+                        property.GetSetMethod(true).Invoke(obj, new object[] { Unserialize(member.type, member.typeEnum)});
+#elif Core
+                        property.SetValue(obj, Unserialize(member.type, member.typeEnum));
 #endif
                     }
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
-                    values[i] = Unserialize(memberType);
+#else
+                    values[i] = Unserialize(member.type, member.typeEnum);
 #endif
                 }
                 else {
@@ -862,21 +868,22 @@ namespace Hprose.IO {
             object[] values = new object[count];
 #endif
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            Dictionary<string, FieldInfo> fields = HproseHelper.GetFields(type);
+            Dictionary<string, FieldTypeInfo> fields = HproseHelper.GetFields(type);
 #else
             Hashtable fields = HproseHelper.GetFields(type);
 #endif
-            FieldInfo field;
+            FieldTypeInfo field;
             for (int i = 0; i < count; i++) {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
                 if (fields.TryGetValue(memberNames[i], out field)) {
 #else
-                if ((field = (FieldInfo)fields[memberNames[i]]) != null) {
+                if (fields.ContainsKey(memberNames[i])) {
+                    field = (FieldTypeInfo)fields[memberNames[i]];
 #endif
 #if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
-                    values[i] = Unserialize(field.FieldType);
+                    values[i] = Unserialize(field.type, field.typeEnum);
 #else
-                    field.SetValue(obj, Unserialize(field.FieldType));
+                    field.info.SetValue(obj, Unserialize(field.type, field.typeEnum));
 #endif
                 }
                 else {
@@ -893,23 +900,26 @@ namespace Hprose.IO {
             object[] values = new object[count];
 #endif
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            Dictionary<string, PropertyInfo> properties = HproseHelper.GetProperties(type);
+            Dictionary<string, PropertyTypeInfo> properties = HproseHelper.GetProperties(type);
 #else
             Hashtable properties = HproseHelper.GetProperties(type);
 #endif
-            PropertyInfo property;
+            PropertyTypeInfo property;
             for (int i = 0; i < count; i++) {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
                 if (properties.TryGetValue(memberNames[i], out property)) {
 #else
-                if ((property = (PropertyInfo)properties[memberNames[i]]) != null) {
+                if (properties.ContainsKey(memberNames[i])) {
+                    property = (PropertyTypeInfo)properties[memberNames[i]];
 #endif
 #if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
-                    values[i] = Unserialize(property.PropertyType);
+                    values[i] = Unserialize(property.type, property.typeEnum);
 #elif (dotNET10 || dotNET11)
-                    PropertyAccessor.Get(property).SetValue(obj, Unserialize(property.PropertyType));
+                    PropertyAccessor.Get(property.info).SetValue(obj, Unserialize(property.type, property.typeEnum));
+#elif Core
+                    property.info.SetValue(obj, Unserialize(property.type, property.typeEnum));
 #else
-                    property.SetValue(obj, Unserialize(property.PropertyType), null);
+                    property.info.GetSetMethod(true).Invoke(obj, new object[] { Unserialize(property.type, property.typeEnum)});
 #endif
                 }
                 else {
@@ -926,36 +936,35 @@ namespace Hprose.IO {
             object[] values = new object[count];
 #endif
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            Dictionary<string, MemberInfo> members = HproseHelper.GetMembers(type);
+            Dictionary<string, MemberTypeInfo> members = HproseHelper.GetMembers(type);
 #else
             Hashtable members = HproseHelper.GetMembers(type);
 #endif
-            MemberInfo member;
+            MemberTypeInfo member;
             for (int i = 0; i < count; i++) {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
                 if (members.TryGetValue(memberNames[i], out member)) {
 #else
-                if ((member = (MemberInfo)members[memberNames[i]]) != null) {
+                if (members.ContainsKey(memberNames[i])) {
+                    member = (MemberTypeInfo)members[memberNames[i]];
 #endif
-                    Type memberType;
-                    if (member is FieldInfo) {
-                        FieldInfo field = (FieldInfo)member;
-                        memberType = field.FieldType;
 #if (PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
-                        field.SetValue(obj, Unserialize(memberType));
-#endif
+                    if (member.info is FieldInfo) {
+                        FieldInfo field = (FieldInfo)member.info;
+                        field.SetValue(obj, Unserialize(member.type, member.typeEnum));
                     }
                     else {
-                        PropertyInfo property = (PropertyInfo)member;
-                        memberType = property.PropertyType;
+                        PropertyInfo property = (PropertyInfo)member.info;
 #if (dotNET10 || dotNET11)
-                        PropertyAccessor.Get(property).SetValue(obj, Unserialize(memberType));
-#elif (PocketPC || Smartphone || WindowsCE || SILVERLIGHT || WINDOWS_PHONE || Core)
-                        property.SetValue(obj, Unserialize(memberType), null);
+                        PropertyAccessor.Get(property).SetValue(obj, Unserialize(member.type, member.typeEnum));
+#elif (PocketPC || Smartphone || WindowsCE || SILVERLIGHT || WINDOWS_PHONE)
+                        property.GetSetMethod(true).Invoke(obj, new object[] { Unserialize(member.type, member.typeEnum)});
+#elif Core
+                        property.SetValue(obj, Unserialize(member.type, member.typeEnum));
 #endif
                     }
-#if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
-                    values[i] = Unserialize(memberType);
+#else
+                    values[i] = Unserialize(member.type, member.typeEnum);
 #endif
                 }
                 else {

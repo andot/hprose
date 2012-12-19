@@ -13,7 +13,7 @@
  *                                                        *
  * hprose helper class for C#.                            *
  *                                                        *
- * LastModified: Dec 17, 2012                             *
+ * LastModified: Dec 19, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -93,6 +93,36 @@ namespace Hprose.IO {
         }
     }
 #endif
+    internal struct FieldTypeInfo {
+        public FieldInfo info;
+        public Type type;
+        public TypeEnum typeEnum;
+        public FieldTypeInfo(FieldInfo field) {
+            info = field;
+            type = field.FieldType;
+            typeEnum = HproseHelper.GetTypeEnum(type);
+        }
+    }
+    internal struct PropertyTypeInfo {
+        public PropertyInfo info;
+        public Type type;
+        public TypeEnum typeEnum;
+        public PropertyTypeInfo(PropertyInfo property) {
+            info = property;
+            type = property.PropertyType;
+            typeEnum = HproseHelper.GetTypeEnum(type);
+        }
+    }
+    internal struct MemberTypeInfo {
+        public MemberInfo info;
+        public Type type;
+        public TypeEnum typeEnum;
+        public MemberTypeInfo(MemberInfo member) {
+            info = member;
+            type = (member is FieldInfo) ? ((FieldInfo)member).FieldType : ((PropertyInfo)member).PropertyType;
+            typeEnum = HproseHelper.GetTypeEnum(type);
+        }
+    }
     public sealed class HproseHelper {
 #if !(SILVERLIGHT || WINDOWS_PHONE || Core)
         public static readonly Type typeofArrayList = typeof(ArrayList);
@@ -467,9 +497,9 @@ namespace Hprose.IO {
         }
 
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-        private static readonly Dictionary<Type, Dictionary<string, FieldInfo>> fieldsCache = new Dictionary<Type, Dictionary<string, FieldInfo>>();
-        private static readonly Dictionary<Type, Dictionary<string, PropertyInfo>> propertiesCache = new Dictionary<Type, Dictionary<string, PropertyInfo>>();
-        private static readonly Dictionary<Type, Dictionary<string, MemberInfo>> membersCache = new Dictionary<Type, Dictionary<string, MemberInfo>>();
+        private static readonly Dictionary<Type, Dictionary<string, FieldTypeInfo>> fieldsCache = new Dictionary<Type, Dictionary<string, FieldTypeInfo>>();
+        private static readonly Dictionary<Type, Dictionary<string, PropertyTypeInfo>> propertiesCache = new Dictionary<Type, Dictionary<string, PropertyTypeInfo>>();
+        private static readonly Dictionary<Type, Dictionary<string, MemberTypeInfo>> membersCache = new Dictionary<Type, Dictionary<string, MemberTypeInfo>>();
 #if (PocketPC || Smartphone || WindowsCE || SILVERLIGHT || WINDOWS_PHONE || Core)
         private static readonly Dictionary<Type, ConstructorInfo> ctorCache = new Dictionary<Type, ConstructorInfo>();
         private static readonly Dictionary<ConstructorInfo, object[]> argsCache = new Dictionary<ConstructorInfo, object[]>();
@@ -514,9 +544,9 @@ namespace Hprose.IO {
         }
 
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-        internal static Dictionary<string, MemberInfo> GetMembersWithoutCache(Type type) {
+        private static Dictionary<string, MemberTypeInfo> GetMembersWithoutCache(Type type) {
 #else
-        internal static Hashtable GetMembersWithoutCache(Type type) {
+        private static Hashtable GetMembersWithoutCache(Type type) {
 #endif
 #if Core
             if (type.GetTypeInfo().IsDefined(typeofDataContract, false)) {
@@ -528,7 +558,7 @@ namespace Hprose.IO {
             }
 #endif
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            Dictionary<string, MemberInfo> members = new Dictionary<string, MemberInfo>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, MemberTypeInfo> members = new Dictionary<string, MemberTypeInfo>(StringComparer.OrdinalIgnoreCase);
 #elif MONO
             Hashtable members = new Hashtable(StringComparer.OrdinalIgnoreCase);
 #else
@@ -543,14 +573,14 @@ namespace Hprose.IO {
                     pi.GetIndexParameters().GetLength(0) == 0 &&
                     !members.ContainsKey(name = pi.Name)) {
                     name = char.ToLower(name[0]) + name.Substring(1);
-                    members[name] = pi;
+                    members[name] = new MemberTypeInfo(pi);
                 }
             }
             IEnumerable<FieldInfo> fiarray = type.GetRuntimeFields();
             foreach (FieldInfo fi in fiarray) {
                 string name;
                 if (fi.IsPublic && !fi.IsStatic && !members.ContainsKey(name = fi.Name)) {
-                    members[name] = fi;
+                    members[name] = new MemberTypeInfo(fi);
                 }
             }
 #else
@@ -564,7 +594,7 @@ namespace Hprose.IO {
                     pi.GetIndexParameters().GetLength(0) == 0 &&
                     !members.ContainsKey(name = pi.Name)) {
                     name = char.ToLower(name[0]) + name.Substring(1);
-                    members[name] = pi;
+                    members[name] = new MemberTypeInfo(pi);
                 }
             }
             bindingflags = BindingFlags.Public | BindingFlags.Instance;
@@ -572,7 +602,7 @@ namespace Hprose.IO {
             foreach (FieldInfo fi in fiarray) {
                 string name;
                 if (!members.ContainsKey(name = fi.Name)) {
-                    members[name] = fi;
+                    members[name] = new MemberTypeInfo(fi);
                 }
             }
 #endif
@@ -580,8 +610,8 @@ namespace Hprose.IO {
         }
 
 #if dotNET45
-        internal static Dictionary<string, MemberInfo> GetDataMembersWithoutCache(Type type) {
-            Dictionary<string, MemberInfo> members = new Dictionary<string, MemberInfo>(StringComparer.OrdinalIgnoreCase);
+        private static Dictionary<string, MemberTypeInfo> GetDataMembersWithoutCache(Type type) {
+            Dictionary<string, MemberTypeInfo> members = new Dictionary<string, MemberTypeInfo>(StringComparer.OrdinalIgnoreCase);
             IEnumerable<PropertyInfo> piarray = type.GetRuntimeProperties();
             foreach (PropertyInfo pi in piarray) {
                 string name;
@@ -591,7 +621,7 @@ namespace Hprose.IO {
                     pi.GetIndexParameters().GetLength(0) == 0 &&
                     !members.ContainsKey(name = pi.Name)) {
                     name = char.ToLower(name[0]) + name.Substring(1);
-                    members[name] = pi;
+                    members[name] = new MemberTypeInfo(pi);
                 }
             }
             IEnumerable<FieldInfo> fiarray = type.GetRuntimeFields();
@@ -599,14 +629,14 @@ namespace Hprose.IO {
                 string name;
                 if (fi.IsDefined(typeofDataMember, false) &&
                     !fi.IsStatic && !members.ContainsKey(name = fi.Name)) {
-                    members[name] = fi;
+                    members[name] = new MemberTypeInfo(fi);
                 }
             }
             return members;
         }
 #elif (dotNET35 || dotNET4 || SILVERLIGHT || WINDOWS_PHONE)
-        internal static Dictionary<string, MemberInfo> GetDataMembersWithoutCache(Type type) {
-            Dictionary<string, MemberInfo> members = new Dictionary<string, MemberInfo>(StringComparer.OrdinalIgnoreCase);
+        private static Dictionary<string, MemberTypeInfo> GetDataMembersWithoutCache(Type type) {
+            Dictionary<string, MemberTypeInfo> members = new Dictionary<string, MemberTypeInfo>(StringComparer.OrdinalIgnoreCase);
             BindingFlags bindingflags = BindingFlags.Public |
                                         BindingFlags.NonPublic |
                                         BindingFlags.Instance;
@@ -618,7 +648,7 @@ namespace Hprose.IO {
                     pi.GetIndexParameters().GetLength(0) == 0 &&
                     !members.ContainsKey(name = pi.Name)) {
                     name = char.ToLower(name[0]) + name.Substring(1);
-                    members[name] = pi;
+                    members[name] = new MemberTypeInfo(pi);
                 }
             }
             FieldInfo[] fiarray = type.GetFields(bindingflags);
@@ -626,7 +656,7 @@ namespace Hprose.IO {
                 string name;
                 if (fi.IsDefined(typeofDataMember, false) &&
                     !members.ContainsKey(name = fi.Name)) {
-                    members[name] = fi;
+                    members[name] = new MemberTypeInfo(fi);
                 }
             }
             return members;
@@ -634,14 +664,14 @@ namespace Hprose.IO {
 #endif
 
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-        public static Dictionary<string, MemberInfo> GetMembers(Type type) {
+        internal static Dictionary<string, MemberTypeInfo> GetMembers(Type type) {
 #else
-        public static Hashtable GetMembers(Type type) {
+        internal static Hashtable GetMembers(Type type) {
 #endif
             ICollection pc = membersCache;
             lock (pc.SyncRoot) {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                Dictionary<string, MemberInfo> result;
+                Dictionary<string, MemberTypeInfo> result;
                 if (membersCache.TryGetValue(type, out result)) {
                     return result;
 #else
@@ -651,7 +681,7 @@ namespace Hprose.IO {
                 }
             }
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            Dictionary<string, MemberInfo> members;
+            Dictionary<string, MemberTypeInfo> members;
 #else
             Hashtable members;
 #endif
@@ -663,12 +693,12 @@ namespace Hprose.IO {
         }
 
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-        internal static Dictionary<string, PropertyInfo> GetPropertiesWithoutCache(Type type) {
+        private static Dictionary<string, PropertyTypeInfo> GetPropertiesWithoutCache(Type type) {
 #else
-        internal static Hashtable GetPropertiesWithoutCache(Type type) {
+        private static Hashtable GetPropertiesWithoutCache(Type type) {
 #endif
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            Dictionary<string, PropertyInfo> properties = new Dictionary<string, PropertyInfo>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, PropertyTypeInfo> properties = new Dictionary<string, PropertyTypeInfo>(StringComparer.OrdinalIgnoreCase);
 #elif MONO
             Hashtable properties = new Hashtable(StringComparer.OrdinalIgnoreCase);
 #else
@@ -685,7 +715,7 @@ namespace Hprose.IO {
                         pi.GetIndexParameters().GetLength(0) == 0 &&
                         !properties.ContainsKey(name = pi.Name)) {
                         name = char.ToLower(name[0]) + name.Substring(1);
-                        properties[name] = pi;
+                        properties[name] = new PropertyTypeInfo(pi);
                     }
                 }
 #else
@@ -698,7 +728,7 @@ namespace Hprose.IO {
                         pi.GetIndexParameters().GetLength(0) == 0 &&
                         !properties.ContainsKey(name = pi.Name)) {
                         name = char.ToLower(name[0]) + name.Substring(1);
-                        properties[name] = pi;
+                        properties[name] = new PropertyTypeInfo(pi);
                     }
                 }
 #endif
@@ -707,14 +737,14 @@ namespace Hprose.IO {
         }
 
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-        public static Dictionary<string, PropertyInfo> GetProperties(Type type) {
+        internal static Dictionary<string, PropertyTypeInfo> GetProperties(Type type) {
 #else
-        public static Hashtable GetProperties(Type type) {
+        internal static Hashtable GetProperties(Type type) {
 #endif
             ICollection pc = propertiesCache;
             lock (pc.SyncRoot) {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                Dictionary<string, PropertyInfo> result;
+                Dictionary<string, PropertyTypeInfo> result;
                 if (propertiesCache.TryGetValue(type, out result)) {
                     return result;
 #else
@@ -725,7 +755,7 @@ namespace Hprose.IO {
                 }
             }
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            Dictionary<string, PropertyInfo> properties;
+            Dictionary<string, PropertyTypeInfo> properties;
 #else
             Hashtable properties;
 #endif
@@ -737,12 +767,12 @@ namespace Hprose.IO {
         }
 
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-        public static Dictionary<string, FieldInfo> GetFieldsWithoutCache(Type type) {
+        private static Dictionary<string, FieldTypeInfo> GetFieldsWithoutCache(Type type) {
 #else
-        public static Hashtable GetFieldsWithoutCache(Type type) {
+        private static Hashtable GetFieldsWithoutCache(Type type) {
 #endif
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            Dictionary<string, FieldInfo> fields = new Dictionary<string, FieldInfo>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, FieldTypeInfo> fields = new Dictionary<string, FieldTypeInfo>(StringComparer.OrdinalIgnoreCase);
 #elif MONO
             Hashtable fields = new Hashtable(StringComparer.OrdinalIgnoreCase);
 #else
@@ -758,7 +788,7 @@ namespace Hprose.IO {
                     if (((fi.Attributes & ns) != ns) &&
                         !fi.IsStatic &&
                         !fields.ContainsKey(name = fi.Name)) {
-                        fields[name] = fi;
+                        fields[name] = new FieldTypeInfo(fi);
                     }
                 }
                 type = typeInfo.BaseType;
@@ -774,7 +804,7 @@ namespace Hprose.IO {
                     string name;
                     if (!fi.IsNotSerialized &&
                         !fields.ContainsKey(name = fi.Name)) {
-                        fields[name] = fi;
+                        fields[name] = new FieldTypeInfo(fi);
                     }
                 }
                 type = type.BaseType;
@@ -784,14 +814,14 @@ namespace Hprose.IO {
         }
 
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-        public static Dictionary<string, FieldInfo> GetFields(Type type) {
+        internal static Dictionary<string, FieldTypeInfo> GetFields(Type type) {
 #else
-        public static Hashtable GetFields(Type type) {
+        internal static Hashtable GetFields(Type type) {
 #endif
             ICollection fc = fieldsCache;
             lock (fc.SyncRoot) {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-                Dictionary<string, FieldInfo> result;
+                Dictionary<string, FieldTypeInfo> result;
                 if (fieldsCache.TryGetValue(type, out result)) {
                     return result;
 #else
@@ -802,7 +832,7 @@ namespace Hprose.IO {
                 }
             }
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-            Dictionary<string, FieldInfo> fields;
+            Dictionary<string, FieldTypeInfo> fields;
 #else
             Hashtable fields;
 #endif
