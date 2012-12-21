@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for C#.                            *
  *                                                        *
- * LastModified: Dec 19, 2012                             *
+ * LastModified: Dec 21, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -1003,7 +1003,7 @@ namespace Hprose.IO {
 #endif
                 references.Add(map);
                 for (int i = 0; i < count; i++) {
-                    map[memberNames[i]] = Unserialize(HproseHelper.typeofObject);
+                    map[memberNames[i]] = Unserialize();
                 }
                 obj = map;
             }
