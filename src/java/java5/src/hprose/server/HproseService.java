@@ -13,7 +13,7 @@
  *                                                        *
  * hprose service class for Java.                         *
  *                                                        *
- * LastModified: Nov 27, 2012                             *
+ * LastModified: Dec 26, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -294,7 +294,7 @@ public abstract class HproseService {
         }
         HproseWriter writer = new HproseWriter(ostream, mode);
         ostream.write(HproseTags.TagError);
-        writer.writeString(error, false);
+        writer.writeString(error);
         ostream.write(HproseTags.TagEnd);
         ostream.flush();
     }
@@ -423,7 +423,7 @@ public abstract class HproseService {
                 if (byRef) {
                     ostream.write(HproseTags.TagArgument);
                     writer.reset();
-                    writer.writeArray(arguments, false);
+                    writer.writeArray(arguments);
                 }
             }
         } while (tag == HproseTags.TagCall);
@@ -443,7 +443,7 @@ public abstract class HproseService {
         }
         HproseWriter writer = new HproseWriter(ostream, mode);
         ostream.write(HproseTags.TagFunctions);
-        writer.writeList(names, false);
+        writer.writeList(names);
         ostream.write(HproseTags.TagEnd);
         ostream.flush();
     }

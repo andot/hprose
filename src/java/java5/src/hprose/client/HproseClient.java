@@ -348,10 +348,10 @@ public abstract class HproseClient implements HproseInvoker {
         }
         HproseWriter hproseWriter = new HproseWriter(ostream, mode);
         ostream.write(HproseTags.TagCall);
-        hproseWriter.writeString(functionName, false);
+        hproseWriter.writeString(functionName);
         if ((arguments != null) && (arguments.length > 0 || byRef)) {
             hproseWriter.reset();
-            hproseWriter.writeArray(arguments, false);
+            hproseWriter.writeArray(arguments);
             if (byRef) {
                 hproseWriter.writeBoolean(true);
             }
