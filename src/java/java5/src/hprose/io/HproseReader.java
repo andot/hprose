@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for Java.                          *
  *                                                        *
- * LastModified: Nov 1, 2012                              *
+ * LastModified: Dec 26, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -25,42 +25,26 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Serializable;
 import java.lang.reflect.Array;
-import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
-import java.lang.reflect.WildcardType;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.AbstractCollection;
-import java.util.AbstractList;
-import java.util.AbstractMap;
-import java.util.AbstractSequentialList;
-import java.util.AbstractSet;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.Stack;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
-import java.util.Vector;
 
 public final class HproseReader {
 
@@ -80,820 +64,55 @@ public final class HproseReader {
         this.mode = mode;
     }
 
-    public Object unserialize() throws IOException {
-        return unserialize(stream.read(), (Class<?>)null);
+    public HproseException unexpectedTag(int tag) {
+        return unexpectedTag(tag, null);
+    }
+    
+    public HproseException unexpectedTag(int tag, String expectTags) {
+        if (tag == -1) {
+            return new HproseException("No byte found in stream");
+        }
+        else if (expectTags == null) {
+            return new HproseException("Unexpected serialize tag '" +
+                                       (char)tag + "' in stream");
+        }
+        else {
+            return new HproseException("Tag '" + expectTags +
+                                       "' expected, but '" + (char)tag +
+                                       "' found in stream");
+        }
+    }
+    
+    private HproseException castError(String srctype, Type desttype) {
+        return new HproseException(srctype + " can't change to " +
+                                   desttype.toString());
     }
 
-    public Object unserialize(Type type) throws IOException {
-        return unserialize(stream.read(), type);
+    private HproseException castError(Object obj, Type type) {
+        return new HproseException(obj.getClass().toString() +
+                                   " can't change to " +
+                                   type.toString());
     }
 
-    private Object unserialize(int tag, Type type) throws IOException {
-        if (type == null) {
-            return unserialize(tag, (Class<?>) null);
-        }
-        if (type instanceof Class<?>) {
-            return unserialize(tag, (Class<?>) type);
-        }
-        else if (type instanceof ParameterizedType) {
-            return unserialize(tag, (ParameterizedType) type);
-        }
-        else if (type instanceof GenericArrayType) {
-            return unserialize(tag, (GenericArrayType) type);
-        }
-        return unserialize(tag, toClass(type));
-    }
-
-    private Object unserialize(int tag, ParameterizedType type) throws IOException {
-        switch (tag) {
-            case '0':
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9':
-            case HproseTags.TagInteger:
-                return castError("Integer", type);
-            case HproseTags.TagLong:
-                return castError("Long", type);
-            case HproseTags.TagDouble:
-                return castError("Double", type);
-            case HproseTags.TagNull:
-                return null;
-            case HproseTags.TagEmpty:
-                return castError("Empty String", type);
-            case HproseTags.TagTrue:
-                return castError("Boolean", type);
-            case HproseTags.TagFalse:
-                return castError("Boolean", type);
-            case HproseTags.TagNaN:
-                return castError("Double", type);
-            case HproseTags.TagInfinity:
-                return castError("Double", type);
-            case HproseTags.TagDate:
-                return castError("Date", type);
-            case HproseTags.TagTime:
-                return castError("Time", type);
-            case HproseTags.TagBytes:
-                return castError("byte[]", type);
-            case HproseTags.TagUTF8Char:
-                return castError("Character", type);
-            case HproseTags.TagString:
-                return castError("String", type);
-            case HproseTags.TagGuid:
-                return castError("GUID", type);
-            case HproseTags.TagList:
-                return readList(false, type);
-            case HproseTags.TagMap:
-                return readMap(false, type);
-            case HproseTags.TagClass:
-                readClass();
-                return unserialize(stream.read(), type);
-            case HproseTags.TagObject:
-                return readObject(false, (Class<?>) type.getRawType());
-            case HproseTags.TagRef:
-                return readRef(toClass(type));
-            case HproseTags.TagError:
-                throw new HproseException((String)readString());
-            case -1:
-                throw new HproseException("No byte found in stream");
-        }
-        throw new HproseException("Unexpected serialize tag '" +
-                                  (char) tag + "' in stream");
-    }
-
-    private Object unserialize(int tag, GenericArrayType type) throws IOException {
-        switch (tag) {
-            case '0':
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9':
-            case HproseTags.TagInteger:
-                return castError("Integer", type);
-            case HproseTags.TagLong:
-                return castError("Long", type);
-            case HproseTags.TagDouble:
-                return castError("Double", type);
-            case HproseTags.TagNull:
-                return null;
-            case HproseTags.TagEmpty:
-                return castError("Empty String", type);
-            case HproseTags.TagTrue:
-                return castError("Boolean", type);
-            case HproseTags.TagFalse:
-                return castError("Boolean", type);
-            case HproseTags.TagNaN:
-                return castError("Double", type);
-            case HproseTags.TagInfinity:
-                return castError("Double", type);
-            case HproseTags.TagDate:
-                return castError("Date", type);
-            case HproseTags.TagTime:
-                return castError("Time", type);
-            case HproseTags.TagBytes:
-                return castError("byte[]", type);
-            case HproseTags.TagUTF8Char:
-                return castError("Character", type);
-            case HproseTags.TagString:
-                return castError("String", type);
-            case HproseTags.TagGuid:
-                return castError("GUID", type);
-            case HproseTags.TagList:
-                return readList(false, type);
-            case HproseTags.TagMap:
-                return castError("Map", type);
-            case HproseTags.TagClass:
-                readClass();
-                return unserialize(stream.read(), type);
-            case HproseTags.TagObject:
-                return castError("Object", type);
-            case HproseTags.TagRef:
-                return readRef(toClass(type));
-            case HproseTags.TagError:
-                throw new HproseException((String)readString());
-            case -1:
-                throw new HproseException("No byte found in stream");
-        }
-        throw new HproseException("Unexpected serialize tag '" +
-                                  (char) tag + "' in stream");
-    }
-
-    public Object unserialize(Class<?> type) throws IOException {
-        return unserialize(stream.read(), type);
-    }
-
-    private Object unserialize(int tag, Class<?> type) throws IOException {
-        switch (tag) {
-            case '0':
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9':
-                return readDigit(tag, type);
-            case HproseTags.TagInteger:
-                return readInteger(type);
-            case HproseTags.TagLong:
-                return readLong(type);
-            case HproseTags.TagDouble:
-                return readDouble(type);
-            case HproseTags.TagNull:
-                return readNull(type);
-            case HproseTags.TagEmpty:
-                return readEmpty(type);
-            case HproseTags.TagTrue:
-                return readTrue(type);
-            case HproseTags.TagFalse:
-                return readFalse(type);
-            case HproseTags.TagNaN:
-                return readNaN(type);
-            case HproseTags.TagInfinity:
-                return readInfinity(type);
-            case HproseTags.TagDate:
-                return readDate(false, type);
-            case HproseTags.TagTime:
-                return readTime(false, type);
-            case HproseTags.TagBytes:
-                return readBytes(type);
-            case HproseTags.TagUTF8Char:
-                return readUTF8Char(type);
-            case HproseTags.TagString:
-                return readString(false, type);
-            case HproseTags.TagGuid:
-                return readUUID(false, type);
-            case HproseTags.TagList:
-                return readList(false, type);
-            case HproseTags.TagMap:
-                return readMap(false, type);
-            case HproseTags.TagClass:
-                readClass();
-                return unserialize(stream.read(), type);
-            case HproseTags.TagObject:
-                return readObject(false, type);
-            case HproseTags.TagRef:
-                return readRef(type);
-            case HproseTags.TagError:
-                throw new HproseException((String)readString());
-            case -1:
-                throw new HproseException("No byte found in stream");
-        }
-        throw new HproseException("Unexpected serialize tag '" +
-                                  (char) tag + "' in stream");
-    }
-
-    private Object readDigit(int tag, Class<?> type) throws IOException {
-        if ((type == null) ||
-            int.class.equals(type) ||
-            Integer.class.equals(type) ||
-            Number.class.equals(type) ||
-            Object.class.equals(type)) {
-            return Integer.valueOf((int)(tag - '0'));
-        }
-        if (byte.class.equals(type) ||
-            Byte.class.equals(type)) {
-            return Byte.valueOf((byte)(tag - '0'));
-        }
-        if (long.class.equals(type) ||
-            Long.class.equals(type)) {
-            return Long.valueOf((long)(tag - '0'));
-        }
-        if (short.class.equals(type) ||
-            Short.class.equals(type)) {
-            return Short.valueOf((short)(tag - '0'));
-        }
-        if (float.class.equals(type) ||
-            Float.class.equals(type)) {
-            return Float.valueOf((float)(tag - '0'));
-        }
-        if (double.class.equals(type) ||
-            Double.class.equals(type)) {
-            return Double.valueOf((double)(tag - '0'));
-        }
-        if (BigInteger.class.equals(type)) {
-            return BigInteger.valueOf((long)(tag - '0'));
-        }
-        if (BigDecimal.class.equals(type)) {
-            return BigDecimal.valueOf((long)(tag - '0'));
-        }
-        if (String.class.equals(type)) {
-            return String.valueOf((char)tag);
-        }
-        if (char.class.equals(type) ||
-            Character.class.equals(type)) {
-            return Character.valueOf((char)tag);
-        }
-        if (boolean.class.equals(type) ||
-            Boolean.class.equals(type)) {
-            return Boolean.valueOf(tag != '0');
-        }
-        if (Calendar.class.equals(type)) {
-            Calendar calendar = Calendar.getInstance(HproseHelper.DefaultTZ);
-            calendar.setTimeInMillis((long)(tag - '0'));
-            return calendar;
-        }
-        if (Date.class.equals(type)) {
-            return new Date((long)(tag - '0'));
-        }
-        if (java.sql.Date.class.equals(type)) {
-            return new java.sql.Date((long)(tag - '0'));
-        }
-        if (java.sql.Time.class.equals(type)) {
-            return new java.sql.Time((long)(tag - '0'));
-        }
-        if (java.sql.Timestamp.class.equals(type)) {
-            return new java.sql.Timestamp((long)(tag - '0'));
-        }
-        if (type.isEnum()) {
-             return getEnum(type, (int)(tag - '0'));
-        }
-        return castError("Integer", type);
-    }
-
-    private Object readInteger(Class<?> type) throws IOException {
-        if ((type == null) ||
-            int.class.equals(type) ||
-            Integer.class.equals(type) ||
-            Number.class.equals(type) ||
-            Object.class.equals(type)) {
-            return Integer.valueOf(readInt(HproseTags.TagSemicolon));
-        }
-        if (byte.class.equals(type) ||
-            Byte.class.equals(type)) {
-            return Byte.valueOf(readByte(HproseTags.TagSemicolon));
-        }
-        if (long.class.equals(type) ||
-            Long.class.equals(type)) {
-            return Long.valueOf(readLong(HproseTags.TagSemicolon));
-        }
-        if (short.class.equals(type) ||
-            Short.class.equals(type)) {
-            return Short.valueOf(readShort(HproseTags.TagSemicolon));
-        }
-        if (float.class.equals(type) ||
-            Float.class.equals(type)) {
-            return Float.valueOf(readUntil(HproseTags.TagSemicolon));
-        }
-        if (double.class.equals(type) ||
-            Double.class.equals(type)) {
-            return Double.valueOf(readUntil(HproseTags.TagSemicolon));
-        }
-        if (BigInteger.class.equals(type)) {
-            return new BigInteger(readUntil(HproseTags.TagSemicolon));
-        }
-        if (BigDecimal.class.equals(type)) {
-            return new BigDecimal(readUntil(HproseTags.TagSemicolon));
-        }
-        if (String.class.equals(type)) {
-            return readUntil(HproseTags.TagSemicolon);
-        }
-        if (char.class.equals(type) ||
-            Character.class.equals(type)) {
-            return Character.valueOf((char) readInteger(false));
-        }
-        if (boolean.class.equals(type) ||
-            Boolean.class.equals(type)) {
-            return Boolean.valueOf(readInteger(false) != 0);
-        }
-        if (Calendar.class.equals(type)) {
-            Calendar calendar = Calendar.getInstance(HproseHelper.DefaultTZ);
-            calendar.setTimeInMillis(readLong(false));
-            return calendar;
-        }
-        if (Date.class.equals(type)) {
-            return new Date(readLong(false));
-        }
-        if (java.sql.Date.class.equals(type)) {
-            return new java.sql.Date(readLong(false));
-        }
-        if (java.sql.Time.class.equals(type)) {
-            return new java.sql.Time(readLong(false));
-        }
-        if (java.sql.Timestamp.class.equals(type)) {
-            return new java.sql.Timestamp(readLong(false));
-        }
-        if (type.isEnum()) {
-             return readEnum(type, false);
-        }
-        return castError("Integer", type);
-    }
-
-    private Object readLong(Class<?> type) throws IOException {
-        if ((type == null) ||
-            BigInteger.class.equals(type) ||
-            Number.class.equals(type) ||
-            Object.class.equals(type)) {
-            return new BigInteger(readUntil(HproseTags.TagSemicolon));
-        }
-        if (long.class.equals(type) ||
-            Long.class.equals(type)) {
-            return Long.valueOf(readLong(HproseTags.TagSemicolon));
-        }
-        if (int.class.equals(type) ||
-            Integer.class.equals(type)) {
-            return Integer.valueOf(readInt(HproseTags.TagSemicolon));
-        }
-        if (float.class.equals(type) ||
-            Float.class.equals(type)) {
-            return Float.valueOf(readUntil(HproseTags.TagSemicolon));
-        }
-        if (double.class.equals(type) ||
-            Double.class.equals(type)) {
-            return Double.valueOf(readUntil(HproseTags.TagSemicolon));
-        }
-        if (BigDecimal.class.equals(type)) {
-            return new BigDecimal(readUntil(HproseTags.TagSemicolon));
-        }
-        if (byte.class.equals(type) ||
-            Byte.class.equals(type)) {
-            return Byte.valueOf(readByte(HproseTags.TagSemicolon));
-        }
-        if (short.class.equals(type) ||
-            Short.class.equals(type)) {
-            return Short.valueOf(readShort(HproseTags.TagSemicolon));
-        }
-        if (String.class.equals(type)) {
-            return readUntil(HproseTags.TagSemicolon);
-        }
-        if (boolean.class.equals(type) ||
-            Boolean.class.equals(type)) {
-            return Boolean.valueOf(readLong(false) != 0);
-        }
-        if (char.class.equals(type) ||
-            Character.class.equals(type)) {
-            return Character.valueOf((char) readLong(false));
-        }
-        if (Calendar.class.equals(type)) {
-            Calendar calendar = Calendar.getInstance(HproseHelper.DefaultTZ);
-            calendar.setTimeInMillis(readLong(false));
-            return calendar;
-        }
-        if (Date.class.equals(type)) {
-            return new Date(readLong(false));
-        }
-        if (java.sql.Date.class.equals(type)) {
-            return new java.sql.Date(readLong(false));
-        }
-        if (java.sql.Time.class.equals(type)) {
-            return new java.sql.Time(readLong(false));
-        }
-        if (java.sql.Timestamp.class.equals(type)) {
-            return new java.sql.Timestamp(readLong(false));
-        }
-        if (type.isEnum()) {
-             return readEnum(type, false);
-        }
-        return castError("Long", type);
-    }
-
-    private Object readDouble(Class<?> type) throws IOException {
-        if ((type == null) ||
-            double.class.equals(type) ||
-            Double.class.equals(type) ||
-            Number.class.equals(type) ||
-            Object.class.equals(type)) {
-            return Double.valueOf(readUntil(HproseTags.TagSemicolon));
-        }
-        if (float.class.equals(type) ||
-            Float.class.equals(type)) {
-            return Float.valueOf(readUntil(HproseTags.TagSemicolon));
-        }
-        if (BigDecimal.class.equals(type)) {
-            return new BigDecimal(readUntil(HproseTags.TagSemicolon));
-        }
-        if (String.class.equals(type)) {
-            return readUntil(HproseTags.TagSemicolon);
-        }
-        if (int.class.equals(type) ||
-            Integer.class.equals(type)) {
-            return Integer.valueOf(Double.valueOf(readUntil(HproseTags.TagSemicolon)).intValue());
-        }
-        if (long.class.equals(type) ||
-            Long.class.equals(type)) {
-            return Long.valueOf(Double.valueOf(readUntil(HproseTags.TagSemicolon)).longValue());
-        }
-        if (BigInteger.class.equals(type)) {
-            return new BigInteger(readUntil(HproseTags.TagSemicolon));
-        }
-        if (byte.class.equals(type) ||
-            Byte.class.equals(type)) {
-            return Byte.valueOf(Double.valueOf(readUntil(HproseTags.TagSemicolon)).byteValue());
-        }
-        if (short.class.equals(type) ||
-            Short.class.equals(type)) {
-            return Short.valueOf(Double.valueOf(readUntil(HproseTags.TagSemicolon)).shortValue());
-        }
-        if (boolean.class.equals(type) ||
-            Boolean.class.equals(type)) {
-            return Boolean.valueOf(readDouble(false) != 0.0);
-        }
-        if (char.class.equals(type) ||
-            Character.class.equals(type)) {
-            return Character.valueOf((char) Double.valueOf(readUntil(HproseTags.TagSemicolon)).intValue());
-        }
-        if (Calendar.class.equals(type)) {
-            Calendar calendar = Calendar.getInstance(HproseHelper.DefaultTZ);
-            calendar.setTimeInMillis(Double.valueOf(readUntil(HproseTags.TagSemicolon)).longValue());
-            return calendar;
-        }
-        if (Date.class.equals(type)) {
-            return new Date(Double.valueOf(readUntil(HproseTags.TagSemicolon)).longValue());
-        }
-        if (java.sql.Date.class.equals(type)) {
-            return new java.sql.Date(Double.valueOf(readUntil(HproseTags.TagSemicolon)).longValue());
-        }
-        if (java.sql.Time.class.equals(type)) {
-            return new java.sql.Time(Double.valueOf(readUntil(HproseTags.TagSemicolon)).longValue());
-        }
-        if (java.sql.Timestamp.class.equals(type)) {
-            return new java.sql.Timestamp(Double.valueOf(readUntil(HproseTags.TagSemicolon)).longValue());
-        }
-        if (type.isEnum()) {
-             return readEnum(type, false);
-        }
-        return castError("Double", type);
-    }
-
-    private Object readNull(Class<?> type) throws IOException {
-        if (boolean.class.equals(type)) {
-            return Boolean.FALSE;
-        }
-        if (int.class.equals(type)) {
-            return Integer.valueOf(0);
-        }
-        if (long.class.equals(type)) {
-            return Long.valueOf((long) 0);
-        }
-        if (byte.class.equals(type)) {
-            return Byte.valueOf((byte) 0);
-        }
-        if (short.class.equals(type)) {
-            return Short.valueOf((short) 0);
-        }
-        if (char.class.equals(type)) {
-            return Character.valueOf((char) 0);
-        }
-        if (float.class.equals(type)) {
-            return Float.valueOf(0);
-        }
-        if (double.class.equals(type)) {
-            return Double.valueOf(0);
-        }
-        return null;
-    }
-
-    private Object readEmpty(Class<?> type) throws IOException {
-        if (type == null ||
-            String.class.equals(type) ||
-            Object.class.equals(type)) {
-            return "";
-        }
-        if (StringBuilder.class.equals(type)) {
-            return new StringBuilder();
-        }
-        if (StringBuffer.class.equals(type)) {
-            return new StringBuffer();
-        }
-        if (char[].class.equals(type)) {
-            return new char[0];
-        }
-        if (byte[].class.equals(type)) {
-            return new byte[0];
-        }
-        if (boolean.class.equals(type) ||
-            Boolean.class.equals(type)) {
-            return Boolean.FALSE;
-        }
-        if (int.class.equals(type) ||
-            Integer.class.equals(type) ||
-            Number.class.equals(type)) {
-            return Integer.valueOf(0);
-        }
-        if (long.class.equals(type) ||
-            Long.class.equals(type)) {
-            return Long.valueOf((long) 0);
-        }
-        if (byte.class.equals(type) ||
-            Byte.class.equals(type)) {
-            return Byte.valueOf((byte) 0);
-        }
-        if (short.class.equals(type) ||
-            Short.class.equals(type)) {
-            return Short.valueOf((short) 0);
-        }
-        if (char.class.equals(type) ||
-            Character.class.equals(type)) {
-            return Character.valueOf((char) 0);
-        }
-        if (float.class.equals(type) ||
-            Float.class.equals(type)) {
-            return new Float(0);
-        }
-        if (double.class.equals(type) ||
-            Double.class.equals(type)) {
-            return new Double(0);
-        }
-        if (BigInteger.class.equals(type)) {
-            return BigInteger.ZERO;
-        }
-        if (BigDecimal.class.equals(type)) {
-            return BigDecimal.valueOf(0);
-        }
-        return castError("Empty String", type);
-    }
-
-    private Object readTrue(Class<?> type) throws IOException {
-        if (type == null ||
-            boolean.class.equals(type) ||
-            Boolean.class.equals(type) ||
-            Object.class.equals(type)) {
-            return Boolean.TRUE;
-        }
-        if (String.class.equals(type)) {
-            return "true";
-        }
-        if (int.class.equals(type) ||
-            Integer.class.equals(type) ||
-            Number.class.equals(type)) {
-            return Integer.valueOf(1);
-        }
-        if (long.class.equals(type) ||
-            Long.class.equals(type)) {
-            return Long.valueOf((long) 1);
-        }
-        if (byte.class.equals(type) ||
-            Byte.class.equals(type)) {
-            return Byte.valueOf((byte) 1);
-        }
-        if (short.class.equals(type) ||
-            Short.class.equals(type)) {
-            return Short.valueOf((short) 1);
-        }
-        if (char.class.equals(type) ||
-            Character.class.equals(type)) {
-            return Character.valueOf('T');
-        }
-        if (float.class.equals(type) ||
-            Float.class.equals(type)) {
-            return new Float(1);
-        }
-        if (double.class.equals(type) ||
-            Double.class.equals(type)) {
-            return new Double(1);
-        }
-        if (BigInteger.class.equals(type)) {
-            return BigInteger.ONE;
-        }
-        if (BigDecimal.class.equals(type)) {
-            return BigDecimal.valueOf(1);
-        }
-        return castError("Boolean", type);
-    }
-
-    private Object readFalse(Class<?> type) throws IOException {
-        if (type == null ||
-            boolean.class.equals(type) ||
-            Boolean.class.equals(type) ||
-            Object.class.equals(type)) {
-            return Boolean.FALSE;
-        }
-        if (String.class.equals(type)) {
-            return "false";
-        }
-        if (int.class.equals(type) ||
-            Integer.class.equals(type) ||
-            Number.class.equals(type)) {
-            return Integer.valueOf(0);
-        }
-        if (long.class.equals(type) ||
-            Long.class.equals(type)) {
-            return Long.valueOf((long) 0);
-        }
-        if (byte.class.equals(type) ||
-            Byte.class.equals(type)) {
-            return Byte.valueOf((byte) 0);
-        }
-        if (short.class.equals(type) ||
-            Short.class.equals(type)) {
-            return Short.valueOf((short) 0);
-        }
-        if (char.class.equals(type) ||
-            Character.class.equals(type)) {
-            return Character.valueOf('F');
-        }
-        if (float.class.equals(type) ||
-            Float.class.equals(type)) {
-            return new Float(0);
-        }
-        if (double.class.equals(type) ||
-            Double.class.equals(type)) {
-            return new Double(0);
-        }
-        if (BigInteger.class.equals(type)) {
-            return BigInteger.ZERO;
-        }
-        if (BigDecimal.class.equals(type)) {
-            return BigDecimal.valueOf(0);
-        }
-        return castError("Boolean", type);
-    }
-
-    private Object readNaN(Class<?> type) throws IOException {
-        if ((type == null) ||
-            double.class.equals(type) ||
-            Double.class.equals(type) ||
-            Number.class.equals(type) ||
-            Object.class.equals(type)) {
-            return Double.valueOf(Double.NaN);
-        }
-        if (float.class.equals(type) ||
-            Float.class.equals(type)) {
-            return Float.valueOf(Float.NaN);
-        }
-        if (String.class.equals(type)) {
-            return "NaN";
-        }
-        return castError("NaN", type);
-    }
-
-    private Object readInfinity(Class<?> type) throws IOException {
-        if ((type == null) ||
-            double.class.equals(type) ||
-            Double.class.equals(type) ||
-            Number.class.equals(type) ||
-            Object.class.equals(type)) {
-            return Double.valueOf(readInfinity(false));
-        }
-        if (float.class.equals(type) ||
-            Float.class.equals(type)) {
-            return Float.valueOf((float) readInfinity(false));
-        }
-        if (String.class.equals(type)) {
-            return String.valueOf(readInfinity(false));
-        }
-        return castError("Infinity", type);
-    }
-
-    private Object readBytes(Class<?> type) throws IOException {
-        if ((type == null) ||
-            byte[].class.equals(type) ||
-            Object.class.equals(type)) {
-            return readBytes(false);
-        }
-        if (String.class.equals(type)) {
-            return new String(readBytes(false));
-        }
-        return castError("byte[]", type);
-    }
-
-    private Object readUTF8Char(Class<?> type) throws IOException {
-        char u = readUTF8Char(false);
-        if ((type == null) ||
-            char.class.equals(type) ||
-            Character.class.equals(type)) {
-            return Character.valueOf(u);
-        }
-        if (String.class.equals(type) ||
-            Object.class.equals(type)) {
-            return String.valueOf((char)u);
-        }
-        if (int.class.equals(type) ||
-            Integer.class.equals(type) ||
-            Number.class.equals(type)) {
-            return Integer.valueOf((int)u);
-        }
-        if (byte.class.equals(type) ||
-            Byte.class.equals(type)) {
-            return Byte.valueOf((byte)u);
-        }
-        if (long.class.equals(type) ||
-            Long.class.equals(type)) {
-            return Long.valueOf((long)u);
-        }
-        if (short.class.equals(type) ||
-            Short.class.equals(type)) {
-            return Short.valueOf((short)u);
-        }
-        if (float.class.equals(type) ||
-            Float.class.equals(type)) {
-            return Float.valueOf((float)u);
-        }
-        if (double.class.equals(type) ||
-            Double.class.equals(type)) {
-            return Double.valueOf((double)u);
-        }
-        if (BigInteger.class.equals(type)) {
-            return BigInteger.valueOf((long)u);
-        }
-        if (BigDecimal.class.equals(type)) {
-            return BigDecimal.valueOf((long)u);
-        }
-        if (char[].class.equals(type)) {
-            return new char[] { u };
-        }
-        if (boolean.class.equals(type) ||
-            Boolean.class.equals(type)) {
-            return Boolean.valueOf(u != 0 && u != '0' && u != 'F' && u != 'f');
-        }
-        if (Calendar.class.equals(type)) {
-            Calendar calendar = Calendar.getInstance(HproseHelper.DefaultTZ);
-            calendar.setTimeInMillis((long)u);
-            return calendar;
-        }
-        if (Date.class.equals(type)) {
-            return new Date((long)u);
-        }
-        if (java.sql.Date.class.equals(type)) {
-            return new java.sql.Date((long)u);
-        }
-        if (java.sql.Time.class.equals(type)) {
-            return new java.sql.Time((long)u);
-        }
-        if (java.sql.Timestamp.class.equals(type)) {
-            return new java.sql.Timestamp((long)u);
-        }
-        if (type.isEnum()) {
-             return getEnum(type, (int)u);
-        }
-        return castError("Character", type);
-    }
-
-    public void checkTag(int expectTag, int tag) throws IOException {
+    public void checkTag(int tag, int expectTag) throws HproseException {
         if (tag != expectTag) {
-            throw new HproseException("Tag '" + (char) expectTag +
-                                      "' expected, but '" + (char) tag +
-                                      "' found in stream");
+            throw unexpectedTag(tag, new String(new char[] {(char)expectTag}));
         }
     }
 
     public void checkTag(int expectTag) throws IOException {
-        checkTag(expectTag, stream.read());
+        checkTag(stream.read(), expectTag);
     }
 
-    public int checkTags(String expectTags, int tag) throws IOException {
+    public int checkTags(int tag, String expectTags) throws IOException {
         if (expectTags.indexOf(tag) == -1) {
-            throw new HproseException("Tag '" + expectTags +
-                                      "' expected, but '" + (char) tag +
-                                      "' found in stream");
+            throw unexpectedTag(tag, expectTags);
         }
         return tag;
     }
 
     public int checkTags(String expectTags) throws IOException {
-        return checkTags(expectTags, stream.read());
+        return checkTags(stream.read(), expectTags);
     }
 
     private boolean isInstantiableClass(Class<?> type) {
@@ -901,27 +120,34 @@ public final class HproseReader {
                !Modifier.isAbstract(type.getModifiers());
     }
 
-    public String readUntil(int tag) throws IOException {
+    private StringBuilder readUntil(int tag) throws IOException {
         StringBuilder sb = new StringBuilder();
         int i = stream.read();
         while ((i != tag) && (i != -1)) {
             sb.append((char) i);
             i = stream.read();
         }
-        return sb.toString();
+        return sb;
     }
 
+    private void skipUntil(int tag) throws IOException {
+        int i = stream.read();
+        while ((i != tag) && (i != -1)) {
+            i = stream.read();
+        }
+    }
+
+    @SuppressWarnings({"fallthrough"})
     public byte readByte(int tag) throws IOException {
         byte result = 0;
         int i = stream.read();
-        if (i == tag) return result;
-        byte sign = 1;
-        if (i == '+') {
-            i = stream.read();
+        if (i == tag) {
+            return result;
         }
-        else if (i == '-') {
-            sign = -1;
-            i = stream.read();
+        byte sign = 1;
+        switch (i) {
+            case '-': sign = -1; // NO break HERE
+            case '+': i = stream.read(); break;
         }
         while ((i != tag) && (i != -1)) {
             result *= 10;
@@ -931,17 +157,17 @@ public final class HproseReader {
         return result;
     }
 
+    @SuppressWarnings({"fallthrough"})
     public short readShort(int tag) throws IOException {
         short result = 0;
         int i = stream.read();
-        if (i == tag) return result;
-        short sign = 1;
-        if (i == '+') {
-            i = stream.read();
+        if (i == tag) {
+            return result;
         }
-        else if (i == '-') {
-            sign = -1;
-            i = stream.read();
+        short sign = 1;
+        switch (i) {
+            case '-': sign = -1; // NO break HERE
+            case '+': i = stream.read(); break;
         }
         while ((i != tag) && (i != -1)) {
             result *= 10;
@@ -951,17 +177,17 @@ public final class HproseReader {
         return result;
     }
 
+    @SuppressWarnings({"fallthrough"})
     public int readInt(int tag) throws IOException {
         int result = 0;
         int i = stream.read();
-        if (i == tag) return result;
-        int sign = 1;
-        if (i == '+') {
-            i = stream.read();
+        if (i == tag) {
+            return result;
         }
-        else if (i == '-') {
-            sign = -1;
-            i = stream.read();
+        int sign = 1;
+        switch (i) {
+            case '-': sign = -1; // NO break HERE
+            case '+': i = stream.read(); break;
         }
         while ((i != tag) && (i != -1)) {
             result *= 10;
@@ -971,17 +197,17 @@ public final class HproseReader {
         return result;
     }
 
+    @SuppressWarnings({"fallthrough"})
     public long readLong(int tag) throws IOException {
         long result = 0;
         int i = stream.read();
-        if (i == tag) return result;
-        long sign = 1;
-        if (i == '+') {
-            i = stream.read();
+        if (i == tag) {
+            return result;
         }
-        else if (i == '-') {
-            sign = -1;
-            i = stream.read();
+        long sign = 1;
+        switch (i) {
+            case '-': sign = -1; // NO break HERE
+            case '+': i = stream.read(); break;
         }
         while ((i != tag) && (i != -1)) {
             result *= 10;
@@ -991,147 +217,69 @@ public final class HproseReader {
         return result;
     }
 
-    public int readInteger() throws IOException {
-        return readInteger(true);
-    }
-
-    public int readInteger(boolean includeTag) throws IOException {
-        if (includeTag) {
-            int tag = stream.read();
-            if ((tag >= '0') && (tag <= '9')) {
-                return tag - '0';
-            }
-            checkTag(HproseTags.TagInteger, tag);
+    @SuppressWarnings({"fallthrough"})
+    public float readIntAsFloat() throws IOException {
+        float result = 0.0f;
+        float sign = 1.0f;
+        int i = stream.read();
+        switch (i) {
+            case '-': sign = -1.0f; // NO BREAK HERE
+            case '+': i = stream.read(); break;
         }
-        return readInt(HproseTags.TagSemicolon);
+        while ((i != HproseTags.TagSemicolon) && (i != -1)) {
+            result *= 10.0f;
+            result += (i - '0') * sign;
+            i = stream.read();
+        }
+        return result;
     }
 
-    public Object readEnum(Class<?> type) throws IOException {
-        return readEnum(type, true);
+    @SuppressWarnings({"fallthrough"})
+    public double readIntAsDouble() throws IOException {
+        double result = 0.0;
+        double sign = 1.0;
+        int i = stream.read();
+        switch (i) {
+            case '-': sign = -1.0; // NO BREAK HERE
+            case '+': i = stream.read(); break;
+        }
+        while ((i != HproseTags.TagSemicolon) && (i != -1)) {
+            result *= 10.0;
+            result += (i - '0') * sign;
+            i = stream.read();
+        }
+        return result;
     }
 
-    public Object readEnum(Class<?> type, boolean includeTag) throws IOException {
-        return getEnum(type, readInteger(includeTag));
-    }
-
-    private Object getEnum(Class<?> type, int value) throws IOException {
+    private float parseFloat(String value) {
         try {
-            return type.getEnumConstants()[value];
+            return Float.parseFloat(value);
         }
-        catch (Exception e) {
-            throw new HproseException(e.getMessage());
+        catch (NumberFormatException e) {
+            return Float.NaN;
         }
     }
 
-    public BigInteger readBigInteger() throws IOException {
-        return readBigInteger(true);
+    private float parseFloat(StringBuilder value) {
+        return parseFloat(value.toString());
     }
 
-    public BigInteger readBigInteger(boolean includeTag) throws IOException {
-        if (includeTag) {
-            int tag = stream.read();
-            if ((tag >= '0') && (tag <= '9')) {
-                return BigInteger.valueOf((long)(tag - '0'));
-            }
-            checkTags((char) HproseTags.TagInteger + "" +
-                      (char) HproseTags.TagLong, tag);
+    private double parseDouble(String value) {
+        try {
+            return Double.parseDouble(value);
         }
-        return new BigInteger(readUntil(HproseTags.TagSemicolon));
-    }
-
-    public long readLong() throws IOException {
-        return readLong(true);
-    }
-
-    public long readLong(boolean includeTag) throws IOException {
-        if (includeTag) {
-            int tag = stream.read();
-            if ((tag >= '0') && (tag <= '9')) {
-                return (long)(tag - '0');
-            }
-            checkTags((char) HproseTags.TagInteger + "" +
-                      (char) HproseTags.TagLong, tag);
+        catch (NumberFormatException e) {
+            return Double.NaN;
         }
-        return readLong(HproseTags.TagSemicolon);
     }
 
-    public double readDouble() throws IOException {
-        return readDouble(true);
+    private double parseDouble(StringBuilder value) {
+        return parseDouble(value.toString());
     }
 
-    public double readDouble(boolean includeTag) throws IOException {
-        if (includeTag) {
-            int tag = stream.read();
-            if ((tag >= '0') && (tag <= '9')) {
-                return (double)(tag - '0');
-            }
-            checkTags((char) HproseTags.TagInteger + "" +
-                       (char) HproseTags.TagLong + "" +
-                       (char) HproseTags.TagDouble + "" +
-                       (char) HproseTags.TagNaN + "" +
-                       (char) HproseTags.TagInfinity, tag);
-            if (tag == HproseTags.TagNaN) {
-                return Double.NaN;
-            }
-            if (tag == HproseTags.TagInfinity) {
-                return readInfinity(false);
-            }
-        }
-        return Double.parseDouble(readUntil(HproseTags.TagSemicolon));
-    }
-
-    public double readNaN() throws IOException {
-        checkTag(HproseTags.TagNaN);
-        return Double.NaN;
-    }
-
-    public double readInfinity() throws IOException {
-        return readInfinity(true);
-    }
-
-    public double readInfinity(boolean includeTag) throws IOException {
-        if (includeTag) {
-            checkTag(HproseTags.TagInfinity);
-        }
-        return ((stream.read() == HproseTags.TagNeg) ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY);
-    }
-
-    public Object readNull() throws IOException {
-        checkTag(HproseTags.TagNull);
-        return null;
-    }
-
-    public Object readEmpty() throws IOException {
-        checkTag(HproseTags.TagEmpty);
-        return "";
-    }
-
-    public boolean readBoolean() throws IOException {
-        int tag = checkTags((char) HproseTags.TagTrue + "" + (char) HproseTags.TagFalse);
-        return (tag == HproseTags.TagTrue);
-    }
-
-    public Object readDate() throws IOException {
-        return readDate(true, null);
-    }
-
-    public Object readDate(boolean includeTag) throws IOException {
-        return readDate(includeTag, null);
-    }
-
-    public Object readDate(Class<?> type) throws IOException {
-        return readDate(true, type);
-    }
-
-    public Object readDate(boolean includeTag, Class<?> type) throws IOException {
-        int tag;
-        if (includeTag) {
-            tag = checkTags((char) HproseTags.TagDate + "" + (char) HproseTags.TagRef);
-            if (tag == HproseTags.TagRef) {
-                return readRef(type);
-            }
-        }
+    private Object readDateAs(Class<?> type) throws IOException {
         Calendar calendar;
+        int nanosecond = 0;
         int year = stream.read() - '0';
         year = year * 10 + stream.read() - '0';
         year = year * 10 + stream.read() - '0';
@@ -1140,7 +288,7 @@ public final class HproseReader {
         month = month * 10 + stream.read() - '0';
         int day = stream.read() - '0';
         day = day * 10 + stream.read() - '0';
-        tag = stream.read();
+        int tag = stream.read();
         if (tag == HproseTags.TagTime) {
             int hour = stream.read() - '0';
             hour = hour * 10 + stream.read() - '0';
@@ -1148,7 +296,6 @@ public final class HproseReader {
             minute = minute * 10 + stream.read() - '0';
             int second = stream.read() - '0';
             second = second * 10 + stream.read() - '0';
-            int nanosecond = 0;
             tag = stream.read();
             if (tag == HproseTags.TagPoint) {
                 nanosecond = stream.read() - '0';
@@ -1169,49 +316,27 @@ public final class HproseReader {
                     }
                 }
             }
-            calendar = Calendar.getInstance(tag == HproseTags.TagUTC ? HproseHelper.UTC : HproseHelper.DefaultTZ);
+            calendar = Calendar.getInstance(tag == HproseTags.TagUTC ?
+                    HproseHelper.UTC : HproseHelper.DefaultTZ);
             calendar.set(year, month - 1, day, hour, minute, second);
-            if (nanosecond > 0) {
-                if (java.sql.Timestamp.class.equals(type)) {
-                    java.sql.Timestamp timestamp = new java.sql.Timestamp(calendar.getTimeInMillis());
-                    timestamp.setNanos(nanosecond);
-                    ref.add(timestamp);
-                    return timestamp;
-                }
-                else {
-                    calendar.set(Calendar.MILLISECOND, (int)(nanosecond / 1000000));
-                }
-            }
+            calendar.set(Calendar.MILLISECOND, nanosecond / 1000000);
         }
         else {
-            calendar = Calendar.getInstance(tag == HproseTags.TagUTC ? HproseHelper.UTC : HproseHelper.DefaultTZ);
+            calendar = Calendar.getInstance(tag == HproseTags.TagUTC ?
+                    HproseHelper.UTC : HproseHelper.DefaultTZ);
             calendar.set(year, month - 1, day);
         }
-        Object o = changeCalendarType(calendar, type);
-        ref.add(o);
-        return o;
-    }
-
-    public Object readTime() throws IOException {
-        return readTime(true, null);
-    }
-
-    public Object readTime(boolean includeTag) throws IOException {
-        return readTime(includeTag, null);
-    }
-
-    public Object readTime(Class<?> type) throws IOException {
-        return readTime(true, type);
-    }
-
-    public Object readTime(boolean includeTag, Class<?> type) throws IOException {
-        int tag;
-        if (includeTag) {
-            tag = checkTags((char) HproseTags.TagTime + "" + (char) HproseTags.TagRef);
-            if (tag == HproseTags.TagRef) {
-                return readRef(type);
-            }
+        if (Timestamp.class.equals(type)) {
+            Timestamp timestamp = new Timestamp(calendar.getTimeInMillis());
+            timestamp.setNanos(nanosecond);
+            ref.add(timestamp);
+            return timestamp;
         }
+        ref.add(calendar);
+        return calendar;
+    }
+
+    private Object readTimeAs(Class<?> type) throws IOException {
         Calendar calendar;
         int hour = stream.read() - '0';
         hour = hour * 10 + stream.read() - '0';
@@ -1220,7 +345,7 @@ public final class HproseReader {
         int second = stream.read() - '0';
         second = second * 10 + stream.read() - '0';
         int nanosecond = 0;
-        tag = stream.read();
+        int tag = stream.read();
         if (tag == HproseTags.TagPoint) {
             nanosecond = stream.read() - '0';
             nanosecond = nanosecond * 10 + stream.read() - '0';
@@ -1240,99 +365,20 @@ public final class HproseReader {
                 }
             }
         }
-        calendar = Calendar.getInstance(tag == HproseTags.TagUTC ? HproseHelper.UTC : HproseHelper.DefaultTZ);
+        calendar = Calendar.getInstance(tag == HproseTags.TagUTC ?
+                HproseHelper.UTC : HproseHelper.DefaultTZ);
         calendar.set(1970, 0, 1, hour, minute, second);
-        if (nanosecond > 0) {
-            if (java.sql.Timestamp.class.equals(type)) {
-                java.sql.Timestamp timestamp = new java.sql.Timestamp(calendar.getTimeInMillis());
-                timestamp.setNanos(nanosecond);
-                ref.add(timestamp);
-                return timestamp;
-            }
-            else {
-                calendar.set(Calendar.MILLISECOND, (int)(nanosecond / 1000000));
-            }
-        }
-        Object o = changeCalendarType(calendar, type);
-        ref.add(o);
-        return o;
-    }
-
-    public Object readDateTime() throws IOException {
-        return readDateTime(null);
-    }
-
-    public Object readDateTime(Class<?> type) throws IOException {
-        int tag = checkTags((char) HproseTags.TagDate + "" +
-                            (char) HproseTags.TagTime + "" +
-                            (char) HproseTags.TagRef);
-        if (tag == HproseTags.TagRef) {
-            return readRef(type);
-        }
-        if (tag == HproseTags.TagDate) {
-            return readDate(false, type);
-        }
-        return readTime(false, type);
-    }
-
-    private Object changeCalendarType(Calendar calendar, Class<?> type) throws IOException {
-        if (type == null ||
-            Calendar.class.equals(type) ||
-            GregorianCalendar.class.equals(type) ||
-            Object.class.equals(type)) {
-            return calendar;
-        }
-        if (Date.class.equals(type)) {
-            return calendar.getTime();
-        }
-        if (Long.class.equals(type) || long.class.equals(type)) {
-            return new Long(calendar.getTimeInMillis());
-        }
-        if (java.sql.Date.class.equals(type)) {
-            return new java.sql.Date(calendar.getTimeInMillis());
-        }
-        if (java.sql.Time.class.equals(type)) {
-            return new java.sql.Time(calendar.getTimeInMillis());
-        }
-        if (java.sql.Timestamp.class.equals(type)) {
-            java.sql.Timestamp timestamp = new java.sql.Timestamp(calendar.getTimeInMillis());
-            timestamp.setNanos(0);
+        if (Timestamp.class.equals(type)) {
+            Timestamp timestamp = new Timestamp(calendar.getTimeInMillis());
+            timestamp.setNanos(nanosecond);
+            ref.add(timestamp);
             return timestamp;
         }
-        if (String.class.equals(type)) {
-            return calendar.getTime().toString();
-        }
-        return castError(calendar, type);
+        ref.add(calendar);
+        return calendar;
     }
 
-    public byte[] readBytes() throws IOException {
-        return readBytes(true);
-    }
-
-    public byte[] readBytes(boolean includeTag) throws IOException {
-        if (includeTag) {
-            int tag = checkTags((char) HproseTags.TagBytes + "" + (char) HproseTags.TagRef);
-            if (tag == HproseTags.TagRef) {
-                return (byte[]) readRef(byte[].class);
-            }
-        }
-        int len = readInt(HproseTags.TagQuote);
-        int off = 0;
-        byte[] b = new byte[len];
-        while (len > 0) {
-            int size = stream.read(b, off, len);
-            off += size;
-            len -= size;
-        }
-        checkTag(HproseTags.TagQuote);
-        ref.add(b);
-        return b;
-    }
-
-    public char readUTF8Char(boolean includeTag) throws IOException {
-        if (includeTag) {
-            checkTag(HproseTags.TagUTF8Char);
-        }
+    private char readUTF8CharAsChar() throws IOException {
         char u;
         int c = stream.read();
         switch (c >>> 4) {
@@ -1365,37 +411,15 @@ public final class HproseReader {
                             (c3 & 0x3f));
                 break;
             }
-            default:
-                throw new HproseException("bad utf-8 encoding at " +
-                                          ((c < 0) ? "end of stream" : "0x" + Integer.toHexString(c & 0xff)));
+            default: throw new HproseException("bad utf-8 encoding at " +
+                         ((c < 0) ? "end of stream" :
+                         "0x" + Integer.toHexString(c & 0xff)));
         }
         return u;
     }
 
-    public Object readString() throws IOException {
-        return readString(true, null, true);
-    }
-
-    public Object readString(boolean includeTag) throws IOException {
-        return readString(includeTag, null, true);
-    }
-
-    public Object readString(Class<?> type) throws IOException {
-        return readString(true, type, true);
-    }
-
-    public Object readString(boolean includeTag, Class<?> type) throws IOException {
-        return readString(includeTag, type, true);
-    }
-
-    private Object readString(boolean includeTag, Class<?> type, boolean includeRef) throws IOException {
-        if (includeTag) {
-            int tag = checkTags((char) HproseTags.TagString + "" +
-                                (char) HproseTags.TagRef);
-            if (tag == HproseTags.TagRef) {
-                return readRef(type);
-            }
-        }
+    @SuppressWarnings({"fallthrough"}) 
+    private char[] readChars() throws IOException {
         int count = readInt(HproseTags.TagQuote);
         char[] buf = new char[count];
         for (int i = 0; i < count; i++) {
@@ -1410,14 +434,14 @@ public final class HproseReader {
                 case 6:
                 case 7: {
                     // 0xxx xxxx
-                    buf[i] = (char) c;
+                    buf[i] = (char)c;
                     break;
                 }
                 case 12:
                 case 13: {
                     // 110x xxxx   10xx xxxx
                     int c2 = stream.read();
-                    buf[i] = (char) (((c & 0x1f) << 6) |
+                    buf[i] = (char)(((c & 0x1f) << 6) |
                                      (c2 & 0x3f));
                     break;
                 }
@@ -1425,7 +449,7 @@ public final class HproseReader {
                     // 1110 xxxx  10xx xxxx  10xx xxxx
                     int c2 = stream.read();
                     int c3 = stream.read();
-                    buf[i] = (char) (((c & 0x0f) << 12) |
+                    buf[i] = (char)(((c & 0x0f) << 12) |
                                      ((c2 & 0x3f) << 6) |
                                      (c3 & 0x3f));
                     break;
@@ -1441,972 +465,1606 @@ public final class HproseReader {
                                 ((c3 & 0x3f) << 6) |
                                 (c4 & 0x3f) - 0x10000;
                         if (0 <= s && s <= 0xfffff) {
-                            buf[i++] = (char) (((s >>> 10) & 0x03ff) | 0xd800);
-                            buf[i] = (char) ((s & 0x03ff) | 0xdc00);
+                            buf[i++] = (char)(((s >> 10) & 0x03ff) | 0xd800);
+                            buf[i] = (char)((s & 0x03ff) | 0xdc00);
                             break;
                         }
                     }
-                // no break here!! here need throw exception.
                 }
+                // NO break here
                 default:
                     throw new HproseException("bad utf-8 encoding at " +
-                                              ((c < 0) ? "end of stream" : "0x" + Integer.toHexString(c & 0xff)));
+                        ((c < 0) ? "end of stream" :
+                        "0x" + Integer.toHexString(c & 0xff)));
             }
         }
-        checkTag(HproseTags.TagQuote);
-        Object o = changeStringType(buf, type);
-        if (includeRef) {
-            ref.add(o);
-        }
-        return o;
+        stream.read();
+        return buf;
     }
 
-    private Object changeStringType(char[] str, Class<?> type) throws IOException {
-        if (char[].class.equals(type)) {
-            return str;
+    private String readCharsAsString() throws IOException {
+        return new String(readChars());
+    }
+
+    @SuppressWarnings({"unchecked"})
+    private Map readObjectAsMap(Map map) throws IOException {
+        Object c = classref.get(readInt(HproseTags.TagOpenbrace));
+        String[] memberNames = membersref.get(c);
+        ref.add(map);
+        int count = memberNames.length;
+        for (int i = 0; i < count; i++) {
+            map.put(memberNames[i], unserialize());
         }
-        if (StringBuffer.class.equals(type)) {
-            return new StringBuffer(str.length).append(str);
+        stream.read();
+        return map;
+    }
+
+    private <T> T readMapAsObject(Class<T> type) throws IOException {
+        T obj = HproseHelper.newInstance(type);
+        if (obj == null) {
+            throw new HproseException("Can not make an instance of type: " + type.toString());
         }
-        String s = new String(str);
-        if ((type == null) ||
-            String.class.equals(type) ||
-            Object.class.equals(type)) {
-            return s;
-        }
-        if (BigDecimal.class.equals(type)) {
-            return new BigDecimal(s);
-        }
-        if (BigInteger.class.equals(type)) {
-            return new BigInteger(s);
-        }
-        if (Byte.class.equals(type) || byte.class.equals(type)) {
-            return new Byte(s);
-        }
-        if (Short.class.equals(type) || short.class.equals(type)) {
-            return new Short(s);
-        }
-        if (Integer.class.equals(type) || int.class.equals(type)) {
-            return new Integer(s);
-        }
-        if (Long.class.equals(type) || long.class.equals(type)) {
-            return new Long(s);
-        }
-        if (Float.class.equals(type) || float.class.equals(type)) {
-            return new Float(s);
-        }
-        if (Double.class.equals(type) || double.class.equals(type)) {
-            return new Double(s);
-        }
-        if (Character.class.equals(type) || char.class.equals(type)) {
-            if (str.length == 1) {
-                return new Character(str[0]);
+        ref.add(obj);
+        Map<String, MemberAccessor> members = HproseHelper.getMembers(type, mode);
+        int count = readInt(HproseTags.TagOpenbrace);
+        for (int i = 0; i < count; i++) {
+            MemberAccessor member = members.get(readString());
+            if (member != null) {
+                Object value = unserialize(member.cls, member.type, member.typecode);
+                try {
+                    member.set(obj, value);
+                }
+                catch (Exception e) {
+                    throw new HproseException(e.getMessage());
+                }
             }
             else {
-                return new Character((char) Integer.parseInt(s));
+                unserialize();
             }
         }
-        if (Boolean.class.equals(type) || boolean.class.equals(type)) {
-            return Boolean.valueOf(s);
-        }
-        if (byte[].class.equals(type)) {
-            try {
-                return s.getBytes("UTF-8");
-            }
-            catch (Exception e) {
-                return s.getBytes();
-            }
-        }
-        if (UUID.class.equals(type)) {
-            return UUID.fromString(s);
-        }
-        return castError(str, type);
+        stream.read();
+        return obj;
     }
 
-    public Object readUUID() throws IOException {
-        return readUUID(true, null);
-    }
-
-    public Object readUUID(boolean includeTag) throws IOException {
-        return readUUID(includeTag, null);
-    }
-
-    public Object readUUID(Class<?> type) throws IOException {
-        return readUUID(true, type);
-    }
-
-    public Object readUUID(boolean includeTag, Class<?> type) throws IOException {
-        if (includeTag) {
-            int tag = checkTags((char)HproseTags.TagGuid + "" +
-                                (char)HproseTags.TagRef);
-            if (tag == HproseTags.TagRef) {
-                return readRef(type);
-            }
+    private void readClass() throws IOException {
+        String className = readCharsAsString();
+        int count = readInt(HproseTags.TagOpenbrace);
+        String[] memberNames = new String[count];
+        for (int i = 0; i < count; i++) {
+            memberNames[i] = readString();
         }
+        stream.read();
+        Type type = HproseHelper.getClass(className);
+        Object key = (type == null) ? new Object() : type;
+        classref.add(key);
+        membersref.put(key, memberNames);
+    }
+
+    private Object readRef() throws IOException {
+        return ref.get(readIntWithoutTag());
+    }
+
+    @SuppressWarnings({"unchecked"})
+    private <T> T readRef(Class<T> type) throws IOException {
+        Object obj = readRef();
+        Class<?> objType = obj.getClass();
+        if (objType.equals(type) ||
+            type.isAssignableFrom(objType)) {
+            return (T)obj;
+        }
+        throw castError(objType.toString(), type);
+    }
+
+    public int readIntWithoutTag() throws IOException {
+        return readInt(HproseTags.TagSemicolon);
+    }
+
+    public BigInteger readBigIntegerWithoutTag() throws IOException {
+        return new BigInteger(readUntil(HproseTags.TagSemicolon).toString(), 10);
+    }
+
+    public long readLongWithoutTag() throws IOException {
+        return readLong(HproseTags.TagSemicolon);
+    }
+
+    public double readDoubleWithoutTag() throws IOException {
+        return parseDouble(readUntil(HproseTags.TagSemicolon));
+    }
+
+    public double readInfinityWithoutTag() throws IOException {
+        return ((stream.read() == HproseTags.TagNeg) ?
+            Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY);
+    }
+
+    public Calendar readDateWithoutTag()throws IOException {
+        return (Calendar)readDateAs(Calendar.class);
+    }
+
+    public Calendar readTimeWithoutTag()throws IOException {
+        return (Calendar)readTimeAs(Calendar.class);
+    }
+
+    public byte[] readBytesWithoutTag() throws IOException {
+        int len = readInt(HproseTags.TagQuote);
+        int off = 0;
+        byte[] b = new byte[len];
+        while (len > 0) {
+            int size = stream.read(b, off, len);
+            off += size;
+            len -= size;
+        }
+        stream.read();
+        ref.add(b);
+        return b;
+    }
+
+    public String readUTF8CharWithoutTag() throws IOException {
+        return new String(new char[] { readUTF8CharAsChar() });
+    }
+
+    public String readStringWithoutTag() throws IOException {
+        String str = readCharsAsString();
+        ref.add(str);
+        return str;
+    }
+
+    public char[] readCharsWithoutTag() throws IOException {
+        char[] chars = readChars();
+        ref.add(chars);
+        return chars;
+    }
+
+    public UUID readUUIDWithoutTag() throws IOException {
         checkTag(HproseTags.TagOpenbrace);
         char[] buf = new char[36];
         for (int i = 0; i < 36; i++) {
             buf[i] = (char) stream.read();
         }
         checkTag(HproseTags.TagClosebrace);
-        Object o = changeUUIDType(buf, type);
-        ref.add(o);
-        return o;
+        UUID uuid = UUID.fromString(new String(buf));
+        ref.add(uuid);
+        return uuid;
     }
 
-    private Object changeUUIDType(char[] buf, Class<?> type) throws IOException {
-        if (char[].class.equals(type)) {
-            return buf;
-        }
-        String s = new String(buf);
-        if (String.class.equals(type)) {
-            return s;
-        }
-        if (StringBuffer.class.equals(type)) {
-            return new StringBuffer(s);
-        }
-        if (StringBuilder.class.equals(type)) {
-            return new StringBuilder(s);
-        }
-        if (type == null ||
-            Object.class.equals(type) ||
-            UUID.class.equals(type)) {
-            return UUID.fromString(s);
-        }
-        return castError(buf, type);
-    }
-
-    private short[] readShortArray(int count) throws IOException {
-        short[] a = new short[count];
+    @SuppressWarnings({"unchecked"})
+    public ArrayList readListWithoutTag() throws IOException {
+        int count = readInt(HproseTags.TagOpenbrace);
+        ArrayList a = new ArrayList(count);
         ref.add(a);
         for (int i = 0; i < count; i++) {
-            a[i] = ((Short)unserialize(short.class)).shortValue();
+            a.add(unserialize());
         }
+        stream.read();
         return a;
     }
 
-    private int[] readIntegerArray(int count) throws IOException {
-        int[] a = new int[count];
-        ref.add(a);
+    @SuppressWarnings({"unchecked"})
+    public HashMap readMapWithoutTag() throws IOException {
+        int count = readInt(HproseTags.TagOpenbrace);
+        HashMap map = new HashMap(count);
+        ref.add(map);
         for (int i = 0; i < count; i++) {
-            a[i] = ((Integer)unserialize(int.class)).intValue();
+            Object key = unserialize();
+            Object value = unserialize();
+            map.put(key, value);
         }
-        return a;
+        stream.read();
+        return map;
     }
 
-    private long[] readLongArray(int count) throws IOException {
-        long[] a = new long[count];
-        ref.add(a);
-        for (int i = 0; i < count; i++) {
-            a[i] = ((Long)unserialize(long.class)).longValue();
+    public Object readObjectWithoutTag(Class<?> type) throws IOException {
+        Object c = classref.get(readInt(HproseTags.TagOpenbrace));
+        String[] memberNames = membersref.get(c);
+        int count = memberNames.length;
+        if (Class.class.equals(c.getClass())) {
+            Class<?> cls = (Class<?>) c;
+            if ((type == null) || type.isAssignableFrom(cls)) {
+                type = cls;
+            }
         }
-        return a;
-    }
-
-    private boolean[] readBooleanArray(int count) throws IOException {
-        boolean[] a = new boolean[count];
-        ref.add(a);
-        for (int i = 0; i < count; i++) {
-            a[i] = ((Boolean)unserialize(boolean.class)).booleanValue();
+        if (type == null) {
+            HashMap<String, Object> map = new HashMap<String, Object>(count);
+            ref.add(map);
+            for (int i = 0; i < count; i++) {
+                map.put(memberNames[i], unserialize());
+            }
+            stream.read();
+            return map;
         }
-        return a;
-    }
-
-    private float[] readFloatArray(int count) throws IOException {
-        float[] a = new float[count];
-        ref.add(a);
-        for (int i = 0; i < count; i++) {
-            a[i] = ((Float)unserialize(float.class)).floatValue();
-        }
-        return a;
-    }
-
-    private double[] readDoubleArray(int count) throws IOException {
-        double[] a = new double[count];
-        ref.add(a);
-        for (int i = 0; i < count; i++) {
-            a[i] = ((Double)unserialize(double.class)).doubleValue();
-        }
-        return a;
-    }
-
-    private BigInteger[] readBigIntegerArray(int count) throws IOException {
-        BigInteger[] a = new BigInteger[count];
-        ref.add(a);
-        for (int i = 0; i < count; i++) {
-            a[i] = (BigInteger)unserialize(BigInteger.class);
-        }
-        return a;
-    }
-
-    private String[] readStringArray(int count) throws IOException {
-        String[] a = new String[count];
-        ref.add(a);
-        for (int i = 0; i < count; i++) {
-            a[i] = (String) unserialize(String.class);
-        }
-        return a;
-    }
-
-    private StringBuffer[] readStringBufferArray(int count) throws IOException {
-        StringBuffer[] a = new StringBuffer[count];
-        ref.add(a);
-        for (int i = 0; i < count; i++) {
-            a[i] = (StringBuffer) unserialize(StringBuffer.class);
-        }
-        return a;
-    }
-
-    private BigDecimal[] readBigDecimalArray(int count) throws IOException {
-        BigDecimal[] a = new BigDecimal[count];
-        ref.add(a);
-        for (int i = 0; i < count; i++) {
-            a[i] = (BigDecimal) unserialize(BigDecimal.class);
-        }
-        return a;
-    }
-
-    private byte[][] readBytesArray(int count) throws IOException {
-        byte[][] a = new byte[count][];
-        ref.add(a);
-        for (int i = 0; i < count; i++) {
-            a[i] = (byte[])unserialize(byte[].class);
-        }
-        return a;
-    }
-
-    private char[][] readCharsArray(int count) throws IOException {
-        char[][] a = new char[count][];
-        ref.add(a);
-        for (int i = 0; i < count; i++) {
-            a[i] = (char[])unserialize(char[].class);
-        }
-        return a;
-    }
-
-    private Calendar[] readCalendarArray(int count) throws IOException {
-        Calendar[] a = new Calendar[count];
-        ref.add(a);
-        for (int i = 0; i < count; i++) {
-            a[i] = (Calendar) unserialize(Calendar.class);
-        }
-        return a;
-    }
-
-    private Date[] readDateArray(int count) throws IOException {
-        Date[] a = new Date[count];
-        ref.add(a);
-        for (int i = 0; i < count; i++) {
-            a[i] = (Date) unserialize(Date.class);
-        }
-        return a;
-    }
-
-    private Object readArray(Class<?> componentType, int count) throws IOException {
-        Object a = Array.newInstance(componentType, count);
-        ref.add(a);
-        for (int i = 0; i < count; i++) {
-            Array.set(a, i, unserialize(componentType));
-        }
-        return a;
-    }
-
-    public void readArray(Class<?>[] componentTypes, Object[] a, int count) throws IOException {
-        ref.add(a);
-        for (int i = 0; i < count; i++) {
-            a[i] = unserialize(componentTypes[i]);
+        else {
+            Object obj = HproseHelper.newInstance(type);
+            ref.add(obj);
+            Map<String, MemberAccessor> members = HproseHelper.getMembers(type, mode);
+            for (int i = 0; i < count; i++) {
+                MemberAccessor member = members.get(memberNames[i]);
+                if (member != null) {
+                    Object value = unserialize(member.cls, member.type, member.typecode);
+                    try {
+                        member.set(obj, value);
+                    }
+                    catch (Exception e) {
+                        throw new HproseException(e.getMessage());
+                    }
+                }
+                else {
+                    unserialize();
+                }
+            }
+            stream.read();
+            return obj;
         }
     }
 
-    private Object readArray(Type componentType, int count) throws IOException {
-        Class<?> type = toClass(componentType);
-        if (type == null) type = Object.class;
-        Object a = Array.newInstance(type, count);
-        ref.add(a);
-        for (int i = 0; i < count; i++) {
-            Array.set(a, i, unserialize(componentType));
+    private Object unserialize(int tag) throws IOException {
+        switch (tag) {
+            case '0': return 0;
+            case '1': return 1;
+            case '2': return 2;
+            case '3': return 3;
+            case '4': return 4;
+            case '5': return 5;
+            case '6': return 6;
+            case '7': return 7;
+            case '8': return 8;
+            case '9': return 9;
+            case HproseTags.TagInteger: return readIntWithoutTag();
+            case HproseTags.TagLong: return readBigIntegerWithoutTag();
+            case HproseTags.TagDouble: return readDoubleWithoutTag();
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagEmpty: return "";
+            case HproseTags.TagTrue: return true;
+            case HproseTags.TagFalse: return false;
+            case HproseTags.TagNaN: return Double.NaN;
+            case HproseTags.TagInfinity: return readInfinityWithoutTag();
+            case HproseTags.TagDate: return readDateWithoutTag();
+            case HproseTags.TagTime: return readTimeWithoutTag();
+            case HproseTags.TagBytes: return readBytesWithoutTag();
+            case HproseTags.TagUTF8Char: return readUTF8CharWithoutTag();
+            case HproseTags.TagString: return readStringWithoutTag();
+            case HproseTags.TagGuid: return readUUIDWithoutTag();
+            case HproseTags.TagList: return readListWithoutTag();
+            case HproseTags.TagMap: return readMapWithoutTag();
+            case HproseTags.TagClass: readClass(); return readObject(null);
+            case HproseTags.TagObject: return readObjectWithoutTag(null);
+            case HproseTags.TagRef: return readRef();
+            case HproseTags.TagError: throw new HproseException(readString());
+            default: throw unexpectedTag(tag);
         }
-        return a;
     }
 
-    public void readArray(Type[] componentTypes, Object[] a, int count) throws IOException {
+    public Object unserialize() throws IOException {
+        return unserialize(stream.read());
+    }
+
+    private String tagToString(int tag) throws IOException {
+        switch (tag) {
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+            case HproseTags.TagInteger: return "Integer";
+            case HproseTags.TagLong: return "BigInteger";
+            case HproseTags.TagDouble: return "Double";
+            case HproseTags.TagNull: return "Null";
+            case HproseTags.TagEmpty: return "Empty String";
+            case HproseTags.TagTrue: return "Boolean True";
+            case HproseTags.TagFalse: return "Boolean False";
+            case HproseTags.TagNaN: return "NaN";
+            case HproseTags.TagInfinity: return "Infinity";
+            case HproseTags.TagDate: return "DateTime";
+            case HproseTags.TagTime: return "DateTime";
+            case HproseTags.TagBytes: return "Byte[]";
+            case HproseTags.TagUTF8Char: return "Char";
+            case HproseTags.TagString: return "String";
+            case HproseTags.TagGuid: return "Guid";
+            case HproseTags.TagList: return "IList";
+            case HproseTags.TagMap: return "IDictionary";
+            case HproseTags.TagClass: return "Class";
+            case HproseTags.TagObject: return "Object";
+            case HproseTags.TagRef: return "Object Reference";
+            case HproseTags.TagError: throw new HproseException(readString());
+            default: throw unexpectedTag(tag);
+        }
+    }
+
+    public boolean readBoolean() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case '0': return false;
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9': return true;
+            case HproseTags.TagInteger: return readIntWithoutTag() != 0;
+            case HproseTags.TagLong: return !(BigInteger.ZERO.equals(readBigIntegerWithoutTag()));
+            case HproseTags.TagDouble: return readDoubleWithoutTag() != 0.0;
+            case HproseTags.TagNull: return false;
+            case HproseTags.TagEmpty: return false;
+            case HproseTags.TagTrue: return true;
+            case HproseTags.TagFalse: return false;
+            case HproseTags.TagNaN: return true;
+            case HproseTags.TagInfinity: return true;
+            case HproseTags.TagUTF8Char: return "\00".indexOf(readUTF8CharAsChar()) > -1;
+            case HproseTags.TagString: return Boolean.parseBoolean(readStringWithoutTag());
+            case HproseTags.TagRef: return Boolean.parseBoolean(readRef(String.class));
+            default: throw castError(tagToString(tag), boolean.class);
+        }
+    }
+
+    public char readChar() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9': return (char)tag;
+            case HproseTags.TagInteger: return (char)readIntWithoutTag();
+            case HproseTags.TagLong: return (char)readLongWithoutTag();
+            case HproseTags.TagDouble: return (char)Double.valueOf(readDoubleWithoutTag()).intValue();
+            case HproseTags.TagUTF8Char: return readUTF8CharAsChar();
+            case HproseTags.TagString: return readStringWithoutTag().charAt(0);
+            case HproseTags.TagRef: return readRef(String.class).charAt(0);
+            default: throw castError(tagToString(tag), char.class);
+        }
+    }
+
+    public byte readByte() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case '0': return 0;
+            case '1': return 1;
+            case '2': return 2;
+            case '3': return 3;
+            case '4': return 4;
+            case '5': return 5;
+            case '6': return 6;
+            case '7': return 7;
+            case '8': return 8;
+            case '9': return 9;
+            case HproseTags.TagInteger: return readByte(HproseTags.TagSemicolon);
+            case HproseTags.TagLong: return readByte(HproseTags.TagSemicolon);
+            case HproseTags.TagDouble: return Double.valueOf(readDoubleWithoutTag()).byteValue();
+            case HproseTags.TagNull: return 0;
+            case HproseTags.TagEmpty: return 0;
+            case HproseTags.TagTrue: return 1;
+            case HproseTags.TagFalse: return 0;
+            case HproseTags.TagUTF8Char: return (byte)readUTF8CharAsChar();
+            case HproseTags.TagString: return Byte.parseByte(readStringWithoutTag());
+            case HproseTags.TagRef: return Byte.parseByte(readRef(String.class));
+            default: throw castError(tagToString(tag), byte.class);
+        }
+    }
+
+    public short readShort() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case '0': return 0;
+            case '1': return 1;
+            case '2': return 2;
+            case '3': return 3;
+            case '4': return 4;
+            case '5': return 5;
+            case '6': return 6;
+            case '7': return 7;
+            case '8': return 8;
+            case '9': return 9;
+            case HproseTags.TagInteger: return readShort(HproseTags.TagSemicolon);
+            case HproseTags.TagLong: return readShort(HproseTags.TagSemicolon);
+            case HproseTags.TagDouble: return Double.valueOf(readDoubleWithoutTag()).shortValue();
+            case HproseTags.TagNull: return 0;
+            case HproseTags.TagEmpty: return 0;
+            case HproseTags.TagTrue: return 1;
+            case HproseTags.TagFalse: return 0;
+            case HproseTags.TagUTF8Char: return (short)readUTF8CharAsChar();
+            case HproseTags.TagString: return Short.parseShort(readStringWithoutTag());
+            case HproseTags.TagRef: return Short.parseShort(readRef(String.class));
+            default: throw castError(tagToString(tag), short.class);
+        }
+    }
+
+    public int readInt() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case '0': return 0;
+            case '1': return 1;
+            case '2': return 2;
+            case '3': return 3;
+            case '4': return 4;
+            case '5': return 5;
+            case '6': return 6;
+            case '7': return 7;
+            case '8': return 8;
+            case '9': return 9;
+            case HproseTags.TagInteger: return readInt(HproseTags.TagSemicolon);
+            case HproseTags.TagLong: return readInt(HproseTags.TagSemicolon);
+            case HproseTags.TagDouble: return Double.valueOf(readDoubleWithoutTag()).intValue();
+            case HproseTags.TagNull: return 0;
+            case HproseTags.TagEmpty: return 0;
+            case HproseTags.TagTrue: return 1;
+            case HproseTags.TagFalse: return 0;
+            case HproseTags.TagUTF8Char: return (int)readUTF8CharAsChar();
+            case HproseTags.TagString: return Integer.parseInt(readStringWithoutTag());
+            case HproseTags.TagRef: return Integer.parseInt(readRef(String.class));
+            default: throw castError(tagToString(tag), int.class);
+        }
+    }
+
+    public long readLong() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case '0': return 0L;
+            case '1': return 1L;
+            case '2': return 2L;
+            case '3': return 3L;
+            case '4': return 4L;
+            case '5': return 5L;
+            case '6': return 6L;
+            case '7': return 7L;
+            case '8': return 8L;
+            case '9': return 9L;
+            case HproseTags.TagInteger: return readLong(HproseTags.TagSemicolon);
+            case HproseTags.TagLong: return readLong(HproseTags.TagSemicolon);
+            case HproseTags.TagDouble: return Double.valueOf(readDoubleWithoutTag()).longValue();
+            case HproseTags.TagNull: return 0l;
+            case HproseTags.TagEmpty: return 0l;
+            case HproseTags.TagTrue: return 1l;
+            case HproseTags.TagFalse: return 0l;
+            case HproseTags.TagDate: return readDateWithoutTag().getTimeInMillis();
+            case HproseTags.TagTime: return readTimeWithoutTag().getTimeInMillis();
+            case HproseTags.TagUTF8Char: return (long)readUTF8CharAsChar();
+            case HproseTags.TagString: return Long.parseLong(readStringWithoutTag());
+            case HproseTags.TagRef: return Long.parseLong(readRef(String.class));
+            default: throw castError(tagToString(tag), long.class);
+        }
+    }
+
+    public float readFloat() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case '0': return 0.0f;
+            case '1': return 1.0f;
+            case '2': return 2.0f;
+            case '3': return 3.0f;
+            case '4': return 4.0f;
+            case '5': return 5.0f;
+            case '6': return 6.0f;
+            case '7': return 7.0f;
+            case '8': return 8.0f;
+            case '9': return 9.0f;
+            case HproseTags.TagInteger: return readIntAsFloat();
+            case HproseTags.TagLong: return readIntAsFloat();
+            case HproseTags.TagDouble: return parseFloat(readUntil(HproseTags.TagSemicolon));
+            case HproseTags.TagNull: return 0.0f;
+            case HproseTags.TagEmpty: return 0.0f;
+            case HproseTags.TagTrue: return 1.0f;
+            case HproseTags.TagFalse: return 0.0f;
+            case HproseTags.TagNaN: return Float.NaN;
+            case HproseTags.TagInfinity: return (stream.read() == HproseTags.TagPos) ?
+                                                 Float.POSITIVE_INFINITY :
+                                                 Float.NEGATIVE_INFINITY;
+            case HproseTags.TagUTF8Char: return readUTF8CharAsChar();
+            case HproseTags.TagString: return Float.parseFloat(readStringWithoutTag());
+            case HproseTags.TagRef: return Float.parseFloat(readRef(String.class));
+            default: throw castError(tagToString(tag), float.class);
+        }
+    }
+
+    public double readDouble() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case '0': return 0.0;
+            case '1': return 1.0;
+            case '2': return 2.0;
+            case '3': return 3.0;
+            case '4': return 4.0;
+            case '5': return 5.0;
+            case '6': return 6.0;
+            case '7': return 7.0;
+            case '8': return 8.0;
+            case '9': return 9.0;
+            case HproseTags.TagInteger: return readIntAsDouble();
+            case HproseTags.TagLong: return readIntAsDouble();
+            case HproseTags.TagDouble: return readDoubleWithoutTag();
+            case HproseTags.TagNull: return 0.0;
+            case HproseTags.TagEmpty: return 0.0;
+            case HproseTags.TagTrue: return 1.0;
+            case HproseTags.TagFalse: return 0.0;
+            case HproseTags.TagNaN: return Double.NaN;
+            case HproseTags.TagInfinity: return readInfinityWithoutTag();
+            case HproseTags.TagUTF8Char: return (double)readUTF8CharAsChar();
+            case HproseTags.TagString: return Double.parseDouble(readStringWithoutTag());
+            case HproseTags.TagRef: return Double.parseDouble(readRef(String.class));
+            default: throw castError(tagToString(tag), double.class);
+        }
+    }
+
+    public <T> T readEnum(Class<T> type) throws HproseException {
+        try {
+            return type.getEnumConstants()[readInt()];
+        }
+        catch (Exception e) {
+            throw new HproseException(e.getMessage());
+        }
+    }
+
+    public String readString() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case '0': return "0";
+            case '1': return "1";
+            case '2': return "2";
+            case '3': return "3";
+            case '4': return "4";
+            case '5': return "5";
+            case '6': return "6";
+            case '7': return "7";
+            case '8': return "8";
+            case '9': return "9";
+            case HproseTags.TagInteger: return readUntil(HproseTags.TagSemicolon).toString();
+            case HproseTags.TagLong: return readUntil(HproseTags.TagSemicolon).toString();
+            case HproseTags.TagDouble: return readUntil(HproseTags.TagSemicolon).toString();
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagEmpty: return "";
+            case HproseTags.TagTrue: return "true";
+            case HproseTags.TagFalse: return "false";
+            case HproseTags.TagNaN: return "NaN";
+            case HproseTags.TagInfinity: return (stream.read() == HproseTags.TagPos) ?
+                                                 "Infinity" : "-Infinity";
+            case HproseTags.TagDate: return readDateWithoutTag().toString();
+            case HproseTags.TagTime: return readTimeWithoutTag().toString();
+            case HproseTags.TagUTF8Char: return readUTF8CharWithoutTag();
+            case HproseTags.TagString: return readStringWithoutTag();
+            case HproseTags.TagGuid: return readUUIDWithoutTag().toString();
+            case HproseTags.TagList: return readListWithoutTag().toString();
+            case HproseTags.TagMap: return readMapWithoutTag().toString();
+            case HproseTags.TagClass: readClass(); return readObject(null).toString();
+            case HproseTags.TagObject: return readObjectWithoutTag(null).toString();
+            case HproseTags.TagRef: {
+                Object obj = readRef();
+                if (obj instanceof char[]) {
+                    return new String((char[])obj);
+                }
+                return obj.toString();
+            }
+            default: throw castError(tagToString(tag), String.class);
+        }
+    }
+
+    public BigInteger readBigInteger() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case '0': return BigInteger.ZERO;
+            case '1': return BigInteger.ONE;
+            case '2': return BigInteger.valueOf(2);
+            case '3': return BigInteger.valueOf(3);
+            case '4': return BigInteger.valueOf(4);
+            case '5': return BigInteger.valueOf(5);
+            case '6': return BigInteger.valueOf(6);
+            case '7': return BigInteger.valueOf(7);
+            case '8': return BigInteger.valueOf(8);
+            case '9': return BigInteger.valueOf(9);
+            case HproseTags.TagInteger: return BigInteger.valueOf(readIntWithoutTag());
+            case HproseTags.TagLong: return readBigIntegerWithoutTag();
+            case HproseTags.TagDouble: return BigInteger.valueOf(Double.valueOf(readDoubleWithoutTag()).longValue());
+            case HproseTags.TagNull: return BigInteger.ZERO;
+            case HproseTags.TagEmpty: return BigInteger.ZERO;
+            case HproseTags.TagTrue: return BigInteger.ONE;
+            case HproseTags.TagFalse: return BigInteger.ZERO;
+            case HproseTags.TagDate: return BigInteger.valueOf(readDateWithoutTag().getTimeInMillis());
+            case HproseTags.TagTime: return BigInteger.valueOf(readTimeWithoutTag().getTimeInMillis());
+            case HproseTags.TagUTF8Char: return BigInteger.valueOf((long)readUTF8CharAsChar());
+            case HproseTags.TagString: return new BigInteger(readStringWithoutTag());
+            case HproseTags.TagRef: return new BigInteger(readRef(String.class));
+            default: throw castError(tagToString(tag), BigInteger.class);
+        }
+    }
+
+    public Date readDate() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case '0': return new Date(0l);
+            case '1': return new Date(1l);
+            case '2': return new Date(2l);
+            case '3': return new Date(3l);
+            case '4': return new Date(4l);
+            case '5': return new Date(5l);
+            case '6': return new Date(6l);
+            case '7': return new Date(7l);
+            case '8': return new Date(8l);
+            case '9': return new Date(9l);
+            case HproseTags.TagInteger:
+            case HproseTags.TagLong: return new Date(readLongWithoutTag());
+            case HproseTags.TagDouble: return new Date(Double.valueOf(readDoubleWithoutTag()).longValue());
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagEmpty: return null;
+            case HproseTags.TagDate: return new Date(readDateWithoutTag().getTimeInMillis());
+            case HproseTags.TagTime: return new Date(readTimeWithoutTag().getTimeInMillis());
+            case HproseTags.TagRef: {
+                Object obj = readRef();
+                if (obj instanceof Calendar) {
+                    return new Date(((Calendar)obj).getTimeInMillis());
+                }
+                if (obj instanceof Timestamp) {
+                    return new Date(((Timestamp)obj).getTime());
+                }
+                throw castError(obj, Date.class);
+            }
+            default: throw castError(tagToString(tag), Date.class);
+        }
+    }
+
+    public Time readTime() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case '0': return new Time(0l);
+            case '1': return new Time(1l);
+            case '2': return new Time(2l);
+            case '3': return new Time(3l);
+            case '4': return new Time(4l);
+            case '5': return new Time(5l);
+            case '6': return new Time(6l);
+            case '7': return new Time(7l);
+            case '8': return new Time(8l);
+            case '9': return new Time(9l);
+            case HproseTags.TagInteger:
+            case HproseTags.TagLong: return new Time(readLongWithoutTag());
+            case HproseTags.TagDouble: return new Time(Double.valueOf(readDoubleWithoutTag()).longValue());
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagEmpty: return null;
+            case HproseTags.TagDate: return new Time(readDateWithoutTag().getTimeInMillis());
+            case HproseTags.TagTime: return new Time(readTimeWithoutTag().getTimeInMillis());
+            case HproseTags.TagRef: {
+                Object obj = readRef();
+                if (obj instanceof Calendar) {
+                    return new Time(((Calendar)obj).getTimeInMillis());
+                }
+                if (obj instanceof Timestamp) {
+                    return new Time(((Timestamp)obj).getTime());
+                }
+                throw castError(obj, Time.class);
+            }
+            default: throw castError(tagToString(tag), Time.class);
+        }
+    }
+
+    public java.util.Date readDateTime() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case '0': return new java.util.Date(0l);
+            case '1': return new java.util.Date(1l);
+            case '2': return new java.util.Date(2l);
+            case '3': return new java.util.Date(3l);
+            case '4': return new java.util.Date(4l);
+            case '5': return new java.util.Date(5l);
+            case '6': return new java.util.Date(6l);
+            case '7': return new java.util.Date(7l);
+            case '8': return new java.util.Date(8l);
+            case '9': return new java.util.Date(9l);
+            case HproseTags.TagInteger:
+            case HproseTags.TagLong: return new java.util.Date(readLongWithoutTag());
+            case HproseTags.TagDouble: return new java.util.Date(Double.valueOf(readDoubleWithoutTag()).longValue());
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagEmpty: return null;
+            case HproseTags.TagDate: return new java.util.Date(readDateWithoutTag().getTimeInMillis());
+            case HproseTags.TagTime: return new java.util.Date(readTimeWithoutTag().getTimeInMillis());
+            case HproseTags.TagRef: {
+                Object obj = readRef();
+                if (obj instanceof Calendar) {
+                    return new java.util.Date(((Calendar)obj).getTimeInMillis());
+                }
+                if (obj instanceof Timestamp) {
+                    return new java.util.Date(((Timestamp)obj).getTime());
+                }
+                throw castError(obj, java.util.Date.class);
+            }
+            default: throw castError(tagToString(tag), java.util.Date.class);
+        }
+    }
+
+    public Timestamp readTimestamp() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case '0': return new Timestamp(0l);
+            case '1': return new Timestamp(1l);
+            case '2': return new Timestamp(2l);
+            case '3': return new Timestamp(3l);
+            case '4': return new Timestamp(4l);
+            case '5': return new Timestamp(5l);
+            case '6': return new Timestamp(6l);
+            case '7': return new Timestamp(7l);
+            case '8': return new Timestamp(8l);
+            case '9': return new Timestamp(9l);
+            case HproseTags.TagInteger:
+            case HproseTags.TagLong: return new Timestamp(readLongWithoutTag());
+            case HproseTags.TagDouble: return new Timestamp(Double.valueOf(readDoubleWithoutTag()).longValue());
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagEmpty: return null;
+            case HproseTags.TagDate: return (Timestamp)readDateAs(Timestamp.class);
+            case HproseTags.TagTime: return (Timestamp)readTimeAs(Timestamp.class);
+            case HproseTags.TagRef: {
+                Object obj = readRef();
+                if (obj instanceof Calendar) {
+                    return new Timestamp(((Calendar)obj).getTimeInMillis());
+                }
+                if (obj instanceof Timestamp) {
+                    return (Timestamp)obj;
+                }
+                throw castError(obj, Timestamp.class);
+            }
+            default: throw castError(tagToString(tag), Timestamp.class);
+        }
+    }
+
+    public Calendar readCalendar() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9': {
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTimeInMillis(tag - '0');
+                return calendar;
+            }
+            case HproseTags.TagInteger:
+            case HproseTags.TagLong: {
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTimeInMillis(readLongWithoutTag());
+                return calendar;
+            }
+            case HproseTags.TagDouble: {
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTimeInMillis(Double.valueOf(readDoubleWithoutTag()).longValue());
+                return calendar;
+            }
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagEmpty: return null;
+            case HproseTags.TagDate: return readDateWithoutTag();
+            case HproseTags.TagTime: return readTimeWithoutTag();
+            case HproseTags.TagRef: {
+                Object obj = readRef();
+                if (obj instanceof Calendar) {
+                    return (Calendar)obj;
+                }
+                if (obj instanceof Timestamp) {
+                    Calendar calendar = Calendar.getInstance();
+                    calendar.setTimeInMillis(((Timestamp)obj).getTime());
+                    return calendar;
+                }
+                throw castError(obj, Calendar.class);
+            }
+            default: throw castError(tagToString(tag), Calendar.class);
+        }
+    }
+
+    public BigDecimal readBigDecimal() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case '0': return BigDecimal.ZERO;
+            case '1': return BigDecimal.ONE;
+            case '2': return BigDecimal.valueOf(2);
+            case '3': return BigDecimal.valueOf(3);
+            case '4': return BigDecimal.valueOf(4);
+            case '5': return BigDecimal.valueOf(5);
+            case '6': return BigDecimal.valueOf(6);
+            case '7': return BigDecimal.valueOf(7);
+            case '8': return BigDecimal.valueOf(8);
+            case '9': return BigDecimal.valueOf(9);
+            case HproseTags.TagInteger: return new BigDecimal(readIntWithoutTag());
+            case HproseTags.TagLong: return new BigDecimal(readLongWithoutTag());
+            case HproseTags.TagDouble: return new BigDecimal(readUntil(HproseTags.TagSemicolon).toString());
+            case HproseTags.TagNull: return BigDecimal.ZERO;
+            case HproseTags.TagEmpty: return BigDecimal.ZERO;
+            case HproseTags.TagTrue: return BigDecimal.ONE;
+            case HproseTags.TagFalse: return BigDecimal.ZERO;
+            case HproseTags.TagUTF8Char: return new BigDecimal((long)readUTF8CharAsChar());
+            case HproseTags.TagString: return new BigDecimal(readStringWithoutTag());
+            case HproseTags.TagRef: return new BigDecimal(readRef(String.class));
+            default: throw castError(tagToString(tag), BigDecimal.class);
+        }
+    }
+
+    public StringBuilder readStringBuilder() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case '0': return new StringBuilder("0");
+            case '1': return new StringBuilder("1");
+            case '2': return new StringBuilder("2");
+            case '3': return new StringBuilder("3");
+            case '4': return new StringBuilder("4");
+            case '5': return new StringBuilder("5");
+            case '6': return new StringBuilder("6");
+            case '7': return new StringBuilder("7");
+            case '8': return new StringBuilder("8");
+            case '9': return new StringBuilder("9");
+            case HproseTags.TagInteger: return readUntil(HproseTags.TagSemicolon);
+            case HproseTags.TagLong: return readUntil(HproseTags.TagSemicolon);
+            case HproseTags.TagDouble: return readUntil(HproseTags.TagSemicolon);
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagEmpty: return new StringBuilder();
+            case HproseTags.TagTrue: return new StringBuilder("true");
+            case HproseTags.TagFalse: return new StringBuilder("false");
+            case HproseTags.TagNaN: return new StringBuilder("NaN");
+            case HproseTags.TagInfinity: return new StringBuilder(
+                                                (stream.read() == HproseTags.TagPos) ?
+                                                "Infinity" : "-Infinity");
+            case HproseTags.TagDate: return new StringBuilder(readDateWithoutTag().toString());
+            case HproseTags.TagTime: return new StringBuilder(readTimeWithoutTag().toString());
+            case HproseTags.TagUTF8Char: return new StringBuilder(1).append(readUTF8CharAsChar());
+            case HproseTags.TagString: return new StringBuilder(readStringWithoutTag());
+            case HproseTags.TagGuid: return new StringBuilder(readUUIDWithoutTag().toString());
+            case HproseTags.TagRef: {
+                Object obj = readRef();
+                if (obj instanceof char[]) {
+                    return new StringBuilder(new String((char[])obj));
+                }
+                return new StringBuilder(obj.toString());
+            }
+            default: throw castError(tagToString(tag), StringBuilder.class);
+        }
+    }
+
+    public StringBuffer readStringBuffer() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case '0': return new StringBuffer("0");
+            case '1': return new StringBuffer("1");
+            case '2': return new StringBuffer("2");
+            case '3': return new StringBuffer("3");
+            case '4': return new StringBuffer("4");
+            case '5': return new StringBuffer("5");
+            case '6': return new StringBuffer("6");
+            case '7': return new StringBuffer("7");
+            case '8': return new StringBuffer("8");
+            case '9': return new StringBuffer("9");
+            case HproseTags.TagInteger: return new StringBuffer(readUntil(HproseTags.TagSemicolon));
+            case HproseTags.TagLong: return new StringBuffer(readUntil(HproseTags.TagSemicolon));
+            case HproseTags.TagDouble: return new StringBuffer(readUntil(HproseTags.TagSemicolon));
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagEmpty: return new StringBuffer();
+            case HproseTags.TagTrue: return new StringBuffer("true");
+            case HproseTags.TagFalse: return new StringBuffer("false");
+            case HproseTags.TagNaN: return new StringBuffer("NaN");
+            case HproseTags.TagInfinity: return new StringBuffer(
+                                                (stream.read() == HproseTags.TagPos) ?
+                                                "Infinity" : "-Infinity");
+            case HproseTags.TagDate: return new StringBuffer(readDateWithoutTag().toString());
+            case HproseTags.TagTime: return new StringBuffer(readTimeWithoutTag().toString());
+            case HproseTags.TagUTF8Char: return new StringBuffer(1).append(readUTF8CharAsChar());
+            case HproseTags.TagString: return new StringBuffer(readStringWithoutTag());
+            case HproseTags.TagGuid: return new StringBuffer(readUUIDWithoutTag().toString());
+            case HproseTags.TagRef: {
+                Object obj = readRef();
+                if (obj instanceof char[]) {
+                    return new StringBuffer(new String((char[])obj));
+                }
+                return new StringBuffer(obj.toString());
+            }
+            default: throw castError(tagToString(tag), StringBuffer.class);
+        }
+    }
+
+    public UUID readUUID() throws IOException  {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagEmpty: return null;
+            case HproseTags.TagBytes: return UUID.nameUUIDFromBytes(readBytesWithoutTag());
+            case HproseTags.TagGuid: return readUUIDWithoutTag();
+            case HproseTags.TagString: return UUID.fromString(readStringWithoutTag());
+            case HproseTags.TagRef: {
+                Object obj = readRef();
+                if (obj instanceof UUID) {
+                    return (UUID)obj;
+                }
+                if (obj instanceof byte[]) {
+                    return UUID.nameUUIDFromBytes((byte[])obj);
+                }
+                if (obj instanceof String) {
+                    return UUID.fromString((String)obj);
+                }
+                if (obj instanceof char[]) {
+                    return UUID.fromString(new String((char[])obj));
+                }
+                throw castError(obj, UUID.class);
+            }
+            default: throw castError(tagToString(tag), UUID.class);
+        }
+    }
+
+    public void readArray(Type[] types, Object[] a, int count) throws IOException {
         ref.add(a);
         for (int i = 0; i < count; i++) {
-            a[i] = unserialize(componentTypes[i]);
+            a[i] = unserialize(types[i]);
         }
+        stream.read();
     }
 
     public Object[] readArray(int count) throws IOException {
         Object[] a = new Object[count];
         ref.add(a);
         for (int i = 0; i < count; i++) {
-            a[i] = unserialize(Object.class);
+            a[i] = unserialize();
         }
+        stream.read();
         return a;
     }
 
-    @SuppressWarnings("unchecked")
-    private ArrayList readArrayList(Type componentType, int count) throws IOException {
-        ArrayList list = new ArrayList(count);
-        ref.add(list);
-        for (int i = 0; i < count; i++) {
-            list.add(unserialize(componentType));
+    public Object[] readObjectArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: return readArray(readInt(HproseTags.TagOpenbrace));
+            case HproseTags.TagRef: return (Object[])readRef();
+            default: throw castError(tagToString(tag), Object[].class);
         }
-        return list;
     }
 
-    @SuppressWarnings("unchecked")
-    private LinkedList readLinkedList(Type componentType, int count) throws IOException {
-        LinkedList list = new LinkedList();
-        ref.add(list);
-        for (int i = 0; i < count; i++) {
-            list.add(unserialize(componentType));
-        }
-        return list;
-    }
-
-    @SuppressWarnings("unchecked")
-    private Vector readVector(Type componentType, int count) throws IOException {
-        Vector list = new Vector(count);
-        ref.add(list);
-        for (int i = 0; i < count; i++) {
-            list.add(unserialize(componentType));
-        }
-        return list;
-    }
-
-    @SuppressWarnings("unchecked")
-    private Stack readStack(Type componentType, int count) throws IOException {
-        Stack list = new Stack();
-        ref.add(list);
-        for (int i = 0; i < count; i++) {
-            list.add(unserialize(componentType));
-        }
-        return list;
-    }
-
-    @SuppressWarnings("unchecked")
-    private HashSet readHashSet(Type componentType, int count) throws IOException {
-        HashSet set = new HashSet();
-        ref.add(set);
-        for (int i = 0; i < count; i++) {
-            set.add(unserialize(componentType));
-        }
-        return set;
-    }
-
-    @SuppressWarnings("unchecked")
-    private TreeSet readTreeSet(Type componentType, int count) throws IOException {
-        TreeSet set = new TreeSet();
-        ref.add(set);
-        for (int i = 0; i < count; i++) {
-            set.add(unserialize(componentType));
-        }
-        return set;
-    }
-
-    @SuppressWarnings("unchecked")
-    private Collection readCollection(Type componentType, int count, Class<?> type) throws IOException {
-        Collection collection = (Collection) HproseHelper.newInstance(type);
-        ref.add(collection);
-        for (int i = 0; i < count; i++) {
-            collection.add(unserialize(componentType));
-        }
-        return collection;
-    }
-
-    public Object readList() throws IOException {
-        return readList(true, (Class<?>) null);
-    }
-
-    public Object readList(boolean includeTag) throws IOException {
-        return readList(includeTag, (Class<?>) null);
-    }
-
-    public Object readList(Class<?> type) throws IOException {
-        return readList(true, type);
-    }
-
-    public Object readList(boolean includeTag, Class<?> type) throws IOException {
-        if (includeTag) {
-            int tag = checkTags((char) HproseTags.TagList + "" +
-                                (char) HproseTags.TagRef);
-            if (tag == HproseTags.TagRef) {
-                return readRef(type);
-            }
-        }
-        int count = readInt(HproseTags.TagOpenbrace);
-        Object list = null;
-        if ((type == null) ||
-            Object.class.equals(type) ||
-            Collection.class.equals(type) ||
-            AbstractCollection.class.equals(type) ||
-            List.class.equals(type) ||
-            AbstractList.class.equals(type) ||
-            ArrayList.class.equals(type)) {
-            list = readArrayList(Object.class, count);
-        }
-        else if (AbstractSequentialList.class.equals(type) ||
-                 LinkedList.class.equals(type)) {
-            list = readLinkedList(Object.class, count);
-        }
-        else if (int[].class.equals(type)) {
-            list = readIntegerArray(count);
-        }
-        else if (short[].class.equals(type)) {
-            list = readShortArray(count);
-        }
-        else if (long[].class.equals(type)) {
-            list = readLongArray(count);
-        }
-        else if (String[].class.equals(type)) {
-            list = readStringArray(count);
-        }
-        else if (boolean[].class.equals(type)) {
-            list = readBooleanArray(count);
-        }
-        else if (double[].class.equals(type)) {
-            list = readDoubleArray(count);
-        }
-        else if (float[].class.equals(type)) {
-            list = readFloatArray(count);
-        }
-        else if (BigInteger[].class.equals(type)) {
-            list = readBigIntegerArray(count);
-        }
-        else if (BigDecimal[].class.equals(type)) {
-            list = readBigDecimalArray(count);
-        }
-        else if (StringBuffer[].class.equals(type)) {
-            list = readStringBufferArray(count);
-        }
-        else if (byte[][].class.equals(type)) {
-            list = readBytesArray(count);
-        }
-        else if (char[][].class.equals(type)) {
-            list = readCharsArray(count);
-        }
-        else if (Calendar[].class.equals(type)) {
-            list = readCalendarArray(count);
-        }
-        else if (Date[].class.equals(type)) {
-            list = readDateArray(count);
-        }
-        else if (Object[].class.equals(type)) {
-            list = readArray(count);
-        }
-        else if (type.isArray()) {
-            list = readArray(type.getComponentType(), count);
-        }
-        else if (Vector.class.equals(type)) {
-            list = readVector(Object.class, count);
-        }
-        else if (Stack.class.equals(type)) {
-            list = readStack(Object.class, count);
-        }
-        else if (Set.class.equals(type) ||
-                 AbstractSet.class.equals(type) ||
-                 HashSet.class.equals(type)) {
-            list = readHashSet(Object.class, count);
-        }
-        else if (SortedSet.class.equals(type) ||
-                 TreeSet.class.equals(type)) {
-            list = readTreeSet(Object.class, count);
-        }
-        else if (Collection.class.isAssignableFrom(type) && isInstantiableClass(type)) {
-            list = readCollection(Object.class, count, type);
-        }
-        else {
-            castError("List", type);
-        }
-        checkTag(HproseTags.TagClosebrace);
-        return list;
-    }
-
-    public Object readList(ParameterizedType type) throws IOException {
-        return readList(true, type);
-    }
-
-    public Object readList(boolean includeTag, ParameterizedType type) throws IOException {
-        Class<?> rawType = (Class<?>) type.getRawType();
-        if (includeTag) {
-            int tag = checkTags((char) HproseTags.TagList + "" +
-                                (char) HproseTags.TagRef);
-            if (tag == HproseTags.TagRef) {
-                return readRef(rawType);
-            }
-        }
-        Type componentType = type.getActualTypeArguments()[0];
-        int count = readInt(HproseTags.TagOpenbrace);
-        Object list = null;
-        if (Collection.class.equals(rawType) ||
-            AbstractCollection.class.equals(rawType) ||
-            List.class.equals(rawType) ||
-            AbstractList.class.equals(rawType) ||
-            ArrayList.class.equals(rawType)) {
-            list = readArrayList(componentType, count);
-        }
-        else if (AbstractSequentialList.class.equals(rawType) ||
-                 LinkedList.class.equals(rawType)) {
-            list = readLinkedList(componentType, count);
-        }
-        else if (Vector.class.equals(rawType)) {
-            list = readVector(componentType, count);
-        }
-        else if (Stack.class.equals(rawType)) {
-            list = readStack(componentType, count);
-        }
-        else if (Set.class.equals(rawType) ||
-                 AbstractSet.class.equals(rawType) ||
-                 HashSet.class.equals(rawType)) {
-            list = readHashSet(componentType, count);
-        }
-        else if (SortedSet.class.equals(rawType) ||
-                 TreeSet.class.equals(rawType)) {
-            list = readTreeSet(componentType, count);
-        }
-        else if (Collection.class.isAssignableFrom(rawType) && isInstantiableClass(rawType)) {
-            list = readCollection(componentType, count, rawType);
-        }
-        else {
-            castError("List", type);
-        }
-        checkTag(HproseTags.TagClosebrace);
-        return list;
-    }
-
-    public Object readList(GenericArrayType type) throws IOException {
-        return readList(true, type);
-    }
-
-    public Object readList(boolean includeTag, GenericArrayType type) throws IOException {
-        Class<?> rawType = toClass(type);
-        if (includeTag) {
-            int tag = checkTags((char) HproseTags.TagList + "" +
-                                (char) HproseTags.TagRef);
-            if (tag == HproseTags.TagRef) {
-                return readRef(rawType);
-            }
-        }
-        int count = readInt(HproseTags.TagOpenbrace);
-        Object list = readArray(type.getGenericComponentType(), count);
-        checkTag(HproseTags.TagClosebrace);
-        return list;
-    }
-
-    @SuppressWarnings("unchecked")
-    private HashMap readHashMap(Type keyType, Type valueType, int count) throws IOException {
-        HashMap map = new HashMap(count);
-        ref.add(map);
-        for (int i = 0; i < count; i++) {
-            Object key = unserialize(keyType);
-            Object value = unserialize(valueType);
-            map.put(key, value);
-        }
-        return map;
-    }
-
-    @SuppressWarnings("unchecked")
-    private TreeMap readTreeMap(Type keyType, Type valueType, int count) throws IOException {
-        TreeMap map = new TreeMap();
-        ref.add(map);
-        for (int i = 0; i < count; i++) {
-            Object key = unserialize(keyType);
-            Object value = unserialize(valueType);
-            map.put(key, value);
-        }
-        return map;
-    }
-
-    @SuppressWarnings("unchecked")
-    private Hashtable readHashtable(Type keyType, Type valueType, int count) throws IOException {
-        Hashtable map = new Hashtable(count);
-        ref.add(map);
-        for (int i = 0; i < count; i++) {
-            Object key = unserialize(keyType);
-            Object value = unserialize(valueType);
-            map.put(key, value);
-        }
-        return map;
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map readMap(Type keyType, Type valueType, int count, Class<?> type) throws IOException {
-        Map map = (Map) HproseHelper.newInstance(type);
-        ref.add(map);
-        for (int i = 0; i < count; i++) {
-            Object key = unserialize(keyType);
-            Object value = unserialize(valueType);
-            map.put(key, value);
-        }
-        return map;
-    }
-
-    private Object readObject1(int count, Class<?> type) throws IOException {
-        Object obj = HproseHelper.newInstance(type);
-        Map fields = HproseHelper.getFields(type);
-        ref.add(obj);
-        for (int i = 0; i < count; i++) {
-            Field field = (Field) fields.get(unserialize(String.class));
-            if (field != null) {
-                Object value = unserialize(field.getGenericType());
-                try {
-                    field.set(obj, value);
+    public boolean[] readBooleanArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                boolean[] a = new boolean[count];
+                ref.add(a);
+                for (int i = 0; i < count; i++) {
+                    a[i] = readBoolean();
                 }
-                catch (Exception e) {
-                    throw new HproseException(e.getMessage());
+                stream.read();
+                return a;
+            }
+            case HproseTags.TagRef: return (boolean[])readRef();
+            default: throw castError(tagToString(tag), boolean[].class);
+        }
+    }
+
+    public char[] readCharArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagUTF8Char: return new char[] { readUTF8CharAsChar() };
+            case HproseTags.TagString: return readCharsWithoutTag();
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                char[] a = new char[count];
+                ref.add(a);
+                for (int i = 0; i < count; i++) {
+                    a[i] = readChar();
                 }
+                stream.read();
+                return a;
             }
-            else {
-                unserialize();
-            }
-        }
-        return obj;
-    }
-
-    private Object readObject2(int count, Class<?> type) throws IOException {
-        Object obj = HproseHelper.newInstance(type);
-        Map properties = HproseHelper.getProperties(type);
-        ref.add(obj);
-        for (int i = 0; i < count; i++) {
-            PropertyAccessor pa = (PropertyAccessor) properties.get(unserialize(String.class));
-            if (pa != null) {
-                Method setter = pa.setter;
-                Object value = unserialize(setter.getGenericParameterTypes()[0]);
-                try {
-                    setter.invoke(obj, new Object[]{value});
+            case HproseTags.TagRef: {
+                Object obj = readRef();
+                if (obj instanceof char[]) {
+                    return (char[])obj;
                 }
-                catch (Exception e) {
-                    throw new HproseException(e.getMessage());
+                if (obj instanceof String) {
+                    return ((String)obj).toCharArray();
                 }
+                throw castError(obj, char[].class);
             }
-            else {
-                unserialize();
-            }
+            default: throw castError(tagToString(tag), char[].class);
         }
-        return obj;
     }
 
-    private Object readBean(int count, Class<?> type) throws IOException {
-        Object obj = HproseHelper.newInstance(type);
-        Map members = HproseHelper.getMembers(type);
-        ref.add(obj);
-        for (int i = 0; i < count; i++) {
-            Object member = members.get(unserialize(String.class));
-            if (member != null) {
-                try {
-                    if (member instanceof Field) {
-                        Field field = (Field) member;
-                        Object value = unserialize(field.getGenericType());
-                        field.set(obj, value);
-                    }
-                    else {
-                        Method setter = ((PropertyAccessor) member).setter;
-                        Object value = unserialize(setter.getGenericParameterTypes()[0]);
-                        setter.invoke(obj, new Object[]{value});
-                    }
+    public byte[] readByteArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagUTF8Char: return readUTF8CharWithoutTag().getBytes("UTF-8");
+            case HproseTags.TagString: return readStringWithoutTag().getBytes("UTF-8");
+            case HproseTags.TagBytes: return readBytesWithoutTag();
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                byte[] a = new byte[count];
+                ref.add(a);
+                for (int i = 0; i < count; i++) {
+                    a[i] = readByte();
                 }
-                catch (Exception e) {
-                    throw new HproseException(e.getMessage());
+                stream.read();
+                return a;
+            }
+            case HproseTags.TagRef: {
+                Object obj = readRef();
+                if (obj instanceof byte[]) {
+                    return (byte[])obj;
                 }
+                if (obj instanceof String) {
+                    return ((String)obj).getBytes("UTF-8");
+                }
+                throw castError(obj, byte[].class);
             }
-            else {
-                unserialize();
-            }
+            default: throw castError(tagToString(tag), byte[].class);
         }
-        return obj;
     }
 
-    public Object readMap() throws IOException {
-        return readMap(true, (Class<?>)null);
+    public short[] readShortArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                short[] a = new short[count];
+                ref.add(a);
+                for (int i = 0; i < count; i++) {
+                    a[i] = readShort();
+                }
+                stream.read();
+                return a;
+            }
+            case HproseTags.TagRef: return (short[])readRef();
+            default: throw castError(tagToString(tag), short[].class);
+        }
     }
 
-    public Object readMap(boolean includeTag) throws IOException {
-        return readMap(includeTag, (Class<?>)null);
+    public int[] readIntArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                int[] a = new int[count];
+                ref.add(a);
+                for (int i = 0; i < count; i++) {
+                    a[i] = readInt();
+                }
+                stream.read();
+                return a;
+            }
+            case HproseTags.TagRef: return (int[])readRef();
+            default: throw castError(tagToString(tag), int[].class);
+        }
     }
 
-    public Object readMap(Class<?> type) throws IOException {
-        return readMap(true, type);
+    public long[] readLongArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                long[] a = new long[count];
+                ref.add(a);
+                for (int i = 0; i < count; i++) {
+                    a[i] = readLong();
+                }
+                stream.read();
+                return a;
+            }
+            case HproseTags.TagRef: return (long[])readRef();
+            default: throw castError(tagToString(tag), long[].class);
+        }
     }
 
-    public Object readMap(boolean includeTag, Class<?> type) throws IOException {
-        if (includeTag) {
-            int tag = checkTags((char) HproseTags.TagMap + "" +
-                                (char) HproseTags.TagRef);
-            if (tag == HproseTags.TagRef) {
-                return readRef(type);
+    public float[] readFloatArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                float[] a = new float[count];
+                ref.add(a);
+                for (int i = 0; i < count; i++) {
+                    a[i] = readFloat();
+                }
+                stream.read();
+                return a;
             }
+            case HproseTags.TagRef: return (float[])readRef();
+            default: throw castError(tagToString(tag), float[].class);
         }
-        int count = readInt(HproseTags.TagOpenbrace);
-        Object map = null;
-        if ((type == null) ||
-            Object.class.equals(type) ||
-            Map.class.equals(type) ||
-            AbstractMap.class.equals(type) ||
-            HashMap.class.equals(type)) {
-            map = readHashMap(Object.class, Object.class, count);
-        }
-        else if (SortedMap.class.equals(type) ||
-                 TreeMap.class.equals(type)) {
-            map = readTreeMap(Object.class, Object.class, count);
-        }
-        else if (Hashtable.class.equals(type)) {
-            map = readHashtable(Object.class, Object.class, count);
-        }
-        else if (isInstantiableClass(type)) {
-            if (Map.class.isAssignableFrom(type)) {
-                map = readMap(Object.class, Object.class, count, type);
-            }
-            else if (!Serializable.class.isAssignableFrom(type)) {
-                map = readBean(count, type);
-            }
-            else if (mode == HproseMode.FieldMode) {
-                map = readObject1(count, type);
-            }
-            else {
-                map = readObject2(count, type);
-            }
-        }
-        else {
-            castError("Map", type);
-        }
-        checkTag(HproseTags.TagClosebrace);
-        return map;
     }
 
-    public Object readMap(ParameterizedType type) throws IOException {
-        return readMap(true, type);
+    public double[] readDoubleArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                double[] a = new double[count];
+                ref.add(a);
+                for (int i = 0; i < count; i++) {
+                    a[i] = readDouble();
+                }
+                stream.read();
+                return a;
+            }
+            case HproseTags.TagRef: return (double[])readRef();
+            default: throw castError(tagToString(tag), double[].class);
+        }
     }
 
-    private Object readMap(boolean includeTag, ParameterizedType type) throws IOException {
-        Class<?> rawType = (Class<?>) type.getRawType();
-        if (includeTag) {
-            int tag = checkTags((char) HproseTags.TagMap + "" +
-                                (char) HproseTags.TagRef);
-            if (tag == HproseTags.TagRef) {
-                return readRef(rawType);
+    public String[] readStringArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                String[] a = new String[count];
+                ref.add(a);
+                for (int i = 0; i < count; i++) {
+                    a[i] = readString();
+                }
+                stream.read();
+                return a;
             }
+            case HproseTags.TagRef: return (String[])readRef();
+            default: throw castError(tagToString(tag), String[].class);
         }
-        Type[] actualTypeArguments = type.getActualTypeArguments();
-        Type keyType = actualTypeArguments[0];
-        Type valueType = actualTypeArguments[1];
-        int count = readInt(HproseTags.TagOpenbrace);
-        Object map = null;
-        if (Map.class.equals(rawType) ||
-            AbstractMap.class.equals(rawType) ||
-            HashMap.class.equals(rawType)) {
-            map = readHashMap(keyType, valueType, count);
-        }
-        else if (SortedMap.class.equals(rawType) ||
-                 TreeMap.class.equals(rawType)) {
-            map = readTreeMap(keyType, valueType, count);
-        }
-        else if (Hashtable.class.equals(rawType)) {
-            map = readHashtable(keyType, valueType, count);
-        }
-        else if (isInstantiableClass(rawType)) {
-            if (Map.class.isAssignableFrom(rawType)) {
-                map = readMap(keyType, valueType, count, rawType);
-            }
-            else if (!Serializable.class.isAssignableFrom(rawType)) {
-                map = readBean(count, rawType);
-            }
-            else if (mode == HproseMode.FieldMode) {
-                map = readObject1(count, rawType);
-            }
-            else {
-                map = readObject2(count, rawType);
-            }
-        }
-        else {
-            castError("Map", type);
-        }
-        checkTag(HproseTags.TagClosebrace);
-        return map;
     }
 
-    public Object readObject() throws IOException {
-        return readObject(true, null);
+    public BigInteger[] readBigIntegerArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                BigInteger[] a = new BigInteger[count];
+                ref.add(a);
+                for (int i = 0; i < count; i++) {
+                    a[i] = readBigInteger();
+                }
+                stream.read();
+                return a;
+            }
+            case HproseTags.TagRef: return (BigInteger[])readRef();
+            default: throw castError(tagToString(tag), BigInteger[].class);
+        }
     }
 
-    public Object readObject(boolean includeTag) throws IOException {
-        return readObject(includeTag, null);
+    public Date[] readDateArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                Date[] a = new Date[count];
+                ref.add(a);
+                for (int i = 0; i < count; i++) {
+                    a[i] = readDate();
+                }
+                stream.read();
+                return a;
+            }
+            case HproseTags.TagRef: return (Date[])readRef();
+            default: throw castError(tagToString(tag), Date[].class);
+        }
+    }
+
+    public Time[] readTimeArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                Time[] a = new Time[count];
+                ref.add(a);
+                for (int i = 0; i < count; i++) {
+                    a[i] = readTime();
+                }
+                stream.read();
+                return a;
+            }
+            case HproseTags.TagRef: return (Time[])readRef();
+            default: throw castError(tagToString(tag), Time[].class);
+        }
+    }
+
+    public Timestamp[] readTimestampArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                Timestamp[] a = new Timestamp[count];
+                ref.add(a);
+                for (int i = 0; i < count; i++) {
+                    a[i] = readTimestamp();
+                }
+                stream.read();
+                return a;
+            }
+            case HproseTags.TagRef: return (Timestamp[])readRef();
+            default: throw castError(tagToString(tag), Timestamp[].class);
+        }
+    }
+
+    public java.util.Date[] readDateTimeArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                java.util.Date[] a = new java.util.Date[count];
+                ref.add(a);
+                for (int i = 0; i < count; i++) {
+                    a[i] = readDateTime();
+                }
+                stream.read();
+                return a;
+            }
+            case HproseTags.TagRef: return (java.util.Date[])readRef();
+            default: throw castError(tagToString(tag), java.util.Date[].class);
+        }
+    }
+
+    public Calendar[] readCalendarArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                Calendar[] a = new Calendar[count];
+                ref.add(a);
+                for (int i = 0; i < count; i++) {
+                    a[i] = readCalendar();
+                }
+                stream.read();
+                return a;
+            }
+            case HproseTags.TagRef: return (Calendar[])readRef();
+            default: throw castError(tagToString(tag), Calendar[].class);
+        }
+    }
+    
+    public BigDecimal[] readBigDecimalArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                BigDecimal[] a = new BigDecimal[count];
+                ref.add(a);
+                for (int i = 0; i < count; i++) {
+                    a[i] = readBigDecimal();
+                }
+                stream.read();
+                return a;
+            }
+            case HproseTags.TagRef: return (BigDecimal[])readRef();
+            default: throw castError(tagToString(tag), BigDecimal[].class);
+        }
+    }
+
+    public StringBuilder[] readStringBuilderArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                StringBuilder[] a = new StringBuilder[count];
+                ref.add(a);
+                for (int i = 0; i < count; i++) {
+                    a[i] = readStringBuilder();
+                }
+                stream.read();
+                return a;
+            }
+            case HproseTags.TagRef: return (StringBuilder[])readRef();
+            default: throw castError(tagToString(tag), StringBuilder[].class);
+        }
+    }
+
+    public StringBuffer[] readStringBufferArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                StringBuffer[] a = new StringBuffer[count];
+                ref.add(a);
+                for (int i = 0; i < count; i++) {
+                    a[i] = readStringBuffer();
+                }
+                stream.read();
+                return a;
+            }
+            case HproseTags.TagRef: return (StringBuffer[])readRef();
+            default: throw castError(tagToString(tag), StringBuffer[].class);
+        }
+    }
+
+    public UUID[] readUUIDArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                UUID[] a = new UUID[count];
+                ref.add(a);
+                for (int i = 0; i < count; i++) {
+                    a[i] = readUUID();
+                }
+                stream.read();
+                return a;
+            }
+            case HproseTags.TagRef: return (UUID[])readRef();
+            default: throw castError(tagToString(tag), UUID[].class);
+        }
+    }
+
+    public char[][] readCharsArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                char[][] a = new char[count][];
+                ref.add(a);
+                for (int i = 0; i < count; i++) {
+                    a[i] = readCharArray();
+                }
+                stream.read();
+                return a;
+            }
+            case HproseTags.TagRef: return (char[][])readRef();
+            default: throw castError(tagToString(tag), char[][].class);
+        }
+    }
+
+    public byte[][] readBytesArray() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                byte[][] a = new byte[count][];
+                ref.add(a);
+                for (int i = 0; i < count; i++) {
+                    a[i] = readByteArray();
+                }
+                stream.read();
+                return a;
+            }
+            case HproseTags.TagRef: return (byte[][])readRef();
+            default: throw castError(tagToString(tag), byte[][].class);
+        }
+    }
+
+    @SuppressWarnings({"unchecked"})
+    public <T> T[] readOtherTypeArray(Class<T> componentClass, Type componentType) throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                T[] a = (T[])Array.newInstance(componentClass, count);
+                ref.add(a);
+                int typecode = TypeCode.get(componentClass);
+                for (int i = 0; i < count; i++) {
+                    a[i] = (T)unserialize(componentClass, componentType, typecode);
+                }
+                stream.read();
+                return a;
+            }
+            case HproseTags.TagRef: return (T[])readRef();
+            default: throw castError(tagToString(tag), Array.newInstance(componentClass, 0).getClass());
+        }
+    }
+
+    @SuppressWarnings({"unchecked"})
+    public Collection readCollection(Class<?> cls, Type type) throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagList: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                Collection a = (Collection)HproseHelper.newInstance(cls);
+                ref.add(a);
+                Type componentType;
+                Class<?> componentClass;
+                if (type instanceof ParameterizedType) {
+                    componentType = ((ParameterizedType)type).getActualTypeArguments()[0];
+                    componentClass = HproseHelper.toClass(componentType);
+                }
+                else {
+                    componentType = Object.class;
+                    componentClass = Object.class;
+                }
+                int typecode = TypeCode.get(componentClass);
+                for (int i = 0; i < count; i++) {
+                    a.add(unserialize(componentClass, componentType, typecode));
+                }
+                stream.read();
+                return a;
+            }
+            case HproseTags.TagRef: return (Collection)readRef();
+            default: throw castError(tagToString(tag), cls);
+        }
+    }
+
+    @SuppressWarnings({"unchecked"})
+    public Map readMap(Class<?> cls, Type type) throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagMap: {
+                int count = readInt(HproseTags.TagOpenbrace);
+                Map m = (Map)HproseHelper.newInstance(cls);
+                ref.add(m);
+                Type keyType, valueType;
+                Class<?> keyClass, valueClass;
+                if (type instanceof ParameterizedType) {
+                    Type[] argsType = ((ParameterizedType)type).getActualTypeArguments();
+                    keyType = argsType[0];
+                    valueType = argsType[1];
+                    keyClass = HproseHelper.toClass(keyType);
+                    valueClass = HproseHelper.toClass(valueType);
+                }
+                else {
+                    keyType = Object.class;
+                    valueType = Object.class;
+                    keyClass = Object.class;
+                    valueClass = Object.class;
+                }
+                int keyTypecode = TypeCode.get(keyClass);
+                int valueTypecode = TypeCode.get(valueClass);
+                for (int i = 0; i < count; i++) {
+                    Object key = unserialize(keyClass, keyType, keyTypecode);
+                    Object value = unserialize(valueClass, valueType, valueTypecode);
+                    m.put(key, value);
+                }
+                stream.read();
+                return m;
+            }
+            case HproseTags.TagClass: readClass(); return readMap(cls, type);
+            case HproseTags.TagObject: return readObjectAsMap((Map)HproseHelper.newInstance(cls));
+            case HproseTags.TagRef: return (Map)readRef();
+            default: throw castError(tagToString(tag), cls);
+        }
     }
 
     public Object readObject(Class<?> type) throws IOException {
-        return readObject(true, type);
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            case HproseTags.TagMap: return readMapAsObject(type);
+            case HproseTags.TagClass: readClass(); return readObject(type);
+            case HproseTags.TagObject: return readObjectWithoutTag(type);
+            case HproseTags.TagRef: return readRef(type);
+            default: throw castError(tagToString(tag), type);
+        }
     }
 
-    public Object readObject(boolean includeTag, Class<?> type) throws IOException {
-        if (includeTag) {
-            int tag = checkTags((char) HproseTags.TagObject + "" +
-                                (char) HproseTags.TagClass + "" +
-                                (char) HproseTags.TagRef);
-            if (tag == HproseTags.TagRef) {
-                return readRef(type);
-            }
-            if (tag == HproseTags.TagClass) {
-                readClass();
-                return readObject(type);
-            }
+    public Object unserialize(Type type) throws IOException {
+        if (type == null) {
+            return unserialize();
         }
-        Object c = classref.get(readInt(HproseTags.TagOpenbrace));
-        String[] memberNames = (String[]) membersref.get(c);
-        int count = memberNames.length;
-        Object obj = null;
-        Map members = null;
-        boolean isBean = false;
-        if (Class.class.equals(c.getClass())) {
-            Class<?> cls = (Class<?>) c;
-            if ((type == null) || type.isAssignableFrom(cls)) {
-                obj = HproseHelper.newInstance(cls);
-                if (obj != null) {
-                    isBean = !(Serializable.class.isAssignableFrom(cls));
-                    if (isBean) {
-                        members = HproseHelper.getMembers(cls);
-                    }
-                    else if (mode == HproseMode.FieldMode) {
-                        members = HproseHelper.getFields(cls);
-                    }
-                    else {
-                        members = HproseHelper.getProperties(cls);
-                    }
+        Class<?> cls = HproseHelper.toClass(type);
+        return unserialize(cls, type, TypeCode.get(cls));
+    }
+
+    @SuppressWarnings({"unchecked"})
+    public <T> T unserialize(Class<T> type) throws IOException {
+        return (T) unserialize(type, type, TypeCode.get(type));
+    }
+
+    private Object unserialize(Class<?> cls, Type type, int typecode) throws IOException {
+        switch (typecode) {
+            case TypeCode.Null: return unserialize();
+            case TypeCode.BooleanType: return readBoolean();
+            case TypeCode.CharType: return readChar();
+            case TypeCode.ByteType: return readByte();
+            case TypeCode.ShortType: return readShort();
+            case TypeCode.IntType: return readInt();
+            case TypeCode.LongType: return readLong();
+            case TypeCode.FloatType: return readFloat();
+            case TypeCode.DoubleType: return readDouble();
+            case TypeCode.Enum: return readEnum(cls);
+            case TypeCode.Object: return unserialize();
+            case TypeCode.Boolean: return readBoolean();
+            case TypeCode.Character: return readChar();
+            case TypeCode.Byte: return readByte();
+            case TypeCode.Short: return readShort();
+            case TypeCode.Integer: return readInt();
+            case TypeCode.Long: return readLong();
+            case TypeCode.Float: return readFloat();
+            case TypeCode.Double: return readDouble();
+            case TypeCode.String: return readString();
+            case TypeCode.BigInteger: return readBigInteger();
+            case TypeCode.Date: return readDate();
+            case TypeCode.Time: return readTime();
+            case TypeCode.Timestamp: return readTimestamp();
+            case TypeCode.DateTime: return readDateTime();
+            case TypeCode.Calendar: return readCalendar();
+            case TypeCode.BigDecimal: return readBigDecimal();
+            case TypeCode.StringBuilder: return readStringBuilder();
+            case TypeCode.StringBuffer: return readStringBuffer();
+            case TypeCode.UUID: return readUUID();
+            case TypeCode.ObjectArray: return readObjectArray();
+            case TypeCode.BooleanArray: return readBooleanArray();
+            case TypeCode.CharArray: return readCharArray();
+            case TypeCode.ByteArray: return readByteArray();
+            case TypeCode.ShortArray: return readShortArray();
+            case TypeCode.IntArray: return readIntArray();
+            case TypeCode.LongArray: return readLongArray();
+            case TypeCode.FloatArray: return readFloatArray();
+            case TypeCode.DoubleArray: return readDoubleArray();
+            case TypeCode.StringArray: return readStringArray();
+            case TypeCode.BigIntegerArray: return readBigIntegerArray();
+            case TypeCode.DateArray: return readDateArray();
+            case TypeCode.TimeArray: return readTimeArray();
+            case TypeCode.TimestampArray: return readTimestampArray();
+            case TypeCode.DateTimeArray: return readDateTimeArray();
+            case TypeCode.CalendarArray: return readCalendarArray();
+            case TypeCode.BigDecimalArray: return readBigDecimalArray();
+            case TypeCode.StringBuilderArray: return readStringBuilderArray();
+            case TypeCode.StringBufferArray: return readStringBufferArray();
+            case TypeCode.UUIDArray: return readUUIDArray();
+            case TypeCode.CharsArray: return readCharsArray();
+            case TypeCode.BytesArray: return readBytesArray();
+            case TypeCode.OtherTypeArray: {
+                Class<?> componentClass = cls.getComponentType();
+                if (type instanceof GenericArrayType) {
+                    Type componentType = ((GenericArrayType)type).getGenericComponentType();
+                    return readOtherTypeArray(componentClass, componentType);
+                }
+                else {
+                    return readOtherTypeArray(componentClass, componentClass);
                 }
             }
-            else if (isInstantiableClass(type)) {
-                obj = HproseHelper.newInstance(type);
-            }
-        }
-        else if ((type != null) && isInstantiableClass(type)) {
-            obj = HproseHelper.newInstance(type);
-        }
-        if ((obj != null) && (members == null)) {
-            isBean = !(Serializable.class.isAssignableFrom(type));
-            if (isBean) {
-                members = HproseHelper.getMembers(type);
-            }
-            else if (mode == HproseMode.FieldMode) {
-                members = HproseHelper.getFields(type);
-            }
-            else {
-                members = HproseHelper.getProperties(type);
-            }
-        }
-        if (obj == null) {
-            HashMap<String, Object> map = new HashMap<String, Object>(count);
-            ref.add(map);
-            for (int i = 0; i < count; i++) {
-                map.put(memberNames[i], unserialize(Object.class));
-            }
-            obj = map;
-        }
-        else {
-            ref.add(obj);
-            if (isBean) {
-                for (int i = 0; i < count; i++) {
-                    Object member = members.get(memberNames[i]);
-                    if (member != null) {
-                        try {
-                            if (member instanceof Field) {
-                                Field field = (Field) member;
-                                Object value = unserialize(field.getGenericType());
-                                field.set(obj, value);
-                            }
-                            else {
-                                Method setter = ((PropertyAccessor) member).setter;
-                                Object value = unserialize(setter.getGenericParameterTypes()[0]);
-                                setter.invoke(obj, new Object[]{value});
-                            }
-                        }
-                        catch (Exception e) {
-                            throw new HproseException(e.getMessage());
-                        }
-                    }
-                    else {
-                        unserialize();
-                    }
+            case TypeCode.ArrayList:
+            case TypeCode.AbstractList:
+            case TypeCode.AbstractCollection:
+            case TypeCode.List:
+            case TypeCode.Collection: return readCollection(ArrayList.class, type);
+            case TypeCode.AbstractSequentialList:
+            case TypeCode.LinkedList: return readCollection(LinkedList.class, type);
+            case TypeCode.HashSet:
+            case TypeCode.AbstractSet:
+            case TypeCode.Set: return readCollection(HashSet.class, type);
+            case TypeCode.TreeSet:
+            case TypeCode.SortedSet: return readCollection(TreeSet.class, type);
+            case TypeCode.CollectionType: {
+                if (isInstantiableClass(cls)) {
+                    return readCollection(cls, type);
+                }
+                else {
+                    throw new HproseException(type.toString() + " is not an instantiable class.");
                 }
             }
-            else if (mode == HproseMode.FieldMode) {
-                for (int i = 0; i < count; i++) {
-                    Field field = (Field) members.get(memberNames[i]);
-                    if (field != null) {
-                        Object value = unserialize(field.getGenericType());
-                        try {
-                            field.set(obj, value);
-                        }
-                        catch (Exception e) {
-                            throw new HproseException(e.getMessage());
-                        }
-                    }
-                    else {
-                        unserialize();
-                    }
+            case TypeCode.HashMap:
+            case TypeCode.AbstractMap:
+            case TypeCode.Map: return readMap(HashMap.class, type);
+            case TypeCode.TreeMap:
+            case TypeCode.SortedMap: return readMap(TreeMap.class, type);
+            case TypeCode.MapType: {
+                if (isInstantiableClass(cls)) {
+                    return readMap(cls, type);
+                }
+                else {
+                    throw new HproseException(type.toString() + " is not an instantiable class.");
                 }
             }
-            else {
-                for (int i = 0; i < count; i++) {
-                    PropertyAccessor pa = (PropertyAccessor) members.get(memberNames[i]);
-                    if (pa != null) {
-                        Method setter = pa.setter;
-                        Object value = unserialize(setter.getGenericParameterTypes()[0]);
-                        try {
-                            setter.invoke(obj, new Object[]{value});
-                        }
-                        catch (Exception e) {
-                            throw new HproseException(e.getMessage());
-                        }
-                    }
-                    else {
-                        unserialize();
-                    }
-                }
-            }
+            case TypeCode.OtherType: return readObject(cls);
         }
-        checkTag(HproseTags.TagClosebrace);
-        return obj;
+        throw new HproseException("Can not unserialize this type: " + type.toString());
     }
 
-    private void readClass() throws IOException {
-        String className = (String) readString(false, null, false);
-        int count = readInt(HproseTags.TagOpenbrace);
-        String[] memberNames = new String[count];
-        for (int i = 0; i < count; i++) {
-            memberNames[i] = (String) readString(true);
-        }
-        checkTag(HproseTags.TagClosebrace);
-        Class<?> type = HproseHelper.getClass(className);
-        if (type == void.class) {
-            Object key = new Object();
-            classref.add(key);
-            membersref.put(key, memberNames);
-        }
-        else {
-            classref.add(type);
-            membersref.put(type, memberNames);
-        }
-    }
-
-    private Object readRef(Class<?> type) throws IOException {
-        Object o = ref.get(readInt(HproseTags.TagSemicolon));
-        if (type == null || type.isInstance(o)) {
-            return o;
-        }
-        return castError(o, type);
-    }
-
-    private Object castError(String srctype, Type desttype) throws IOException {
-        throw new HproseException(srctype + " can't change to " + desttype.toString());
-    }
-
-    private Object castError(String srctype, Class<?> desttype) throws IOException {
-        throw new HproseException(srctype + " can't change to " + desttype.getName());
-    }
-
-    private Object castError(Object obj, Class<?> type) throws IOException {
-        throw new HproseException(obj.getClass().getName() + " can't change to " + type.getName());
-    }
-    
     public ByteArrayOutputStream readRaw() throws IOException {
     	ByteArrayOutputStream ostream = new ByteArrayOutputStream();
     	readRaw(ostream);
@@ -2532,8 +2190,8 @@ public final class HproseReader {
             }
             default:
                 throw new HproseException("bad utf-8 encoding at " +
-                                          ((tag < 0) ? "end of stream" :
-                                              "0x" + Integer.toHexString(tag & 0xff)));
+                    ((tag < 0) ? "end of stream" :
+                    "0x" + Integer.toHexString(tag & 0xff)));
         }
     }
 
@@ -2558,6 +2216,7 @@ public final class HproseReader {
         ostream.write(stream.read());        
     }
 
+    @SuppressWarnings({"fallthrough"})
     private void readStringRaw(OutputStream ostream, int tag) throws IOException {
         ostream.write(tag);
         int count = 0;
@@ -2606,12 +2265,12 @@ public final class HproseReader {
                         ostream.write(stream.read());
                         break;
                     }
-                // no break here!! here need throw exception.
                 }
+                // No break here
                 default:
                     throw new HproseException("bad utf-8 encoding at " +
-                                              ((tag < 0) ? "end of stream" :
-                                                  "0x" + Integer.toHexString(tag & 0xff)));
+                        ((tag < 0) ? "end of stream" :
+                        "0x" + Integer.toHexString(tag & 0xff)));
             }
         }
         ostream.write(stream.read());
@@ -2640,55 +2299,6 @@ public final class HproseReader {
             readRaw(ostream, tag);
         }
         ostream.write(tag);
-    }
-
-    private static Class<?> toClass(Type o) {
-        if (o instanceof Class<?>) {
-            return (Class<?>) o;
-        }
-        if (o instanceof WildcardType) {
-            WildcardType wildcardType = (WildcardType) o;
-            if (wildcardType.getUpperBounds().length == 1) {
-                Type upperBoundType = wildcardType.getUpperBounds()[0];
-                if (upperBoundType instanceof Class<?>) {
-                    if (Object.class.equals(upperBoundType)) {
-                        if (wildcardType.getLowerBounds().length == 0) {
-                            return Object.class;
-                        }
-                        else {
-                            return null;
-                        }
-                    }
-                    return (Class<?>) upperBoundType;
-                }
-            }
-            return Object.class;
-        }
-        if (o instanceof TypeVariable) {
-            TypeVariable typeVariable = (TypeVariable) o;
-            Type[] bounds = typeVariable.getBounds();
-            if (bounds.length != 1) {
-                return null;
-            }
-            Type boundType = bounds[0];
-            if (boundType instanceof Class<?>) {
-                return (Class<?>) boundType;
-            }
-            return Object.class;
-        }
-        if (o instanceof ParameterizedType) {
-            return (Class<?>) (((ParameterizedType) o).getRawType());
-        }
-	if (o instanceof GenericArrayType) {
-            Class<?> componentType = toClass(((GenericArrayType)o).getGenericComponentType());
-            if (componentType == null) {
-                return Object[].class;
-            }
-            else {
-                return Array.newInstance(componentType, 0).getClass();
-            }
-        }
-        return Object.class;
     }
 
     public void reset() {

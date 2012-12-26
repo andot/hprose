@@ -142,18 +142,16 @@ public final class HproseFormatter {
         return reader.unserialize();
     }
 
-    @SuppressWarnings("unchecked")
     public static <T> T unserialize(byte[] data, Class<T> type) throws IOException {
         ByteArrayInputStream stream = new ByteArrayInputStream(data);
         HproseReader reader = new HproseReader(stream);
-        return (T) reader.unserialize(type);
+        return reader.unserialize(type);
     }
 
-    @SuppressWarnings("unchecked")
     public static <T> T unserialize(byte[] data, HproseMode mode, Class<T> type) throws IOException {
         ByteArrayInputStream stream = new ByteArrayInputStream(data);
         HproseReader reader = new HproseReader(stream, mode);
-        return (T) reader.unserialize(type);
+        return reader.unserialize(type);
     }
 
     public static Object unserialize(InputStream stream) throws IOException {
@@ -166,15 +164,13 @@ public final class HproseFormatter {
         return reader.unserialize();
     }
 
-    @SuppressWarnings("unchecked")
     public static <T> T unserialize(InputStream stream, Class<T> type) throws IOException {
         HproseReader reader = new HproseReader(stream);
-        return (T) reader.unserialize(type);
+        return reader.unserialize(type);
     }
 
-    @SuppressWarnings("unchecked")
     public static <T> T unserialize(InputStream stream, HproseMode mode, Class<T> type) throws IOException {
         HproseReader reader = new HproseReader(stream, mode);
-        return (T) reader.unserialize(type);
+        return reader.unserialize(type);
     }
 }

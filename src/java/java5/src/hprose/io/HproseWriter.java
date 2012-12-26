@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for Java.                          *
  *                                                        *
- * LastModified: May 8, 2011                              *
+ * LastModified: Dec 26, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -26,7 +26,6 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.ref.SoftReference;
 import java.lang.reflect.Array;
-import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Date;
@@ -392,7 +391,9 @@ public final class HproseWriter {
         int minute = calendar.get(Calendar.MINUTE);
         int second = calendar.get(Calendar.SECOND);
         int millisecond = calendar.get(Calendar.MILLISECOND);
-        if (ignoreZero && hour == 0 && minute == 0 && second == 0 && millisecond == 0) return;
+        if (ignoreZero && hour == 0 && minute == 0 && second == 0 && millisecond == 0) {
+            return;
+        }
         stream.write(HproseTags.TagTime);
         stream.write((byte) ('0' + (hour / 10 % 10)));
         stream.write((byte) ('0' + (hour % 10)));
@@ -415,7 +416,9 @@ public final class HproseWriter {
     public void writeBytes(byte[] bytes, boolean checkRef) throws IOException {
         if (writeRef(bytes, checkRef)) {
             stream.write(HproseTags.TagBytes);
-            if (bytes.length > 0) writeInt(bytes.length);
+            if (bytes.length > 0) {
+                writeInt(bytes.length);
+            }
             stream.write(HproseTags.TagQuote);
             stream.write(bytes);
             stream.write(HproseTags.TagQuote);
@@ -451,7 +454,9 @@ public final class HproseWriter {
 
     private void writeUTF8String(String s, OutputStream stream) throws IOException {
         int length = s.length();
-        if (length > 0) writeInt(length, stream);
+        if (length > 0) {
+            writeInt(length, stream);
+        }
         stream.write(HproseTags.TagQuote);
         for (int i = 0; i < length; ++i) {
             int c = 0xffff & s.charAt(i);
@@ -502,7 +507,9 @@ public final class HproseWriter {
 
     private void writeUTF8String(char[] s) throws IOException {
         int length = s.length;
-        if (length > 0) writeInt(length);
+        if (length > 0) {
+            writeInt(length);
+        }
         stream.write(HproseTags.TagQuote);
         for (int i = 0; i < length; ++i) {
             int c = 0xffff & s[i];
@@ -561,7 +568,9 @@ public final class HproseWriter {
         if (writeRef(array, checkRef)) {
             int length = array.length;
             stream.write(HproseTags.TagList);
-            if (length > 0) writeInt(length);
+            if (length > 0) {
+                writeInt(length);
+            }
             stream.write(HproseTags.TagOpenbrace);
             for (int i = 0; i < length; ++i) {
                 writeInteger(array[i]);
@@ -578,7 +587,9 @@ public final class HproseWriter {
         if (writeRef(array, checkRef)) {
             int length = array.length;
             stream.write(HproseTags.TagList);
-            if (length > 0) writeInt(length);
+            if (length > 0) {
+                writeInt(length);
+            }
             stream.write(HproseTags.TagOpenbrace);
             for (int i = 0; i < length; ++i) {
                 writeInteger(array[i]);
@@ -595,7 +606,9 @@ public final class HproseWriter {
         if (writeRef(array, checkRef)) {
             int length = array.length;
             stream.write(HproseTags.TagList);
-            if (length > 0) writeInt(length);
+            if (length > 0) {
+                writeInt(length);
+            }
             stream.write(HproseTags.TagOpenbrace);
             for (int i = 0; i < length; ++i) {
                 writeLong(array[i]);
@@ -612,7 +625,9 @@ public final class HproseWriter {
         if (writeRef(array, checkRef)) {
             int length = array.length;
             stream.write(HproseTags.TagList);
-            if (length > 0) writeInt(length);
+            if (length > 0) {
+                writeInt(length);
+            }
             stream.write(HproseTags.TagOpenbrace);
             for (int i = 0; i < length; ++i) {
                 writeDouble(array[i]);
@@ -629,7 +644,9 @@ public final class HproseWriter {
         if (writeRef(array, checkRef)) {
             int length = array.length;
             stream.write(HproseTags.TagList);
-            if (length > 0) writeInt(length);
+            if (length > 0) {
+                writeInt(length);
+            }
             stream.write(HproseTags.TagOpenbrace);
             for (int i = 0; i < length; ++i) {
                 writeDouble(array[i]);
@@ -646,7 +663,9 @@ public final class HproseWriter {
         if (writeRef(array, checkRef)) {
             int length = array.length;
             stream.write(HproseTags.TagList);
-            if (length > 0) writeInt(length);
+            if (length > 0) {
+                writeInt(length);
+            }
             stream.write(HproseTags.TagOpenbrace);
             for (int i = 0; i < length; ++i) {
                 writeBoolean(array[i]);
@@ -663,7 +682,9 @@ public final class HproseWriter {
         if (writeRef(array, checkRef)) {
             int length = array.length;
             stream.write(HproseTags.TagList);
-            if (length > 0) writeInt(length);
+            if (length > 0) {
+                writeInt(length);
+            }
             stream.write(HproseTags.TagOpenbrace);
             for (int i = 0; i < length; ++i) {
                 writeString(array[i]);
@@ -680,7 +701,9 @@ public final class HproseWriter {
         if (writeRef(array, checkRef)) {
             int length = array.length;
             stream.write(HproseTags.TagList);
-            if (length > 0) writeInt(length);
+            if (length > 0) {
+                writeInt(length);
+            }
             stream.write(HproseTags.TagOpenbrace);
             for (int i = 0; i < length; ++i) {
                 writeString(array[i].toString());
@@ -697,7 +720,9 @@ public final class HproseWriter {
         if (writeRef(array, checkRef)) {
             int length = array.length;
             stream.write(HproseTags.TagList);
-            if (length > 0) writeInt(length);
+            if (length > 0) {
+                writeInt(length);
+            }
             stream.write(HproseTags.TagOpenbrace);
             for (int i = 0; i < length; ++i) {
                 writeString(array[i].toString());
@@ -714,7 +739,9 @@ public final class HproseWriter {
         if (writeRef(array, checkRef)) {
             int length = array.length;
             stream.write(HproseTags.TagList);
-            if (length > 0) writeInt(length);
+            if (length > 0) {
+                writeInt(length);
+            }
             stream.write(HproseTags.TagOpenbrace);
             for (int i = 0; i < length; ++i) {
                 writeString(array[i]);
@@ -731,7 +758,9 @@ public final class HproseWriter {
         if (writeRef(array, checkRef)) {
             int length = array.length;
             stream.write(HproseTags.TagList);
-            if (length > 0) writeInt(length);
+            if (length > 0) {
+                writeInt(length);
+            }
             stream.write(HproseTags.TagOpenbrace);
             for (int i = 0; i < length; ++i) {
                 writeBytes(array[i]);
@@ -748,7 +777,9 @@ public final class HproseWriter {
         if (writeRef(array, checkRef)) {
             int length = array.length;
             stream.write(HproseTags.TagList);
-            if (length > 0) writeInt(length);
+            if (length > 0) {
+                writeInt(length);
+            }
             stream.write(HproseTags.TagOpenbrace);
             for (int i = 0; i < length; ++i) {
                 writeLong(array[i]);
@@ -765,7 +796,9 @@ public final class HproseWriter {
         if (writeRef(array, checkRef)) {
             int length = array.length;
             stream.write(HproseTags.TagList);
-            if (length > 0) writeInt(length);
+            if (length > 0) {
+                writeInt(length);
+            }
             stream.write(HproseTags.TagOpenbrace);
             for (int i = 0; i < length; ++i) {
                 writeString(array[i].toString());
@@ -782,7 +815,9 @@ public final class HproseWriter {
         if (writeRef(array, checkRef)) {
             int length = array.length;
             stream.write(HproseTags.TagList);
-            if (length > 0) writeInt(length);
+            if (length > 0) {
+                writeInt(length);
+            }
             stream.write(HproseTags.TagOpenbrace);
             for (int i = 0; i < length; ++i) {
                 serialize(array[i]);
@@ -799,7 +834,9 @@ public final class HproseWriter {
         if (writeRef(array, checkRef)) {
             int length = Array.getLength(array);
             stream.write(HproseTags.TagList);
-            if (length > 0) writeInt(length);
+            if (length > 0) {
+                writeInt(length);
+            }
             stream.write(HproseTags.TagOpenbrace);
             for (int i = 0; i < length; ++i) {
                 serialize(Array.get(array, i));
@@ -808,15 +845,17 @@ public final class HproseWriter {
         }
     }
 
-    public void writeCollection(Collection collection) throws IOException {
+    public void writeCollection(Collection<?> collection) throws IOException {
         writeCollection(collection, true);
     }
 
-    public void writeCollection(Collection collection, boolean checkRef) throws IOException {
+    public void writeCollection(Collection<?> collection, boolean checkRef) throws IOException {
         if (writeRef(collection, checkRef)) {
             int count = collection.size();
             stream.write(HproseTags.TagList);
-            if (count > 0) writeInt(count);
+            if (count > 0) {
+                writeInt(count);
+            }
             stream.write(HproseTags.TagOpenbrace);
             for (Object item : collection) {
                 serialize(item);
@@ -825,15 +864,17 @@ public final class HproseWriter {
         }
     }
 
-    public void writeList(List list) throws IOException {
+    public void writeList(List<?> list) throws IOException {
         writeList(list, true);
     }
 
-    public void writeList(List list, boolean checkRef) throws IOException {
+    public void writeList(List<?> list, boolean checkRef) throws IOException {
         if (writeRef(list, checkRef)) {
             int count = list.size();
             stream.write(HproseTags.TagList);
-            if (count > 0) writeInt(count);
+            if (count > 0) {
+                writeInt(count);
+            }
             stream.write(HproseTags.TagOpenbrace);
             for (int i = 0; i < count; ++i) {
                 serialize(list.get(i));
@@ -850,9 +891,11 @@ public final class HproseWriter {
         if (writeRef(map, checkRef)) {
             int count = map.size();
             stream.write(HproseTags.TagMap);
-            if (count > 0) writeInt(count);
+            if (count > 0) {
+                writeInt(count);
+            }
             stream.write(HproseTags.TagOpenbrace);
-            for (Entry entry : map.entrySet()) {
+            for (Entry<?,?> entry : map.entrySet()) {
                 serialize(entry.getKey());
                 serialize(entry.getValue());
             }
@@ -865,10 +908,6 @@ public final class HproseWriter {
     }
 
     public void writeObject(Object object, boolean checkRef) throws IOException {
-        if (!(object instanceof Serializable)) {
-            writeBean(object, checkRef);
-            return;
-        }
         if (checkRef && ref.containsKey(object)) {
             writeRef(object);
         }
@@ -882,115 +921,14 @@ public final class HproseWriter {
                 cr = writeClass(type);
             }
             ref.put(object, lastref++);
-            Map<String, ?> members;
-            if (mode == HproseMode.FieldMode) {
-                members = HproseHelper.getFields(type);
-            }
-            else {
-                members = HproseHelper.getProperties(type);
-            }
+            Map<String, MemberAccessor> members = HproseHelper.getMembers(type, mode);
             stream.write(HproseTags.TagObject);
             writeInt(cr);
             stream.write(HproseTags.TagOpenbrace);
-            if (mode == HproseMode.FieldMode) {
-                for (Entry entry : members.entrySet()) {
-                    Object value;
-                    try {
-                        value = ((Field) entry.getValue()).get(object);
-                    }
-                    catch (Exception e) {
-                        throw new HproseException(e.getMessage());
-                    }
-                    serialize(value);
-                }
-            }
-            else {
-                for (Entry entry : members.entrySet()) {
-                    Object value;
-                    try {
-                        value = ((PropertyAccessor) entry.getValue()).getter.invoke(object, nullArgs);
-                    }
-                    catch (Exception e) {
-                        throw new HproseException(e.getMessage());
-                    }
-                    serialize(value);
-                }
-            }
-            stream.write(HproseTags.TagClosebrace);
-        }
-    }
-
-    private int writeClass(Class<?> type) throws IOException {
-        SoftReference<SerializeCache> sref = 
-                (mode == HproseMode.FieldMode) ?
-                fieldsCache.get(type) :
-                propertiesCache.get(type);
-        SerializeCache cache = null;
-        if (sref != null) cache = sref.get();
-        if (cache == null) {
-            cache = new SerializeCache();
-            ByteArrayOutputStream cachestream = new ByteArrayOutputStream();
-            Map<String, ?> members;
-            if (mode == HproseMode.FieldMode) {
-                members = HproseHelper.getFields(type);
-            }
-            else {
-                members = HproseHelper.getProperties(type);
-            }
-            int count = members.size();
-            cachestream.write(HproseTags.TagClass);
-            writeUTF8String(HproseHelper.getClassName(type), cachestream);
-            if (count > 0) writeInt(count, cachestream);
-            cachestream.write(HproseTags.TagOpenbrace);
-            for (Entry<String, ?> member : members.entrySet()) {
-                cachestream.write(HproseTags.TagString);
-                writeUTF8String(member.getKey(), cachestream);
-                ++cache.refcount;
-            }
-            cachestream.write(HproseTags.TagClosebrace);
-            cache.data = cachestream.toByteArray();
-            if (mode == HproseMode.FieldMode) {
-                fieldsCache.put(type, new SoftReference<SerializeCache>(cache));
-            }
-            else {
-                propertiesCache.put(type, new SoftReference<SerializeCache>(cache));
-            }
-        }
-        stream.write(cache.data);
-        lastref += cache.refcount;
-        int cr = lastclassref++;
-        classref.put(type, cr);
-        return cr;
-    }
-
-    private void writeBean(Object object, boolean checkRef) throws IOException {
-        if (checkRef && ref.containsKey(object)) {
-            writeRef(object);
-        }
-        else {
-            Class<?> type = object.getClass();
-            int cr;
-            if (classref.containsKey(type)) {
-                cr = classref.get(type);
-            }
-            else {
-                cr = writeBeanClass(type);
-            }
-            ref.put(object, lastref++);
-            Map<String, ?> members = HproseHelper.getMembers(type);
-            stream.write(HproseTags.TagObject);
-            writeInt(cr);
-            stream.write(HproseTags.TagOpenbrace);
-            for (Entry entry : members.entrySet()) {
+            for (Entry<String, MemberAccessor> entry : members.entrySet()) {
                 Object value;
                 try {
-                    Object member = entry.getValue();
-                    if (member instanceof Field) {
-                        value = ((Field) member).get(object);
-                    }
-                    else {
-                        value = ((PropertyAccessor) member).getter.invoke(object, nullArgs);
-                    }
+                    value = entry.getValue().get(object);
                 }
                 catch (Exception e) {
                     throw new HproseException(e.getMessage());
@@ -1001,27 +939,54 @@ public final class HproseWriter {
         }
     }
 
-    private int writeBeanClass(Class<?> type) throws IOException {
-        SoftReference<SerializeCache> sref = membersCache.get(type);
-        SerializeCache cache = null;
-        if (sref != null) cache = sref.get();
+    private SerializeCache getSerializeCache(Class<?> type, HproseMode mode) {
+        SoftReference<SerializeCache> sref =
+            (Serializable.class.isAssignableFrom(type)) ?
+            (mode == HproseMode.FieldMode) ?
+            fieldsCache.get(type) :
+            propertiesCache.get(type) :
+            membersCache.get(type);
+        if (sref != null) {
+            return sref.get();
+        }
+        return null;
+    }
+    
+    private void putSerializeCache(Class<?> type, HproseMode mode, SerializeCache cache) {
+        if (Serializable.class.isAssignableFrom(type)) {
+            if (mode == HproseMode.FieldMode) {
+                fieldsCache.put(type, new SoftReference<SerializeCache>(cache));
+            }
+            else {
+                propertiesCache.put(type, new SoftReference<SerializeCache>(cache));
+            }
+        }
+        else {
+            membersCache.put(type, new SoftReference<SerializeCache>(cache));
+        }
+    }
+
+    private int writeClass(Class<?> type) throws IOException {
+        SerializeCache cache = getSerializeCache(type, mode);
         if (cache == null) {
             cache = new SerializeCache();
             ByteArrayOutputStream cachestream = new ByteArrayOutputStream();
-            Map<String, ?> members = HproseHelper.getMembers(type);
+            Map<String, MemberAccessor> members = HproseHelper.getMembers(type, mode);
             int count = members.size();
             cachestream.write(HproseTags.TagClass);
             writeUTF8String(HproseHelper.getClassName(type), cachestream);
-            if (count > 0) writeInt(count, cachestream);
+            if (count > 0) {
+                writeInt(count, cachestream);
+            }
             cachestream.write(HproseTags.TagOpenbrace);
-            for (Entry<String, ?> member : members.entrySet()) {
+            for (Entry<String, MemberAccessor> member : members.entrySet()) {
                 cachestream.write(HproseTags.TagString);
                 writeUTF8String(member.getKey(), cachestream);
                 ++cache.refcount;
             }
             cachestream.write(HproseTags.TagClosebrace);
             cache.data = cachestream.toByteArray();
-            membersCache.put(type, new SoftReference<SerializeCache>(cache));
+            putSerializeCache(type, mode, cache);
         }
         stream.write(cache.data);
         lastref += cache.refcount;

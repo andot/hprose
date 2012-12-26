@@ -13,7 +13,7 @@
  *                                                        *
  * hprose helper class for Java.                          *
  *                                                        *
- * LastModified: May 21, 2011                             *
+ * LastModified: Dec 26, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -21,11 +21,18 @@ package hprose.io;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectStreamClass;
+import java.io.Serializable;
 import java.lang.ref.SoftReference;
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
+import java.lang.reflect.WildcardType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -35,9 +42,9 @@ import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class HproseHelper {
-    private static final ConcurrentHashMap<Class<?>, SoftReference<HashMap<String, Field>>> fieldsCache = new ConcurrentHashMap<Class<?>, SoftReference<HashMap<String, Field>>>();
-    private static final ConcurrentHashMap<Class<?>, SoftReference<HashMap<String, PropertyAccessor>>> propertiesCache = new ConcurrentHashMap<Class<?>, SoftReference<HashMap<String, PropertyAccessor>>>();
-    private static final ConcurrentHashMap<Class<?>, SoftReference<HashMap<String, Object>>> membersCache = new ConcurrentHashMap<Class<?>, SoftReference<HashMap<String, Object>>>();
+    private static final ConcurrentHashMap<Class<?>, SoftReference<HashMap<String, MemberAccessor>>> fieldsCache = new ConcurrentHashMap<Class<?>, SoftReference<HashMap<String, MemberAccessor>>>();
+    private static final ConcurrentHashMap<Class<?>, SoftReference<HashMap<String, MemberAccessor>>> propertiesCache = new ConcurrentHashMap<Class<?>, SoftReference<HashMap<String, MemberAccessor>>>();
+    private static final ConcurrentHashMap<Class<?>, SoftReference<HashMap<String, MemberAccessor>>> membersCache = new ConcurrentHashMap<Class<?>, SoftReference<HashMap<String, MemberAccessor>>>();
     private static final ConcurrentHashMap<Class<?>, SoftReference<Constructor<?>>> ctorCache = new ConcurrentHashMap<Class<?>, SoftReference<Constructor<?>>>();
     private static final ConcurrentHashMap<Constructor<?>, SoftReference<Object[]>> argsCache = new ConcurrentHashMap<Constructor<?>, SoftReference<Object[]>>();
     private static final Object[] nullArgs = new Object[0];
@@ -86,8 +93,49 @@ public final class HproseHelper {
         newInstance = _newInstance;
     }
 
+    public static Class<?> toClass(Type type) {
+        if (type == null) {
+            return null;
+        }
+        else if (type instanceof Class<?>) {
+            return (Class<?>) type;
+        }
+        else if (type instanceof WildcardType) {
+            WildcardType wildcardType = (WildcardType) type;
+            if (wildcardType.getUpperBounds().length == 1) {
+                Type upperBoundType = wildcardType.getUpperBounds()[0];
+                if (upperBoundType instanceof Class<?>) {
+                    return (Class<?>) upperBoundType;
+                }
+            }
+            return Object.class;
+        }
+        else if (type instanceof TypeVariable) {
+            TypeVariable typeVariable = (TypeVariable) type;
+            Type[] bounds = typeVariable.getBounds();
+            if (bounds.length == 1) {
+                Type boundType = bounds[0];
+                if (boundType instanceof Class<?>) {
+                    return (Class<?>) boundType;
+                }
+            }
+            return Object.class;
+        }
+        else if (type instanceof ParameterizedType) {
+            return toClass(((ParameterizedType) type).getRawType());
+        }
+	else if (type instanceof GenericArrayType) {
+            return Array.newInstance(toClass(((GenericArrayType)type).getGenericComponentType()), 0).getClass();
+        }
+        else {
+            return Object.class;
+        }
+    }
+
     public static String[] split(String s, char c, int limit) {
-        if (s == null) return null;
+        if (s == null) {
+            return null;
+        }
         ArrayList<Integer> pos = new ArrayList<Integer>();
         int i = -1;
         while ((i = s.indexOf((int) c, i + 1)) > 0) {
@@ -138,13 +186,13 @@ public final class HproseHelper {
         return null;
     }
 
-    public static Map<String, ?> getProperties(Class<?> type) {
-        HashMap<String, PropertyAccessor> properties;
-        SoftReference<HashMap<String, PropertyAccessor>> sref = propertiesCache.get(type);
+    static Map<String, MemberAccessor> getProperties(Class<?> type) {
+        HashMap<String, MemberAccessor> properties;
+        SoftReference<HashMap<String, MemberAccessor>> sref = propertiesCache.get(type);
         if ((sref != null) && (properties = sref.get()) != null) {
             return properties;
         }
-        properties = new HashMap<String, PropertyAccessor>();
+        properties = new HashMap<String, MemberAccessor>();
         Method[] methods = type.getMethods();
         for (Method setter : methods) {
             if (Modifier.isStatic(setter.getModifiers())) {
@@ -164,8 +212,6 @@ public final class HproseHelper {
             String propertyName = name.substring(3);
             Method getter = findGetter(methods, propertyName, paramTypes[0]);
             if (getter != null) {
-                getter.setAccessible(true);
-                setter.setAccessible(true);
                 PropertyAccessor propertyAccessor = new PropertyAccessor(getter, setter);
                 char[] cname = propertyName.toCharArray();
                 cname[0] = Character.toLowerCase(cname[0]);
@@ -173,41 +219,40 @@ public final class HproseHelper {
                 properties.put(propertyName, propertyAccessor);
             }
         }
-        propertiesCache.put(type, new SoftReference<HashMap<String, PropertyAccessor>>(properties));
+        propertiesCache.put(type, new SoftReference<HashMap<String, MemberAccessor>>(properties));
         return properties;
     }
 
-    public static Map<String, ?> getFields(Class<?> type) {
-        HashMap<String, Field> fields;
-        SoftReference<HashMap<String, Field>> sref = fieldsCache.get(type);
+    static Map<String, MemberAccessor> getFields(Class<?> type) {
+        HashMap<String, MemberAccessor> fields;
+        SoftReference<HashMap<String, MemberAccessor>> sref = fieldsCache.get(type);
         if ((sref != null) && (fields = sref.get()) != null) {
             return fields;
         }
-        fields = new HashMap<String, Field>();
+        fields = new HashMap<String, MemberAccessor>();
         for (Class<?> clazz = type; clazz != null; clazz = clazz.getSuperclass()) {
             Field[] fs = clazz.getDeclaredFields();
             for (Field field : fs) {
                 int mod = field.getModifiers();
                 if (!Modifier.isTransient(mod) && !Modifier.isStatic(mod)) {
-                    field.setAccessible(true);
                     String fieldName = field.getName();
                     if (!fields.containsKey(fieldName)) {
-                        fields.put(fieldName, field);
+                        fields.put(fieldName, new FieldAccessor(field));
                     }
                 }
             }
         }
-        fieldsCache.put(type, new SoftReference<HashMap<String, Field>>(fields));
+        fieldsCache.put(type, new SoftReference<HashMap<String, MemberAccessor>>(fields));
         return fields;
     }
 
-    public static Map<String, ?> getMembers(Class<?> type) {
-        HashMap<String, Object> members;
-        SoftReference<HashMap<String, Object>> sref = membersCache.get(type);
+    static Map<String, MemberAccessor> getMembers(Class<?> type) {
+        HashMap<String, MemberAccessor> members;
+        SoftReference<HashMap<String, MemberAccessor>> sref = membersCache.get(type);
         if ((sref != null) && (members = sref.get()) != null) {
             return members;
         }
-        members = new HashMap<String, Object>();
+        members = new HashMap<String, MemberAccessor>();
         Method[] methods = type.getMethods();
         for (Method setter : methods) {
             if (Modifier.isStatic(setter.getModifiers())) {
@@ -227,8 +272,6 @@ public final class HproseHelper {
             String propertyName = name.substring(3);
             Method getter = findGetter(methods, propertyName, paramTypes[0]);
             if (getter != null) {
-                getter.setAccessible(true);
-                setter.setAccessible(true);
                 PropertyAccessor propertyAccessor = new PropertyAccessor(getter, setter);
                 char[] cname = propertyName.toCharArray();
                 cname[0] = Character.toLowerCase(cname[0]);
@@ -240,17 +283,24 @@ public final class HproseHelper {
         for (Field field : fs) {
             int mod = field.getModifiers();
             if (!Modifier.isTransient(mod) && !Modifier.isStatic(mod)) {
-                field.setAccessible(true);
                 String fieldName = field.getName();
                 if (!members.containsKey(fieldName)) {
-                    members.put(fieldName, field);
+                    members.put(fieldName, new FieldAccessor(field));
                 }
             }
         }
-        membersCache.put(type, new SoftReference<HashMap<String, Object>>(members));
+        membersCache.put(type, new SoftReference<HashMap<String, MemberAccessor>>(members));
         return members;
     }
 
+    static Map<String, MemberAccessor> getMembers(Class<?> type, HproseMode mode) {
+        return (Serializable.class.isAssignableFrom(type)) ?
+               (mode == HproseMode.FieldMode) ?
+               getFields(type) :
+               getProperties(type) :
+               getMembers(type);
+    }
+    
     public static String getClassName(Class<?> type) {
         String className = ClassManager.getClassAlias(type);
         if (className == null) {
@@ -399,14 +449,15 @@ public final class HproseHelper {
         }
     }
 
-    public static Object newInstance(Class<?> type) {
-        Constructor<?> ctor = null;
+    @SuppressWarnings({"unchecked"})
+    public static <T> T newInstance(Class<T> type) {
+        Constructor<T> ctor = null;
         boolean ctorCached = false;
         if (ctorCache.containsKey(type)) {
             ctorCached = true;
             SoftReference<Constructor<?>> sref = ctorCache.get(type);
             if (sref != null) {
-                ctor = sref.get();
+                ctor = (Constructor<T>) sref.get();
                 if (ctor == null) {
                     ctorCached = false;
                 }
@@ -418,12 +469,12 @@ public final class HproseHelper {
             }
             else {
                 if (!ctorCached) {
-                    Constructor<?>[] ctors = type.getDeclaredConstructors();
+                    Constructor<T>[] ctors = (Constructor<T>[]) type.getDeclaredConstructors();
                     Arrays.sort(ctors, new ConstructorComparator());
-                    for (Constructor<?> c : ctors) {
+                    for (Constructor<T> c : ctors) {
                         try {
                             c.setAccessible(true);
-                            Object obj = c.newInstance(getArgs(c));
+                            T obj = c.newInstance(getArgs(c));
                             ctorCache.put(type, new SoftReference<Constructor<?>>(c));
                             return obj;
                         }
@@ -433,7 +484,7 @@ public final class HproseHelper {
                     ctorCache.put(type, new SoftReference<Constructor<?>>(null));
                 }
                 if (newInstance != null) {
-                    return newInstance.invoke(ObjectStreamClass.lookup(type), nullArgs);
+                    return (T)newInstance.invoke(ObjectStreamClass.lookup(type), nullArgs);
                 }
                 else {
                     return null;
@@ -501,7 +552,7 @@ public final class HproseHelper {
             if (b2 == -1) {
                 break;
             }
-            buf.write((int) ((b1 << 2) | ((b2 & 0x30) >>> 4)));
+            buf.write((b1 << 2) | ((b2 & 0x30) >>> 4));
 
             /* b3 */
             do {
@@ -514,7 +565,7 @@ public final class HproseHelper {
             if (b3 == -1) {
                 break;
             }
-            buf.write((int) (((b2 & 0x0f) << 4) | ((b3 & 0x3c) >>> 2)));
+            buf.write(((b2 & 0x0f) << 4) | ((b3 & 0x3c) >>> 2));
 
             /* b4 */
             do {
@@ -527,7 +578,7 @@ public final class HproseHelper {
             if (b4 == -1) {
                 break;
             }
-            buf.write((int) (((b3 & 0x03) << 6) | b4));
+            buf.write(((b3 & 0x03) << 6) | b4);
         }
         return buf.toByteArray();
     }

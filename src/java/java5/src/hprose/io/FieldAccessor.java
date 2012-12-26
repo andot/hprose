@@ -9,9 +9,9 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * PropertyAccessor.java                                  *
+ * FieldAccessor.java                                     *
  *                                                        *
- * PropertyAccessor class for Java.                       *
+ * FieldAccessor class for Java.                          *
  *                                                        *
  * LastModified: Dec 26, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
@@ -19,35 +19,31 @@
 \**********************************************************/
 package hprose.io;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 
-final class PropertyAccessor extends MemberAccessor {
-    private Method getter;
-    private Method setter;
-    private static final Object[] nullArgs = new Object[0];
+final class FieldAccessor extends MemberAccessor {
+    private Field accessor;
 
-    public PropertyAccessor(Method getter, Method setter) {
-        getter.setAccessible(true);
-        setter.setAccessible(true);
-        this.getter = getter;
-        this.setter = setter;
-        this.type = getter.getGenericReturnType();
-        this.cls =  HproseHelper.toClass(type);
+    public FieldAccessor(Field accessor) {
+        accessor.setAccessible(true);
+        this.accessor = accessor;
+        this.type = accessor.getGenericType();
+        this.cls = HproseHelper.toClass(type);
         this.typecode = TypeCode.get(cls);
     }
-
+    
     @Override
     void set(Object obj, Object value) throws IllegalAccessException,
                                               IllegalArgumentException,
                                               InvocationTargetException {
-        setter.invoke(obj, new Object[] { value });
+        accessor.set(obj, value);
     }
 
     @Override
     Object get(Object obj) throws IllegalAccessException,
                                   IllegalArgumentException,
                                   InvocationTargetException {
-        return getter.invoke(obj, nullArgs);
+        return accessor.get(obj);
     }
 }

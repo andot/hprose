@@ -102,11 +102,11 @@ public abstract class HproseService {
         getGlobalMethods().addMethod(methodName, obj, paramTypes, aliasName, mode);
     }
 
-    public void add(String methodName, Class type, Class<?>[] paramTypes, String aliasName) throws NoSuchMethodException {
+    public void add(String methodName, Class<?> type, Class<?>[] paramTypes, String aliasName) throws NoSuchMethodException {
         getGlobalMethods().addMethod(methodName, type, paramTypes, aliasName);
     }
 
-    public void add(String methodName, Class type, Class<?>[] paramTypes, String aliasName, HproseResultMode mode) throws NoSuchMethodException {
+    public void add(String methodName, Class<?> type, Class<?>[] paramTypes, String aliasName, HproseResultMode mode) throws NoSuchMethodException {
         getGlobalMethods().addMethod(methodName, type, paramTypes, aliasName, mode);
     }
 
@@ -289,7 +289,9 @@ public abstract class HproseService {
             event.onSendError(error);
         }
         OutputStream ostream = getOutputStream();
-        if (filter != null) ostream = filter.outputFilter(ostream);
+        if (filter != null) {
+            ostream = filter.outputFilter(ostream);
+        }
         HproseWriter writer = new HproseWriter(ostream, mode);
         ostream.write(HproseTags.TagError);
         writer.writeString(error, false);
@@ -299,20 +301,23 @@ public abstract class HproseService {
 
     protected void doInvoke(HproseMethods methods) throws Throwable {
         InputStream istream = getInputStream();
-        if (filter != null) istream = filter.inputFilter(istream);
+        if (filter != null) {
+            istream = filter.inputFilter(istream);
+        }
         HproseReader reader = new HproseReader(istream, mode);
         OutputStream ostream = getOutputStream();
-        if (filter != null) ostream = filter.outputFilter(ostream);
+        if (filter != null) {
+            ostream = filter.outputFilter(ostream);
+        }
         HproseWriter writer = new HproseWriter(ostream, mode);
         int tag;
         do {
             reader.reset();
-            String name = ((String) reader.readString());
+            String name = reader.readString();
             String aliasname = name.toLowerCase();
             HproseMethod remoteMethod = null;
             int count = 0;
-            Object[] args = null;
-            Object[] arguments = null;
+            Object[] args, arguments;
             boolean byRef = false;
             tag = reader.checkTags((char) HproseTags.TagList + "" +
                                    (char) HproseTags.TagEnd + "" +
@@ -333,7 +338,6 @@ public abstract class HproseService {
                     arguments = new Object[count];
                     reader.readArray(remoteMethod.paramTypes, arguments, count);
                 }
-                reader.checkTag(HproseTags.TagClosebrace);
                 tag = reader.checkTags((char) HproseTags.TagTrue + "" +
                                        (char) HproseTags.TagEnd + "" +
                                        (char) HproseTags.TagCall);
@@ -434,7 +438,9 @@ public abstract class HproseService {
             names.addAll(methods.getAllNames());
         }
         OutputStream ostream = getOutputStream();
-        if (filter != null) ostream = filter.outputFilter(ostream);
+        if (filter != null) {
+            ostream = filter.outputFilter(ostream);
+        }
         HproseWriter writer = new HproseWriter(ostream, mode);
         ostream.write(HproseTags.TagFunctions);
         writer.writeList(names, false);

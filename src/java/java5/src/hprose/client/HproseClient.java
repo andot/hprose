@@ -13,7 +13,7 @@
  *                                                        *
  * hprose client class for Java.                          *
  *                                                        *
- * LastModified: Nov 27, 2012                             *
+ * LastModified: Dec 26, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -282,7 +282,9 @@ public abstract class HproseClient implements HproseInvoker {
 
     private Object doInput(Object[] arguments, Type returnType, HproseResultMode resultMode, InputStream istream) throws IOException {
         int tag;
-        if (filter != null) istream = filter.inputFilter(istream);
+        if (filter != null) {
+            istream = filter.inputFilter(istream);
+        }
         Object result = null;
         HproseReader hproseReader = new HproseReader(istream, mode);
         ByteArrayOutputStream bytestream = null;
@@ -315,7 +317,7 @@ public abstract class HproseClient implements HproseInvoker {
                     }
                     else {
                         hproseReader.reset();
-                        Object[] args = (Object[]) hproseReader.readList(Object[].class);
+                        Object[] args = hproseReader.readObjectArray();
                         System.arraycopy(args, 0, arguments, 0, arguments.length);
                     }
                     break;
@@ -326,7 +328,7 @@ public abstract class HproseClient implements HproseInvoker {
                     }
                     else {
                         hproseReader.reset();
-                        result = new HproseException((String) hproseReader.readString());
+                        result = new HproseException(hproseReader.readString());
                     }
                     break;
             }
@@ -341,7 +343,9 @@ public abstract class HproseClient implements HproseInvoker {
     }
 
     private void doOutput(String functionName, Object[] arguments, boolean byRef, OutputStream ostream) throws IOException {
-        if (filter != null) ostream = filter.outputFilter(ostream);
+        if (filter != null) {
+            ostream = filter.outputFilter(ostream);
+        }
         HproseWriter hproseWriter = new HproseWriter(ostream, mode);
         ostream.write(HproseTags.TagCall);
         hproseWriter.writeString(functionName, false);
