@@ -1,13 +1,12 @@
 Hprose
 ===============
 
-*Hprose* is a High Performance Remote Object Service Engine. It is a modern,
-lightweight, cross-language, cross-platform, object-oriented, high performance,
-remote dynamic communication middleware.
+*Hprose* is a High Performance Remote Object Service Engine. 
 
-*Hprose* is not only easy to use, but powerful. You just need a little time to
-learn, then you can use it to easily construct cross language cross platform
-distributed application system.
+It is a modern, lightweight, cross-language, cross-platform, object-oriented,
+high performance, remote dynamic communication middleware. It is not only easy to
+use, but powerful. You just need a little time to learn, then you can use it to
+easily construct cross language cross platform distributed application system.
 
 Language support
 ----------------
