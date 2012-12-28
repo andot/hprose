@@ -15,7 +15,7 @@
  *                                                        *
  * hprose synapse http client unit for delphi.            *
  *                                                        *
- * LastModified: Jun 10, 2010                             *
+ * LastModified: Dec 29, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -301,7 +301,7 @@ begin
   FPassword := '';
   FKeepAlive := False;
   FKeepAliveTimeout := 300;
-  FStatus100 := True;
+  FStatus100 := False;
   FProxyHost := '';
   FProxyPort := 8080;
   FProxyUser := '';
