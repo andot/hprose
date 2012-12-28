@@ -15,7 +15,7 @@
  *                                                        *
  * hprose common unit for delphi.                         *
  *                                                        *
- * LastModified: Nov 27, 2012                             *
+ * LastModified: Dec 28, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -516,7 +516,7 @@ function VarToMap(const Value: Variant): IMap;
 function VarIsIntf(const Value: Variant): Boolean; overload;
 function VarIsIntf(const Value: Variant; const IID: TGUID): Boolean; overload;
 function VarToIntf(const Value: Variant; const IID: TGUID; out AIntf): Boolean;
-function IntfToObj(const Intf: IInterface): TInterfacedObject;
+function IntfToObj(const Intf: IInterface): TObject;
 
 function CopyVarRec(const Item: TVarRec): TVarRec;
 function CreateConstArray(const Elements: array of const): TConstArray;
@@ -887,7 +887,7 @@ type
   PObjectFromInterfaceStub = ^TObjectFromInterfaceStub;
 {$endif}
 
-function IntfToObj(const Intf: IInterface): TInterfacedObject; {$ifdef Supports_Inline}inline;{$endif}
+function IntfToObj(const Intf: IInterface): TObject; {$ifdef Supports_Inline}inline;{$endif}
 begin
   if Intf = nil then
     result := nil

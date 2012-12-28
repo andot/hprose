@@ -15,7 +15,7 @@
  *                                                        *
  * hprose io unit for delphi.                             *
  *                                                        *
- * LastModified: Dec 12, 2012                             *
+ * LastModified: Dec 28, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -1860,7 +1860,6 @@ begin
   C := FClassRefList[ReadInt(HproseTagOpenbrace)];
   AttrNames := VarToList(FAttrRefMap[C]);
   Count := AttrNames.Count;
-  Instance := nil;
   if {$IFDEF CPU64}VarType(C) = varInt64{$ELSE}VarType(C) = varInteger{$ENDIF} then begin
 {$IFDEF CPU64}
     Cls := TClass(Int64(C));
