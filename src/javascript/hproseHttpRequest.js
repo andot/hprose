@@ -14,7 +14,7 @@
  *                                                        *
  * POST data to HTTP Server (using Flash).                *
  *                                                        *
- * LastModified: Nov 27, 2012                             *
+ * LastModified: Dec 29, 2012                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -356,6 +356,15 @@ var HproseHttpRequest = (function() {
                 task();
             }
         }
+        window["__flash__removeCallback"] = function(instance, name) {
+            try {
+                if (instance) {
+                    instance[name] = null;
+                 }
+            }
+            catch (flashEx) { 
+            }
+        };
     }
 
     HproseHttpRequest.setFlash = function(path) {
