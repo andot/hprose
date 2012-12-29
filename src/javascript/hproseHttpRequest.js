@@ -350,12 +350,6 @@ var HproseHttpRequest = (function() {
 
     HproseHttpRequest.__setSwfReady = function () {
         s_swfReady = true;
-        while (s_swfTaskQueue.length > 0) {
-            var task = s_swfTaskQueue.shift();
-            if (typeof(task) == 'function') {
-                task();
-            }
-        }
         window["__flash__removeCallback"] = function(instance, name) {
             try {
                 if (instance) {
@@ -365,6 +359,12 @@ var HproseHttpRequest = (function() {
             catch (flashEx) { 
             }
         };
+        while (s_swfTaskQueue.length > 0) {
+            var task = s_swfTaskQueue.shift();
+            if (typeof(task) == 'function') {
+                task();
+            }
+        }
     }
 
     HproseHttpRequest.setFlash = function(path) {
