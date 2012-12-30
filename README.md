@@ -35,6 +35,12 @@ programming languages.
 License
 -------
 
-*Hprose* is free software, available with full source. it released under the MIT
-License for non-commercial software. Commercial licenses are also available for 
-customers who wish to use *Hprose* for commercial software.
+*Hprose* is free software, available with full source. You may use *hprose* under the terms of the MIT License. 
+
+The MIT License is simple and easy to understand and it places almost no restrictions on what you can do with *hprose*.
+
+You are free to use *hprose* in commercial projects as long as the copyright header is left intact.
+
+
+
+
