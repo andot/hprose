@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for C#.                            *
  *                                                        *
- * LastModified: Dec 19, 2012                             *
+ * LastModified: Jan 3, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -139,13 +139,13 @@ namespace Hprose.IO {
                 else if (obj is double) WriteDouble((double)obj);
                 else if (obj is bool) WriteBoolean((bool)obj);
                 else if (obj is char) WriteUTF8Char((char)obj);
-                else if (obj is sbyte) WriteInteger((sbyte)obj);
                 else if (obj is byte) WriteInteger((byte)obj);
-                else if (obj is short) WriteInteger((short)obj);
+                else if (obj is sbyte) WriteInteger((sbyte)obj);
                 else if (obj is ushort) WriteInteger((ushort)obj);
+                else if (obj is short) WriteInteger((short)obj);
                 else if (obj is uint) WriteLong((uint)obj);
-                else if (obj is long) WriteLong((long)obj);
                 else if (obj is ulong) WriteLong((ulong)obj);
+                else if (obj is long) WriteLong((long)obj);
                 else if (obj is float) WriteDouble((float)obj);
                 else if (obj is decimal) WriteDouble((decimal)obj);
                 else if (obj is DateTime) WriteDateWithRef((DateTime)obj);
@@ -173,29 +173,31 @@ namespace Hprose.IO {
                 WriteStreamWithRef((Stream)obj);
             }
             else if (obj is Array) {
-                if (obj is int[]) WriteArrayWithRef((int[])obj);
-                else if (obj is string[]) WriteArrayWithRef((string[])obj);
-                else if (obj is double[]) WriteArrayWithRef((double[])obj);
-                else if (obj is object[]) WriteArrayWithRef((object[])obj);
-                else if (obj is bool[]) WriteArrayWithRef((bool[])obj);
-                else if (obj is char[]) WriteStringWithRef((char[])obj);
-                else if (obj is sbyte[]) WriteArrayWithRef((sbyte[])obj);
-                else if (obj is byte[]) WriteBytesWithRef((byte[])obj);
-                else if (obj is short[]) WriteArrayWithRef((short[])obj);
-                else if (obj is ushort[]) WriteArrayWithRef((ushort[])obj);
-                else if (obj is uint[]) WriteArrayWithRef((uint[])obj);
-                else if (obj is long[]) WriteArrayWithRef((long[])obj);
-                else if (obj is ulong[]) WriteArrayWithRef((ulong[])obj);
-                else if (obj is float[]) WriteArrayWithRef((float[])obj);
-                else if (obj is decimal[]) WriteArrayWithRef((decimal[])obj);
-                else if (obj is DateTime[]) WriteArrayWithRef((DateTime[])obj);
-                else if (obj is TimeSpan[]) WriteArrayWithRef((TimeSpan[])obj);
-                else if (obj is BigInteger[]) WriteArrayWithRef((BigInteger[])obj);
-                else if (obj is Guid[]) WriteArrayWithRef((Guid[])obj);
-                else if (obj is StringBuilder[]) WriteArrayWithRef((StringBuilder[])obj);
-                else if (obj is byte[][]) WriteArrayWithRef((byte[][])obj);
-                else if (obj is char[][]) WriteArrayWithRef((char[][])obj);
-                else WriteArrayWithRef((Array)obj);
+                switch ((TypeEnum)HproseHelper.GetArrayTypeEnum(obj.GetType())) {
+                    case TypeEnum.ObjectArray: WriteArrayWithRef((object[])obj); break;
+                    case TypeEnum.BooleanArray: WriteArrayWithRef((bool[])obj); break;
+                    case TypeEnum.CharArray: WriteStringWithRef((char[])obj); break;
+                    case TypeEnum.SByteArray: WriteArrayWithRef((sbyte[])obj); break;
+                    case TypeEnum.ByteArray: WriteBytesWithRef((byte[])obj); break;
+                    case TypeEnum.Int16Array: WriteArrayWithRef((short[])obj); break;
+                    case TypeEnum.UInt16Array: WriteArrayWithRef((ushort[])obj); break;
+                    case TypeEnum.Int32Array: WriteArrayWithRef((int[])obj); break;
+                    case TypeEnum.UInt32Array: WriteArrayWithRef((uint[])obj); break;
+                    case TypeEnum.Int64Array: WriteArrayWithRef((long[])obj); break;
+                    case TypeEnum.UInt64Array: WriteArrayWithRef((ulong[])obj); break;
+                    case TypeEnum.SingleArray: WriteArrayWithRef((float[])obj); break;
+                    case TypeEnum.DoubleArray: WriteArrayWithRef((double[])obj); break;
+                    case TypeEnum.DecimalArray: WriteArrayWithRef((decimal[])obj); break;
+                    case TypeEnum.DateTimeArray: WriteArrayWithRef((DateTime[])obj); break;
+                    case TypeEnum.StringArray: WriteArrayWithRef((string[])obj); break;
+                    case TypeEnum.StringBuilderArray: WriteArrayWithRef((StringBuilder[])obj); break;
+                    case TypeEnum.BigIntegerArray: WriteArrayWithRef((BigInteger[])obj); break;
+                    case TypeEnum.TimeSpanArray: WriteArrayWithRef((TimeSpan[])obj); break;
+                    case TypeEnum.GuidArray: WriteArrayWithRef((Guid[])obj); break;
+                    case TypeEnum.BytesArray: WriteArrayWithRef((byte[][])obj); break;
+                    case TypeEnum.CharsArray: WriteArrayWithRef((char[][])obj); break;
+                    default: WriteArrayWithRef((Array)obj); break;
+                }
             }
 #if !(SILVERLIGHT || WINDOWS_PHONE || Core)
             else if (obj is ArrayList) WriteListWithRef((IList)obj);

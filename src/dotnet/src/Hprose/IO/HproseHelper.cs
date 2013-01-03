@@ -13,7 +13,7 @@
  *                                                        *
  * hprose helper class for C#.                            *
  *                                                        *
- * LastModified: Dec 19, 2012                             *
+ * LastModified: Jan 3, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -445,6 +445,17 @@ namespace Hprose.IO {
 #endif
         }
 #endif
+
+        internal static TypeEnum GetArrayTypeEnum(Type type) {
+#if !(dotNET10 || dotNET11 || dotNETCF10)
+            TypeEnum t;
+            if (typeMap.TryGetValue(type, out t)) return t;
+#else
+            Object t;
+            if ((t = typeMap[type]) != null) return (TypeEnum)t;
+#endif
+            return TypeEnum.OtherTypeArray;
+        }
 
         internal static TypeEnum GetTypeEnum(Type type) {
             if (type == null) return TypeEnum.Null;
