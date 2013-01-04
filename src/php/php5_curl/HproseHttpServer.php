@@ -15,7 +15,7 @@
  *                                                        *
  * hprose http server library for php5.                   *
  *                                                        *
- * LastModified: Dec 9, 2012                              *
+ * LastModified: Jan 4, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -63,6 +63,7 @@ class HproseHttpServer {
         $this->P3P = false;
         $this->get = true;
         $this->filter = NULL;
+        $this->error_types = E_ALL & ~E_NOTICE;
         $this->onBeforeInvoke = NULL;
         $this->onAfterInvoke = NULL;
         $this->onSendHeader = NULL;
@@ -423,6 +424,12 @@ class HproseHttpServer {
     public function setFilter($filter) {
         $this->filter = $filter;
     }
+    public function getErrorTypes() {
+        return $this->error_types;
+    }
+    public function setErrorTypes($error_types) {
+        $this->error_types = $error_types;
+    }
     public function handle() {
         if (!isset($HTTP_RAW_POST_DATA)) $HTTP_RAW_POST_DATA = file_get_contents("php://input");
         if ($this->filter) $HTTP_RAW_POST_DATA = $this->filter->inputFilter($HTTP_RAW_POST_DATA);
@@ -430,7 +437,7 @@ class HproseHttpServer {
         $this->reader = new HproseReader($this->input);
         $this->output = new HproseFileStream(fopen('php://output', 'wb'));
         $this->writer = new HproseWriter($this->output);
-        set_error_handler(array(&$this, '__errorHandler'));
+        set_error_handler(array(&$this, '__errorHandler'), $this->error_types);
         ob_start(array(&$this, "__filterHandler"));
         ob_implicit_flush(0);
         ob_clean();
