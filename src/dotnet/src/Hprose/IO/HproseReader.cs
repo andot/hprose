@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for C#.                            *
  *                                                        *
- * LastModified: Dec 21, 2012                             *
+ * LastModified: Jan 4, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -46,7 +46,7 @@ namespace Hprose.IO {
         private Hashtable membersref = new Hashtable();
 #endif
         public HproseReader(Stream stream)
-            : this(stream, HproseMode.FieldMode) {
+            : this(stream, HproseMode.PropertyMode) {
         }
         public HproseReader(Stream stream, HproseMode mode) {
             this.stream = stream;

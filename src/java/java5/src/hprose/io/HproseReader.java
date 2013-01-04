@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for Java.                          *
  *                                                        *
- * LastModified: Dec 26, 2012                             *
+ * LastModified: Jan 4, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -56,7 +56,7 @@ public final class HproseReader {
     private static final Object[] nullArgs = new Object[0];
 
     public HproseReader(InputStream stream) {
-        this(stream, HproseMode.FieldMode);
+        this(stream, HproseMode.PropertyMode);
     }
 
     public HproseReader(InputStream stream, HproseMode mode) {

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http service class for Java.                    *
  *                                                        *
- * LastModified: Jun 15, 2010                             *
+ * LastModified: Jan 4, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -171,9 +171,9 @@ public class HproseHttpService extends HproseService {
             }
         }
         finally {
-            output.remove();
-            input.remove();
-            context.remove();
+            output.set(null);
+            input.set(null);
+            context.set(null);
         }
     }
 }

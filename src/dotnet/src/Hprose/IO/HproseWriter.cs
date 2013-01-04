@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for C#.                            *
  *                                                        *
- * LastModified: Jan 3, 2013                              *
+ * LastModified: Jan 4, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -100,7 +100,7 @@ namespace Hprose.IO {
 #endif
 
         public HproseWriter(Stream stream)
-            : this(stream, HproseMode.FieldMode) {
+            : this(stream, HproseMode.PropertyMode) {
         }
 
         public HproseWriter(Stream stream, HproseMode mode) {

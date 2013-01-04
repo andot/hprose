@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for Java.                          *
  *                                                        *
- * LastModified: Dec 27, 2012                             *
+ * LastModified: Jan 4, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -56,7 +56,7 @@ public final class HproseWriter {
     private int lastclassref = 0;
 
     public HproseWriter(OutputStream stream) {
-        this(stream, HproseMode.FieldMode);
+        this(stream, HproseMode.PropertyMode);
     }
 
     public HproseWriter(OutputStream stream, HproseMode mode) {
