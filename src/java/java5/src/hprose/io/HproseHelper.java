@@ -13,7 +13,7 @@
  *                                                        *
  * hprose helper class for Java.                          *
  *                                                        *
- * LastModified: Dec 26, 2012                             *
+ * LastModified: Jan 4, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -36,15 +36,14 @@ import java.lang.reflect.WildcardType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class HproseHelper {
-    private static final ConcurrentHashMap<Class<?>, SoftReference<HashMap<String, MemberAccessor>>> fieldsCache = new ConcurrentHashMap<Class<?>, SoftReference<HashMap<String, MemberAccessor>>>();
-    private static final ConcurrentHashMap<Class<?>, SoftReference<HashMap<String, MemberAccessor>>> propertiesCache = new ConcurrentHashMap<Class<?>, SoftReference<HashMap<String, MemberAccessor>>>();
-    private static final ConcurrentHashMap<Class<?>, SoftReference<HashMap<String, MemberAccessor>>> membersCache = new ConcurrentHashMap<Class<?>, SoftReference<HashMap<String, MemberAccessor>>>();
+    private static final ConcurrentHashMap<Class<?>, SoftReference<ConcurrentHashMap<String, MemberAccessor>>> fieldsCache = new ConcurrentHashMap<Class<?>, SoftReference<ConcurrentHashMap<String, MemberAccessor>>>();
+    private static final ConcurrentHashMap<Class<?>, SoftReference<ConcurrentHashMap<String, MemberAccessor>>> propertiesCache = new ConcurrentHashMap<Class<?>, SoftReference<ConcurrentHashMap<String, MemberAccessor>>>();
+    private static final ConcurrentHashMap<Class<?>, SoftReference<ConcurrentHashMap<String, MemberAccessor>>> membersCache = new ConcurrentHashMap<Class<?>, SoftReference<ConcurrentHashMap<String, MemberAccessor>>>();
     private static final ConcurrentHashMap<Class<?>, SoftReference<Constructor<?>>> ctorCache = new ConcurrentHashMap<Class<?>, SoftReference<Constructor<?>>>();
     private static final ConcurrentHashMap<Constructor<?>, SoftReference<Object[]>> argsCache = new ConcurrentHashMap<Constructor<?>, SoftReference<Object[]>>();
     private static final Object[] nullArgs = new Object[0];
@@ -187,12 +186,12 @@ public final class HproseHelper {
     }
 
     static Map<String, MemberAccessor> getProperties(Class<?> type) {
-        HashMap<String, MemberAccessor> properties;
-        SoftReference<HashMap<String, MemberAccessor>> sref = propertiesCache.get(type);
+        ConcurrentHashMap<String, MemberAccessor> properties;
+        SoftReference<ConcurrentHashMap<String, MemberAccessor>> sref = propertiesCache.get(type);
         if ((sref != null) && (properties = sref.get()) != null) {
             return properties;
         }
-        properties = new HashMap<String, MemberAccessor>();
+        properties = new ConcurrentHashMap<String, MemberAccessor>();
         Method[] methods = type.getMethods();
         for (Method setter : methods) {
             if (Modifier.isStatic(setter.getModifiers())) {
@@ -219,17 +218,17 @@ public final class HproseHelper {
                 properties.put(propertyName, propertyAccessor);
             }
         }
-        propertiesCache.put(type, new SoftReference<HashMap<String, MemberAccessor>>(properties));
+        propertiesCache.put(type, new SoftReference<ConcurrentHashMap<String, MemberAccessor>>(properties));
         return properties;
     }
 
     static Map<String, MemberAccessor> getFields(Class<?> type) {
-        HashMap<String, MemberAccessor> fields;
-        SoftReference<HashMap<String, MemberAccessor>> sref = fieldsCache.get(type);
+        ConcurrentHashMap<String, MemberAccessor> fields;
+        SoftReference<ConcurrentHashMap<String, MemberAccessor>> sref = fieldsCache.get(type);
         if ((sref != null) && (fields = sref.get()) != null) {
             return fields;
         }
-        fields = new HashMap<String, MemberAccessor>();
+        fields = new ConcurrentHashMap<String, MemberAccessor>();
         for (Class<?> clazz = type; clazz != null; clazz = clazz.getSuperclass()) {
             Field[] fs = clazz.getDeclaredFields();
             for (Field field : fs) {
@@ -242,17 +241,17 @@ public final class HproseHelper {
                 }
             }
         }
-        fieldsCache.put(type, new SoftReference<HashMap<String, MemberAccessor>>(fields));
+        fieldsCache.put(type, new SoftReference<ConcurrentHashMap<String, MemberAccessor>>(fields));
         return fields;
     }
 
     static Map<String, MemberAccessor> getMembers(Class<?> type) {
-        HashMap<String, MemberAccessor> members;
-        SoftReference<HashMap<String, MemberAccessor>> sref = membersCache.get(type);
+        ConcurrentHashMap<String, MemberAccessor> members;
+        SoftReference<ConcurrentHashMap<String, MemberAccessor>> sref = membersCache.get(type);
         if ((sref != null) && (members = sref.get()) != null) {
             return members;
         }
-        members = new HashMap<String, MemberAccessor>();
+        members = new ConcurrentHashMap<String, MemberAccessor>();
         Method[] methods = type.getMethods();
         for (Method setter : methods) {
             if (Modifier.isStatic(setter.getModifiers())) {
@@ -289,7 +288,7 @@ public final class HproseHelper {
                 }
             }
         }
-        membersCache.put(type, new SoftReference<HashMap<String, MemberAccessor>>(members));
+        membersCache.put(type, new SoftReference<ConcurrentHashMap<String, MemberAccessor>>(members));
         return members;
     }
 

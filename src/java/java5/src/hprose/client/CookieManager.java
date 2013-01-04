@@ -13,7 +13,7 @@
  *                                                        *
  * cookie manager class for Java.                         *
  *                                                        *
- * LastModified: May 12, 2011                             *
+ * LastModified: Jan 4, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -22,7 +22,7 @@ package hprose.client;
 import hprose.io.HproseHelper;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.TimeZone;
@@ -82,7 +82,7 @@ public class CookieManager {
         return calendar;
     }
 
-    private HashMap<String, HashMap<String, HashMap<String, String>>> container = new HashMap<String, HashMap<String, HashMap<String, String>>>();
+    private ConcurrentHashMap<String, ConcurrentHashMap<String, ConcurrentHashMap<String, String>>> container = new ConcurrentHashMap<String, ConcurrentHashMap<String, ConcurrentHashMap<String, String>>>();
 
     public CookieManager() {
     }
@@ -97,7 +97,7 @@ public class CookieManager {
                 continue;
             }
             String[] cookies = HproseHelper.split(cookieString.trim(), ';', 0);
-            HashMap<String, String> cookie = new HashMap<String, String>();
+            ConcurrentHashMap<String, String> cookie = new ConcurrentHashMap<String, String>();
             String[] value = HproseHelper.split(cookies[0].trim(), '=', 2);
             cookie.put("name", value[0]);
             if (value.length == 2) {
@@ -132,7 +132,7 @@ public class CookieManager {
                 cookie.put("DOMAIN", host);
             }
             if (!container.containsKey(cookie.get("DOMAIN"))) {
-                container.put(cookie.get("DOMAIN"), new HashMap<String, HashMap<String, String>>());
+                container.put(cookie.get("DOMAIN"), new ConcurrentHashMap<String, ConcurrentHashMap<String, String>>());
             }
             container.get(cookie.get("DOMAIN")).put(cookie.get("name"), cookie);
         }
@@ -140,13 +140,13 @@ public class CookieManager {
 
     public synchronized String getCookie(String host, String path, boolean secure) {
         StringBuilder cookies = new StringBuilder();
-        for (Entry<String, HashMap<String, HashMap<String, String>>> entry : container.entrySet()) {
+        for (Entry<String, ConcurrentHashMap<String, ConcurrentHashMap<String, String>>> entry : container.entrySet()) {
             String domain = entry.getKey();
-            HashMap<String, HashMap<String, String>> cookieList = entry.getValue();
+            ConcurrentHashMap<String, ConcurrentHashMap<String, String>> cookieList = entry.getValue();
             if (host.endsWith(domain)) {
                 ArrayList<String> names = new ArrayList<String>(cookieList.size());
-                for (Entry<String, HashMap<String, String>> entry2 : cookieList.entrySet()) {
-                    HashMap<String, String> cookie = entry2.getValue();
+                for (Entry<String, ConcurrentHashMap<String, String>> entry2 : cookieList.entrySet()) {
+                    ConcurrentHashMap<String, String> cookie = entry2.getValue();
                     if (cookie.containsKey("EXPIRES") && Calendar.getInstance(utc).after(parseCalendar(cookie.get("EXPIRES")))) {
                         names.add(entry2.getKey());
                     }

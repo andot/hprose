@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http client class for Java.                     *
  *                                                        *
- * LastModified: Dec 26, 2012                             *
+ * LastModified: Jan 4, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -28,7 +28,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map.Entry;
@@ -37,7 +37,7 @@ import java.util.Properties;
 public class HproseHttpClient extends HproseClient {
 
     private String uri;
-    private HashMap<String, String> headers = new HashMap<String, String>();
+    private ConcurrentHashMap<String, String> headers = new ConcurrentHashMap<String, String>();
     private static CookieManager cookieManager = new CookieManager();
     private boolean keepAlive = false;
     private int keepAliveTimeout = 300;

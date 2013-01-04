@@ -13,7 +13,7 @@
  *                                                        *
  * hprose remote methods class for Java.                  *
  *                                                        *
- * LastModified: Jun 22, 2011                             *
+ * LastModified: Jan 4, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -22,19 +22,19 @@ package hprose.common;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Collection;
 
 public class HproseMethods {
 
-    protected HashMap<String, HashMap<Integer, HproseMethod>> remoteMethods = new HashMap<String, HashMap<Integer, HproseMethod>>();
-    protected HashMap<String, String> methodNames = new HashMap<String, String>();
+    protected ConcurrentHashMap<String, ConcurrentHashMap<Integer, HproseMethod>> remoteMethods = new ConcurrentHashMap<String, ConcurrentHashMap<Integer, HproseMethod>>();
+    protected ConcurrentHashMap<String, String> methodNames = new ConcurrentHashMap<String, String>();
 
     public HproseMethods() {
     }
 
     public HproseMethod get(String aliasName, int paramCount) {
-        HashMap<Integer, HproseMethod> methods = remoteMethods.get(aliasName);
+        ConcurrentHashMap<Integer, HproseMethod> methods = remoteMethods.get(aliasName);
         if (methods == null) {
             return null;
         }
@@ -54,13 +54,13 @@ public class HproseMethods {
     }
 
     void addMethod(String aliasName, HproseMethod method) {
-        HashMap<Integer, HproseMethod> methods;
+        ConcurrentHashMap<Integer, HproseMethod> methods;
         String name = aliasName.toLowerCase();
         if (remoteMethods.containsKey(name)) {
             methods = remoteMethods.get(name);
         }
         else {
-            methods = new HashMap<Integer, HproseMethod>();
+            methods = new ConcurrentHashMap<Integer, HproseMethod>();
             methodNames.put(name, aliasName);
         }
         if (aliasName.equals("*") &&
