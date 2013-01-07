@@ -15,7 +15,7 @@
  *                                                        *
  * hprose io unit for delphi.                             *
  *                                                        *
- * LastModified: Dec 28, 2012                             *
+ * LastModified: Jan 8, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -151,9 +151,7 @@ type
     FStream: TStream;
     FRefList: IList;
     FClassRefList: IList;
-    function WriteRef(const Value: Variant; CheckRef: Boolean):
-      Boolean; overload;
-    procedure WriteRef(Value: Integer); overload;
+    procedure WriteRef(Value: Integer);
     function WriteClass(Instance: TObject): Integer;
     procedure WriteRawByteString(const S: RawByteString);
     procedure WriteShortIntArray(var P; Count: Integer);
@@ -196,15 +194,23 @@ type
     procedure WriteNaN();
     procedure WriteInfinity(Positive: Boolean);
     procedure WriteUTF8Char(C: WideChar);
-    procedure WriteDateTime(const ADateTime: TDateTime; CheckRef: Boolean = True);
-    procedure WriteBytes(const Bytes: Variant; CheckRef: Boolean = True);
-    procedure WriteString(const S: WideString; CheckRef: Boolean = True);
-    procedure WriteArray(const Value: Variant; CheckRef: Boolean = True); overload;
+    procedure WriteDateTime(const ADateTime: TDateTime);
+    procedure WriteDateTimeWithRef(const ADateTime: TDateTime);
+    procedure WriteBytes(const Bytes: Variant);
+    procedure WriteBytesWithRef(const Bytes: Variant);
+    procedure WriteString(const S: WideString);
+    procedure WriteStringWithRef(const S: WideString);
+    procedure WriteArray(const Value: Variant); overload;
+    procedure WriteArrayWithRef(const Value: Variant);
     procedure WriteArray(const Value: array of const); overload;
-    procedure WriteList(AList: IList; CheckRef: Boolean = True);
-    procedure WriteMap(AMap: IMap; CheckRef: Boolean = True);
-    procedure WriteObject(AObject: TObject; CheckRef: Boolean = True);
-    procedure WriteInterface(Intf: IInterface; CheckRef: Boolean = True);
+    procedure WriteList(AList: IList);
+    procedure WriteListWithRef(AList: IList);
+    procedure WriteMap(AMap: IMap);
+    procedure WriteMapWithRef(AMap: IMap);
+    procedure WriteObject(AObject: TObject);
+    procedure WriteObjectWithRef(AObject: TObject);
+    procedure WriteInterface(Intf: IInterface);
+    procedure WriteInterfaceWithRef(Intf: IInterface);
     procedure Reset;
     property Stream: TStream read FStream;
   end;
@@ -2216,31 +2222,31 @@ begin
         else if Length(Value) = 1 then
           WriteUTF8Char(VarToWideStr(Value)[1])
         else
-          WriteString(Value);
+          WriteStringWithRef(Value);
       varDate:
-        WriteDateTime(Value);
+        WriteDateTimeWithRef(Value);
       varUnknown:
         if (IInterface(Value) = nil) then
           WriteNull
         else if Supports(IInterface(Value), IList, AList) then
-          WriteList(AList)
+          WriteListWithRef(AList)
         else if Supports(IInterface(Value), IMap, AMap) then
-          WriteMap(AMap)
+          WriteMapWithRef(AMap)
         else
-          WriteInterface(IInterface(Value));
+          WriteInterfaceWithRef(IInterface(Value));
     else
       if VType and varArray = varArray then
         if (VType and varTypeMask = varByte) and
            (VarArrayDimCount(Value) = 1) then
-          WriteBytes(Value)
+          WriteBytesWithRef(Value)
         else
-          WriteArray(Value)
+          WriteArrayWithRef(Value)
       else if VType and not varByRef = varObject then begin
         Obj := VarToObj(Value);
         if Obj = nil then WriteNull
-        else if Obj is TAbstractList then WriteList(TAbstractList(Obj))
-        else if Obj is TAbstractMap then WriteMap(TAbstractMap(Obj))
-        else WriteObject(Obj);
+        else if Obj is TAbstractList then WriteListWithRef(TAbstractList(Obj))
+        else if Obj is TAbstractMap then WriteMapWithRef(TAbstractMap(Obj))
+        else WriteObjectWithRef(Obj);
       end
     end;
   end;
@@ -2275,38 +2281,38 @@ begin
       vtBoolean:       WriteBoolean(VBoolean);
       vtChar:          WriteUTF8Char(WideString(VChar)[1]);
       vtExtended:      WriteDouble(VExtended^);
-      vtString:        WriteString(WideString(VString^));
-      vtPChar:         WriteString(WideString(AnsiString(VPChar)));
+      vtString:        WriteStringWithRef(WideString(VString^));
+      vtPChar:         WriteStringWithRef(WideString(AnsiString(VPChar)));
       vtObject:
         if VObject = nil then
           WriteNull
         else if Supports(VObject, IList, AList) then
-          WriteList(AList)
+          WriteListWithRef(AList)
         else if Supports(VObject, IMap, AMap) then
-          WriteMap(AMap)
+          WriteMapWithRef(AMap)
         else
-          WriteObject(VObject);
+          WriteObjectWithRef(VObject);
       vtWideChar:      WriteUTF8Char(VWideChar);
-      vtPWideChar:     WriteString(WideString(VPWideChar));
-      vtAnsiString:    WriteString(WideString(AnsiString(VAnsiString)));
+      vtPWideChar:     WriteStringWithRef(WideString(VPWideChar));
+      vtAnsiString:    WriteStringWithRef(WideString(AnsiString(VAnsiString)));
       vtCurrency:      WriteCurrency(VCurrency^);
       vtVariant:       Serialize(VVariant^);
       vtInterface:
         if IInterface(VInterface) = nil then
           WriteNull
         else if Supports(IInterface(VInterface), IList, AList) then
-          WriteList(AList)
+          WriteListWithRef(AList)
         else if Supports(IInterface(VInterface), IMap, AMap) then
-          WriteMap(AMap)
+          WriteMapWithRef(AMap)
         else
-          WriteInterface(IInterface(VInterface));
-      vtWideString:    WriteString(WideString(VWideString));
+          WriteInterfaceWithRef(IInterface(VInterface));
+      vtWideString:    WriteStringWithRef(WideString(VWideString));
       vtInt64:         WriteLong(VInt64^);
 {$IFDEF FPC}
       vtQWord:         WriteLong(VQWord^);
 {$ENDIF}
 {$IFDEF DELPHI2009_UP}
-      vtUnicodeString: WriteString(UnicodeString(VUnicodeString));
+      vtUnicodeString: WriteStringWithRef(UnicodeString(VUnicodeString));
 {$ENDIF}
     else
       WriteNull;
@@ -2314,8 +2320,7 @@ begin
   FStream.WriteBuffer(HproseTagClosebrace, 1);
 end;
 
-procedure THproseWriter.WriteArray(const Value: Variant;
-  CheckRef: Boolean);
+procedure THproseWriter.WriteArray(const Value: Variant);
 var
   PVar: PVarData;
   P: Pointer;
@@ -2323,78 +2328,85 @@ var
   Des: array of array[0..1] of Integer;
   Loc, Len: array of Integer;
 begin
-  if WriteRef(Value, CheckRef) then begin
-    PVar := FindVarData(Value);
-    Rank := VarArrayDimCount(Value);
-    if Rank = 1 then begin
-      Count := VarArrayHighBound(Value, 1) - VarArrayLowBound(Value, 1) + 1;
-      FStream.WriteBuffer(HproseTagList, 1);
-      if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
-      FStream.WriteBuffer(HproseTagOpenbrace, 1);
-      P := VarArrayLock(Value);
-      case PVar.VType and varTypeMask of
-        varInteger: WriteIntegerArray(P, Count);
-        varShortInt: WriteShortIntArray(P, Count);
-        varWord: WriteWordArray(P, Count);
-        varSmallint: WriteSmallintArray(P, Count);
-        varLongWord: WriteLongWordArray(P, Count);
-        varSingle: WriteSingleArray(P, Count);
-        varDouble: WriteDoubleArray(P, Count);
-        varCurrency: WriteCurrencyArray(P, Count);
-        varInt64: WriteInt64Array(P, Count);
+  FRefList.Add(Value);
+  PVar := FindVarData(Value);
+  Rank := VarArrayDimCount(Value);
+  if Rank = 1 then begin
+    Count := VarArrayHighBound(Value, 1) - VarArrayLowBound(Value, 1) + 1;
+    FStream.WriteBuffer(HproseTagList, 1);
+    if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+    FStream.WriteBuffer(HproseTagOpenbrace, 1);
+    P := VarArrayLock(Value);
+    case PVar.VType and varTypeMask of
+      varInteger: WriteIntegerArray(P, Count);
+      varShortInt: WriteShortIntArray(P, Count);
+      varWord: WriteWordArray(P, Count);
+      varSmallint: WriteSmallintArray(P, Count);
+      varLongWord: WriteLongWordArray(P, Count);
+      varSingle: WriteSingleArray(P, Count);
+      varDouble: WriteDoubleArray(P, Count);
+      varCurrency: WriteCurrencyArray(P, Count);
+      varInt64: WriteInt64Array(P, Count);
 {$IFDEF DELPHI2009_UP}
-        varUInt64: WriteUInt64Array(P, Count);
+      varUInt64: WriteUInt64Array(P, Count);
 {$ENDIF}
 {$IFDEF FPC}
-        varQWord: WriteQWordArray(P, Count);
+      varQWord: WriteQWordArray(P, Count);
 {$ENDIF}
-        varOleStr: WriteWideStringArray(P, Count);
-        varBoolean: WriteBooleanArray(P, Count);
-        varDate: WriteDateTimeArray(P, Count);
-        varVariant: WriteVariantArray(P, Count);
-      end;
-      VarArrayUnLock(Value);
-      FStream.WriteBuffer(HproseTagClosebrace, 1);
-    end
-    else begin
-      SetLength(Des, Rank);
-      SetLength(Loc, Rank);
-      SetLength(Len, Rank);
-      MaxRank := Rank - 1;
-      for I := 0 to MaxRank do begin
-        Des[I, 0] := VarArrayLowBound(Value, I + 1);
-        Des[I, 1] := VarArrayHighBound(Value, I + 1);
-        Loc[I] := Des[I, 0];
-        Len[I] := Des[I, 1] - Des[I, 0] + 1;
-      end;
-      FStream.WriteBuffer(HproseTagList, 1);
-      if Len[0] > 0 then WriteRawByteString(RawByteString(IntToStr(Len[0])));
-      FStream.WriteBuffer(HproseTagOpenbrace, 1);
-      while Loc[0] <= Des[0, 1] do begin
-        N := 0;
-        for I := Maxrank downto 1 do
-          if Loc[I] = Des[I, 0] then Inc(N) else Break;
-        for I := Rank - N to MaxRank do begin
-          FRefList.Add(Null);
-          FStream.WriteBuffer(HproseTagList, 1);
-          if Len[I] > 0 then WriteRawByteString(RawByteString(IntToStr(Len[I])));
-          FStream.WriteBuffer(HproseTagOpenbrace, 1);
-        end;
-        for I := Des[MaxRank, 0] to Des[MaxRank, 1] do begin
-          Loc[MaxRank] := I;
-          Serialize(VarArrayGet(Value, Loc));
-        end;
-        Inc(Loc[MaxRank]);
-        for I := MaxRank downto 1 do
-          if Loc[I] > Des[I, 1] then begin
-            Loc[I] := Des[I, 0];
-            Inc(Loc[I - 1]);
-            FStream.WriteBuffer(HproseTagClosebrace, 1);
-          end;
-      end;
-      FStream.WriteBuffer(HproseTagClosebrace, 1);
+      varOleStr: WriteWideStringArray(P, Count);
+      varBoolean: WriteBooleanArray(P, Count);
+      varDate: WriteDateTimeArray(P, Count);
+      varVariant: WriteVariantArray(P, Count);
     end;
+    VarArrayUnLock(Value);
+    FStream.WriteBuffer(HproseTagClosebrace, 1);
+  end
+  else begin
+    SetLength(Des, Rank);
+    SetLength(Loc, Rank);
+    SetLength(Len, Rank);
+    MaxRank := Rank - 1;
+    for I := 0 to MaxRank do begin
+      Des[I, 0] := VarArrayLowBound(Value, I + 1);
+      Des[I, 1] := VarArrayHighBound(Value, I + 1);
+      Loc[I] := Des[I, 0];
+      Len[I] := Des[I, 1] - Des[I, 0] + 1;
+    end;
+    FStream.WriteBuffer(HproseTagList, 1);
+    if Len[0] > 0 then WriteRawByteString(RawByteString(IntToStr(Len[0])));
+    FStream.WriteBuffer(HproseTagOpenbrace, 1);
+    while Loc[0] <= Des[0, 1] do begin
+      N := 0;
+      for I := Maxrank downto 1 do
+        if Loc[I] = Des[I, 0] then Inc(N) else Break;
+      for I := Rank - N to MaxRank do begin
+        FRefList.Add(Null);
+        FStream.WriteBuffer(HproseTagList, 1);
+        if Len[I] > 0 then WriteRawByteString(RawByteString(IntToStr(Len[I])));
+        FStream.WriteBuffer(HproseTagOpenbrace, 1);
+      end;
+      for I := Des[MaxRank, 0] to Des[MaxRank, 1] do begin
+        Loc[MaxRank] := I;
+        Serialize(VarArrayGet(Value, Loc));
+      end;
+      Inc(Loc[MaxRank]);
+      for I := MaxRank downto 1 do
+        if Loc[I] > Des[I, 1] then begin
+          Loc[I] := Des[I, 0];
+          Inc(Loc[I - 1]);
+          FStream.WriteBuffer(HproseTagClosebrace, 1);
+        end;
+    end;
+    FStream.WriteBuffer(HproseTagClosebrace, 1);
   end;
+end;
+
+procedure THproseWriter.WriteArrayWithRef(const Value: Variant);
+var
+  Ref: Integer;
+begin
+  Ref := FRefList.IndexOf(Value);
+  if Ref > -1 then WriteRef(Ref) else WriteArray(Value);
 end;
 
 procedure THproseWriter.WriteBoolean(B: Boolean);
@@ -2410,20 +2422,26 @@ begin
   for I := 0 to Count - 1 do WriteBoolean(AP^[I]);
 end;
 
-procedure THproseWriter.WriteBytes(const Bytes: Variant;
-  CheckRef: Boolean);
+procedure THproseWriter.WriteBytes(const Bytes: Variant);
 var
   N: Integer;
 begin
-  if WriteRef(Bytes, CheckRef) then begin
-    N := VarArrayHighBound(Bytes, 1) - VarArrayLowBound(Bytes, 1) + 1;
-    FStream.WriteBuffer(HproseTagBytes, 1);
-    WriteRawByteString(RawByteString(IntToStr(N)));
-    FStream.WriteBuffer(HproseTagQuote, 1);
-    FStream.WriteBuffer(VarArrayLock(Bytes)^, N);
-    VarArrayUnLock(Bytes);
-    FStream.WriteBuffer(HproseTagQuote, 1);
-  end;
+  FRefList.Add(Bytes);
+  N := VarArrayHighBound(Bytes, 1) - VarArrayLowBound(Bytes, 1) + 1;
+  FStream.WriteBuffer(HproseTagBytes, 1);
+  WriteRawByteString(RawByteString(IntToStr(N)));
+  FStream.WriteBuffer(HproseTagQuote, 1);
+  FStream.WriteBuffer(VarArrayLock(Bytes)^, N);
+  VarArrayUnLock(Bytes);
+  FStream.WriteBuffer(HproseTagQuote, 1);
+end;
+
+procedure THproseWriter.WriteBytesWithRef(const Bytes: Variant);
+var
+  Ref: Integer;
+begin
+  Ref := FRefList.IndexOf(Bytes);
+  if Ref > -1 then WriteRef(Ref) else WriteBytes(Bytes);
 end;
 
 function THproseWriter.WriteClass(Instance: TObject): Integer;
@@ -2530,42 +2548,48 @@ var
   AP: PDateTimeArray absolute P;
   I: Integer;
 begin
-  for I := 0 to Count - 1 do WriteDateTime(AP^[I]);
+  for I := 0 to Count - 1 do WriteDateTimeWithRef(AP^[I]);
 end;
 
-procedure THproseWriter.WriteDateTime(const ADateTime: TDateTime;
-  CheckRef: Boolean);
+procedure THproseWriter.WriteDateTime(const ADateTime: TDateTime);
 var
   ADate, ATime, AMillisecond: RawByteString;
 begin
-  if WriteRef(ADateTime, CheckRef) then begin
-    ADate := RawByteString(FormatDateTime('yyyymmdd', ADateTime));
-    ATime := RawByteString(FormatDateTime('hhnnss', ADateTime));
-    AMillisecond := RawByteString(FormatDateTime('zzz', ADateTime));
-    if (ATime = '000000') and (AMillisecond = '000') then begin
-      FStream.WriteBuffer(HproseTagDate, 1);
-      WriteRawByteString(ADate);
-    end
-    else if ADate = '18991230' then begin
-      FStream.WriteBuffer(HproseTagTime, 1);
-      WriteRawByteString(ATime);
-      if AMillisecond <> '000' then begin
-        FStream.WriteBuffer(HproseTagPoint, 1);
-        WriteRawByteString(AMillisecond);
-      end;
-    end
-    else begin
-      FStream.WriteBuffer(HproseTagDate, 1);
-      WriteRawByteString(ADate);
-      FStream.WriteBuffer(HproseTagTime, 1);
-      WriteRawByteString(ATime);
-      if AMillisecond <> '000' then begin
-        FStream.WriteBuffer(HproseTagPoint, 1);
-        WriteRawByteString(AMillisecond);
-      end;
+  FRefList.Add(ADateTime);
+  ADate := RawByteString(FormatDateTime('yyyymmdd', ADateTime));
+  ATime := RawByteString(FormatDateTime('hhnnss', ADateTime));
+  AMillisecond := RawByteString(FormatDateTime('zzz', ADateTime));
+  if (ATime = '000000') and (AMillisecond = '000') then begin
+    FStream.WriteBuffer(HproseTagDate, 1);
+    WriteRawByteString(ADate);
+  end
+  else if ADate = '18991230' then begin
+    FStream.WriteBuffer(HproseTagTime, 1);
+    WriteRawByteString(ATime);
+    if AMillisecond <> '000' then begin
+      FStream.WriteBuffer(HproseTagPoint, 1);
+      WriteRawByteString(AMillisecond);
     end;
-    FStream.WriteBuffer(HproseTagSemicolon, 1);
+  end
+  else begin
+    FStream.WriteBuffer(HproseTagDate, 1);
+    WriteRawByteString(ADate);
+    FStream.WriteBuffer(HproseTagTime, 1);
+    WriteRawByteString(ATime);
+    if AMillisecond <> '000' then begin
+      FStream.WriteBuffer(HproseTagPoint, 1);
+      WriteRawByteString(AMillisecond);
+    end;
   end;
+  FStream.WriteBuffer(HproseTagSemicolon, 1);
+end;
+
+procedure THproseWriter.WriteDateTimeWithRef(const ADateTime: TDateTime);
+var
+  Ref: Integer;
+begin
+  Ref := FRefList.IndexOf(ADateTime);
+  if Ref > -1 then WriteRef(Ref) else WriteDateTime(ADateTime);
 end;
 
 procedure THproseWriter.WriteDouble(D: Extended);
@@ -2646,18 +2670,25 @@ begin
   for I := 0 to Count - 1 do WriteInteger(AP^[I]);
 end;
 
-procedure THproseWriter.WriteList(AList: IList; CheckRef: Boolean);
+procedure THproseWriter.WriteList(AList: IList);
 var
   Count, I: Integer;
 begin
-  if WriteRef(AList, CheckRef) then begin
-    Count := AList.Count;
-    FStream.WriteBuffer(HproseTagList, 1);
-    if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
-    FStream.WriteBuffer(HproseTagOpenbrace, 1);
-    for I := 0 to Count - 1 do Serialize(AList[I]);
-    FStream.WriteBuffer(HproseTagClosebrace, 1);
-  end;
+  FRefList.Add(AList);
+  Count := AList.Count;
+  FStream.WriteBuffer(HproseTagList, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  for I := 0 to Count - 1 do Serialize(AList[I]);
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteListWithRef(AList: IList);
+var
+  Ref: Integer;
+begin
+  Ref := FRefList.IndexOf(AList);
+  if Ref > -1 then WriteRef(Ref) else WriteList(AList);
 end;
 
 procedure THproseWriter.WriteLong(const L: RawByteString);
@@ -2728,21 +2759,28 @@ begin
   for I := 0 to Count - 1 do WriteLong(AP^[I]);
 end;
 
-procedure THproseWriter.WriteMap(AMap: IMap; CheckRef: Boolean);
+procedure THproseWriter.WriteMap(AMap: IMap);
 var
   Count, I: Integer;
 begin
-  if WriteRef(AMap, CheckRef) then begin
-    Count := AMap.Count;
-    FStream.WriteBuffer(HproseTagMap, 1);
-    if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
-    FStream.WriteBuffer(HproseTagOpenbrace, 1);
-    for I := 0 to Count - 1 do begin
-      Serialize(AMap.Keys[I]);
-      Serialize(AMap.Values[I]);
-    end;
-    FStream.WriteBuffer(HproseTagClosebrace, 1);
+  FRefList.Add(AMap);
+  Count := AMap.Count;
+  FStream.WriteBuffer(HproseTagMap, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  for I := 0 to Count - 1 do begin
+    Serialize(AMap.Keys[I]);
+    Serialize(AMap.Values[I]);
   end;
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteMapWithRef(AMap: IMap);
+var
+  Ref: Integer;
+begin
+  Ref := FRefList.IndexOf(AMap);
+  if Ref > -1 then WriteRef(Ref) else WriteMap(AMap);
 end;
 
 procedure THproseWriter.WriteNaN;
@@ -2760,21 +2798,14 @@ begin
   FStream.WriteBuffer(HproseTagEmpty, 1);
 end;
 
-procedure THproseWriter.WriteObject(AObject: TObject; CheckRef: Boolean);
+procedure THproseWriter.WriteObject(AObject: TObject);
 var
-  Ref, ClassRef: Integer;
+  ClassRef: Integer;
   Value: Variant;
   PropList: PPropList;
   PropCount, I: Integer;
 begin
   Value := ObjToVar(AObject);
-  if CheckRef then begin
-    Ref := FRefList.IndexOf(Value);
-    if Ref > -1 then begin
-      WriteRef(Ref);
-      Exit;
-    end;
-  end;
   ClassRef := FClassRefList.IndexOf(AObject.ClassName);
   if ClassRef < 0 then ClassRef := WriteClass(AObject);
   FRefList.Add(Value);
@@ -2791,27 +2822,25 @@ begin
   FStream.WriteBuffer(HproseTagClosebrace, 1);
 end;
 
-procedure THproseWriter.WriteInterface(Intf: IInterface;
-  CheckRef: Boolean);
+procedure THproseWriter.WriteObjectWithRef(AObject: TObject);
 var
-  Ref, ClassRef: Integer;
-  Value: Variant;
+  Ref: Integer;
+begin
+  Ref := FRefList.IndexOf(ObjToVar(AObject));
+  if Ref > -1 then WriteRef(Ref) else WriteObject(AObject);
+end;
+
+procedure THproseWriter.WriteInterface(Intf: IInterface);
+var
+  ClassRef: Integer;
   AObject: TObject;
   PropList: PPropList;
   PropCount, I: Integer;
 begin
-  Value := Intf;
-  if CheckRef then begin
-    Ref := FRefList.IndexOf(Value);
-    if Ref > -1 then begin
-      WriteRef(Ref);
-      Exit;
-    end;
-  end;
   AObject := IntfToObj(Intf);
   ClassRef := FClassRefList.IndexOf(AObject.ClassName);
   if ClassRef < 0 then ClassRef := WriteClass(AObject);
-  FRefList.Add(Value);
+  FRefList.Add(Intf);
   FStream.WriteBuffer(HproseTagObject, 1);
   WriteRawByteString(RawByteString(IntToStr(ClassRef)));
   FStream.WriteBuffer(HproseTagOpenbrace, 1);
@@ -2825,21 +2854,12 @@ begin
   FStream.WriteBuffer(HproseTagClosebrace, 1);
 end;
 
-function THproseWriter.WriteRef(const Value: Variant;
-  CheckRef: Boolean): Boolean;
+procedure THproseWriter.WriteInterfaceWithRef(Intf: IInterface);
 var
   Ref: Integer;
 begin
-  if CheckRef then begin
-    Ref := FRefList.IndexOf(Value);
-    if Ref > -1 then begin
-      WriteRef(Ref);
-      Result := False;
-      Exit;
-    end;
-  end;
-  FRefList.Add(Value);
-  Result := True;
+  Ref := FRefList.IndexOf(Intf);
+  if Ref > -1 then WriteRef(Ref) else WriteInterface(Intf);
 end;
 
 procedure THproseWriter.WriteRef(Value: Integer);
@@ -2879,16 +2899,22 @@ begin
   WriteRawByteString(UTF8Encode(WideString(C)));
 end;
 
-procedure THproseWriter.WriteString(const S: WideString;
-  CheckRef: Boolean);
+procedure THproseWriter.WriteString(const S: WideString);
 begin
-  if WriteRef(S, CheckRef) then begin
-    FStream.WriteBuffer(HproseTagString, 1);
-    WriteRawByteString(RawByteString(IntToStr(Length(S))));
-    FStream.WriteBuffer(HproseTagQuote, 1);
-    WriteRawByteString(UTF8Encode(S));
-    FStream.WriteBuffer(HproseTagQuote, 1);
-  end;
+  FRefList.Add(S);
+  FStream.WriteBuffer(HproseTagString, 1);
+  WriteRawByteString(RawByteString(IntToStr(Length(S))));
+  FStream.WriteBuffer(HproseTagQuote, 1);
+  WriteRawByteString(UTF8Encode(S));
+  FStream.WriteBuffer(HproseTagQuote, 1);
+end;
+
+procedure THproseWriter.WriteStringWithRef(const S: WideString);
+var
+  Ref: Integer;
+begin
+  Ref := FRefList.IndexOf(S);
+  if Ref > -1 then WriteRef(Ref) else WriteString(S);
 end;
 
 procedure THproseWriter.WriteVariantArray(var P; Count: Integer);
@@ -2904,7 +2930,7 @@ var
   AP: PWideStringArray absolute P;
   I: Integer;
 begin
-  for I := 0 to Count - 1 do WriteString(AP^[I]);
+  for I := 0 to Count - 1 do WriteStringWithRef(AP^[I]);
 end;
 
 procedure THproseWriter.WriteWordArray(var P; Count: Integer);
