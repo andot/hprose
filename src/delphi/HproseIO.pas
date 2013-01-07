@@ -152,7 +152,7 @@ type
     FRefList: IList;
     FClassRefList: IList;
     procedure WriteRef(Value: Integer);
-    function WriteClass(Instance: TObject): Integer;
+    function WriteClass(const Instance: TObject): Integer;
     procedure WriteRawByteString(const S: RawByteString);
     procedure WriteShortIntArray(var P; Count: Integer);
     procedure WriteSmallIntArray(var P; Count: Integer);
@@ -200,17 +200,19 @@ type
     procedure WriteBytesWithRef(const Bytes: Variant);
     procedure WriteString(const S: WideString);
     procedure WriteStringWithRef(const S: WideString);
+    procedure WriteStrings(const SS: TStrings);
+    procedure WriteStringsWithRef(const SS: TStrings);
     procedure WriteArray(const Value: Variant); overload;
     procedure WriteArrayWithRef(const Value: Variant);
     procedure WriteArray(const Value: array of const); overload;
-    procedure WriteList(AList: IList);
-    procedure WriteListWithRef(AList: IList);
-    procedure WriteMap(AMap: IMap);
-    procedure WriteMapWithRef(AMap: IMap);
-    procedure WriteObject(AObject: TObject);
-    procedure WriteObjectWithRef(AObject: TObject);
-    procedure WriteInterface(Intf: IInterface);
-    procedure WriteInterfaceWithRef(Intf: IInterface);
+    procedure WriteList(const AList: IList);
+    procedure WriteListWithRef(const AList: IList);
+    procedure WriteMap(const AMap: IMap);
+    procedure WriteMapWithRef(const AMap: IMap);
+    procedure WriteObject(const AObject: TObject);
+    procedure WriteObjectWithRef(const AObject: TObject);
+    procedure WriteInterface(const Intf: IInterface);
+    procedure WriteInterfaceWithRef(const Intf: IInterface);
     procedure Reset;
     property Stream: TStream read FStream;
   end;
@@ -2246,6 +2248,7 @@ begin
         if Obj = nil then WriteNull
         else if Obj is TAbstractList then WriteListWithRef(TAbstractList(Obj))
         else if Obj is TAbstractMap then WriteMapWithRef(TAbstractMap(Obj))
+        else if Obj is TStrings then WriteStringsWithRef(TStrings(Obj))
         else WriteObjectWithRef(Obj);
       end
     end;
@@ -2284,14 +2287,11 @@ begin
       vtString:        WriteStringWithRef(WideString(VString^));
       vtPChar:         WriteStringWithRef(WideString(AnsiString(VPChar)));
       vtObject:
-        if VObject = nil then
-          WriteNull
-        else if Supports(VObject, IList, AList) then
-          WriteListWithRef(AList)
-        else if Supports(VObject, IMap, AMap) then
-          WriteMapWithRef(AMap)
-        else
-          WriteObjectWithRef(VObject);
+        if VObject = nil then WriteNull
+        else if Supports(VObject, IList, AList) then WriteListWithRef(AList)
+        else if Supports(VObject, IMap, AMap) then WriteMapWithRef(AMap)
+        else if VObject is TStrings then WriteStringsWithRef(TStrings(VObject))
+        else WriteObjectWithRef(VObject);
       vtWideChar:      WriteUTF8Char(VWideChar);
       vtPWideChar:     WriteStringWithRef(WideString(VPWideChar));
       vtAnsiString:    WriteStringWithRef(WideString(AnsiString(VAnsiString)));
@@ -2444,7 +2444,7 @@ begin
   if Ref > -1 then WriteRef(Ref) else WriteBytes(Bytes);
 end;
 
-function THproseWriter.WriteClass(Instance: TObject): Integer;
+function THproseWriter.WriteClass(const Instance: TObject): Integer;
 var
   ClassAlias: string;
   PropName: ShortString;
@@ -2670,7 +2670,7 @@ begin
   for I := 0 to Count - 1 do WriteInteger(AP^[I]);
 end;
 
-procedure THproseWriter.WriteList(AList: IList);
+procedure THproseWriter.WriteList(const AList: IList);
 var
   Count, I: Integer;
 begin
@@ -2683,7 +2683,7 @@ begin
   FStream.WriteBuffer(HproseTagClosebrace, 1);
 end;
 
-procedure THproseWriter.WriteListWithRef(AList: IList);
+procedure THproseWriter.WriteListWithRef(const AList: IList);
 var
   Ref: Integer;
 begin
@@ -2759,7 +2759,7 @@ begin
   for I := 0 to Count - 1 do WriteLong(AP^[I]);
 end;
 
-procedure THproseWriter.WriteMap(AMap: IMap);
+procedure THproseWriter.WriteMap(const AMap: IMap);
 var
   Count, I: Integer;
 begin
@@ -2775,7 +2775,7 @@ begin
   FStream.WriteBuffer(HproseTagClosebrace, 1);
 end;
 
-procedure THproseWriter.WriteMapWithRef(AMap: IMap);
+procedure THproseWriter.WriteMapWithRef(const AMap: IMap);
 var
   Ref: Integer;
 begin
@@ -2798,7 +2798,7 @@ begin
   FStream.WriteBuffer(HproseTagEmpty, 1);
 end;
 
-procedure THproseWriter.WriteObject(AObject: TObject);
+procedure THproseWriter.WriteObject(const AObject: TObject);
 var
   ClassRef: Integer;
   Value: Variant;
@@ -2822,7 +2822,7 @@ begin
   FStream.WriteBuffer(HproseTagClosebrace, 1);
 end;
 
-procedure THproseWriter.WriteObjectWithRef(AObject: TObject);
+procedure THproseWriter.WriteObjectWithRef(const AObject: TObject);
 var
   Ref: Integer;
 begin
@@ -2830,7 +2830,7 @@ begin
   if Ref > -1 then WriteRef(Ref) else WriteObject(AObject);
 end;
 
-procedure THproseWriter.WriteInterface(Intf: IInterface);
+procedure THproseWriter.WriteInterface(const Intf: IInterface);
 var
   ClassRef: Integer;
   AObject: TObject;
@@ -2854,7 +2854,7 @@ begin
   FStream.WriteBuffer(HproseTagClosebrace, 1);
 end;
 
-procedure THproseWriter.WriteInterfaceWithRef(Intf: IInterface);
+procedure THproseWriter.WriteInterfaceWithRef(const Intf: IInterface);
 var
   Ref: Integer;
 begin
@@ -2915,6 +2915,27 @@ var
 begin
   Ref := FRefList.IndexOf(S);
   if Ref > -1 then WriteRef(Ref) else WriteString(S);
+end;
+
+procedure THproseWriter.WriteStrings(const SS: TStrings);
+var
+  Count, I: Integer;
+begin
+  FRefList.Add(ObjToVar(SS));
+  Count := SS.Count;
+  FStream.WriteBuffer(HproseTagList, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  for I := 0 to Count - 1 do WriteStringWithRef(SS[I]);
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteStringsWithRef(const SS: TStrings);
+var
+  Ref: Integer;
+begin
+  Ref := FRefList.IndexOf(ObjToVar(SS));
+  if Ref > -1 then WriteRef(Ref) else WriteStrings(SS);
 end;
 
 procedure THproseWriter.WriteVariantArray(var P; Count: Integer);

@@ -516,7 +516,7 @@ function VarToMap(const Value: Variant): IMap;
 function VarIsIntf(const Value: Variant): Boolean; overload;
 function VarIsIntf(const Value: Variant; const IID: TGUID): Boolean; overload;
 function VarToIntf(const Value: Variant; const IID: TGUID; out AIntf): Boolean;
-function IntfToObj(const Intf: IInterface): TObject;
+function IntfToObj(const Intf: IInterface): TInterfacedObject;
 
 function CopyVarRec(const Item: TVarRec): TVarRec;
 function CreateConstArray(const Elements: array of const): TConstArray;
@@ -887,13 +887,13 @@ type
   PObjectFromInterfaceStub = ^TObjectFromInterfaceStub;
 {$endif}
 
-function IntfToObj(const Intf: IInterface): TObject; {$ifdef DELPHI2010_UP}inline;{$endif}
+function IntfToObj(const Intf: IInterface): TInterfacedObject; {$ifdef DELPHI2010_UP}inline;{$endif}
 begin
   if Intf = nil then
     result := nil
   else begin
 {$ifdef DELPHI2010_UP}
-    result := Intf as TObject; // slower but always working
+    result := Intf as TInterfacedObject; // slower but always working
 {$else}
     with PObjectFromInterfaceStub(PPointer(PPointer(Intf)^)^)^ do
     case Stub of
