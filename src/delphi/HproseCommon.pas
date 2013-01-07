@@ -15,7 +15,7 @@
  *                                                        *
  * hprose common unit for delphi.                         *
  *                                                        *
- * LastModified: Dec 28, 2012                             *
+ * LastModified: Jan 8, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -887,7 +887,7 @@ type
   PObjectFromInterfaceStub = ^TObjectFromInterfaceStub;
 {$endif}
 
-function IntfToObj(const Intf: IInterface): TObject; {$ifdef Supports_Inline}inline;{$endif}
+function IntfToObj(const Intf: IInterface): TObject; {$ifdef DELPHI2010_UP}inline;{$endif}
 begin
   if Intf = nil then
     result := nil
