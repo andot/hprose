@@ -479,13 +479,25 @@ type
     property DataString: RawByteString read FDataString;
   end;
 
-{$IFDEF Supports_Generics}
   ISmartObject = interface
   ['{496CD091-9C33-423A-BC4A-61AF16C74A75}']
     function ClassType: TClass;
     function Value: TObject;
   end;
 
+  TSmartObject = class(TInterfacedObject, ISmartObject)
+  private
+    FObject: TObject;
+    FClass: TClass;
+    constructor Create(const AClass: TClass);
+    function ClassType: TClass;
+    function Value: TObject;
+  public
+    class function New(const AClass: TClass): ISmartObject;
+    destructor Destroy; override;
+  end;
+
+{$IFDEF Supports_Generics}
   ISmartObject<T: constructor, class> = interface
   ['{91FEB85D-1284-4516-A9DA-5D370A338DA0}']
     function Value: T;
@@ -2686,6 +2698,35 @@ begin
 end;
 
 {$ENDIF}
+
+{ TSmartObject }
+
+function TSmartObject.ClassType: TClass;
+begin
+  Result := FClass;
+end;
+
+constructor TSmartObject.Create(const AClass: TClass);
+begin
+  FClass := AClass;
+  FObject := AClass.Create;
+end;
+
+destructor TSmartObject.Destroy;
+begin
+  FreeAndNil(FObject);
+  inherited;
+end;
+
+class function TSmartObject.New(const AClass: TClass): ISmartObject;
+begin
+  Result := TSmartObject.Create(AClass) as ISmartObject;
+end;
+
+function TSmartObject.Value: TObject;
+begin
+  Result := FObject;
+end;
 
 initialization
 
