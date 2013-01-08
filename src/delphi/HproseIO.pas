@@ -176,6 +176,7 @@ type
   public
     constructor Create(AStream: TStream);
     procedure Serialize(const Value: Variant); overload;
+    procedure Serialize(const Value: TObject); overload;
     procedure Serialize(const Value: array of const); overload;
     procedure WriteInteger(I: Integer);
     procedure WriteLong(L: Int64); overload;
@@ -205,28 +206,34 @@ type
     procedure WriteArray(const Value: Variant); overload;
     procedure WriteArrayWithRef(const Value: Variant);
     procedure WriteArray(const Value: array of const); overload;
-    procedure WriteList(const AList: IList);
-    procedure WriteListWithRef(const AList: IList);
-    procedure WriteMap(const AMap: IMap);
-    procedure WriteMapWithRef(const AMap: IMap);
+    procedure WriteList(const AList: IList); overload;
+    procedure WriteListWithRef(const AList: IList); overload;
+    procedure WriteList(const AList: TAbstractList); overload;
+    procedure WriteListWithRef(const AList: TAbstractList); overload;
+    procedure WriteMap(const AMap: IMap); overload;
+    procedure WriteMapWithRef(const AMap: IMap); overload;
+    procedure WriteMap(const AMap: TAbstractMap); overload;
+    procedure WriteMapWithRef(const AMap: TAbstractMap); overload;
     procedure WriteObject(const AObject: TObject);
     procedure WriteObjectWithRef(const AObject: TObject);
     procedure WriteInterface(const Intf: IInterface);
     procedure WriteInterfaceWithRef(const Intf: IInterface);
+    procedure WriteSmartObject(const SmartObject: ISmartObject);
+    procedure WriteSmartObjectWithRef(const SmartObject: ISmartObject);
     procedure Reset;
     property Stream: TStream read FStream;
   end;
 
   THproseFormatter = class
   public
-    class function Serialize(Value: TObject): RawByteString; overload;
+    class function Serialize(const Value: TObject): RawByteString; overload;
     class function Serialize(const Value: Variant): RawByteString; overload;
     class function Serialize(const Value: array of const): RawByteString; overload;
     class function Unserialize(const Data:RawByteString; VType: TVarType = varVariant;
       AClass: TClass = nil): Variant;
   end;
 
-function HproseSerialize(Value: TObject): RawByteString; overload;
+function HproseSerialize(const Value: TObject): RawByteString; overload;
 function HproseSerialize(const Value: Variant): RawByteString; overload;
 function HproseSerialize(const Value: array of const): RawByteString; overload;
 function HproseUnserialize(const Data:RawByteString; VType: TVarType = varVariant;
@@ -2197,6 +2204,7 @@ procedure THproseWriter.Serialize(const Value: Variant);
 var
   AList: IList;
   AMap: IMap;
+  ASmartObject: ISmartObject;
   Obj: TObject;
 begin
   with FindVarData(Value)^ do begin
@@ -2234,6 +2242,8 @@ begin
           WriteListWithRef(AList)
         else if Supports(IInterface(Value), IMap, AMap) then
           WriteMapWithRef(AMap)
+        else if Supports(IInterface(Value), ISmartObject, ASmartObject) then
+          WriteSmartObjectWithRef(ASmartObject)
         else
           WriteInterfaceWithRef(IInterface(Value));
     else
@@ -2255,6 +2265,11 @@ begin
   end;
 end;
 
+procedure THproseWriter.Serialize(const Value: TObject);
+begin
+  Serialize(ObjToVar(Value));
+end;
+
 procedure THproseWriter.Serialize(const Value: array of const);
 begin
   WriteArray(Value);
@@ -2271,6 +2286,7 @@ var
   I, N: Integer;
   AList: IList;
   AMap: IMap;
+  ASmartObject: ISmartObject;
 begin
   FRefList.Add(Null);
   N := Length(Value);
@@ -2304,6 +2320,8 @@ begin
           WriteListWithRef(AList)
         else if Supports(IInterface(VInterface), IMap, AMap) then
           WriteMapWithRef(AMap)
+        else if Supports(IInterface(VInterface), ISmartObject, ASmartObject) then
+          WriteSmartObjectWithRef(ASmartObject)
         else
           WriteInterfaceWithRef(IInterface(VInterface));
       vtWideString:    WriteStringWithRef(WideString(VWideString));
@@ -2691,6 +2709,27 @@ begin
   if Ref > -1 then WriteRef(Ref) else WriteList(AList);
 end;
 
+procedure THproseWriter.WriteList(const AList: TAbstractList);
+var
+  Count, I: Integer;
+begin
+  FRefList.Add(ObjToVar(AList));
+  Count := AList.Count;
+  FStream.WriteBuffer(HproseTagList, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  for I := 0 to Count - 1 do Serialize(AList[I]);
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteListWithRef(const AList: TAbstractList);
+var
+  Ref: Integer;
+begin
+  Ref := FRefList.IndexOf(ObjToVar(AList));
+  if Ref > -1 then WriteRef(Ref) else WriteList(AList);
+end;
+
 procedure THproseWriter.WriteLong(const L: RawByteString);
 begin
   if (Length(L) = 1) and (L[1] in ['0'..'9']) then
@@ -2783,6 +2822,30 @@ begin
   if Ref > -1 then WriteRef(Ref) else WriteMap(AMap);
 end;
 
+procedure THproseWriter.WriteMap(const AMap: TAbstractMap);
+var
+  Count, I: Integer;
+begin
+  FRefList.Add(ObjToVar(AMap));
+  Count := AMap.Count;
+  FStream.WriteBuffer(HproseTagMap, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  for I := 0 to Count - 1 do begin
+    Serialize(AMap.Keys[I]);
+    Serialize(AMap.Values[I]);
+  end;
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteMapWithRef(const AMap: TAbstractMap);
+var
+  Ref: Integer;
+begin
+  Ref := FRefList.IndexOf(ObjToVar(AMap));
+  if Ref > -1 then WriteRef(Ref) else WriteMap(AMap);
+end;
+
 procedure THproseWriter.WriteNaN;
 begin
   FStream.WriteBuffer(HproseTagNaN, 1);
@@ -2860,6 +2923,42 @@ var
 begin
   Ref := FRefList.IndexOf(Intf);
   if Ref > -1 then WriteRef(Ref) else WriteInterface(Intf);
+end;
+
+procedure THproseWriter.WriteSmartObject(const SmartObject: ISmartObject);
+var
+  ClassRef: Integer;
+  AObject: TObject;
+  PropList: PPropList;
+  PropCount, I: Integer;
+begin
+  AObject := SmartObject.Value;
+  ClassRef := FClassRefList.IndexOf(AObject.ClassName);
+  if ClassRef < 0 then ClassRef := WriteClass(AObject);
+  FRefList.Add(SmartObject);
+  FStream.WriteBuffer(HproseTagObject, 1);
+  WriteRawByteString(RawByteString(IntToStr(ClassRef)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  PropCount := GetStoredPropList(AObject, PropList);
+  try
+    for I := 0 to PropCount - 1 do
+      Serialize(GetPropValue(AObject, PropList^[I]));
+  finally
+    FreeMem(PropList);
+  end;
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteSmartObjectWithRef(const SmartObject: ISmartObject);
+var
+  Ref: Integer;
+begin
+  if SmartObject.Value is TStrings then
+    WriteStringsWithRef(TStrings(SmartObject.Value))
+  else begin
+    Ref := FRefList.IndexOf(SmartObject);
+    if Ref > -1 then WriteRef(Ref) else WriteSmartObject(SmartObject);
+  end;
 end;
 
 procedure THproseWriter.WriteRef(Value: Integer);
@@ -2970,7 +3069,7 @@ end;
 
 { HproseSerialize }
 
-function HproseSerialize(Value: TObject): RawByteString;
+function HproseSerialize(const Value: TObject): RawByteString;
 begin
   Result := HproseSerialize(ObjToVar(Value));
 end;
@@ -3043,7 +3142,7 @@ end;
 { THproseFormatter }
 
 class function THproseFormatter.Serialize(
-  Value: TObject): RawByteString;
+  const Value: TObject): RawByteString;
 begin
   Result := HproseSerialize(Value);
 end;

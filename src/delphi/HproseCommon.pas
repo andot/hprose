@@ -478,6 +478,34 @@ type
     property Capacity: Integer read FCapacity write SetCapacity;
     property DataString: RawByteString read FDataString;
   end;
+
+{$IFDEF Supports_Generics}
+  ISmartObject = interface
+  ['{496CD091-9C33-423A-BC4A-61AF16C74A75}']
+    function ClassType: TClass;
+    function Value: TObject;
+  end;
+
+  ISmartObject<T: constructor, class> = interface
+  ['{91FEB85D-1284-4516-A9DA-5D370A338DA0}']
+    function Value: T;
+  end;
+
+  TSmartObject<T: constructor, class> = class(TInterfacedObject, ISmartObject<T>, ISmartObject)
+  private
+    FObject: T;
+    constructor Create;
+    function ClassType: TClass;
+    function Get: TObject;
+    function GetValue: T;
+    function ISmartObject.Value = Get;
+    function ISmartObject<T>.Value = GetValue;
+  public
+    class function New: ISmartObject<T>;
+    destructor Destroy; override;
+  end;
+{$ENDIF}
+
 {$IFDEF FPC}
 const
   varObject = 23;  {23 is not used by FreePascal and Delphi, so it's safe.}
@@ -2623,19 +2651,46 @@ begin
     TrimKey, TrimValue, SkipEmptyKey, SkipEmptyValue);
 end;
 
+{$IFDEF Supports_Generics}
+{ TSmartObject<T> }
+
+constructor TSmartObject<T>.Create();
+begin
+  FObject := T.Create;
+end;
+
+function TSmartObject<T>.ClassType: TClass;
+begin
+  Result := T;
+end;
+
+destructor TSmartObject<T>.Destroy;
+begin
+  FreeAndNil(FObject);
+  inherited;
+end;
+
+function TSmartObject<T>.Get: TObject;
+begin
+  Result := FObject;
+end;
+
+function TSmartObject<T>.GetValue: T;
+begin
+  Result := FObject;
+end;
+
+class function TSmartObject<T>.New: ISmartObject<T>;
+begin
+  Result := TSmartObject<T>.Create as ISmartObject<T>;
+end;
+
+{$ENDIF}
+
 initialization
 
   HproseClassMap := TCaseInsensitiveHashedMap.Create(False, True);
   HproseInterfaceMap := TCaseInsensitiveHashedMap.Create(False, True);
-  RegisterClass(TArrayList, IList, '!List');
-  RegisterClass(TArrayList, IArrayList, '!ArrayList');
-  RegisterClass(THashedList, IHashedList, '!HashedList');
-  RegisterClass(TCaseInsensitiveHashedList, ICaseInsensitiveHashedList, '!CaseInsensitiveHashedList');
-  RegisterClass(THashMap, IMap, '!Map');
-  RegisterClass(THashMap, IHashMap, '!HashMap');
-  RegisterClass(THashedMap, IHashedMap, '!HashedMap');
-  RegisterClass(TCaseInsensitiveHashMap, ICaseInsensitiveHashMap, '!CaseInsensitiveHashMap');
-  RegisterClass(TCaseInsensitiveHashedMap, ICaseInsensitiveHashedMap, '!CaseInsensitiveHashedMap');
 {$IFNDEF FPC}
   VarObjectType := TVarObjectType.Create;
   varObject := VarObjectType.VarType;
