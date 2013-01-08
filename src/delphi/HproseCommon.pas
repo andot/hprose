@@ -481,19 +481,16 @@ type
 
   ISmartObject = interface
   ['{496CD091-9C33-423A-BC4A-61AF16C74A75}']
-    function ClassType: TClass;
     function Value: TObject;
   end;
 
   TSmartObject = class(TInterfacedObject, ISmartObject)
   private
     FObject: TObject;
-    FClass: TClass;
     constructor Create(const AClass: TClass);
-    function ClassType: TClass;
-    function Value: TObject;
   public
     class function New(const AClass: TClass): ISmartObject;
+    function Value: TObject;
     destructor Destroy; override;
   end;
 
@@ -503,17 +500,17 @@ type
     function Value: T;
   end;
 
-  TSmartObject<T: constructor, class> = class(TInterfacedObject, ISmartObject<T>, ISmartObject)
+  TSmartObject<T: constructor, class> = class(TInterfacedObject, ISmartObject, ISmartObject<T>)
   private
     FObject: T;
     constructor Create;
-    function ClassType: TClass;
+  protected
     function Get: TObject;
-    function GetValue: T;
-    function ISmartObject.Value = Get;
-    function ISmartObject<T>.Value = GetValue;
+    function GetT: T;
   public
     class function New: ISmartObject<T>;
+    function ISmartObject.Value = Get;
+    function ISmartObject<T>.Value = GetT;
     destructor Destroy; override;
   end;
 {$ENDIF}
@@ -2671,11 +2668,6 @@ begin
   FObject := T.Create;
 end;
 
-function TSmartObject<T>.ClassType: TClass;
-begin
-  Result := T;
-end;
-
 destructor TSmartObject<T>.Destroy;
 begin
   FreeAndNil(FObject);
@@ -2687,7 +2679,7 @@ begin
   Result := FObject;
 end;
 
-function TSmartObject<T>.GetValue: T;
+function TSmartObject<T>.GetT: T;
 begin
   Result := FObject;
 end;
@@ -2701,14 +2693,8 @@ end;
 
 { TSmartObject }
 
-function TSmartObject.ClassType: TClass;
-begin
-  Result := FClass;
-end;
-
 constructor TSmartObject.Create(const AClass: TClass);
 begin
-  FClass := AClass;
   FObject := AClass.Create;
 end;
 
@@ -2732,6 +2718,16 @@ initialization
 
   HproseClassMap := TCaseInsensitiveHashedMap.Create(False, True);
   HproseInterfaceMap := TCaseInsensitiveHashedMap.Create(False, True);
+  RegisterClass(TArrayList, IList, '!List');
+  RegisterClass(TArrayList, IArrayList, '!ArrayList');
+  RegisterClass(THashedList, IHashedList, '!HashedList');
+  RegisterClass(TCaseInsensitiveHashedList, ICaseInsensitiveHashedList, '!CaseInsensitiveHashedList');
+  RegisterClass(THashMap, IMap, '!Map');
+  RegisterClass(THashMap, IHashMap, '!HashMap');
+  RegisterClass(THashedMap, IHashedMap, '!HashedMap');
+  RegisterClass(TCaseInsensitiveHashMap, ICaseInsensitiveHashMap, '!CaseInsensitiveHashMap');
+  RegisterClass(TCaseInsensitiveHashedMap, ICaseInsensitiveHashedMap, '!CaseInsensitiveHashedMap');
+
 {$IFNDEF FPC}
   VarObjectType := TVarObjectType.Create;
   varObject := VarObjectType.VarType;

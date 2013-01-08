@@ -26,7 +26,8 @@ unit HproseIO;
 
 interface
 
-uses Classes, HproseCommon;
+uses Classes, HproseCommon
+{$IFDEF Supports_Generics}, Generics.Collections {$ENDIF};
 
 const
   { Hprose Serialize Tags }
@@ -173,6 +174,10 @@ type
     procedure WriteWideStringArray(var P; Count: Integer);
     procedure WriteDateTimeArray(var P; Count: Integer);
     procedure WriteVariantArray(var P; Count: Integer);
+    procedure WriteWideString(const Str: WideString);
+{$IFDEF Supports_Generics}
+    procedure SerializeImpl<T>(const Value);
+{$ENDIF}
   public
     constructor Create(AStream: TStream);
     procedure Serialize(const Value: Variant); overload;
@@ -214,6 +219,17 @@ type
     procedure WriteMapWithRef(const AMap: IMap); overload;
     procedure WriteMap(const AMap: TAbstractMap); overload;
     procedure WriteMapWithRef(const AMap: TAbstractMap); overload;
+{$IFDEF Supports_Generics}
+    procedure Serialize<T>(const Value: T); overload;
+    procedure WriteList<T>(const AList: TList<T>); overload;
+    procedure WriteListWithRef<T>(const AList: TList<T>); overload;
+    procedure WriteList<T>(const AList: TQueue<T>); overload;
+    procedure WriteListWithRef<T>(const AList: TQueue<T>); overload;
+    procedure WriteList<T>(const AList: TStack<T>); overload;
+    procedure WriteListWithRef<T>(const AList: TStack<T>); overload;
+    procedure WriteMap<TKey, TValue>(const AMap: TDictionary<TKey, TValue>); overload;
+    procedure WriteMapWithRef<TKey, TValue>(const AMap: TDictionary<TKey, TValue>); overload;
+{$ENDIF}
     procedure WriteObject(const AObject: TObject);
     procedure WriteObjectWithRef(const AObject: TObject);
     procedure WriteInterface(const Intf: IInterface);
@@ -229,6 +245,9 @@ type
     class function Serialize(const Value: TObject): RawByteString; overload;
     class function Serialize(const Value: Variant): RawByteString; overload;
     class function Serialize(const Value: array of const): RawByteString; overload;
+{$IFDEF Supports_Generics}
+    class function Serialize<T>(const Value: T): RawByteString; overload;
+{$ENDIF}
     class function Unserialize(const Data:RawByteString; VType: TVarType = varVariant;
       AClass: TClass = nil): Variant;
   end;
@@ -2227,12 +2246,7 @@ begin
       varCurrency:
         WriteCurrency(Value);
       varString, {$IFDEF DELPHI2009_UP}varUString, {$ENDIF}varOleStr:
-        if Length(Value) = 0 then
-          WriteEmpty
-        else if Length(Value) = 1 then
-          WriteUTF8Char(VarToWideStr(Value)[1])
-        else
-          WriteStringWithRef(Value);
+        WriteWideString(Value);
       varDate:
         WriteDateTimeWithRef(Value);
       varUnknown:
@@ -2274,6 +2288,106 @@ procedure THproseWriter.Serialize(const Value: array of const);
 begin
   WriteArray(Value);
 end;
+
+{$IFDEF Supports_Generics}
+procedure THproseWriter.SerializeImpl<T>(const Value);
+var
+  TypeData: PTypeData;
+  TypeInfo: PTypeInfo;
+  TypeName: string;
+  AList: IList;
+  AMap: IMap;
+  ASmartObject: ISmartObject;
+  Obj: TObject;
+  DynaArray: Variant;
+begin
+  TypeInfo := System.TypeInfo(T);
+  TypeName := LowerCase(string(TypeInfo^.Name));
+  if TypeName = 'boolean' then
+    WriteBoolean(Boolean(Value))
+  else if TypeName = 'tdatetime' then
+    WriteDateTimeWithRef(TDateTime(Value))
+  else if TypeName = 'uint64' then
+    WriteLong(RawByteString(UIntToStr(UInt64(Value))))
+  else begin
+    TypeData := GetTypeData(TypeInfo);
+    case TypeInfo^.Kind of
+      tkInteger, tkEnumeration, tkSet:
+        case TypeData^.OrdType of
+          otSByte:
+            WriteInteger(ShortInt(Value));
+          otUByte:
+            WriteInteger(Byte(Value));
+          otSWord:
+            WriteInteger(SmallInt(Value));
+          otUWord:
+            WriteInteger(Word(Value));
+          otSLong:
+            WriteInteger(Integer(Value));
+          otULong:
+            WriteLong(RawByteString(UIntToStr(LongWord(Value))));
+        end;
+      tkChar:
+        WriteUTF8Char(WideString(AnsiChar(Value))[1]);
+      tkWChar:
+        WriteUTF8Char(WideChar(Value));
+      tkFloat:
+        case TypeData^.FloatType of
+          ftSingle:
+            WriteDouble(Single(Value));
+          ftDouble:
+            WriteDouble(Double(Value));
+          ftCurr:
+            WriteCurrency(Currency(Value));
+        end;
+      tkString:
+        WriteWideString(WideString(ShortString(Value)));
+      tkLString:
+        WriteWideString(WideString(AnsiString(Value)));
+      tkWString:
+        WriteWideString(WideString(Value));
+      tkUString:
+        WriteWideString(UnicodeString(Value));
+      tkInt64:
+        WriteLong(RawByteString(UIntToStr(UInt64(Value))));
+      tkInterface: begin
+        if IInterface(Value) = nil then
+          WriteNull
+        else if Supports(IInterface(Value), IList, AList) then
+          WriteListWithRef(AList)
+        else if Supports(IInterface(Value), IMap, AMap) then
+          WriteMapWithRef(AMap)
+        else if Supports(IInterface(Value), ISmartObject, ASmartObject) then
+          WriteSmartObjectWithRef(ASmartObject)
+        else
+          WriteInterfaceWithRef(IInterface(Value));
+      end;
+      tkDynArray: begin
+        DynaArray := Variant(Value);
+        if (TypeData.varType and varTypeMask = varByte) and
+           (VarArrayDimCount(DynaArray) = 1) then
+          WriteBytesWithRef(DynaArray)
+        else
+          WriteArrayWithRef(DynaArray)
+      end;
+      tkClass: begin
+        Obj := TObject(Value);
+        if Obj = nil then WriteNull
+        else if Obj is TAbstractList then WriteListWithRef(TAbstractList(Obj))
+        else if Obj is TAbstractMap then WriteMapWithRef(TAbstractMap(Obj))
+        else if Obj is TStrings then WriteStringsWithRef(TStrings(Obj))
+        else WriteObjectWithRef(Obj);
+      end;
+    end;
+  end;
+end;
+
+procedure THproseWriter.Serialize<T>(const Value: T);
+begin
+  SerializeImpl<T>(Value);
+end;
+
+{$ENDIF}
 
 procedure THproseWriter.WriteRawByteString(const S: RawByteString);
 begin
@@ -2730,6 +2844,73 @@ begin
   if Ref > -1 then WriteRef(Ref) else WriteList(AList);
 end;
 
+{$IFDEF Supports_Generics}
+procedure THproseWriter.WriteList<T>(const AList: TList<T>);
+var
+  Count, I: Integer;
+begin
+  FRefList.Add(ObjToVar(AList));
+  Count := AList.Count;
+  FStream.WriteBuffer(HproseTagList, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  for I := 0 to Count - 1 do Serialize<T>(AList[I]);
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteListWithRef<T>(const AList: TList<T>);
+var
+  Ref: Integer;
+begin
+  Ref := FRefList.IndexOf(ObjToVar(AList));
+  if Ref > -1 then WriteRef(Ref) else WriteList<T>(AList);
+end;
+
+procedure THproseWriter.WriteList<T>(const AList: TQueue<T>);
+var
+  Count, I: Integer;
+  Element: T;
+begin
+  FRefList.Add(ObjToVar(AList));
+  Count := AList.Count;
+  FStream.WriteBuffer(HproseTagList, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  for Element in AList do SerializeImpl<T>(Element);
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteListWithRef<T>(const AList: TQueue<T>);
+var
+  Ref: Integer;
+begin
+  Ref := FRefList.IndexOf(ObjToVar(AList));
+  if Ref > -1 then WriteRef(Ref) else WriteList<T>(AList);
+end;
+
+procedure THproseWriter.WriteList<T>(const AList: TStack<T>);
+var
+  Count, I: Integer;
+  Element: T;
+begin
+  FRefList.Add(ObjToVar(AList));
+  Count := AList.Count;
+  FStream.WriteBuffer(HproseTagList, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  for Element in AList do SerializeImpl<T>(Element);
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteListWithRef<T>(const AList: TStack<T>);
+var
+  Ref: Integer;
+begin
+  Ref := FRefList.IndexOf(ObjToVar(AList));
+  if Ref > -1 then WriteRef(Ref) else WriteList<T>(AList);
+end;
+{$ENDIF}
+
 procedure THproseWriter.WriteLong(const L: RawByteString);
 begin
   if (Length(L) = 1) and (L[1] in ['0'..'9']) then
@@ -2845,6 +3026,30 @@ begin
   Ref := FRefList.IndexOf(ObjToVar(AMap));
   if Ref > -1 then WriteRef(Ref) else WriteMap(AMap);
 end;
+
+{$IFDEF Supports_Generics}
+procedure THproseWriter.WriteMap<TKey, TValue>(const AMap: TDictionary<TKey, TValue>);
+var
+  Count, I: Integer;
+  Pair: TPair<TKey, TValue>;
+begin
+  FRefList.Add(ObjToVar(AMap));
+  Count := AMap.Count;
+  FStream.WriteBuffer(HproseTagMap, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  for Pair in AMap do begin
+    Serialize<TKey>(Pair.Key);
+    Serialize<TValue>(Pair.Value);
+  end;
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteMapWithRef<TKey, TValue>(const AMap: TDictionary<TKey, TValue>);
+begin
+
+end;
+{$ENDIF}
 
 procedure THproseWriter.WriteNaN;
 begin
@@ -3045,6 +3250,16 @@ begin
   for I := 0 to Count - 1 do Serialize(AP^[I]);
 end;
 
+procedure THproseWriter.WriteWideString(const Str: WideString);
+begin
+  case Length(Str) of
+    0: WriteEmpty;
+    1: WriteUTF8Char(Str[1]);
+  else
+    WriteStringWithRef(Str);
+  end;
+end;
+
 procedure THproseWriter.WriteWideStringArray(var P; Count: Integer);
 var
   AP: PWideStringArray absolute P;
@@ -3158,6 +3373,29 @@ class function THproseFormatter.Serialize(
 begin
   Result := HproseSerialize(Value);
 end;
+
+{$IFDEF Supports_Generics}
+class function THproseFormatter.Serialize<T>(const Value: T): RawByteString;
+var
+  Writer: THproseWriter;
+  Stream: TMemoryStream;
+begin
+  Stream := TMemoryStream.Create;
+  try
+    Writer := THproseWriter.Create(Stream);
+    try
+      Writer.Serialize<T>(Value);
+      Stream.Position := 0;
+      SetLength(Result, Stream.Size);
+      Move(Stream.Memory^, PAnsiChar(Result)^, Stream.Size);
+    finally
+      Writer.Free;
+    end;
+  finally
+    Stream.Free;
+  end;
+end;
+{$ENDIF}
 
 class function THproseFormatter.Unserialize(const Data: RawByteString;
   VType: TVarType; AClass: TClass): Variant;
