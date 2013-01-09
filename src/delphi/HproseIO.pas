@@ -15,7 +15,7 @@
  *                                                        *
  * hprose io unit for delphi.                             *
  *                                                        *
- * LastModified: Jan 8, 2013                              *
+ * LastModified: Jan 9, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -764,8 +764,10 @@ begin
         case TypeData^.FloatType of
           ftSingle:
             Result := varSingle;
-          ftDouble:
+          ftDouble, ftExtended:
             Result := varDouble;
+          ftComp:
+            Result := varInt64;
           ftCurr:
             Result := varCurrency;
         end;
@@ -2312,6 +2314,8 @@ begin
   else begin
     TypeData := GetTypeData(TypeInfo);
     case TypeInfo^.Kind of
+      tkVariant:
+        Serialize(Variant(Value));
       tkInteger, tkEnumeration, tkSet:
         case TypeData^.OrdType of
           otSByte:
@@ -2337,6 +2341,10 @@ begin
             WriteDouble(Single(Value));
           ftDouble:
             WriteDouble(Double(Value));
+          ftExtended:
+            WriteDouble(Extended(Value));
+          ftComp:
+            WriteLong(RawByteString(IntToStr(Int64(Value))));
           ftCurr:
             WriteCurrency(Currency(Value));
         end;
@@ -2349,7 +2357,7 @@ begin
       tkUString:
         WriteWideString(UnicodeString(Value));
       tkInt64:
-        WriteLong(RawByteString(UIntToStr(UInt64(Value))));
+        WriteLong(RawByteString(IntToStr(Int64(Value))));
       tkInterface: begin
         if IInterface(Value) = nil then
           WriteNull
