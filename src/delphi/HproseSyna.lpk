@@ -1,0 +1,125 @@
+<?xml version="1.0"?>
+<CONFIG>
+  <Package Version="4">
+    <PathDelim Value="\"/>
+    <Name Value="HproseSyna"/>
+    <Author Value="Ma Bingyao(mabingyao@gmail.com)"/>
+    <CompilerOptions>
+      <Version Value="11"/>
+      <PathDelim Value="\"/>
+      <SearchPaths>
+        <IncludeFiles Value="Synapse"/>
+        <OtherUnitFiles Value="Synapse"/>
+        <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+      </SearchPaths>
+      <Other>
+        <CompilerMessages>
+          <MsgFileName Value=""/>
+        </CompilerMessages>
+        <CompilerPath Value="$(CompPath)"/>
+      </Other>
+    </CompilerOptions>
+    <Description Value="Hprose with Synapse"/>
+    <License Value="Copyright 2008-2013 Ma Bingyao and other contributors.
+http://hprose.com
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+&quot;Software&quot;), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."/>
+    <Version Major="1" Minor="3"/>
+    <Files Count="16">
+      <Item1>
+        <Filename Value="Synapse\jedi.inc"/>
+        <Type Value="Include"/>
+      </Item1>
+      <Item2>
+        <Filename Value="Synapse\ssdotnet.inc"/>
+        <Type Value="Include"/>
+      </Item2>
+      <Item3>
+        <Filename Value="Synapse\ssfpc.inc"/>
+        <Type Value="Include"/>
+      </Item3>
+      <Item4>
+        <Filename Value="Synapse\sslinux.inc"/>
+        <Type Value="Include"/>
+      </Item4>
+      <Item5>
+        <Filename Value="Synapse\sswin32.inc"/>
+        <Type Value="Include"/>
+      </Item5>
+      <Item6>
+        <Filename Value="Synapse\blcksock.pas"/>
+        <UnitName Value="blcksock"/>
+      </Item6>
+      <Item7>
+        <Filename Value="Synapse\httpsend.pas"/>
+        <UnitName Value="httpsend"/>
+      </Item7>
+      <Item8>
+        <Filename Value="Synapse\synaip.pas"/>
+        <UnitName Value="synaip"/>
+      </Item8>
+      <Item9>
+        <Filename Value="Synapse\synafpc.pas"/>
+        <UnitName Value="synafpc"/>
+      </Item9>
+      <Item10>
+        <Filename Value="Synapse\synautil.pas"/>
+        <UnitName Value="synautil"/>
+      </Item10>
+      <Item11>
+        <Filename Value="Synapse\synsock.pas"/>
+        <UnitName Value="synsock"/>
+      </Item11>
+      <Item12>
+        <Filename Value="Hprose.inc"/>
+        <Type Value="Include"/>
+      </Item12>
+      <Item13>
+        <Filename Value="HproseClient.pas"/>
+        <UnitName Value="HproseClient"/>
+      </Item13>
+      <Item14>
+        <Filename Value="HproseCommon.pas"/>
+        <UnitName Value="HproseCommon"/>
+      </Item14>
+      <Item15>
+        <Filename Value="HproseIO.pas"/>
+        <UnitName Value="HproseIO"/>
+      </Item15>
+      <Item16>
+        <Filename Value="HproseSynaHttpClient.pas"/>
+        <HasRegisterProc Value="True"/>
+        <UnitName Value="HproseSynaHttpClient"/>
+      </Item16>
+    </Files>
+    <Type Value="RunAndDesignTime"/>
+    <RequiredPkgs Count="1">
+      <Item1>
+        <PackageName Value="FCL"/>
+      </Item1>
+    </RequiredPkgs>
+    <UsageOptions>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+    </PublishOptions>
+  </Package>
+</CONFIG>
