@@ -394,7 +394,7 @@ begin
   HproseWriter := THproseWriter.Create(OutStream);
   try
     OutStream.Write(HproseTagCall, 1);
-    HproseWriter.WriteString(Name, False);
+    HproseWriter.WriteString(Name);
     if Length(Args) > 0 then begin
       HproseWriter.Reset;
       HproseWriter.WriteArray(Args);
@@ -414,10 +414,10 @@ begin
   HproseWriter := THproseWriter.Create(OutStream);
   try
     OutStream.Write(HproseTagCall, 1);
-    HproseWriter.WriteString(Name, False);
+    HproseWriter.WriteString(Name);
     if (Length(Args) > 0) or ByRef then begin
       HproseWriter.Reset;
-      HproseWriter.WriteArray(Args, False);
+      HproseWriter.WriteArray(Args);
       if ByRef then HproseWriter.WriteBoolean(True);
     end;
     OutStream.Write(HproseTagEnd, 1);
