@@ -114,6 +114,10 @@
   {$define Supports_Anonymous_Method}
 {$endif}
 
+{$ifdef DELPHI2010_UP}
+  {$define Supports_Rtti}
+{$endif}
+
 // Free Pascal
 
 {$ifdef FPC}

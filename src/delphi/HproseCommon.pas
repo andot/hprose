@@ -15,7 +15,7 @@
  *                                                        *
  * hprose common unit for delphi.                         *
  *                                                        *
- * LastModified: Jan 8, 2013                              *
+ * LastModified: Jan 11, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -26,12 +26,23 @@ unit HproseCommon;
 
 interface
 
-uses Classes, SyncObjs, SysUtils;
+uses Classes, SyncObjs, SysUtils, TypInfo;
 
 type
 
+{$IFDEF FPC}
+  UInt64 = QWord;
+{$ENDIF}
+
 {$IFNDEF DELPHI2009_UP}
   RawByteString = type AnsiString;
+{$IFDEF CPU64}
+  NativeInt = Int64;
+  NativeUInt = UInt64;
+{$ELSE}
+  NativeInt = Integer;
+  NativeUInt = Cardinal;
+{$ENDIF}
 {$ENDIF}
 
   THproseResultMode = (Normal, Serialized, Raw, RawWithEndTag);
@@ -515,12 +526,27 @@ type
   end;
 {$ENDIF}
 
+{$IFDEF DELPHI2009}
+  TArray<T> = array of T;
+{$ENDIF}
+
 {$IFDEF FPC}
 const
   varObject = 23;  {23 is not used by FreePascal and Delphi, so it's safe.}
 {$ELSE}
 var
   varObject: TVarType;
+{$ENDIF}
+
+const
+{$IF SizeOf(NativeInt) = 8}
+  varNativeInt = varInt64;
+{$ELSE}
+  varNativeInt = varInteger;
+{$IFEND}
+
+{$IFNDEF DELPHI2009_UP}
+function GetTypeName(const TypeInfo: PTypeInfo): string;
 {$ENDIF}
 {$IFDEF DELPHI6}
 function FindVarData(const Value: Variant): PVarData;
@@ -564,8 +590,36 @@ procedure RegisterClass(const AClass: TClass; const Alias: string); overload;
 procedure RegisterClass(const AClass: TInterfacedClass; const IID: TGUID; const Alias: string); overload;
 function GetClassByAlias(const Alias: string): TClass;
 function GetClassAlias(const AClass: TClass): string;
-function GetClassByInterface(const IID: TGUID): TClass;
-function GetInterfaceByClass(const AClass: TClass): TGUID;
+function GetClassByInterface(const IID: TGUID): TInterfacedClass;
+function GetInterfaceByClass(const AClass: TInterfacedClass): TGUID;
+
+type
+  TClassManager = class
+    class procedure Register(const AClass: TClass; const Alias: string); overload;
+    class procedure Register(const AClass: TInterfacedClass; const IID: TGUID; const Alias: string); overload;
+    class function GetAlias(const AClass: TClass): string;
+    class function GetClass(const Alias: string): TClass; overload;
+    class function GetClass(const IID: TGUID): TInterfacedClass; overload;
+    class function GetInterface(const AClass: TInterfacedClass): TGUID;
+  end;
+
+{$IFDEF Supports_Generics}
+procedure RegisterType(const Size: Integer; const TypeInfo: PTypeInfo); overload;
+function GetTypeInfo(const TypeName: string; var Size: Integer): PTypeInfo;
+
+type
+  TTypeManager = class
+    class procedure Register<T>; overload;
+    class procedure Register<T: constructor, class>(const Alias: string); overload;
+    class procedure Register<T: constructor, TInterfacedObject; I>(const Alias: string); overload;
+    class function GetAlias<T: class>: string;
+    class function GetInterface<T: TInterfacedObject>: TGUID;
+    class function GetClass(const Alias: string): TClass; overload;
+    class function GetClass<I>: TInterfacedClass; overload;
+    class function TypeInfo(const Name: string): PTypeInfo; overload;
+    class function TypeInfo(const Name: string; var Size: Integer): PTypeInfo; overload;
+  end;
+{$ENDIF}
 
 function ListSplit(ListClass: TListClass; Str: string;
   const Separator: string = ','; Limit: Integer = 0; TrimItem: Boolean = False;
@@ -577,7 +631,7 @@ function MapSplit(MapClass: TMapClass; Str: string;
 
 implementation
 
-uses RTLConsts, Variants;
+uses RTLConsts, Variants{$IFDEF Supports_Rtti}, Rtti{$ENDIF};
 {$IFNDEF FPC}
 type
 
@@ -601,6 +655,13 @@ var
 const
 { Maximum TList size }
   MaxListSize = Maxint div 16;
+{$ENDIF}
+
+{$IFNDEF DELPHI2009_UP}
+function GetTypeName(const TypeInfo: PTypeInfo): string;
+begin
+  Result := string(TypeInfo^.Name);
+end;
 {$ENDIF}
 
 {$IFDEF DELPHI6}
@@ -2567,6 +2628,45 @@ begin
 end;
 {$ENDIF}
 
+function ListSplit(ListClass: TListClass; Str: string;
+  const Separator: string; Limit: Integer; TrimItem: Boolean;
+  SkipEmptyItem: Boolean): IList;
+begin
+  Result := ListClass.Split(Str, Separator, Limit, TrimItem, SkipEmptyItem);
+end;
+
+function MapSplit(MapClass: TMapClass; Str: string;
+  const ItemSeparator: string; const KeyValueSeparator: string;
+  Limit: Integer; TrimKey: Boolean; TrimValue: Boolean;
+  SkipEmptyKey: Boolean; SkipEmptyValue: Boolean): IMap;
+begin
+  Result := MapClass.Split(Str, ItemSeparator, KeyValueSeparator, Limit,
+    TrimKey, TrimValue, SkipEmptyKey, SkipEmptyValue);
+end;
+
+{ TSmartObject }
+
+constructor TSmartObject.Create(const AClass: TClass);
+begin
+  FObject := AClass.Create;
+end;
+
+destructor TSmartObject.Destroy;
+begin
+  FreeAndNil(FObject);
+  inherited;
+end;
+
+class function TSmartObject.New(const AClass: TClass): ISmartObject;
+begin
+  Result := TSmartObject.Create(AClass) as ISmartObject;
+end;
+
+function TSmartObject.Value: TObject;
+begin
+  Result := FObject;
+end;
+
 var
   HproseClassMap: IMap;
   HproseInterfaceMap: IMap;
@@ -2575,11 +2675,7 @@ procedure RegisterClass(const AClass: TClass; const Alias: string);
 begin
   HproseClassMap.BeginWrite;
   try
-{$IFDEF CPU64}
-    HproseClassMap[Alias] := Int64(AClass);
-{$ELSE}
-    HproseClassMap[Alias] := Integer(AClass);
-{$ENDIF}
+    HproseClassMap[Alias] := NativeInt(AClass);
   finally
     HproseClassMap.EndWrite;
   end;
@@ -2600,11 +2696,7 @@ function GetClassByAlias(const Alias: string): TClass;
 begin
   HproseClassMap.BeginRead;
   try
-{$IFDEF CPU64}
-    Result := TClass(Int64(HproseClassMap[Alias]));
-{$ELSE}
-    Result := TClass(Integer(HproseClassMap[Alias]));
-{$ENDIF}
+    Result := TClass(NativeInt(HproseClassMap[Alias]));
   finally
     HproseClassMap.EndRead;
   end;
@@ -2614,27 +2706,23 @@ function GetClassAlias(const AClass: TClass): string;
 begin
   HproseClassMap.BeginRead;
   try
-{$IFDEF CPU64}
-    Result := HproseClassMap.Key[Int64(AClass)];
-{$ELSE}
-    Result := HproseClassMap.Key[Integer(AClass)];
-{$ENDIF}
+    Result := HproseClassMap.Key[NativeInt(AClass)];
   finally
     HproseClassMap.EndRead;
   end;
 end;
 
-function GetClassByInterface(const IID: TGUID): TClass;
+function GetClassByInterface(const IID: TGUID): TInterfacedClass;
 begin
   HproseInterfaceMap.BeginRead;
   try
-    Result := GetClassByAlias(HproseInterfaceMap.Key[GuidToString(IID)]);
+    Result := TInterfacedClass(GetClassByAlias(HproseInterfaceMap.Key[GuidToString(IID)]));
   finally
     HproseInterfaceMap.EndRead;
   end;
 end;
 
-function GetInterfaceByClass(const AClass: TClass): TGUID;
+function GetInterfaceByClass(const AClass: TInterfacedClass): TGUID;
 begin
   HproseInterfaceMap.BeginRead;
   try
@@ -2644,23 +2732,42 @@ begin
   end;
 end;
 
-function ListSplit(ListClass: TListClass; Str: string;
-  const Separator: string; Limit: Integer; TrimItem: Boolean;
-  SkipEmptyItem: Boolean): IList;
+{ TClassManager }
+
+class function TClassManager.GetClass(const IID: TGUID): TInterfacedClass;
 begin
-  Result := ListClass.Split(Str, Separator, Limit, TrimItem, SkipEmptyItem);
+  Result := GetClassByInterface(IID);
 end;
 
-function MapSplit(MapClass: TMapClass; Str: string;
-  const ItemSeparator: string; const KeyValueSeparator: string;
-  Limit: Integer; TrimKey: Boolean; TrimValue: Boolean;
-  SkipEmptyKey: Boolean; SkipEmptyValue: Boolean): IMap;
+class function TClassManager.GetClass(const Alias: string): TClass;
 begin
-  Result := MapClass.Split(Str, ItemSeparator, KeyValueSeparator, Limit,
-    TrimKey, TrimValue, SkipEmptyKey, SkipEmptyValue);
+  Result := GetClassByAlias(Alias);
+end;
+
+class function TClassManager.GetInterface(const AClass: TInterfacedClass): TGUID;
+begin
+  Result := GetInterfaceByClass(AClass);
+end;
+
+class function TClassManager.GetAlias(const AClass: TClass): string;
+begin
+  Result := GetClassAlias(AClass);
+end;
+
+class procedure TClassManager.Register(const AClass: TInterfacedClass;
+  const IID: TGUID; const Alias: string);
+begin
+  RegisterClass(AClass, IID, Alias);
+end;
+
+class procedure TClassManager.Register(const AClass: TClass;
+  const Alias: string);
+begin
+  RegisterClass(AClass, Alias);
 end;
 
 {$IFDEF Supports_Generics}
+
 { TSmartObject<T> }
 
 constructor TSmartObject<T>.Create();
@@ -2689,35 +2796,242 @@ begin
   Result := TSmartObject<T>.Create as ISmartObject<T>;
 end;
 
+var
+  HproseSizeMap: IMap;
+  HproseTypeMap: IMap;
+
+procedure RegisterType(const TypeName: string; const Size: Integer;
+  const TypeInfo: PTypeInfo); overload;
+begin
+  HproseTypeMap.BeginWrite;
+  HproseSizeMap.BeginWrite;
+  try
+    HproseSizeMap[TypeName] := Size;
+    HproseTypeMap[TypeName] := NativeInt(TypeInfo);
+  finally
+    HproseSizeMap.EndWrite;
+    HproseTypeMap.EndWrite;
+  end;
+end;
+
+procedure RegisterType(const Size: Integer; const TypeInfo: PTypeInfo);
+var
+  UnitName: string;
+  TypeName: string;
+  TypeData: PTypeData;
+begin
+  TypeName := GetTypeName(TypeInfo);
+  RegisterType(TypeName, Size, TypeInfo);
+  TypeData :=  GetTypeData(TypeInfo);
+  case TypeInfo^.Kind of
+  tkEnumeration:
+{$IFDEF Supports_Rtti}
+     TypeName := TRttiContext.Create.GetType(TypeInfo).QualifiedName;
+{$ELSE}
+     UnitName := string(TypeData^.EnumUnitName);
+{$ENDIF}
+  tkClass:       UnitName := string(TypeData^.UnitName);
+  tkInterface:   UnitName := string(TypeData^.IntfUnit);
+  tkDynArray:    UnitName := string(TypeData^.DynUnitName);
+  else
+    raise EHproseException.Create('Can not register this type: ' + TypeName);
+  end;
+  if UnitName <> '' then TypeName := UnitName + '.' + TypeName;
+  RegisterType(TypeName, Size, TypeInfo);
+end;
+
+function GetTypeInfo(const TypeName: string; var Size: Integer): PTypeInfo;
+begin
+  HproseTypeMap.BeginRead;
+  HproseSizeMap.BeginRead;
+  try
+    Size := HproseSizeMap[TypeName];
+    Result := PTypeInfo(NativeInt(HproseTypeMap[TypeName]));
+  finally
+    HproseSizeMap.EndRead;
+    HproseTypeMap.EndRead;
+  end;
+end;
+
+{ TTypeManager }
+
+class procedure TTypeManager.Register<T>;
+begin
+    RegisterType(SizeOf(T), System.TypeInfo(T));
+end;
+
+class procedure TTypeManager.Register<T>(const Alias: string);
+var
+  TI: PTypeInfo;
+begin
+  TI := System.TypeInfo(T);
+  if PTypeInfo(TI)^.Kind = tkClass then
+    RegisterClass(GetTypeData(TI)^.ClassType, Alias);
+  RegisterType(SizeOf(T), TI);
+end;
+
+class procedure TTypeManager.Register<T, I>(const Alias: string);
+var
+  TTI, ITI: PTypeInfo;
+begin
+  TTI := System.TypeInfo(T);
+  ITI := System.TypeInfo(I);
+  if ITI^.Kind <> tkInterface then
+    raise EHproseException.Create('I must be a interface');
+  RegisterClass(TInterfacedClass(GetTypeData(TTI)^.ClassType), GetTypeData(ITI)^.Guid, Alias);
+  RegisterType(SizeOf(T), TTI);
+  RegisterType(SizeOf(I), ITI);
+end;
+
+class function TTypeManager.GetAlias<T>: string;
+var
+  TI: PTypeInfo;
+begin
+  Result := '';
+  TI := System.TypeInfo(T);
+  if PTypeInfo(TI)^.Kind = tkClass then Result := GetClassAlias(GetTypeData(TI)^.ClassType);
+end;
+
+class function TTypeManager.GetInterface<T>: TGUID;
+begin
+  Result := GetInterfaceByClass(TInterfacedClass(GetTypeData(System.TypeInfo(T))^.ClassType));
+end;
+
+class function TTypeManager.GetClass(const Alias: string): TClass;
+begin
+  Result := GetClassByAlias(Alias);
+end;
+
+class function TTypeManager.GetClass<I>: TInterfacedClass;
+var
+  ITI: PTypeInfo;
+begin
+  ITI := System.TypeInfo(I);
+  if ITI^.Kind <> tkInterface then
+    raise EHproseException.Create('I must be a interface');
+  Result := GetClassByInterface(GetTypeData(ITI)^.Guid);
+end;
+
+class function TTypeManager.TypeInfo(const Name: string): PTypeInfo;
+var
+  Size: Integer;
+begin
+  Result := GetTypeInfo(Name, Size);
+end;
+
+class function TTypeManager.TypeInfo(const Name: string; var Size: Integer): PTypeInfo;
+begin
+  Result := GetTypeInfo(Name, Size);
+end;
+
 {$ENDIF}
 
-{ TSmartObject }
-
-constructor TSmartObject.Create(const AClass: TClass);
-begin
-  FObject := AClass.Create;
-end;
-
-destructor TSmartObject.Destroy;
-begin
-  FreeAndNil(FObject);
-  inherited;
-end;
-
-class function TSmartObject.New(const AClass: TClass): ISmartObject;
-begin
-  Result := TSmartObject.Create(AClass) as ISmartObject;
-end;
-
-function TSmartObject.Value: TObject;
-begin
-  Result := FObject;
-end;
-
 initialization
+{$IFDEF Supports_Generics}
+  HproseSizeMap := TCaseInsensitiveHashMap.Create(64, 0.75, False, True);
+  HproseSizeMap.BeginWrite;
+  try
+    HproseSizeMap['System.NativeInt'] := SizeOf(NativeInt);
+    HproseSizeMap['System.NativeUInt'] := SizeOf(NativeUInt);
+    HproseSizeMap['System.ShortInt'] := SizeOf(ShortInt);
+    HproseSizeMap['System.SmallInt'] := SizeOf(SmallInt);
+    HproseSizeMap['System.Integer'] := SizeOf(Integer);
+    HproseSizeMap['System.Int64'] := SizeOf(Int64);
+    HproseSizeMap['System.Byte'] := SizeOf(Byte);
+    HproseSizeMap['System.Word'] := SizeOf(Word);
+    HproseSizeMap['System.Cardinal'] := SizeOf(Cardinal);
+    HproseSizeMap['System.UInt64'] := SizeOf(UInt64);
+    HproseSizeMap['System.Char'] := SizeOf(Char);
+    HproseSizeMap['System.AnsiChar'] := SizeOf(AnsiChar);
+    HproseSizeMap['System.WideChar'] := SizeOf(WideChar);
+    HproseSizeMap['System.UCS4Char'] := SizeOf(UCS4Char);
+    HproseSizeMap['System.Boolean'] := SizeOf(Boolean);
+    HproseSizeMap['System.ByteBool'] := SizeOf(ByteBool);
+    HproseSizeMap['System.WordBool'] := SizeOf(WordBool);
+    HproseSizeMap['System.LongBool'] := SizeOf(LongBool);
+    HproseSizeMap['System.Single'] := SizeOf(Single);
+    HproseSizeMap['System.Double'] := SizeOf(Double);
+    HproseSizeMap['System.Real'] := SizeOf(Real);
+    HproseSizeMap['System.Extended'] := SizeOf(Extended);
+    HproseSizeMap['System.Comp'] := SizeOf(Comp);
+    HproseSizeMap['System.Currency'] := SizeOf(Currency);
+    HproseSizeMap['System.AnsiString'] := SizeOf(AnsiString);
+    HproseSizeMap['System.RawByteString'] := SizeOf(RawByteString);
+    HproseSizeMap['System.UnicodeString'] := SizeOf(UnicodeString);
+    HproseSizeMap['System.string'] := SizeOf(string);
+    HproseSizeMap['System.ShortString'] := SizeOf(ShortString);
+    HproseSizeMap['System.WideString'] := SizeOf(WideString);
+    HproseSizeMap['System.UTF8String'] := SizeOf(UTF8String);
+    HproseSizeMap['System.UCS4String'] := SizeOf(UCS4String);
+    HproseSizeMap['System.TDateTime'] := SizeOf(TDateTime);
+    HproseSizeMap['System.TDate'] := SizeOf(TDate);
+    HproseSizeMap['System.TTime'] := SizeOf(TTime);
+    HproseSizeMap['System.Variant'] := SizeOf(Variant);
+    HproseSizeMap['System.OleVariant'] := SizeOf(OleVariant);
+  finally
+    HproseSizeMap.EndWrite;
+  end;
+
+  HproseTypeMap := TCaseInsensitiveHashMap.Create(64, 0.75, False, True);
+  HproseTypeMap.BeginWrite;
+  try
+    HproseTypeMap['System.NativeInt'] := NativeInt(TypeInfo(NativeInt));
+    HproseTypeMap['System.NativeUInt'] := NativeInt(TypeInfo(NativeUInt));
+    HproseTypeMap['System.ShortInt'] := NativeInt(TypeInfo(ShortInt));
+    HproseTypeMap['System.SmallInt'] := NativeInt(TypeInfo(SmallInt));
+    HproseTypeMap['System.Integer'] := NativeInt(TypeInfo(Integer));
+    HproseTypeMap['System.Int64'] := NativeInt(TypeInfo(Int64));
+    HproseTypeMap['System.Byte'] := NativeInt(TypeInfo(Byte));
+    HproseTypeMap['System.Word'] := NativeInt(TypeInfo(Word));
+    HproseTypeMap['System.Cardinal'] := NativeInt(TypeInfo(Cardinal));
+    HproseTypeMap['System.UInt64'] := NativeInt(TypeInfo(UInt64));
+    HproseTypeMap['System.Char'] := NativeInt(TypeInfo(Char));
+    HproseTypeMap['System.AnsiChar'] := NativeInt(TypeInfo(AnsiChar));
+    HproseTypeMap['System.WideChar'] := NativeInt(TypeInfo(WideChar));
+    HproseTypeMap['System.UCS4Char'] := NativeInt(TypeInfo(UCS4Char));
+    HproseTypeMap['System.Boolean'] := NativeInt(TypeInfo(Boolean));
+    HproseTypeMap['System.ByteBool'] := NativeInt(TypeInfo(ByteBool));
+    HproseTypeMap['System.WordBool'] := NativeInt(TypeInfo(WordBool));
+    HproseTypeMap['System.LongBool'] := NativeInt(TypeInfo(LongBool));
+    HproseTypeMap['System.Single'] := NativeInt(TypeInfo(Single));
+    HproseTypeMap['System.Double'] := NativeInt(TypeInfo(Double));
+    HproseTypeMap['System.Real'] := NativeInt(TypeInfo(Real));
+    HproseTypeMap['System.Extended'] := NativeInt(TypeInfo(Extended));
+    HproseTypeMap['System.Comp'] := NativeInt(TypeInfo(Comp));
+    HproseTypeMap['System.Currency'] := NativeInt(TypeInfo(Currency));
+    HproseTypeMap['System.AnsiString'] := NativeInt(TypeInfo(AnsiString));
+    HproseTypeMap['System.RawByteString'] := NativeInt(TypeInfo(RawByteString));
+    HproseTypeMap['System.UnicodeString'] := NativeInt(TypeInfo(UnicodeString));
+    HproseTypeMap['System.string'] := NativeInt(TypeInfo(string));
+    HproseTypeMap['System.ShortString'] := NativeInt(TypeInfo(ShortString));
+    HproseTypeMap['System.WideString'] := NativeInt(TypeInfo(WideString));
+    HproseTypeMap['System.UTF8String'] := NativeInt(TypeInfo(UTF8String));
+    HproseTypeMap['System.UCS4String'] := NativeInt(TypeInfo(UCS4String));
+    HproseTypeMap['System.TDateTime'] := NativeInt(TypeInfo(TDateTime));
+    HproseTypeMap['System.TDate'] := NativeInt(TypeInfo(TDate));
+    HproseTypeMap['System.TTime'] := NativeInt(TypeInfo(TTime));
+    HproseTypeMap['System.Variant'] := NativeInt(TypeInfo(Variant));
+    HproseTypeMap['System.OleVariant'] := NativeInt(TypeInfo(OleVariant));
+  finally
+    HproseTypeMap.EndWrite;
+  end;
+
+  TTypeManager.Register<ISmartObject>;
+{$ENDIF}
 
   HproseClassMap := TCaseInsensitiveHashedMap.Create(False, True);
   HproseInterfaceMap := TCaseInsensitiveHashedMap.Create(False, True);
+{$IFDEF Supports_Generics}
+  TTypeManager.Register<TArrayList, IList>('!List');
+  TTypeManager.Register<TArrayList, IArrayList>('!ArrayList');
+  TTypeManager.Register<THashedList, IHashedList>('!HashedList');
+  TTypeManager.Register<TCaseInsensitiveHashedList, ICaseInsensitiveHashedList>('!CaseInsensitiveHashedList');
+  TTypeManager.Register<THashMap, IMap>('!Map');
+  TTypeManager.Register<THashMap, IHashMap>('!HashMap');
+  TTypeManager.Register<THashedMap, IHashedMap>('!HashedMap');
+  TTypeManager.Register<TCaseInsensitiveHashMap, ICaseInsensitiveHashMap>('!CaseInsensitiveHashMap');
+  TTypeManager.Register<TCaseInsensitiveHashedMap, ICaseInsensitiveHashedMap>('!CaseInsensitiveHashedMap');
+{$ELSE}
   RegisterClass(TArrayList, IList, '!List');
   RegisterClass(TArrayList, IArrayList, '!ArrayList');
   RegisterClass(THashedList, IHashedList, '!HashedList');
@@ -2727,6 +3041,7 @@ initialization
   RegisterClass(THashedMap, IHashedMap, '!HashedMap');
   RegisterClass(TCaseInsensitiveHashMap, ICaseInsensitiveHashMap, '!CaseInsensitiveHashMap');
   RegisterClass(TCaseInsensitiveHashedMap, ICaseInsensitiveHashedMap, '!CaseInsensitiveHashedMap');
+{$ENDIF}
 
 {$IFNDEF FPC}
   VarObjectType := TVarObjectType.Create;

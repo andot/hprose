@@ -15,7 +15,7 @@
  *                                                        *
  * hprose io unit for delphi.                             *
  *                                                        *
- * LastModified: Jan 9, 2013                              *
+ * LastModified: Jan 11, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -175,13 +175,64 @@ type
     procedure WriteDateTimeArray(var P; Count: Integer);
     procedure WriteVariantArray(var P; Count: Integer);
     procedure WriteWideString(const Str: WideString);
+    procedure WriteStrings(const SS: TStrings);
+    procedure WriteList(const AList: TAbstractList); overload;
+    procedure WriteMap(const AMap: TAbstractMap); overload;
 {$IFDEF Supports_Generics}
-    procedure SerializeImpl<T>(const Value);
+    procedure Serialize(const Value; TypeInfo: Pointer); overload;
+    procedure WriteArray(const AList; const Name: string); overload;
+    procedure WriteArrayWithRef(const AList; TypeInfo: Pointer); overload;
+    procedure WriteList(const AList); overload;
+    procedure WriteObjectList(const AList);
+    procedure WriteQueue(const AList); overload;
+    procedure WriteObjectQueue(const AList);
+    procedure WriteStack(const AList); overload;
+    procedure WriteObjectStack(const AList);
+    procedure WriteExtendedDictionary(const AMap;
+              const KeySize, ValueSize: Integer;
+              const KeyTypeInfo, ValueTypeInfo: Pointer);
+    procedure WriteShortStringDictionary(const AMap;
+              const KeySize, ValueSize: Integer;
+              const KeyTypeInfo, ValueTypeInfo: Pointer);
+    procedure WriteAnsiStringDictionary(const AMap;
+              const KeySize, ValueSize: Integer;
+              const KeyTypeInfo, ValueTypeInfo: Pointer);
+    procedure WriteWideStringDictionary(const AMap;
+              const KeySize, ValueSize: Integer;
+              const KeyTypeInfo, ValueTypeInfo: Pointer);
+    procedure WriteUnicodeStringDictionary(const AMap;
+              const KeySize, ValueSize: Integer;
+              const KeyTypeInfo, ValueTypeInfo: Pointer);
+    procedure WriteVariantDictionary(const AMap;
+              const KeySize, ValueSize: Integer;
+              const KeyTypeInfo, ValueTypeInfo: Pointer);
+    procedure WriteDynArrayDictionary(const AMap;
+              const KeySize, ValueSize: Integer;
+              const KeyTypeInfo, ValueTypeInfo: Pointer);
+    procedure WriteInterfaceDictionary(const AMap;
+              const KeySize, ValueSize: Integer;
+              const KeyTypeInfo, ValueTypeInfo: Pointer);
+    procedure WriteObjectDictionary(const AMap;
+              const KeySize, ValueSize: Integer;
+              const KeyTypeInfo, ValueTypeInfo: Pointer); overload;
+    procedure WriteB1Dictionary(const AMap;
+              const KeySize, ValueSize: Integer;
+              const KeyTypeInfo, ValueTypeInfo: Pointer);
+    procedure WriteB2Dictionary(const AMap;
+              const KeySize, ValueSize: Integer;
+              const KeyTypeInfo, ValueTypeInfo: Pointer);
+    procedure WriteB4Dictionary(const AMap;
+              const KeySize, ValueSize: Integer;
+              const KeyTypeInfo, ValueTypeInfo: Pointer);
+    procedure WriteB8Dictionary(const AMap;
+              const KeySize, ValueSize: Integer;
+              const KeyTypeInfo, ValueTypeInfo: Pointer);
+    procedure WriteDictionary(const AMap); overload;
+    procedure WriteObjectDictionary(const AMap); overload;
 {$ENDIF}
   public
     constructor Create(AStream: TStream);
     procedure Serialize(const Value: Variant); overload;
-    procedure Serialize(const Value: TObject); overload;
     procedure Serialize(const Value: array of const); overload;
     procedure WriteInteger(I: Integer);
     procedure WriteLong(L: Int64); overload;
@@ -206,21 +257,19 @@ type
     procedure WriteBytesWithRef(const Bytes: Variant);
     procedure WriteString(const S: WideString);
     procedure WriteStringWithRef(const S: WideString);
-    procedure WriteStrings(const SS: TStrings);
-    procedure WriteStringsWithRef(const SS: TStrings);
     procedure WriteArray(const Value: Variant); overload;
-    procedure WriteArrayWithRef(const Value: Variant);
+    procedure WriteArrayWithRef(const Value: Variant); overload;
     procedure WriteArray(const Value: array of const); overload;
     procedure WriteList(const AList: IList); overload;
     procedure WriteListWithRef(const AList: IList); overload;
-    procedure WriteList(const AList: TAbstractList); overload;
-    procedure WriteListWithRef(const AList: TAbstractList); overload;
     procedure WriteMap(const AMap: IMap); overload;
     procedure WriteMapWithRef(const AMap: IMap); overload;
-    procedure WriteMap(const AMap: TAbstractMap); overload;
-    procedure WriteMapWithRef(const AMap: TAbstractMap); overload;
 {$IFDEF Supports_Generics}
     procedure Serialize<T>(const Value: T); overload;
+    procedure WriteArray<T>(const Value: array of T); overload;
+    procedure WriteArrayWithRef<T>(const Value: array of T); overload;
+    procedure WriteArray<T>(const Value: TArray<T>); overload;
+    procedure WriteArrayWithRef<T>(const Value: TArray<T>); overload;
     procedure WriteList<T>(const AList: TList<T>); overload;
     procedure WriteListWithRef<T>(const AList: TList<T>); overload;
     procedure WriteList<T>(const AList: TQueue<T>); overload;
@@ -229,6 +278,8 @@ type
     procedure WriteListWithRef<T>(const AList: TStack<T>); overload;
     procedure WriteMap<TKey, TValue>(const AMap: TDictionary<TKey, TValue>); overload;
     procedure WriteMapWithRef<TKey, TValue>(const AMap: TDictionary<TKey, TValue>); overload;
+{$ELSE}
+    procedure Serialize(const Value: TObject); overload;
 {$ENDIF}
     procedure WriteObject(const AObject: TObject);
     procedure WriteObjectWithRef(const AObject: TObject);
@@ -242,11 +293,12 @@ type
 
   THproseFormatter = class
   public
-    class function Serialize(const Value: TObject): RawByteString; overload;
     class function Serialize(const Value: Variant): RawByteString; overload;
     class function Serialize(const Value: array of const): RawByteString; overload;
 {$IFDEF Supports_Generics}
     class function Serialize<T>(const Value: T): RawByteString; overload;
+{$ELSE}
+    class function Serialize(const Value: TObject): RawByteString; overload;
 {$ENDIF}
     class function Unserialize(const Data:RawByteString; VType: TVarType = varVariant;
       AClass: TClass = nil): Variant;
@@ -260,7 +312,7 @@ function HproseUnserialize(const Data:RawByteString; VType: TVarType = varVarian
 
 implementation
 
-uses DateUtils, Math, RTLConsts, SysConst, SysUtils, TypInfo, Variants;
+uses DateUtils, Math, RTLConsts, StrUtils, SysConst, SysUtils, TypInfo, Variants;
 
 type
 
@@ -602,7 +654,9 @@ begin
     tkSet:
       Result := GetOrdProp(Instance, PropInfo);
     tkFloat:
-      if (LowerCase(string(PropType^.Name)) = 'tdatetime') then
+      if ((GetTypeName(PropType) = 'TDateTime') or
+          (GetTypeName(PropType) = 'TDate') or
+          (GetTypeName(PropType) = 'TTime')) then
         Result := VarAsType(GetFloatProp(Instance, PropInfo), varDate)
       else
         Result := GetFloatProp(Instance, PropInfo);
@@ -618,7 +672,7 @@ begin
       Result := GetVariantProp(Instance, PropInfo);
     tkInt64:
 {$IFDEF DELPHI2009_UP}
-    if (LowerCase(string(PropType^.Name)) = 'uint64') then
+    if (GetTypeName(PropType) = 'UInt64') then
       Result := UInt64(GetInt64Prop(Instance, PropInfo))
     else
 {$ENDIF}
@@ -719,13 +773,15 @@ var
 begin
   Result := varVariant;
   AClass := nil;
-  TypeName := LowerCase(string(TypeInfo^.Name));
-  if TypeName = 'boolean' then
+  TypeName := GetTypeName(TypeInfo);
+  if TypeName = 'Boolean' then
     Result := varBoolean
-  else if TypeName = 'tdatetime' then
+  else if (TypeName = 'TDateTime') or
+          (TypeName = 'TDate') or
+          (TypeName = 'TTime') then
     Result := varDate
 {$IFDEF DELPHI2009_UP}
-  else if TypeName = 'uint64' then
+  else if TypeName = 'UInt64' then
     Result := varUInt64
 {$ENDIF}
   else begin
@@ -1788,9 +1844,8 @@ begin
       varDate:     Result := ReadDateTimeArray(Count);
       varVariant:  Result := ReadList(TArrayList, Count);
     end
-  else if AClass.InheritsFrom(TAbstractList) then begin
-    Result := ReadList(AClass, Count);
-  end
+  else if AClass.InheritsFrom(TAbstractList) then
+    Result := ReadList(AClass, Count)
   else
     raise EHproseException.Create(AClass.ClassName + ' is not an IList class');
   CheckTag(HproseTagClosebrace);
@@ -1896,17 +1951,13 @@ begin
   C := FClassRefList[ReadInt(HproseTagOpenbrace)];
   AttrNames := VarToList(FAttrRefMap[C]);
   Count := AttrNames.Count;
-  if {$IFDEF CPU64}VarType(C) = varInt64{$ELSE}VarType(C) = varInteger{$ENDIF} then begin
-{$IFDEF CPU64}
-    Cls := TClass(Int64(C));
-{$ELSE}
-    Cls := TClass(Integer(C));
-{$ENDIF}
+  if VarType(C) = varNativeInt then begin
+    Cls := TClass(NativeInt(C));
     if (AClass = nil) or Cls.InheritsFrom(AClass) then AClass := Cls;
   end;
   if AClass <> nil then begin
     if AClass.InheritsFrom(TInterfacedObject) then begin
-      IID := GetInterfaceByClass(AClass);
+      IID := GetInterfaceByClass(TInterfacedClass(AClass));
       Supports(TInterfacedClass(AClass).Create, IID, Intf);
       Result := Intf;
       Instance := IntfToObj(Intf);
@@ -2162,11 +2213,7 @@ begin
     FAttrRefMap[Key] := AttrNames;
   end
   else begin
-{$IFDEF CPU64}
-    Key := Int64(AClass);
-{$ELSE}
-    Key := Integer(AClass);
-{$ENDIF}
+    Key := NativeInt(AClass);
     FClassRefList.Add(Key);
     FAttrRefMap[Key] := AttrNames;
   end;
@@ -2271,19 +2318,10 @@ begin
           WriteArrayWithRef(Value)
       else if VType and not varByRef = varObject then begin
         Obj := VarToObj(Value);
-        if Obj = nil then WriteNull
-        else if Obj is TAbstractList then WriteListWithRef(TAbstractList(Obj))
-        else if Obj is TAbstractMap then WriteMapWithRef(TAbstractMap(Obj))
-        else if Obj is TStrings then WriteStringsWithRef(TStrings(Obj))
-        else WriteObjectWithRef(Obj);
+        if Obj = nil then WriteNull else WriteObjectWithRef(Obj);
       end
     end;
   end;
-end;
-
-procedure THproseWriter.Serialize(const Value: TObject);
-begin
-  Serialize(ObjToVar(Value));
 end;
 
 procedure THproseWriter.Serialize(const Value: array of const);
@@ -2291,117 +2329,10 @@ begin
   WriteArray(Value);
 end;
 
-{$IFDEF Supports_Generics}
-procedure THproseWriter.SerializeImpl<T>(const Value);
-var
-  TypeData: PTypeData;
-  TypeInfo: PTypeInfo;
-  TypeName: string;
-  AList: IList;
-  AMap: IMap;
-  ASmartObject: ISmartObject;
-  Obj: TObject;
-  DynaArray: Variant;
-begin
-  TypeInfo := System.TypeInfo(T);
-  TypeName := LowerCase(string(TypeInfo^.Name));
-  if TypeName = 'boolean' then
-    WriteBoolean(Boolean(Value))
-  else if TypeName = 'tdatetime' then
-    WriteDateTimeWithRef(TDateTime(Value))
-  else if TypeName = 'uint64' then
-    WriteLong(RawByteString(UIntToStr(UInt64(Value))))
-  else begin
-    TypeData := GetTypeData(TypeInfo);
-    case TypeInfo^.Kind of
-      tkVariant:
-        Serialize(Variant(Value));
-      tkInteger, tkEnumeration, tkSet:
-        case TypeData^.OrdType of
-          otSByte:
-            WriteInteger(ShortInt(Value));
-          otUByte:
-            WriteInteger(Byte(Value));
-          otSWord:
-            WriteInteger(SmallInt(Value));
-          otUWord:
-            WriteInteger(Word(Value));
-          otSLong:
-            WriteInteger(Integer(Value));
-          otULong:
-            WriteLong(RawByteString(UIntToStr(LongWord(Value))));
-        end;
-      tkChar:
-        WriteUTF8Char(WideString(AnsiChar(Value))[1]);
-      tkWChar:
-        WriteUTF8Char(WideChar(Value));
-      tkFloat:
-        case TypeData^.FloatType of
-          ftSingle:
-            WriteDouble(Single(Value));
-          ftDouble:
-            WriteDouble(Double(Value));
-          ftExtended:
-            WriteDouble(Extended(Value));
-          ftComp:
-            WriteLong(RawByteString(IntToStr(Int64(Value))));
-          ftCurr:
-            WriteCurrency(Currency(Value));
-        end;
-      tkString:
-        WriteWideString(WideString(ShortString(Value)));
-      tkLString:
-        WriteWideString(WideString(AnsiString(Value)));
-      tkWString:
-        WriteWideString(WideString(Value));
-      tkUString:
-        WriteWideString(UnicodeString(Value));
-      tkInt64:
-        WriteLong(RawByteString(IntToStr(Int64(Value))));
-      tkInterface: begin
-        if IInterface(Value) = nil then
-          WriteNull
-        else if Supports(IInterface(Value), IList, AList) then
-          WriteListWithRef(AList)
-        else if Supports(IInterface(Value), IMap, AMap) then
-          WriteMapWithRef(AMap)
-        else if Supports(IInterface(Value), ISmartObject, ASmartObject) then
-          WriteSmartObjectWithRef(ASmartObject)
-        else
-          WriteInterfaceWithRef(IInterface(Value));
-      end;
-      tkDynArray: begin
-        DynaArray := Variant(Value);
-        if (TypeData.varType and varTypeMask = varByte) and
-           (VarArrayDimCount(DynaArray) = 1) then
-          WriteBytesWithRef(DynaArray)
-        else
-          WriteArrayWithRef(DynaArray)
-      end;
-      tkClass: begin
-        Obj := TObject(Value);
-        if Obj = nil then WriteNull
-        else if Obj is TAbstractList then WriteListWithRef(TAbstractList(Obj))
-        else if Obj is TAbstractMap then WriteMapWithRef(TAbstractMap(Obj))
-        else if Obj is TStrings then WriteStringsWithRef(TStrings(Obj))
-        else WriteObjectWithRef(Obj);
-      end;
-    end;
-  end;
-end;
-
-procedure THproseWriter.Serialize<T>(const Value: T);
-begin
-  SerializeImpl<T>(Value);
-end;
-
-{$ENDIF}
-
 procedure THproseWriter.WriteRawByteString(const S: RawByteString);
 begin
   FStream.WriteBuffer(S[1], Length(S));
 end;
-
 
 procedure THproseWriter.WriteArray(const Value: array of const);
 var
@@ -2425,11 +2356,7 @@ begin
       vtString:        WriteStringWithRef(WideString(VString^));
       vtPChar:         WriteStringWithRef(WideString(AnsiString(VPChar)));
       vtObject:
-        if VObject = nil then WriteNull
-        else if Supports(VObject, IList, AList) then WriteListWithRef(AList)
-        else if Supports(VObject, IMap, AMap) then WriteMapWithRef(AMap)
-        else if VObject is TStrings then WriteStringsWithRef(TStrings(VObject))
-        else WriteObjectWithRef(VObject);
+        if VObject = nil then WriteNull else WriteObjectWithRef(VObject);
       vtWideChar:      WriteUTF8Char(VWideChar);
       vtPWideChar:     WriteStringWithRef(WideString(VPWideChar));
       vtAnsiString:    WriteStringWithRef(WideString(AnsiString(VAnsiString)));
@@ -2600,11 +2527,7 @@ begin
     raise EHproseException.Create(Instance.ClassName + ' has not registered');
   PropertiesCache.Lock;
   try
-{$IFDEF CPU64}
-    CachePointer := PSerializeCache(Int64(PropertiesCache[ClassAlias]));
-{$ELSE}
-    CachePointer := PSerializeCache(Integer(PropertiesCache[ClassAlias]));
-{$ENDIF}
+    CachePointer := PSerializeCache(NativeInt(PropertiesCache[ClassAlias]));
     if CachePointer = nil then begin
       New(CachePointer);
       try
@@ -2653,11 +2576,7 @@ begin
       except
         Dispose(CachePointer);
       end;
-{$IFDEF CPU64}
-      PropertiesCache[ClassAlias] := Int64(CachePointer);
-{$ELSE}
-      PropertiesCache[ClassAlias] := Integer(CachePointer);
-{$ENDIF}
+      PropertiesCache[ClassAlias] := NativeInt(CachePointer);
     end;
   finally
     PropertiesCache.UnLock;
@@ -2844,81 +2763,6 @@ begin
   FStream.WriteBuffer(HproseTagClosebrace, 1);
 end;
 
-procedure THproseWriter.WriteListWithRef(const AList: TAbstractList);
-var
-  Ref: Integer;
-begin
-  Ref := FRefList.IndexOf(ObjToVar(AList));
-  if Ref > -1 then WriteRef(Ref) else WriteList(AList);
-end;
-
-{$IFDEF Supports_Generics}
-procedure THproseWriter.WriteList<T>(const AList: TList<T>);
-var
-  Count, I: Integer;
-begin
-  FRefList.Add(ObjToVar(AList));
-  Count := AList.Count;
-  FStream.WriteBuffer(HproseTagList, 1);
-  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
-  FStream.WriteBuffer(HproseTagOpenbrace, 1);
-  for I := 0 to Count - 1 do Serialize<T>(AList[I]);
-  FStream.WriteBuffer(HproseTagClosebrace, 1);
-end;
-
-procedure THproseWriter.WriteListWithRef<T>(const AList: TList<T>);
-var
-  Ref: Integer;
-begin
-  Ref := FRefList.IndexOf(ObjToVar(AList));
-  if Ref > -1 then WriteRef(Ref) else WriteList<T>(AList);
-end;
-
-procedure THproseWriter.WriteList<T>(const AList: TQueue<T>);
-var
-  Count, I: Integer;
-  Element: T;
-begin
-  FRefList.Add(ObjToVar(AList));
-  Count := AList.Count;
-  FStream.WriteBuffer(HproseTagList, 1);
-  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
-  FStream.WriteBuffer(HproseTagOpenbrace, 1);
-  for Element in AList do SerializeImpl<T>(Element);
-  FStream.WriteBuffer(HproseTagClosebrace, 1);
-end;
-
-procedure THproseWriter.WriteListWithRef<T>(const AList: TQueue<T>);
-var
-  Ref: Integer;
-begin
-  Ref := FRefList.IndexOf(ObjToVar(AList));
-  if Ref > -1 then WriteRef(Ref) else WriteList<T>(AList);
-end;
-
-procedure THproseWriter.WriteList<T>(const AList: TStack<T>);
-var
-  Count, I: Integer;
-  Element: T;
-begin
-  FRefList.Add(ObjToVar(AList));
-  Count := AList.Count;
-  FStream.WriteBuffer(HproseTagList, 1);
-  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
-  FStream.WriteBuffer(HproseTagOpenbrace, 1);
-  for Element in AList do SerializeImpl<T>(Element);
-  FStream.WriteBuffer(HproseTagClosebrace, 1);
-end;
-
-procedure THproseWriter.WriteListWithRef<T>(const AList: TStack<T>);
-var
-  Ref: Integer;
-begin
-  Ref := FRefList.IndexOf(ObjToVar(AList));
-  if Ref > -1 then WriteRef(Ref) else WriteList<T>(AList);
-end;
-{$ENDIF}
-
 procedure THproseWriter.WriteLong(const L: RawByteString);
 begin
   if (Length(L) = 1) and (L[1] in ['0'..'9']) then
@@ -3027,38 +2871,6 @@ begin
   FStream.WriteBuffer(HproseTagClosebrace, 1);
 end;
 
-procedure THproseWriter.WriteMapWithRef(const AMap: TAbstractMap);
-var
-  Ref: Integer;
-begin
-  Ref := FRefList.IndexOf(ObjToVar(AMap));
-  if Ref > -1 then WriteRef(Ref) else WriteMap(AMap);
-end;
-
-{$IFDEF Supports_Generics}
-procedure THproseWriter.WriteMap<TKey, TValue>(const AMap: TDictionary<TKey, TValue>);
-var
-  Count, I: Integer;
-  Pair: TPair<TKey, TValue>;
-begin
-  FRefList.Add(ObjToVar(AMap));
-  Count := AMap.Count;
-  FStream.WriteBuffer(HproseTagMap, 1);
-  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
-  FStream.WriteBuffer(HproseTagOpenbrace, 1);
-  for Pair in AMap do begin
-    Serialize<TKey>(Pair.Key);
-    Serialize<TValue>(Pair.Value);
-  end;
-  FStream.WriteBuffer(HproseTagClosebrace, 1);
-end;
-
-procedure THproseWriter.WriteMapWithRef<TKey, TValue>(const AMap: TDictionary<TKey, TValue>);
-begin
-
-end;
-{$ENDIF}
-
 procedure THproseWriter.WriteNaN;
 begin
   FStream.WriteBuffer(HproseTagNaN, 1);
@@ -3080,22 +2892,49 @@ var
   Value: Variant;
   PropList: PPropList;
   PropCount, I: Integer;
+  ClassName: string;
 begin
-  Value := ObjToVar(AObject);
-  ClassRef := FClassRefList.IndexOf(AObject.ClassName);
-  if ClassRef < 0 then ClassRef := WriteClass(AObject);
-  FRefList.Add(Value);
-  FStream.WriteBuffer(HproseTagObject, 1);
-  WriteRawByteString(RawByteString(IntToStr(ClassRef)));
-  FStream.WriteBuffer(HproseTagOpenbrace, 1);
-  PropCount := GetStoredPropList(AObject, PropList);
-  try
-    for I := 0 to PropCount - 1 do
-      Serialize(GetPropValue(AObject, PropList^[I]));
-  finally
-    FreeMem(PropList);
+  ClassName := AObject.ClassName;
+  if AObject is TAbstractList then WriteList(TAbstractList(AObject))
+  else if AObject is TAbstractMap then WriteMap(TAbstractMap(AObject))
+  else if AObject is TStrings then WriteStrings(TStrings(AObject))
+  else
+{$IFDEF Supports_Generics}
+  if AnsiStartsText('TList<', ClassName) then
+    WriteList(AObject)
+  else if AnsiStartsText('TQueue<', ClassName) then
+    WriteQueue(AObject)
+  else if AnsiStartsText('TStack<', ClassName) then
+    WriteStack(AObject)
+  else if AnsiStartsText('TDictionary<', ClassName) then
+    WriteDictionary(AObject)
+  else if AnsiStartsText('TObjectList<', ClassName) then
+    WriteObjectList(AObject)
+  else if AnsiStartsText('TObjectQueue<', ClassName) then
+    WriteObjectQueue(AObject)
+  else if AnsiStartsText('TObjectStack<', ClassName) then
+    WriteObjectStack(AObject)
+  else if AnsiStartsText('TObjectDictionary<', ClassName) then
+    WriteObjectDictionary(AObject)
+  else
+{$ENDIF}
+  begin
+    Value := ObjToVar(AObject);
+    ClassRef := FClassRefList.IndexOf(ClassName);
+    if ClassRef < 0 then ClassRef := WriteClass(AObject);
+    FRefList.Add(Value);
+    FStream.WriteBuffer(HproseTagObject, 1);
+    WriteRawByteString(RawByteString(IntToStr(ClassRef)));
+    FStream.WriteBuffer(HproseTagOpenbrace, 1);
+    PropCount := GetStoredPropList(AObject, PropList);
+    try
+      for I := 0 to PropCount - 1 do
+        Serialize(GetPropValue(AObject, PropList^[I]));
+    finally
+      FreeMem(PropList);
+    end;
+    FStream.WriteBuffer(HproseTagClosebrace, 1);
   end;
-  FStream.WriteBuffer(HproseTagClosebrace, 1);
 end;
 
 procedure THproseWriter.WriteObjectWithRef(const AObject: TObject);
@@ -3139,39 +2978,21 @@ begin
 end;
 
 procedure THproseWriter.WriteSmartObject(const SmartObject: ISmartObject);
-var
-  ClassRef: Integer;
-  AObject: TObject;
-  PropList: PPropList;
-  PropCount, I: Integer;
 begin
-  AObject := SmartObject.Value;
-  ClassRef := FClassRefList.IndexOf(AObject.ClassName);
-  if ClassRef < 0 then ClassRef := WriteClass(AObject);
-  FRefList.Add(SmartObject);
-  FStream.WriteBuffer(HproseTagObject, 1);
-  WriteRawByteString(RawByteString(IntToStr(ClassRef)));
-  FStream.WriteBuffer(HproseTagOpenbrace, 1);
-  PropCount := GetStoredPropList(AObject, PropList);
-  try
-    for I := 0 to PropCount - 1 do
-      Serialize(GetPropValue(AObject, PropList^[I]));
-  finally
-    FreeMem(PropList);
-  end;
-  FStream.WriteBuffer(HproseTagClosebrace, 1);
+  WriteObject(SmartObject.Value);
 end;
 
 procedure THproseWriter.WriteSmartObjectWithRef(const SmartObject: ISmartObject);
 var
   Ref: Integer;
 begin
-  if SmartObject.Value is TStrings then
-    WriteStringsWithRef(TStrings(SmartObject.Value))
-  else begin
-    Ref := FRefList.IndexOf(SmartObject);
-    if Ref > -1 then WriteRef(Ref) else WriteSmartObject(SmartObject);
-  end;
+  Ref := FRefList.IndexOf(ObjToVar(SmartObject.Value));
+  if Ref > -1 then
+    WriteRef(Ref)
+  else if SmartObject.Value is TStrings then
+    WriteStrings(TStrings(SmartObject.Value))
+  else
+    WriteObject(SmartObject.Value);
 end;
 
 procedure THproseWriter.WriteRef(Value: Integer);
@@ -3242,14 +3063,6 @@ begin
   FStream.WriteBuffer(HproseTagClosebrace, 1);
 end;
 
-procedure THproseWriter.WriteStringsWithRef(const SS: TStrings);
-var
-  Ref: Integer;
-begin
-  Ref := FRefList.IndexOf(ObjToVar(SS));
-  if Ref > -1 then WriteRef(Ref) else WriteStrings(SS);
-end;
-
 procedure THproseWriter.WriteVariantArray(var P; Count: Integer);
 var
   AP: PVariantArray absolute P;
@@ -3273,7 +3086,7 @@ var
   AP: PWideStringArray absolute P;
   I: Integer;
 begin
-  for I := 0 to Count - 1 do WriteStringWithRef(AP^[I]);
+  for I := 0 to Count - 1 do WriteWideString(AP^[I]);
 end;
 
 procedure THproseWriter.WriteWordArray(var P; Count: Integer);
@@ -3289,6 +3102,2025 @@ begin
   FRefList.Clear;
   FClassRefList.Clear;
 end;
+
+{$IFDEF Supports_Generics}
+
+type
+  TB1 = Byte;
+  TB2 = Word;
+  TB4 = LongWord;
+  TB8 = UInt64;
+
+function IsSmartObject(const Name: string): Boolean; inline;
+begin
+  Result := AnsiStartsText('ISmartObject<', Name) or
+            AnsiStartsText('HproseCommon.ISmartObject<', Name);
+end;
+
+function GetElementName(const Name: string): string;
+var
+  I, L: Integer;
+begin
+  L := Length(Name);
+  for I := 1 to L do if Name[I] = '<' then begin
+    Result := AnsiMidStr(Name, I + 1, L - I - 1);
+    Break;
+  end;
+end;
+
+procedure SplitKeyValueTypeName(const Name: string; var KeyName, ValueName: string);
+var
+  I, N, P, L: Integer;
+begin
+  L := Length(Name);
+  N := 0;
+  P := 0;
+  for I := 1 to L do begin
+    case Name[I] of
+      '<': Inc(N);
+      '>': Dec(N);
+      ',': if N = 0 then begin
+        P := I;
+        Break;
+      end;
+    end;
+  end;
+  if P > 0 then begin
+    KeyName := AnsiMidStr(Name, 1, P - 1);
+    ValueName := AnsiMidStr(Name, P + 1, L - P);
+  end;
+end;
+
+procedure THproseWriter.Serialize(const Value; TypeInfo: Pointer);
+var
+  TypeData: PTypeData;
+  TypeName: string;
+  AList: IList;
+  AMap: IMap;
+  ASmartObject: ISmartObject;
+  Obj: TObject;
+begin
+  TypeName := GetTypeName(TypeInfo);
+  if TypeName = 'Boolean' then
+    WriteBoolean(Boolean(Value))
+  else if (TypeName = 'TDateTime') or
+          (TypeName = 'TDate') or
+          (TypeName = 'TTime') then
+    WriteDateTimeWithRef(TDateTime(Value))
+  else if TypeName = 'UInt64' then
+    WriteLong(RawByteString(UIntToStr(UInt64(Value))))
+  else begin
+    TypeData := GetTypeData(TypeInfo);
+    case PTypeInfo(TypeInfo)^.Kind of
+      tkVariant: Serialize(Variant(Value));
+      tkInteger, tkEnumeration, tkSet:
+        case TypeData^.OrdType of
+          otSByte: WriteInteger(ShortInt(Value));
+          otUByte: WriteInteger(Byte(Value));
+          otSWord: WriteInteger(SmallInt(Value));
+          otUWord: WriteInteger(Word(Value));
+          otSLong: WriteInteger(Integer(Value));
+          otULong: WriteLong(RawByteString(UIntToStr(LongWord(Value))));
+        end;
+      tkChar: WriteUTF8Char(WideString(AnsiChar(Value))[1]);
+      tkWChar: WriteUTF8Char(WideChar(Value));
+      tkFloat:
+        case TypeData^.FloatType of
+          ftSingle: WriteDouble(Single(Value));
+          ftDouble: WriteDouble(Double(Value));
+          ftExtended: WriteDouble(Extended(Value));
+          ftComp: WriteLong(RawByteString(IntToStr(Int64(Value))));
+          ftCurr: WriteCurrency(Currency(Value));
+        end;
+      tkString: WriteWideString(WideString(ShortString(Value)));
+      tkLString: WriteWideString(WideString(AnsiString(Value)));
+      tkWString: WriteWideString(WideString(Value));
+      tkUString: WriteWideString(WideString(UnicodeString(Value)));
+      tkInt64: WriteLong(RawByteString(IntToStr(Int64(Value))));
+      tkDynArray: WriteArrayWithRef(Value, TypeInfo);
+      tkInterface: begin
+        if IInterface(Value) = nil then
+          WriteNull
+        else if Supports(IInterface(Value), IList, AList) then
+          WriteListWithRef(AList)
+        else if Supports(IInterface(Value), IMap, AMap) then
+          WriteMapWithRef(AMap)
+        else if Supports(IInterface(Value), ISmartObject, ASmartObject) then
+          WriteSmartObjectWithRef(ASmartObject)
+        else
+          WriteInterfaceWithRef(IInterface(Value));
+      end;
+      tkClass: begin
+        Obj := TObject(Value);
+        if Obj = nil then WriteNull else WriteObjectWithRef(Obj);
+      end;
+    end;
+  end;
+end;
+
+procedure THproseWriter.WriteArray(const AList; const Name: string);
+var
+  TypeName: string;
+  Size: Integer;
+  TypeInfo: PTypeInfo;
+  B1List: TArray<TB1> absolute AList;
+  B2List: TArray<TB2> absolute AList;
+  B4List: TArray<TB4> absolute AList;
+  B8List: TArray<TB8> absolute AList;
+  EList: TArray<Extended> absolute AList;
+  SList: TArray<ShortString> absolute AList;
+  LList: TArray<AnsiString> absolute AList;
+  WList: TArray<WideString> absolute AList;
+  UList: TArray<UnicodeString> absolute AList;
+  VList: TArray<Variant> absolute AList;
+  DList: TArray<TArray<Pointer>> absolute AList;
+  IList: TArray<IInterface> absolute AList;
+  OList: TArray<TObject> absolute AList;
+  Count, I: Integer;
+begin
+  TypeName := GetElementName(Name);
+  if IsSmartObject(TypeName) then TypeName := 'ISmartObject';
+  TypeInfo := GetTypeInfo(TypeName, Size);
+  if TypeInfo = nil then
+    raise EHproseException.Create('Can not serialize ' + Name)
+  else begin
+    FRefList.Add(Integer(Pointer(AList)));
+    Count := Length(B1List);
+    FStream.WriteBuffer(HproseTagList, 1);
+    if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+    FStream.WriteBuffer(HproseTagOpenbrace, 1);
+    case PTypeInfo(TypeInfo)^.Kind of
+      tkString: for I := 0 to Count - 1 do WriteWideString(WideString(SList[I]));
+      tkLString: for I := 0 to Count - 1 do WriteWideString(WideString(LList[I]));
+      tkWString: for I := 0 to Count - 1 do WriteWideString(WList[I]);
+      tkUString: for I := 0 to Count - 1 do WriteWideString(WideString(UList[I]));
+      tkVariant: for I := 0 to Count - 1 do Serialize(VList[I]);
+      tkDynArray: for I := 0 to Count - 1 do WriteArrayWithRef(DList[I], TypeInfo);
+      tkInterface: for I := 0 to Count - 1 do Serialize(IList[I], TypeInfo);
+      tkClass: for I := 0 to Count - 1 do Serialize(OList[I], TypeInfo);
+    else if GetTypeName(TypeInfo) = 'Extended' then
+      for I := 0 to Count - 1 do WriteDouble(EList[I])
+    else
+      case Size of
+        1: for I := 0 to Count - 1 do Serialize(B1List[I], TypeInfo);
+        2: for I := 0 to Count - 1 do Serialize(B2List[I], TypeInfo);
+        4: for I := 0 to Count - 1 do Serialize(B4List[I], TypeInfo);
+        8: for I := 0 to Count - 1 do Serialize(B8List[I], TypeInfo);
+      else
+        raise EHproseException.Create('Can not serialize ' + Name);
+      end;
+    end;
+    FStream.WriteBuffer(HproseTagClosebrace, 1);
+  end;
+end;
+
+procedure THproseWriter.WriteArrayWithRef(const AList; TypeInfo: Pointer);
+var
+  Name: string;
+  Ref: Integer;
+  Value: Variant;
+  TypeData: PTypeData;
+begin
+  Name := GetTypeName(TypeInfo);
+  if AnsiStartsText('TArray<', Name) then begin
+    Ref := FRefList.IndexOf(Integer(Pointer(AList)));
+    if Ref > -1 then WriteRef(Ref) else WriteArray(AList, Name);
+  end
+  else begin
+    DynArrayToVariant(Value, Pointer(AList), TypeInfo);
+    TypeData := GetTypeData(TypeInfo);
+    if (TypeData^.varType and varTypeMask = varByte) and
+       (VarArrayDimCount(Value) = 1) then
+      WriteBytesWithRef(Value)
+    else
+      WriteArrayWithRef(Value);
+  end;
+end;
+
+procedure THproseWriter.WriteList(const AList);
+var
+  AObject: TObject absolute AList;
+  ClassName: string;
+  TypeName: string;
+  Size: Integer;
+  TypeInfo: PTypeInfo;
+  B1List: TList<TB1> absolute AList;
+  B2List: TList<TB2> absolute AList;
+  B4List: TList<TB4> absolute AList;
+  B8List: TList<TB8> absolute AList;
+  EList: TList<Extended> absolute AList;
+  SList: TList<ShortString> absolute AList;
+  LList: TList<AnsiString> absolute AList;
+  WList: TList<WideString> absolute AList;
+  UList: TList<UnicodeString> absolute AList;
+  VList: TList<Variant> absolute AList;
+  DList: TList<TArray<Pointer>> absolute AList;
+  IList: TList<IInterface> absolute AList;
+  OList: TList<TObject> absolute AList;
+  B1: TB1;
+  B2: TB2;
+  B4: TB4;
+  B8: TB8;
+  SS: ShortString;
+  LS: AnsiString;
+  WS: WideString;
+  US: UnicodeString;
+  V: Variant;
+  E: Extended;
+  D: TArray<Pointer>;
+  I: IInterface;
+  O: TObject;
+  Count: Integer;
+begin
+  ClassName := AObject.ClassName;
+  TypeName := GetElementName(ClassName);
+  if IsSmartObject(TypeName) then TypeName := 'ISmartObject';
+  TypeInfo := GetTypeInfo(TypeName, Size);
+  if TypeInfo = nil then
+    raise EHproseException.Create('Can not serialize ' + ClassName)
+  else begin
+    FRefList.Add(ObjToVar(AObject));
+    Count := B1List.Count;
+    FStream.WriteBuffer(HproseTagList, 1);
+    if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+    FStream.WriteBuffer(HproseTagOpenbrace, 1);
+    case PTypeInfo(TypeInfo)^.Kind of
+      tkString: for SS in SList do WriteWideString(WideString(SS));
+      tkLString: for LS in LList do WriteWideString(WideString(LS));
+      tkWString: for WS in WList do WriteWideString(WS);
+      tkUString: for US in UList do WriteWideString(WideString(US));
+      tkVariant: for V in VList do Serialize(V);
+      tkDynArray: for D in DList do WriteArrayWithRef(D, TypeInfo);
+      tkInterface: for I in IList do Serialize(I, TypeInfo);
+      tkClass: for O in OList do Serialize(O, TypeInfo);
+    else if GetTypeName(TypeInfo) = 'Extended' then
+      for E in EList do WriteDouble(E)
+    else
+      case Size of
+        1: for B1 in B1List do Serialize(B1, TypeInfo);
+        2: for B2 in B2List do Serialize(B2, TypeInfo);
+        4: for B4 in B4List do Serialize(B4, TypeInfo);
+        8: for B8 in B8List do Serialize(B8, TypeInfo);
+      else
+        raise EHproseException.Create('Can not serialize ' + ClassName);
+      end;
+    end;
+    FStream.WriteBuffer(HproseTagClosebrace, 1);
+  end;
+end;
+
+procedure THproseWriter.WriteObjectList(const AList);
+var
+  AObject: TObject absolute AList;
+  ClassName: string;
+  TypeInfo: PTypeInfo;
+  OList: TObjectList<TObject> absolute AList;
+  O: TObject;
+  Count: Integer;
+begin
+  ClassName := AObject.ClassName;
+  TypeInfo := TTypeManager.TypeInfo(GetElementName(ClassName));
+  if TypeInfo = nil then
+    raise EHproseException.Create('Can not serialize ' + ClassName)
+  else begin
+    FRefList.Add(ObjToVar(AObject));
+    Count := OList.Count;
+    FStream.WriteBuffer(HproseTagList, 1);
+    if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+    FStream.WriteBuffer(HproseTagOpenbrace, 1);
+    for O in OList do Serialize(O, TypeInfo);
+    FStream.WriteBuffer(HproseTagClosebrace, 1);
+  end;
+end;
+
+procedure THproseWriter.WriteQueue(const AList);
+var
+  AObject: TObject absolute AList;
+  ClassName: string;
+  TypeName: string;
+  Size: Integer;
+  TypeInfo: PTypeInfo;
+  B1List: TQueue<TB1> absolute AList;
+  B2List: TQueue<TB2> absolute AList;
+  B4List: TQueue<TB4> absolute AList;
+  B8List: TQueue<TB8> absolute AList;
+  EList: TQueue<Extended> absolute AList;
+  SList: TQueue<ShortString> absolute AList;
+  LList: TQueue<AnsiString> absolute AList;
+  WList: TQueue<WideString> absolute AList;
+  UList: TQueue<UnicodeString> absolute AList;
+  VList: TQueue<Variant> absolute AList;
+  DList: TQueue<TArray<Pointer>> absolute AList;
+  IList: TQueue<IInterface> absolute AList;
+  OList: TQueue<TObject> absolute AList;
+  B1: TB1;
+  B2: TB2;
+  B4: TB4;
+  B8: TB8;
+  SS: ShortString;
+  LS: AnsiString;
+  WS: WideString;
+  US: UnicodeString;
+  V: Variant;
+  E: Extended;
+  D: TArray<Pointer>;
+  I: IInterface;
+  O: TObject;
+  Count: Integer;
+begin
+  ClassName := AObject.ClassName;
+  TypeName := GetElementName(ClassName);
+  if IsSmartObject(TypeName) then TypeName := 'ISmartObject';
+  TypeInfo := GetTypeInfo(TypeName, Size);
+  if TypeInfo = nil then
+    raise EHproseException.Create('Can not serialize ' + ClassName)
+  else begin
+    FRefList.Add(ObjToVar(AObject));
+    Count := B1List.Count;
+    FStream.WriteBuffer(HproseTagList, 1);
+    if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+    FStream.WriteBuffer(HproseTagOpenbrace, 1);
+    case PTypeInfo(TypeInfo)^.Kind of
+      tkString: for SS in SList do WriteWideString(WideString(SS));
+      tkLString: for LS in LList do WriteWideString(WideString(LS));
+      tkWString: for WS in WList do WriteWideString(WS);
+      tkUString: for US in UList do WriteWideString(WideString(US));
+      tkVariant: for V in VList do Serialize(V);
+      tkDynArray: for D in DList do WriteArrayWithRef(D, TypeInfo);
+      tkInterface: for I in IList do Serialize(I, TypeInfo);
+      tkClass: for O in OList do Serialize(O, TypeInfo);
+    else if GetTypeName(TypeInfo) = 'Extended' then
+      for E in EList do WriteDouble(E)
+    else
+      case Size of
+        1: for B1 in B1List do Serialize(B1, TypeInfo);
+        2: for B2 in B2List do Serialize(B2, TypeInfo);
+        4: for B4 in B4List do Serialize(B4, TypeInfo);
+        8: for B8 in B8List do Serialize(B8, TypeInfo);
+      else
+        raise EHproseException.Create('Can not serialize ' + ClassName);
+      end;
+    end;
+    FStream.WriteBuffer(HproseTagClosebrace, 1);
+  end;
+end;
+
+procedure THproseWriter.WriteObjectQueue(const AList);
+var
+  AObject: TObject absolute AList;
+  ClassName: string;
+  TypeInfo: PTypeInfo;
+  OList: TObjectQueue<TObject> absolute AList;
+  O: TObject;
+  Count: Integer;
+begin
+  ClassName := AObject.ClassName;
+  TypeInfo := TTypeManager.TypeInfo(GetElementName(ClassName));
+  if TypeInfo = nil then
+    raise EHproseException.Create('Can not serialize ' + ClassName)
+  else begin
+    FRefList.Add(ObjToVar(AObject));
+    Count := OList.Count;
+    FStream.WriteBuffer(HproseTagList, 1);
+    if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+    FStream.WriteBuffer(HproseTagOpenbrace, 1);
+    for O in OList do Serialize(O, TypeInfo);
+    FStream.WriteBuffer(HproseTagClosebrace, 1);
+  end;
+end;
+
+procedure THproseWriter.WriteStack(const AList);
+var
+  AObject: TObject absolute AList;
+  ClassName: string;
+  TypeName: string;
+  Size: Integer;
+  TypeInfo: PTypeInfo;
+  B1List: TStack<TB1> absolute AList;
+  B2List: TStack<TB2> absolute AList;
+  B4List: TStack<TB4> absolute AList;
+  B8List: TStack<TB8> absolute AList;
+  EList: TStack<Extended> absolute AList;
+  SList: TStack<ShortString> absolute AList;
+  LList: TStack<AnsiString> absolute AList;
+  WList: TStack<WideString> absolute AList;
+  UList: TStack<UnicodeString> absolute AList;
+  VList: TStack<Variant> absolute AList;
+  DList: TStack<TArray<Pointer>> absolute AList;
+  IList: TStack<IInterface> absolute AList;
+  OList: TStack<TObject> absolute AList;
+  B1: TB1;
+  B2: TB2;
+  B4: TB4;
+  B8: TB8;
+  SS: ShortString;
+  LS: AnsiString;
+  WS: WideString;
+  US: UnicodeString;
+  V: Variant;
+  E: Extended;
+  D: TArray<Pointer>;
+  I: IInterface;
+  O: TObject;
+  Count: Integer;
+begin
+  ClassName := AObject.ClassName;
+  TypeName := GetElementName(ClassName);
+  if IsSmartObject(TypeName) then TypeName := 'ISmartObject';
+  TypeInfo := GetTypeInfo(TypeName, Size);
+  if TypeInfo = nil then
+    raise EHproseException.Create('Can not serialize ' + ClassName)
+  else begin
+    FRefList.Add(ObjToVar(AObject));
+    Count := B1List.Count;
+    FStream.WriteBuffer(HproseTagList, 1);
+    if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+    FStream.WriteBuffer(HproseTagOpenbrace, 1);
+    case PTypeInfo(TypeInfo)^.Kind of
+      tkString: for SS in SList do WriteWideString(WideString(SS));
+      tkLString: for LS in LList do WriteWideString(WideString(LS));
+      tkWString: for WS in WList do WriteWideString(WS);
+      tkUString: for US in UList do WriteWideString(WideString(US));
+      tkVariant: for V in VList do Serialize(V);
+      tkDynArray: for D in DList do WriteArrayWithRef(D, TypeInfo);
+      tkInterface: for I in IList do Serialize(I, TypeInfo);
+      tkClass: for O in OList do Serialize(O, TypeInfo);
+    else if GetTypeName(TypeInfo) = 'Extended' then
+      for E in EList do WriteDouble(E)
+    else
+      case Size of
+        1: for B1 in B1List do Serialize(B1, TypeInfo);
+        2: for B2 in B2List do Serialize(B2, TypeInfo);
+        4: for B4 in B4List do Serialize(B4, TypeInfo);
+        8: for B8 in B8List do Serialize(B8, TypeInfo);
+      else
+        raise EHproseException.Create('Can not serialize ' + ClassName);
+      end;
+    end;
+    FStream.WriteBuffer(HproseTagClosebrace, 1);
+  end;
+end;
+
+procedure THproseWriter.WriteObjectStack(const AList);
+var
+  AObject: TObject absolute AList;
+  ClassName: string;
+  TypeInfo: PTypeInfo;
+  OList: TObjectStack<TObject> absolute AList;
+  O: TObject;
+  Count: Integer;
+begin
+  ClassName := AObject.ClassName;
+  TypeInfo := TTypeManager.TypeInfo(GetElementName(ClassName));
+  if TypeInfo = nil then
+    raise EHproseException.Create('Can not serialize ' + ClassName)
+  else begin
+    FRefList.Add(ObjToVar(AObject));
+    Count := OList.Count;
+    FStream.WriteBuffer(HproseTagList, 1);
+    if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+    FStream.WriteBuffer(HproseTagOpenbrace, 1);
+    for O in OList do Serialize(O, TypeInfo);
+    FStream.WriteBuffer(HproseTagClosebrace, 1);
+  end;
+end;
+
+procedure THproseWriter.WriteExtendedDictionary(const AMap;
+          const KeySize, ValueSize: Integer;
+          const KeyTypeInfo, ValueTypeInfo: Pointer);
+var
+  B1Map: TDictionary<Extended, TB1> absolute AMap;
+  B2Map: TDictionary<Extended, TB2> absolute AMap;
+  B4Map: TDictionary<Extended, TB4> absolute AMap;
+  B8Map: TDictionary<Extended, TB8> absolute AMap;
+  EMap: TDictionary<Extended, Extended> absolute AMap;
+  SMap: TDictionary<Extended, ShortString> absolute AMap;
+  LMap: TDictionary<Extended, AnsiString> absolute AMap;
+  WMap: TDictionary<Extended, WideString> absolute AMap;
+  UMap: TDictionary<Extended, UnicodeString> absolute AMap;
+  VMap: TDictionary<Extended, Variant> absolute AMap;
+  DMap: TDictionary<Extended, TArray<Pointer>> absolute AMap;
+  IMap: TDictionary<Extended, IInterface> absolute AMap;
+  OMap: TDictionary<Extended, TObject> absolute AMap;
+  B1: TPair<Extended, TB1>;
+  B2: TPair<Extended, TB2>;
+  B4: TPair<Extended, TB4>;
+  B8: TPair<Extended, TB8>;
+  E: TPair<Extended, Extended>;
+  SS: TPair<Extended, ShortString>;
+  LS: TPair<Extended, AnsiString>;
+  WS: TPair<Extended, WideString>;
+  US: TPair<Extended, UnicodeString>;
+  V: TPair<Extended, Variant>;
+  D: TPair<Extended, TArray<Pointer>>;
+  I: TPair<Extended, IInterface>;
+  O: TPair<Extended, TObject>;
+  Count: Integer;
+begin
+  FRefList.Add(ObjToVar(TObject(AMap)));
+  Count := B1Map.Count;
+  FStream.WriteBuffer(HproseTagMap, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  case PTypeInfo(ValueTypeInfo)^.Kind of
+    tkString: for SS in SMap do begin
+      WriteDouble(SS.Key);
+      WriteWideString(WideString(SS.Value));
+    end;
+    tkLString: for LS in LMap do begin
+      WriteDouble(LS.Key);
+      WriteWideString(WideString(LS.Value));
+    end;
+    tkWString: for WS in WMap do begin
+      WriteDouble(WS.Key);
+      WriteWideString(WS.Value);
+    end;
+    tkUString: for US in UMap do begin
+      WriteDouble(US.Key);
+      WriteWideString(WideString(US.Value));
+    end;
+    tkVariant: for V in VMap do begin
+      WriteDouble(V.Key);
+      Serialize(V.Value);
+    end;
+    tkDynArray: for D in DMap do begin
+      WriteDouble(D.Key);
+      WriteArrayWithRef(D.Value, ValueTypeInfo);
+    end;
+    tkInterface: for I in IMap do begin
+      WriteDouble(I.Key);
+      Serialize(I.Value, ValueTypeInfo);
+    end;
+    tkClass: for O in OMap do begin
+      WriteDouble(O.Key);
+      Serialize(O.Value, ValueTypeInfo);
+    end;
+  else if GetTypeName(ValueTypeInfo) = 'Extended' then
+    for E in EMap do begin
+      WriteDouble(E.Key);
+      WriteDouble(E.Value);
+    end
+  else
+    case ValueSize of
+      1: for B1 in B1Map do begin
+        WriteDouble(B1.Key);
+        Serialize(B1.Value, ValueTypeInfo);
+      end;
+      2: for B2 in B2Map do begin
+        WriteDouble(B2.Key);
+        Serialize(B2.Value, ValueTypeInfo);
+      end;
+      4: for B4 in B4Map do begin
+        WriteDouble(B4.Key);
+        Serialize(B4.Value, ValueTypeInfo);
+      end;
+      8: for B8 in B8Map do begin
+        WriteDouble(B8.Key);
+        Serialize(B8.Value, ValueTypeInfo);
+      end;
+    else
+      raise EHproseException.Create('Can not serialize ' + ClassName);
+    end;
+  end;
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteShortStringDictionary(const AMap;
+          const KeySize, ValueSize: Integer;
+          const KeyTypeInfo, ValueTypeInfo: Pointer);
+var
+  B1Map: TDictionary<ShortString, TB1> absolute AMap;
+  B2Map: TDictionary<ShortString, TB2> absolute AMap;
+  B4Map: TDictionary<ShortString, TB4> absolute AMap;
+  B8Map: TDictionary<ShortString, TB8> absolute AMap;
+  EMap: TDictionary<ShortString, Extended> absolute AMap;
+  SMap: TDictionary<ShortString, ShortString> absolute AMap;
+  LMap: TDictionary<ShortString, AnsiString> absolute AMap;
+  WMap: TDictionary<ShortString, WideString> absolute AMap;
+  UMap: TDictionary<ShortString, UnicodeString> absolute AMap;
+  VMap: TDictionary<ShortString, Variant> absolute AMap;
+  DMap: TDictionary<ShortString, TArray<Pointer>> absolute AMap;
+  IMap: TDictionary<ShortString, IInterface> absolute AMap;
+  OMap: TDictionary<ShortString, TObject> absolute AMap;
+  B1: TPair<ShortString, TB1>;
+  B2: TPair<ShortString, TB2>;
+  B4: TPair<ShortString, TB4>;
+  B8: TPair<ShortString, TB8>;
+  E: TPair<ShortString, Extended>;
+  SS: TPair<ShortString, ShortString>;
+  LS: TPair<ShortString, AnsiString>;
+  WS: TPair<ShortString, WideString>;
+  US: TPair<ShortString, UnicodeString>;
+  V: TPair<ShortString, Variant>;
+  D: TPair<ShortString, TArray<Pointer>>;
+  I: TPair<ShortString, IInterface>;
+  O: TPair<ShortString, TObject>;
+  Count: Integer;
+begin
+  FRefList.Add(ObjToVar(TObject(AMap)));
+  Count := B1Map.Count;
+  FStream.WriteBuffer(HproseTagMap, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  case PTypeInfo(ValueTypeInfo)^.Kind of
+    tkString: for SS in SMap do begin
+      WriteWideString(WideString(SS.Key));
+      WriteWideString(WideString(SS.Value));
+    end;
+    tkLString: for LS in LMap do begin
+      WriteWideString(WideString(LS.Key));
+      WriteWideString(WideString(LS.Value));
+    end;
+    tkWString: for WS in WMap do begin
+      WriteWideString(WideString(WS.Key));
+      WriteWideString(WS.Value);
+    end;
+    tkUString: for US in UMap do begin
+      WriteWideString(WideString(US.Key));
+      WriteWideString(WideString(US.Value));
+    end;
+    tkVariant: for V in VMap do begin
+      WriteWideString(WideString(V.Key));
+      Serialize(V.Value);
+    end;
+    tkDynArray: for D in DMap do begin
+      WriteWideString(WideString(D.Key));
+      WriteArrayWithRef(D.Value, ValueTypeInfo);
+    end;
+    tkInterface: for I in IMap do begin
+      WriteWideString(WideString(I.Key));
+      Serialize(I.Value, ValueTypeInfo);
+    end;
+    tkClass: for O in OMap do begin
+      WriteWideString(WideString(O.Key));
+      Serialize(O.Value, ValueTypeInfo);
+    end;
+  else if GetTypeName(ValueTypeInfo) = 'Extended' then
+    for E in EMap do begin
+      WriteWideString(WideString(E.Key));
+      WriteDouble(E.Value);
+    end
+  else
+    case ValueSize of
+      1: for B1 in B1Map do begin
+        WriteWideString(WideString(B1.Key));
+        Serialize(B1.Value, ValueTypeInfo);
+      end;
+      2: for B2 in B2Map do begin
+        WriteWideString(WideString(B2.Key));
+        Serialize(B2.Value, ValueTypeInfo);
+      end;
+      4: for B4 in B4Map do begin
+        WriteWideString(WideString(B4.Key));
+        Serialize(B4.Value, ValueTypeInfo);
+      end;
+      8: for B8 in B8Map do begin
+        WriteWideString(WideString(B8.Key));
+        Serialize(B8.Value, ValueTypeInfo);
+      end;
+    else
+      raise EHproseException.Create('Can not serialize ' + ClassName);
+    end;
+  end;
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteAnsiStringDictionary(const AMap;
+          const KeySize, ValueSize: Integer;
+          const KeyTypeInfo, ValueTypeInfo: Pointer);
+var
+  B1Map: TDictionary<AnsiString, TB1> absolute AMap;
+  B2Map: TDictionary<AnsiString, TB2> absolute AMap;
+  B4Map: TDictionary<AnsiString, TB4> absolute AMap;
+  B8Map: TDictionary<AnsiString, TB8> absolute AMap;
+  EMap: TDictionary<AnsiString, Extended> absolute AMap;
+  SMap: TDictionary<AnsiString, ShortString> absolute AMap;
+  LMap: TDictionary<AnsiString, AnsiString> absolute AMap;
+  WMap: TDictionary<AnsiString, WideString> absolute AMap;
+  UMap: TDictionary<AnsiString, UnicodeString> absolute AMap;
+  VMap: TDictionary<AnsiString, Variant> absolute AMap;
+  DMap: TDictionary<AnsiString, TArray<Pointer>> absolute AMap;
+  IMap: TDictionary<AnsiString, IInterface> absolute AMap;
+  OMap: TDictionary<AnsiString, TObject> absolute AMap;
+  B1: TPair<AnsiString, TB1>;
+  B2: TPair<AnsiString, TB2>;
+  B4: TPair<AnsiString, TB4>;
+  B8: TPair<AnsiString, TB8>;
+  E: TPair<AnsiString, Extended>;
+  SS: TPair<AnsiString, ShortString>;
+  LS: TPair<AnsiString, AnsiString>;
+  WS: TPair<AnsiString, WideString>;
+  US: TPair<AnsiString, UnicodeString>;
+  V: TPair<AnsiString, Variant>;
+  D: TPair<AnsiString, TArray<Pointer>>;
+  I: TPair<AnsiString, IInterface>;
+  O: TPair<AnsiString, TObject>;
+  Count: Integer;
+begin
+  FRefList.Add(ObjToVar(TObject(AMap)));
+  Count := B1Map.Count;
+  FStream.WriteBuffer(HproseTagMap, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  case PTypeInfo(ValueTypeInfo)^.Kind of
+    tkString: for SS in SMap do begin
+      WriteWideString(WideString(SS.Key));
+      WriteWideString(WideString(SS.Value));
+    end;
+    tkLString: for LS in LMap do begin
+      WriteWideString(WideString(LS.Key));
+      WriteWideString(WideString(LS.Value));
+    end;
+    tkWString: for WS in WMap do begin
+      WriteWideString(WideString(WS.Key));
+      WriteWideString(WS.Value);
+    end;
+    tkUString: for US in UMap do begin
+      WriteWideString(WideString(US.Key));
+      WriteWideString(WideString(US.Value));
+    end;
+    tkVariant: for V in VMap do begin
+      WriteWideString(WideString(V.Key));
+      Serialize(V.Value);
+    end;
+    tkDynArray: for D in DMap do begin
+      WriteWideString(WideString(D.Key));
+      WriteArrayWithRef(D.Value, ValueTypeInfo);
+    end;
+    tkInterface: for I in IMap do begin
+      WriteWideString(WideString(I.Key));
+      Serialize(I.Value, ValueTypeInfo);
+    end;
+    tkClass: for O in OMap do begin
+      WriteWideString(WideString(O.Key));
+      Serialize(O.Value, ValueTypeInfo);
+    end;
+  else if GetTypeName(ValueTypeInfo) = 'Extended' then
+    for E in EMap do begin
+      WriteWideString(WideString(E.Key));
+      WriteDouble(E.Value);
+    end
+  else
+    case ValueSize of
+      1: for B1 in B1Map do begin
+        WriteWideString(WideString(B1.Key));
+        Serialize(B1.Value, ValueTypeInfo);
+      end;
+      2: for B2 in B2Map do begin
+        WriteWideString(WideString(B2.Key));
+        Serialize(B2.Value, ValueTypeInfo);
+      end;
+      4: for B4 in B4Map do begin
+        WriteWideString(WideString(B4.Key));
+        Serialize(B4.Value, ValueTypeInfo);
+      end;
+      8: for B8 in B8Map do begin
+        WriteWideString(WideString(B8.Key));
+        Serialize(B8.Value, ValueTypeInfo);
+      end;
+    else
+      raise EHproseException.Create('Can not serialize ' + ClassName);
+    end;
+  end;
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteWideStringDictionary(const AMap;
+          const KeySize, ValueSize: Integer;
+          const KeyTypeInfo, ValueTypeInfo: Pointer);
+var
+  B1Map: TDictionary<WideString, TB1> absolute AMap;
+  B2Map: TDictionary<WideString, TB2> absolute AMap;
+  B4Map: TDictionary<WideString, TB4> absolute AMap;
+  B8Map: TDictionary<WideString, TB8> absolute AMap;
+  EMap: TDictionary<WideString, Extended> absolute AMap;
+  SMap: TDictionary<WideString, ShortString> absolute AMap;
+  LMap: TDictionary<WideString, AnsiString> absolute AMap;
+  WMap: TDictionary<WideString, WideString> absolute AMap;
+  UMap: TDictionary<WideString, UnicodeString> absolute AMap;
+  VMap: TDictionary<WideString, Variant> absolute AMap;
+  DMap: TDictionary<WideString, TArray<Pointer>> absolute AMap;
+  IMap: TDictionary<WideString, IInterface> absolute AMap;
+  OMap: TDictionary<WideString, TObject> absolute AMap;
+  B1: TPair<WideString, TB1>;
+  B2: TPair<WideString, TB2>;
+  B4: TPair<WideString, TB4>;
+  B8: TPair<WideString, TB8>;
+  E: TPair<WideString, Extended>;
+  SS: TPair<WideString, ShortString>;
+  LS: TPair<WideString, AnsiString>;
+  WS: TPair<WideString, WideString>;
+  US: TPair<WideString, UnicodeString>;
+  V: TPair<WideString, Variant>;
+  D: TPair<WideString, TArray<Pointer>>;
+  I: TPair<WideString, IInterface>;
+  O: TPair<WideString, TObject>;
+  Count: Integer;
+begin
+  FRefList.Add(ObjToVar(TObject(AMap)));
+  Count := B1Map.Count;
+  FStream.WriteBuffer(HproseTagMap, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  case PTypeInfo(ValueTypeInfo)^.Kind of
+    tkString: for SS in SMap do begin
+      WriteWideString(SS.Key);
+      WriteWideString(WideString(SS.Value));
+    end;
+    tkLString: for LS in LMap do begin
+      WriteWideString(LS.Key);
+      WriteWideString(WideString(LS.Value));
+    end;
+    tkWString: for WS in WMap do begin
+      WriteWideString(WS.Key);
+      WriteWideString(WS.Value);
+    end;
+    tkUString: for US in UMap do begin
+      WriteWideString(US.Key);
+      WriteWideString(WideString(US.Value));
+    end;
+    tkVariant: for V in VMap do begin
+      WriteWideString(V.Key);
+      Serialize(V.Value);
+    end;
+    tkDynArray: for D in DMap do begin
+      WriteWideString(D.Key);
+      WriteArrayWithRef(D.Value, ValueTypeInfo);
+    end;
+    tkInterface: for I in IMap do begin
+      WriteWideString(I.Key);
+      Serialize(I.Value, ValueTypeInfo);
+    end;
+    tkClass: for O in OMap do begin
+      WriteWideString(O.Key);
+      Serialize(O.Value, ValueTypeInfo);
+    end;
+  else if GetTypeName(ValueTypeInfo) = 'Extended' then
+    for E in EMap do begin
+      WriteWideString(E.Key);
+      WriteDouble(E.Value);
+    end
+  else
+    case ValueSize of
+      1: for B1 in B1Map do begin
+        WriteWideString(B1.Key);
+        Serialize(B1.Value, ValueTypeInfo);
+      end;
+      2: for B2 in B2Map do begin
+        WriteWideString(B2.Key);
+        Serialize(B2.Value, ValueTypeInfo);
+      end;
+      4: for B4 in B4Map do begin
+        WriteWideString(B4.Key);
+        Serialize(B4.Value, ValueTypeInfo);
+      end;
+      8: for B8 in B8Map do begin
+        WriteWideString(B8.Key);
+        Serialize(B8.Value, ValueTypeInfo);
+      end;
+    else
+      raise EHproseException.Create('Can not serialize ' + ClassName);
+    end;
+  end;
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteUnicodeStringDictionary(const AMap;
+          const KeySize, ValueSize: Integer;
+          const KeyTypeInfo, ValueTypeInfo: Pointer);
+var
+  B1Map: TDictionary<UnicodeString, TB1> absolute AMap;
+  B2Map: TDictionary<UnicodeString, TB2> absolute AMap;
+  B4Map: TDictionary<UnicodeString, TB4> absolute AMap;
+  B8Map: TDictionary<UnicodeString, TB8> absolute AMap;
+  EMap: TDictionary<UnicodeString, Extended> absolute AMap;
+  SMap: TDictionary<UnicodeString, ShortString> absolute AMap;
+  LMap: TDictionary<UnicodeString, AnsiString> absolute AMap;
+  WMap: TDictionary<UnicodeString, WideString> absolute AMap;
+  UMap: TDictionary<UnicodeString, UnicodeString> absolute AMap;
+  VMap: TDictionary<UnicodeString, Variant> absolute AMap;
+  DMap: TDictionary<UnicodeString, TArray<Pointer>> absolute AMap;
+  IMap: TDictionary<UnicodeString, IInterface> absolute AMap;
+  OMap: TDictionary<UnicodeString, TObject> absolute AMap;
+  B1: TPair<UnicodeString, TB1>;
+  B2: TPair<UnicodeString, TB2>;
+  B4: TPair<UnicodeString, TB4>;
+  B8: TPair<UnicodeString, TB8>;
+  E: TPair<UnicodeString, Extended>;
+  SS: TPair<UnicodeString, ShortString>;
+  LS: TPair<UnicodeString, AnsiString>;
+  WS: TPair<UnicodeString, WideString>;
+  US: TPair<UnicodeString, UnicodeString>;
+  V: TPair<UnicodeString, Variant>;
+  D: TPair<UnicodeString, TArray<Pointer>>;
+  I: TPair<UnicodeString, IInterface>;
+  O: TPair<UnicodeString, TObject>;
+  Count: Integer;
+begin
+  FRefList.Add(ObjToVar(TObject(AMap)));
+  Count := B1Map.Count;
+  FStream.WriteBuffer(HproseTagMap, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  case PTypeInfo(ValueTypeInfo)^.Kind of
+    tkString: for SS in SMap do begin
+      WriteWideString(WideString(SS.Key));
+      WriteWideString(WideString(SS.Value));
+    end;
+    tkLString: for LS in LMap do begin
+      WriteWideString(WideString(LS.Key));
+      WriteWideString(WideString(LS.Value));
+    end;
+    tkWString: for WS in WMap do begin
+      WriteWideString(WideString(WS.Key));
+      WriteWideString(WS.Value);
+    end;
+    tkUString: for US in UMap do begin
+      WriteWideString(WideString(US.Key));
+      WriteWideString(WideString(US.Value));
+    end;
+    tkVariant: for V in VMap do begin
+      WriteWideString(WideString(V.Key));
+      Serialize(V.Value);
+    end;
+    tkDynArray: for D in DMap do begin
+      WriteWideString(WideString(D.Key));
+      WriteArrayWithRef(D.Value, ValueTypeInfo);
+    end;
+    tkInterface: for I in IMap do begin
+      WriteWideString(WideString(I.Key));
+      Serialize(I.Value, ValueTypeInfo);
+    end;
+    tkClass: for O in OMap do begin
+      WriteWideString(WideString(O.Key));
+      Serialize(O.Value, ValueTypeInfo);
+    end;
+  else if GetTypeName(ValueTypeInfo) = 'Extended' then
+    for E in EMap do begin
+      WriteWideString(WideString(E.Key));
+      WriteDouble(E.Value);
+    end
+  else
+    case ValueSize of
+      1: for B1 in B1Map do begin
+        WriteWideString(WideString(B1.Key));
+        Serialize(B1.Value, ValueTypeInfo);
+      end;
+      2: for B2 in B2Map do begin
+        WriteWideString(WideString(B2.Key));
+        Serialize(B2.Value, ValueTypeInfo);
+      end;
+      4: for B4 in B4Map do begin
+        WriteWideString(WideString(B4.Key));
+        Serialize(B4.Value, ValueTypeInfo);
+      end;
+      8: for B8 in B8Map do begin
+        WriteWideString(WideString(B8.Key));
+        Serialize(B8.Value, ValueTypeInfo);
+      end;
+    else
+      raise EHproseException.Create('Can not serialize ' + ClassName);
+    end;
+  end;
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteVariantDictionary(const AMap;
+          const KeySize, ValueSize: Integer;
+          const KeyTypeInfo, ValueTypeInfo: Pointer);
+var
+  B1Map: TDictionary<Variant, TB1> absolute AMap;
+  B2Map: TDictionary<Variant, TB2> absolute AMap;
+  B4Map: TDictionary<Variant, TB4> absolute AMap;
+  B8Map: TDictionary<Variant, TB8> absolute AMap;
+  EMap: TDictionary<Variant, Extended> absolute AMap;
+  SMap: TDictionary<Variant, ShortString> absolute AMap;
+  LMap: TDictionary<Variant, AnsiString> absolute AMap;
+  WMap: TDictionary<Variant, WideString> absolute AMap;
+  UMap: TDictionary<Variant, UnicodeString> absolute AMap;
+  VMap: TDictionary<Variant, Variant> absolute AMap;
+  DMap: TDictionary<Variant, TArray<Pointer>> absolute AMap;
+  IMap: TDictionary<Variant, IInterface> absolute AMap;
+  OMap: TDictionary<Variant, TObject> absolute AMap;
+  B1: TPair<Variant, TB1>;
+  B2: TPair<Variant, TB2>;
+  B4: TPair<Variant, TB4>;
+  B8: TPair<Variant, TB8>;
+  E: TPair<Variant, Extended>;
+  SS: TPair<Variant, ShortString>;
+  LS: TPair<Variant, AnsiString>;
+  WS: TPair<Variant, WideString>;
+  US: TPair<Variant, UnicodeString>;
+  V: TPair<Variant, Variant>;
+  D: TPair<Variant, TArray<Pointer>>;
+  I: TPair<Variant, IInterface>;
+  O: TPair<Variant, TObject>;
+  Count: Integer;
+begin
+  FRefList.Add(ObjToVar(TObject(AMap)));
+  Count := B1Map.Count;
+  FStream.WriteBuffer(HproseTagMap, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  case PTypeInfo(ValueTypeInfo)^.Kind of
+    tkString: for SS in SMap do begin
+      Serialize(SS.Key);
+      WriteWideString(WideString(SS.Value));
+    end;
+    tkLString: for LS in LMap do begin
+      Serialize(LS.Key);
+      WriteWideString(WideString(LS.Value));
+    end;
+    tkWString: for WS in WMap do begin
+      Serialize(WS.Key);
+      WriteWideString(WS.Value);
+    end;
+    tkUString: for US in UMap do begin
+      Serialize(US.Key);
+      WriteWideString(WideString(US.Value));
+    end;
+    tkVariant: for V in VMap do begin
+      Serialize(V.Key);
+      Serialize(V.Value);
+    end;
+    tkDynArray: for D in DMap do begin
+      Serialize(D.Key);
+      WriteArrayWithRef(D.Value, ValueTypeInfo);
+    end;
+    tkInterface: for I in IMap do begin
+      Serialize(I.Key);
+      Serialize(I.Value, ValueTypeInfo);
+    end;
+    tkClass: for O in OMap do begin
+      Serialize(O.Key);
+      Serialize(O.Value, ValueTypeInfo);
+    end;
+  else if GetTypeName(ValueTypeInfo) = 'Extended' then
+    for E in EMap do begin
+      Serialize(E.Key);
+      WriteDouble(E.Value);
+    end
+  else
+    case ValueSize of
+      1: for B1 in B1Map do begin
+        Serialize(B1.Key);
+        Serialize(B1.Value, ValueTypeInfo);
+      end;
+      2: for B2 in B2Map do begin
+        Serialize(B2.Key);
+        Serialize(B2.Value, ValueTypeInfo);
+      end;
+      4: for B4 in B4Map do begin
+        Serialize(B4.Key);
+        Serialize(B4.Value, ValueTypeInfo);
+      end;
+      8: for B8 in B8Map do begin
+        Serialize(B8.Key);
+        Serialize(B8.Value, ValueTypeInfo);
+      end;
+    else
+      raise EHproseException.Create('Can not serialize ' + ClassName);
+    end;
+  end;
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteDynArrayDictionary(const AMap;
+          const KeySize, ValueSize: Integer;
+          const KeyTypeInfo, ValueTypeInfo: Pointer);
+var
+  B1Map: TDictionary<TArray<Pointer>, TB1> absolute AMap;
+  B2Map: TDictionary<TArray<Pointer>, TB2> absolute AMap;
+  B4Map: TDictionary<TArray<Pointer>, TB4> absolute AMap;
+  B8Map: TDictionary<TArray<Pointer>, TB8> absolute AMap;
+  EMap: TDictionary<TArray<Pointer>, Extended> absolute AMap;
+  SMap: TDictionary<TArray<Pointer>, ShortString> absolute AMap;
+  LMap: TDictionary<TArray<Pointer>, AnsiString> absolute AMap;
+  WMap: TDictionary<TArray<Pointer>, WideString> absolute AMap;
+  UMap: TDictionary<TArray<Pointer>, UnicodeString> absolute AMap;
+  VMap: TDictionary<TArray<Pointer>, Variant> absolute AMap;
+  DMap: TDictionary<TArray<Pointer>, TArray<Pointer>> absolute AMap;
+  IMap: TDictionary<TArray<Pointer>, IInterface> absolute AMap;
+  OMap: TDictionary<TArray<Pointer>, TObject> absolute AMap;
+  B1: TPair<TArray<Pointer>, TB1>;
+  B2: TPair<TArray<Pointer>, TB2>;
+  B4: TPair<TArray<Pointer>, TB4>;
+  B8: TPair<TArray<Pointer>, TB8>;
+  E: TPair<TArray<Pointer>, Extended>;
+  SS: TPair<TArray<Pointer>, ShortString>;
+  LS: TPair<TArray<Pointer>, AnsiString>;
+  WS: TPair<TArray<Pointer>, WideString>;
+  US: TPair<TArray<Pointer>, UnicodeString>;
+  V: TPair<TArray<Pointer>, Variant>;
+  D: TPair<TArray<Pointer>, TArray<Pointer>>;
+  I: TPair<TArray<Pointer>, IInterface>;
+  O: TPair<TArray<Pointer>, TObject>;
+  Count: Integer;
+begin
+  FRefList.Add(ObjToVar(TObject(AMap)));
+  Count := B1Map.Count;
+  FStream.WriteBuffer(HproseTagMap, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  case PTypeInfo(ValueTypeInfo)^.Kind of
+    tkString: for SS in SMap do begin
+      WriteArrayWithRef(SS.Key, KeyTypeInfo);
+      WriteWideString(WideString(SS.Value));
+    end;
+    tkLString: for LS in LMap do begin
+      WriteArrayWithRef(LS.Key, KeyTypeInfo);
+      WriteWideString(WideString(LS.Value));
+    end;
+    tkWString: for WS in WMap do begin
+      WriteArrayWithRef(WS.Key, KeyTypeInfo);
+      WriteWideString(WS.Value);
+    end;
+    tkUString: for US in UMap do begin
+      WriteArrayWithRef(US.Key, KeyTypeInfo);
+      WriteWideString(WideString(US.Value));
+    end;
+    tkVariant: for V in VMap do begin
+      WriteArrayWithRef(V.Key, KeyTypeInfo);
+      Serialize(V.Value);
+    end;
+    tkDynArray: for D in DMap do begin
+      WriteArrayWithRef(D.Key, KeyTypeInfo);
+      WriteArrayWithRef(D.Value, ValueTypeInfo);
+    end;
+    tkInterface: for I in IMap do begin
+      WriteArrayWithRef(I.Key, KeyTypeInfo);
+      Serialize(I.Value, ValueTypeInfo);
+    end;
+    tkClass: for O in OMap do begin
+      WriteArrayWithRef(O.Key, KeyTypeInfo);
+      Serialize(O.Value, ValueTypeInfo);
+    end;
+  else if GetTypeName(ValueTypeInfo) = 'Extended' then
+    for E in EMap do begin
+      WriteArrayWithRef(E.Key, KeyTypeInfo);
+      WriteDouble(E.Value);
+    end
+  else
+    case ValueSize of
+      1: for B1 in B1Map do begin
+        WriteArrayWithRef(B1.Key, KeyTypeInfo);
+        Serialize(B1.Value, ValueTypeInfo);
+      end;
+      2: for B2 in B2Map do begin
+        WriteArrayWithRef(B2.Key, KeyTypeInfo);
+        Serialize(B2.Value, ValueTypeInfo);
+      end;
+      4: for B4 in B4Map do begin
+        WriteArrayWithRef(B4.Key, KeyTypeInfo);
+        Serialize(B4.Value, ValueTypeInfo);
+      end;
+      8: for B8 in B8Map do begin
+        WriteArrayWithRef(B8.Key, KeyTypeInfo);
+        Serialize(B8.Value, ValueTypeInfo);
+      end;
+    else
+      raise EHproseException.Create('Can not serialize ' + ClassName);
+    end;
+  end;
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteInterfaceDictionary(const AMap;
+          const KeySize, ValueSize: Integer;
+          const KeyTypeInfo, ValueTypeInfo: Pointer);
+var
+  B1Map: TDictionary<IInterface, TB1> absolute AMap;
+  B2Map: TDictionary<IInterface, TB2> absolute AMap;
+  B4Map: TDictionary<IInterface, TB4> absolute AMap;
+  B8Map: TDictionary<IInterface, TB8> absolute AMap;
+  EMap: TDictionary<IInterface, Extended> absolute AMap;
+  SMap: TDictionary<IInterface, ShortString> absolute AMap;
+  LMap: TDictionary<IInterface, AnsiString> absolute AMap;
+  WMap: TDictionary<IInterface, WideString> absolute AMap;
+  UMap: TDictionary<IInterface, UnicodeString> absolute AMap;
+  VMap: TDictionary<IInterface, Variant> absolute AMap;
+  DMap: TDictionary<IInterface, TArray<Pointer>> absolute AMap;
+  IMap: TDictionary<IInterface, IInterface> absolute AMap;
+  OMap: TDictionary<IInterface, TObject> absolute AMap;
+  B1: TPair<IInterface, TB1>;
+  B2: TPair<IInterface, TB2>;
+  B4: TPair<IInterface, TB4>;
+  B8: TPair<IInterface, TB8>;
+  E: TPair<IInterface, Extended>;
+  SS: TPair<IInterface, ShortString>;
+  LS: TPair<IInterface, AnsiString>;
+  WS: TPair<IInterface, WideString>;
+  US: TPair<IInterface, UnicodeString>;
+  V: TPair<IInterface, Variant>;
+  D: TPair<IInterface, TArray<Pointer>>;
+  I: TPair<IInterface, IInterface>;
+  O: TPair<IInterface, TObject>;
+  Count: Integer;
+begin
+  FRefList.Add(ObjToVar(TObject(AMap)));
+  Count := B1Map.Count;
+  FStream.WriteBuffer(HproseTagMap, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  case PTypeInfo(ValueTypeInfo)^.Kind of
+    tkString: for SS in SMap do begin
+      Serialize(SS.Key, KeyTypeInfo);
+      WriteWideString(WideString(SS.Value));
+    end;
+    tkLString: for LS in LMap do begin
+      Serialize(LS.Key, KeyTypeInfo);
+      WriteWideString(WideString(LS.Value));
+    end;
+    tkWString: for WS in WMap do begin
+      Serialize(WS.Key, KeyTypeInfo);
+      WriteWideString(WS.Value);
+    end;
+    tkUString: for US in UMap do begin
+      Serialize(US.Key, KeyTypeInfo);
+      WriteWideString(WideString(US.Value));
+    end;
+    tkVariant: for V in VMap do begin
+      Serialize(V.Key, KeyTypeInfo);
+      Serialize(V.Value);
+    end;
+    tkDynArray: for D in DMap do begin
+      Serialize(D.Key, KeyTypeInfo);
+      WriteArrayWithRef(D.Value, ValueTypeInfo);
+    end;
+    tkInterface: for I in IMap do begin
+      Serialize(I.Key, KeyTypeInfo);
+      Serialize(I.Value, ValueTypeInfo);
+    end;
+    tkClass: for O in OMap do begin
+      Serialize(O.Key, KeyTypeInfo);
+      Serialize(O.Value, ValueTypeInfo);
+    end;
+  else if GetTypeName(ValueTypeInfo) = 'Extended' then
+    for E in EMap do begin
+      Serialize(E.Key, KeyTypeInfo);
+      WriteDouble(E.Value);
+    end
+  else
+    case ValueSize of
+      1: for B1 in B1Map do begin
+        Serialize(B1.Key, KeyTypeInfo);
+        Serialize(B1.Value, ValueTypeInfo);
+      end;
+      2: for B2 in B2Map do begin
+        Serialize(B2.Key, KeyTypeInfo);
+        Serialize(B2.Value, ValueTypeInfo);
+      end;
+      4: for B4 in B4Map do begin
+        Serialize(B4.Key, KeyTypeInfo);
+        Serialize(B4.Value, ValueTypeInfo);
+      end;
+      8: for B8 in B8Map do begin
+        Serialize(B8.Key, KeyTypeInfo);
+        Serialize(B8.Value, ValueTypeInfo);
+      end;
+    else
+      raise EHproseException.Create('Can not serialize ' + ClassName);
+    end;
+  end;
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteObjectDictionary(const AMap;
+          const KeySize, ValueSize: Integer;
+          const KeyTypeInfo, ValueTypeInfo: Pointer);
+var
+  B1Map: TDictionary<TObject, TB1> absolute AMap;
+  B2Map: TDictionary<TObject, TB2> absolute AMap;
+  B4Map: TDictionary<TObject, TB4> absolute AMap;
+  B8Map: TDictionary<TObject, TB8> absolute AMap;
+  EMap: TDictionary<TObject, Extended> absolute AMap;
+  SMap: TDictionary<TObject, ShortString> absolute AMap;
+  LMap: TDictionary<TObject, AnsiString> absolute AMap;
+  WMap: TDictionary<TObject, WideString> absolute AMap;
+  UMap: TDictionary<TObject, UnicodeString> absolute AMap;
+  VMap: TDictionary<TObject, Variant> absolute AMap;
+  DMap: TDictionary<TObject, TArray<Pointer>> absolute AMap;
+  IMap: TDictionary<TObject, IInterface> absolute AMap;
+  OMap: TDictionary<TObject, TObject> absolute AMap;
+  B1: TPair<TObject, TB1>;
+  B2: TPair<TObject, TB2>;
+  B4: TPair<TObject, TB4>;
+  B8: TPair<TObject, TB8>;
+  E: TPair<TObject, Extended>;
+  SS: TPair<TObject, ShortString>;
+  LS: TPair<TObject, AnsiString>;
+  WS: TPair<TObject, WideString>;
+  US: TPair<TObject, UnicodeString>;
+  V: TPair<TObject, Variant>;
+  D: TPair<TObject, TArray<Pointer>>;
+  I: TPair<TObject, IInterface>;
+  O: TPair<TObject, TObject>;
+  Count: Integer;
+begin
+  FRefList.Add(ObjToVar(TObject(AMap)));
+  Count := B1Map.Count;
+  FStream.WriteBuffer(HproseTagMap, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  case PTypeInfo(ValueTypeInfo)^.Kind of
+    tkString: for SS in SMap do begin
+      Serialize(SS.Key, KeyTypeInfo);
+      WriteWideString(WideString(SS.Value));
+    end;
+    tkLString: for LS in LMap do begin
+      Serialize(LS.Key, KeyTypeInfo);
+      WriteWideString(WideString(LS.Value));
+    end;
+    tkWString: for WS in WMap do begin
+      Serialize(WS.Key, KeyTypeInfo);
+      WriteWideString(WS.Value);
+    end;
+    tkUString: for US in UMap do begin
+      Serialize(US.Key, KeyTypeInfo);
+      WriteWideString(WideString(US.Value));
+    end;
+    tkVariant: for V in VMap do begin
+      Serialize(V.Key, KeyTypeInfo);
+      Serialize(V.Value);
+    end;
+    tkDynArray: for D in DMap do begin
+      Serialize(D.Key, KeyTypeInfo);
+      WriteArrayWithRef(D.Value, ValueTypeInfo);
+    end;
+    tkInterface: for I in IMap do begin
+      Serialize(I.Key, KeyTypeInfo);
+      Serialize(I.Value, ValueTypeInfo);
+    end;
+    tkClass: for O in OMap do begin
+      Serialize(O.Key, KeyTypeInfo);
+      Serialize(O.Value, ValueTypeInfo);
+    end;
+  else if GetTypeName(ValueTypeInfo) = 'Extended' then
+    for E in EMap do begin
+      Serialize(E.Key, KeyTypeInfo);
+      WriteDouble(E.Value);
+    end
+  else
+    case ValueSize of
+      1: for B1 in B1Map do begin
+        Serialize(B1.Key, KeyTypeInfo);
+        Serialize(B1.Value, ValueTypeInfo);
+      end;
+      2: for B2 in B2Map do begin
+        Serialize(B2.Key, KeyTypeInfo);
+        Serialize(B2.Value, ValueTypeInfo);
+      end;
+      4: for B4 in B4Map do begin
+        Serialize(B4.Key, KeyTypeInfo);
+        Serialize(B4.Value, ValueTypeInfo);
+      end;
+      8: for B8 in B8Map do begin
+        Serialize(B8.Key, KeyTypeInfo);
+        Serialize(B8.Value, ValueTypeInfo);
+      end;
+    else
+      raise EHproseException.Create('Can not serialize ' + ClassName);
+    end;
+  end;
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteB1Dictionary(const AMap;
+          const KeySize, ValueSize: Integer;
+          const KeyTypeInfo, ValueTypeInfo: Pointer);
+var
+  B1Map: TDictionary<TB1, TB1> absolute AMap;
+  B2Map: TDictionary<TB1, TB2> absolute AMap;
+  B4Map: TDictionary<TB1, TB4> absolute AMap;
+  B8Map: TDictionary<TB1, TB8> absolute AMap;
+  EMap: TDictionary<TB1, Extended> absolute AMap;
+  SMap: TDictionary<TB1, ShortString> absolute AMap;
+  LMap: TDictionary<TB1, AnsiString> absolute AMap;
+  WMap: TDictionary<TB1, WideString> absolute AMap;
+  UMap: TDictionary<TB1, UnicodeString> absolute AMap;
+  VMap: TDictionary<TB1, Variant> absolute AMap;
+  DMap: TDictionary<TB1, TArray<Pointer>> absolute AMap;
+  IMap: TDictionary<TB1, IInterface> absolute AMap;
+  OMap: TDictionary<TB1, TObject> absolute AMap;
+  B1: TPair<TB1, TB1>;
+  B2: TPair<TB1, TB2>;
+  B4: TPair<TB1, TB4>;
+  B8: TPair<TB1, TB8>;
+  E: TPair<TB1, Extended>;
+  SS: TPair<TB1, ShortString>;
+  LS: TPair<TB1, AnsiString>;
+  WS: TPair<TB1, WideString>;
+  US: TPair<TB1, UnicodeString>;
+  V: TPair<TB1, Variant>;
+  D: TPair<TB1, TArray<Pointer>>;
+  I: TPair<TB1, IInterface>;
+  O: TPair<TB1, TObject>;
+  Count: Integer;
+begin
+  FRefList.Add(ObjToVar(TObject(AMap)));
+  Count := B1Map.Count;
+  FStream.WriteBuffer(HproseTagMap, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  case PTypeInfo(ValueTypeInfo)^.Kind of
+    tkString: for SS in SMap do begin
+      Serialize(SS.Key, KeyTypeInfo);
+      WriteWideString(WideString(SS.Value));
+    end;
+    tkLString: for LS in LMap do begin
+      Serialize(LS.Key, KeyTypeInfo);
+      WriteWideString(WideString(LS.Value));
+    end;
+    tkWString: for WS in WMap do begin
+      Serialize(WS.Key, KeyTypeInfo);
+      WriteWideString(WS.Value);
+    end;
+    tkUString: for US in UMap do begin
+      Serialize(US.Key, KeyTypeInfo);
+      WriteWideString(WideString(US.Value));
+    end;
+    tkVariant: for V in VMap do begin
+      Serialize(V.Key, KeyTypeInfo);
+      Serialize(V.Value);
+    end;
+    tkDynArray: for D in DMap do begin
+      Serialize(D.Key, KeyTypeInfo);
+      WriteArrayWithRef(D.Value, ValueTypeInfo);
+    end;
+    tkInterface: for I in IMap do begin
+      Serialize(I.Key, KeyTypeInfo);
+      Serialize(I.Value, ValueTypeInfo);
+    end;
+    tkClass: for O in OMap do begin
+      Serialize(O.Key, KeyTypeInfo);
+      Serialize(O.Value, ValueTypeInfo);
+    end;
+  else if GetTypeName(ValueTypeInfo) = 'Extended' then
+    for E in EMap do begin
+      Serialize(E.Key, KeyTypeInfo);
+      WriteDouble(E.Value);
+    end
+  else
+    case ValueSize of
+      1: for B1 in B1Map do begin
+        Serialize(B1.Key, KeyTypeInfo);
+        Serialize(B1.Value, ValueTypeInfo);
+      end;
+      2: for B2 in B2Map do begin
+        Serialize(B2.Key, KeyTypeInfo);
+        Serialize(B2.Value, ValueTypeInfo);
+      end;
+      4: for B4 in B4Map do begin
+        Serialize(B4.Key, KeyTypeInfo);
+        Serialize(B4.Value, ValueTypeInfo);
+      end;
+      8: for B8 in B8Map do begin
+        Serialize(B8.Key, KeyTypeInfo);
+        Serialize(B8.Value, ValueTypeInfo);
+      end;
+    else
+      raise EHproseException.Create('Can not serialize ' + ClassName);
+    end;
+  end;
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteB2Dictionary(const AMap;
+          const KeySize, ValueSize: Integer;
+          const KeyTypeInfo, ValueTypeInfo: Pointer);
+var
+  B1Map: TDictionary<TB2, TB1> absolute AMap;
+  B2Map: TDictionary<TB2, TB2> absolute AMap;
+  B4Map: TDictionary<TB2, TB4> absolute AMap;
+  B8Map: TDictionary<TB2, TB8> absolute AMap;
+  EMap: TDictionary<TB2, Extended> absolute AMap;
+  SMap: TDictionary<TB2, ShortString> absolute AMap;
+  LMap: TDictionary<TB2, AnsiString> absolute AMap;
+  WMap: TDictionary<TB2, WideString> absolute AMap;
+  UMap: TDictionary<TB2, UnicodeString> absolute AMap;
+  VMap: TDictionary<TB2, Variant> absolute AMap;
+  DMap: TDictionary<TB2, TArray<Pointer>> absolute AMap;
+  IMap: TDictionary<TB2, IInterface> absolute AMap;
+  OMap: TDictionary<TB2, TObject> absolute AMap;
+  B1: TPair<TB2, TB1>;
+  B2: TPair<TB2, TB2>;
+  B4: TPair<TB2, TB4>;
+  B8: TPair<TB2, TB8>;
+  E: TPair<TB2, Extended>;
+  SS: TPair<TB2, ShortString>;
+  LS: TPair<TB2, AnsiString>;
+  WS: TPair<TB2, WideString>;
+  US: TPair<TB2, UnicodeString>;
+  V: TPair<TB2, Variant>;
+  D: TPair<TB2, TArray<Pointer>>;
+  I: TPair<TB2, IInterface>;
+  O: TPair<TB2, TObject>;
+  Count: Integer;
+begin
+  FRefList.Add(ObjToVar(TObject(AMap)));
+  Count := B1Map.Count;
+  FStream.WriteBuffer(HproseTagMap, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  case PTypeInfo(ValueTypeInfo)^.Kind of
+    tkString: for SS in SMap do begin
+      Serialize(SS.Key, KeyTypeInfo);
+      WriteWideString(WideString(SS.Value));
+    end;
+    tkLString: for LS in LMap do begin
+      Serialize(LS.Key, KeyTypeInfo);
+      WriteWideString(WideString(LS.Value));
+    end;
+    tkWString: for WS in WMap do begin
+      Serialize(WS.Key, KeyTypeInfo);
+      WriteWideString(WS.Value);
+    end;
+    tkUString: for US in UMap do begin
+      Serialize(US.Key, KeyTypeInfo);
+      WriteWideString(WideString(US.Value));
+    end;
+    tkVariant: for V in VMap do begin
+      Serialize(V.Key, KeyTypeInfo);
+      Serialize(V.Value);
+    end;
+    tkDynArray: for D in DMap do begin
+      Serialize(D.Key, KeyTypeInfo);
+      WriteArrayWithRef(D.Value, ValueTypeInfo);
+    end;
+    tkInterface: for I in IMap do begin
+      Serialize(I.Key, KeyTypeInfo);
+      Serialize(I.Value, ValueTypeInfo);
+    end;
+    tkClass: for O in OMap do begin
+      Serialize(O.Key, KeyTypeInfo);
+      Serialize(O.Value, ValueTypeInfo);
+    end;
+  else if GetTypeName(ValueTypeInfo) = 'Extended' then
+    for E in EMap do begin
+      Serialize(E.Key, KeyTypeInfo);
+      WriteDouble(E.Value);
+    end
+  else
+    case ValueSize of
+      1: for B1 in B1Map do begin
+        Serialize(B1.Key, KeyTypeInfo);
+        Serialize(B1.Value, ValueTypeInfo);
+      end;
+      2: for B2 in B2Map do begin
+        Serialize(B2.Key, KeyTypeInfo);
+        Serialize(B2.Value, ValueTypeInfo);
+      end;
+      4: for B4 in B4Map do begin
+        Serialize(B4.Key, KeyTypeInfo);
+        Serialize(B4.Value, ValueTypeInfo);
+      end;
+      8: for B8 in B8Map do begin
+        Serialize(B8.Key, KeyTypeInfo);
+        Serialize(B8.Value, ValueTypeInfo);
+      end;
+    else
+      raise EHproseException.Create('Can not serialize ' + ClassName);
+    end;
+  end;
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteB4Dictionary(const AMap;
+          const KeySize, ValueSize: Integer;
+          const KeyTypeInfo, ValueTypeInfo: Pointer);
+var
+  B1Map: TDictionary<TB4, TB1> absolute AMap;
+  B2Map: TDictionary<TB4, TB2> absolute AMap;
+  B4Map: TDictionary<TB4, TB4> absolute AMap;
+  B8Map: TDictionary<TB4, TB8> absolute AMap;
+  EMap: TDictionary<TB4, Extended> absolute AMap;
+  SMap: TDictionary<TB4, ShortString> absolute AMap;
+  LMap: TDictionary<TB4, AnsiString> absolute AMap;
+  WMap: TDictionary<TB4, WideString> absolute AMap;
+  UMap: TDictionary<TB4, UnicodeString> absolute AMap;
+  VMap: TDictionary<TB4, Variant> absolute AMap;
+  DMap: TDictionary<TB4, TArray<Pointer>> absolute AMap;
+  IMap: TDictionary<TB4, IInterface> absolute AMap;
+  OMap: TDictionary<TB4, TObject> absolute AMap;
+  B1: TPair<TB4, TB1>;
+  B2: TPair<TB4, TB2>;
+  B4: TPair<TB4, TB4>;
+  B8: TPair<TB4, TB8>;
+  E: TPair<TB4, Extended>;
+  SS: TPair<TB4, ShortString>;
+  LS: TPair<TB4, AnsiString>;
+  WS: TPair<TB4, WideString>;
+  US: TPair<TB4, UnicodeString>;
+  V: TPair<TB4, Variant>;
+  D: TPair<TB4, TArray<Pointer>>;
+  I: TPair<TB4, IInterface>;
+  O: TPair<TB4, TObject>;
+  Count: Integer;
+begin
+  FRefList.Add(ObjToVar(TObject(AMap)));
+  Count := B1Map.Count;
+  FStream.WriteBuffer(HproseTagMap, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  case PTypeInfo(ValueTypeInfo)^.Kind of
+    tkString: for SS in SMap do begin
+      Serialize(SS.Key, KeyTypeInfo);
+      WriteWideString(WideString(SS.Value));
+    end;
+    tkLString: for LS in LMap do begin
+      Serialize(LS.Key, KeyTypeInfo);
+      WriteWideString(WideString(LS.Value));
+    end;
+    tkWString: for WS in WMap do begin
+      Serialize(WS.Key, KeyTypeInfo);
+      WriteWideString(WS.Value);
+    end;
+    tkUString: for US in UMap do begin
+      Serialize(US.Key, KeyTypeInfo);
+      WriteWideString(WideString(US.Value));
+    end;
+    tkVariant: for V in VMap do begin
+      Serialize(V.Key, KeyTypeInfo);
+      Serialize(V.Value);
+    end;
+    tkDynArray: for D in DMap do begin
+      Serialize(D.Key, KeyTypeInfo);
+      WriteArrayWithRef(D.Value, ValueTypeInfo);
+    end;
+    tkInterface: for I in IMap do begin
+      Serialize(I.Key, KeyTypeInfo);
+      Serialize(I.Value, ValueTypeInfo);
+    end;
+    tkClass: for O in OMap do begin
+      Serialize(O.Key, KeyTypeInfo);
+      Serialize(O.Value, ValueTypeInfo);
+    end;
+  else if GetTypeName(ValueTypeInfo) = 'Extended' then
+    for E in EMap do begin
+      Serialize(E.Key, KeyTypeInfo);
+      WriteDouble(E.Value);
+    end
+  else
+    case ValueSize of
+      1: for B1 in B1Map do begin
+        Serialize(B1.Key, KeyTypeInfo);
+        Serialize(B1.Value, ValueTypeInfo);
+      end;
+      2: for B2 in B2Map do begin
+        Serialize(B2.Key, KeyTypeInfo);
+        Serialize(B2.Value, ValueTypeInfo);
+      end;
+      4: for B4 in B4Map do begin
+        Serialize(B4.Key, KeyTypeInfo);
+        Serialize(B4.Value, ValueTypeInfo);
+      end;
+      8: for B8 in B8Map do begin
+        Serialize(B8.Key, KeyTypeInfo);
+        Serialize(B8.Value, ValueTypeInfo);
+      end;
+    else
+      raise EHproseException.Create('Can not serialize ' + ClassName);
+    end;
+  end;
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteB8Dictionary(const AMap;
+          const KeySize, ValueSize: Integer;
+          const KeyTypeInfo, ValueTypeInfo: Pointer);
+var
+  B1Map: TDictionary<TB8, TB1> absolute AMap;
+  B2Map: TDictionary<TB8, TB2> absolute AMap;
+  B4Map: TDictionary<TB8, TB4> absolute AMap;
+  B8Map: TDictionary<TB8, TB8> absolute AMap;
+  EMap: TDictionary<TB8, Extended> absolute AMap;
+  SMap: TDictionary<TB8, ShortString> absolute AMap;
+  LMap: TDictionary<TB8, AnsiString> absolute AMap;
+  WMap: TDictionary<TB8, WideString> absolute AMap;
+  UMap: TDictionary<TB8, UnicodeString> absolute AMap;
+  VMap: TDictionary<TB8, Variant> absolute AMap;
+  DMap: TDictionary<TB8, TArray<Pointer>> absolute AMap;
+  IMap: TDictionary<TB8, IInterface> absolute AMap;
+  OMap: TDictionary<TB8, TObject> absolute AMap;
+  B1: TPair<TB8, TB1>;
+  B2: TPair<TB8, TB2>;
+  B4: TPair<TB8, TB4>;
+  B8: TPair<TB8, TB8>;
+  E: TPair<TB8, Extended>;
+  SS: TPair<TB8, ShortString>;
+  LS: TPair<TB8, AnsiString>;
+  WS: TPair<TB8, WideString>;
+  US: TPair<TB8, UnicodeString>;
+  V: TPair<TB8, Variant>;
+  D: TPair<TB8, TArray<Pointer>>;
+  I: TPair<TB8, IInterface>;
+  O: TPair<TB8, TObject>;
+  Count: Integer;
+begin
+  FRefList.Add(ObjToVar(TObject(AMap)));
+  Count := B1Map.Count;
+  FStream.WriteBuffer(HproseTagMap, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  case PTypeInfo(ValueTypeInfo)^.Kind of
+    tkString: for SS in SMap do begin
+      Serialize(SS.Key, KeyTypeInfo);
+      WriteWideString(WideString(SS.Value));
+    end;
+    tkLString: for LS in LMap do begin
+      Serialize(LS.Key, KeyTypeInfo);
+      WriteWideString(WideString(LS.Value));
+    end;
+    tkWString: for WS in WMap do begin
+      Serialize(WS.Key, KeyTypeInfo);
+      WriteWideString(WS.Value);
+    end;
+    tkUString: for US in UMap do begin
+      Serialize(US.Key, KeyTypeInfo);
+      WriteWideString(WideString(US.Value));
+    end;
+    tkVariant: for V in VMap do begin
+      Serialize(V.Key, KeyTypeInfo);
+      Serialize(V.Value);
+    end;
+    tkDynArray: for D in DMap do begin
+      Serialize(D.Key, KeyTypeInfo);
+      WriteArrayWithRef(D.Value, ValueTypeInfo);
+    end;
+    tkInterface: for I in IMap do begin
+      Serialize(I.Key, KeyTypeInfo);
+      Serialize(I.Value, ValueTypeInfo);
+    end;
+    tkClass: for O in OMap do begin
+      Serialize(O.Key, KeyTypeInfo);
+      Serialize(O.Value, ValueTypeInfo);
+    end;
+  else if GetTypeName(ValueTypeInfo) = 'Extended' then
+    for E in EMap do begin
+      Serialize(E.Key, KeyTypeInfo);
+      WriteDouble(E.Value);
+    end
+  else
+    case ValueSize of
+      1: for B1 in B1Map do begin
+        Serialize(B1.Key, KeyTypeInfo);
+        Serialize(B1.Value, ValueTypeInfo);
+      end;
+      2: for B2 in B2Map do begin
+        Serialize(B2.Key, KeyTypeInfo);
+        Serialize(B2.Value, ValueTypeInfo);
+      end;
+      4: for B4 in B4Map do begin
+        Serialize(B4.Key, KeyTypeInfo);
+        Serialize(B4.Value, ValueTypeInfo);
+      end;
+      8: for B8 in B8Map do begin
+        Serialize(B8.Key, KeyTypeInfo);
+        Serialize(B8.Value, ValueTypeInfo);
+      end;
+    else
+      raise EHproseException.Create('Can not serialize ' + ClassName);
+    end;
+  end;
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteDictionary(const AMap);
+var
+  AObject: TObject absolute AMap;
+  ClassName: string;
+  KeyTypeName: string;
+  KeySize: Integer;
+  KeyTypeInfo: PTypeInfo;
+  ValueTypeName: string;
+  ValueSize: Integer;
+  ValueTypeInfo: PTypeInfo;
+begin
+  ClassName := AObject.ClassName;
+  SplitKeyValueTypeName(GetElementName(ClassName), KeyTypeName, ValueTypeName);
+  if IsSmartObject(KeyTypeName) then KeyTypeName := 'ISmartObject';
+  if IsSmartObject(ValueTypeName) then ValueTypeName := 'ISmartObject';
+  KeyTypeInfo := GetTypeInfo(KeyTypeName, KeySize);
+  ValueTypeInfo := GetTypeInfo(ValueTypeName, ValueSize);
+  if (KeyTypeInfo = nil) or (ValueTypeInfo = nil) then
+    raise EHproseException.Create('Can not serialize ' + ClassName)
+  else begin
+    case PTypeInfo(KeyTypeInfo)^.Kind of
+      tkString: WriteShortStringDictionary(AMap, KeySize, ValueSize,
+                                           KeyTypeInfo, ValueTypeInfo);
+      tkLString: WriteAnsiStringDictionary(AMap, KeySize, ValueSize,
+                                           KeyTypeInfo, ValueTypeInfo);
+      tkWString: WriteWideStringDictionary(AMap, KeySize, ValueSize,
+                                           KeyTypeInfo, ValueTypeInfo);
+      tkUString: WriteUnicodeStringDictionary(AMap, KeySize, ValueSize,
+                                              KeyTypeInfo, ValueTypeInfo);
+      tkVariant: WriteVariantDictionary(AMap, KeySize, ValueSize,
+                                        KeyTypeInfo, ValueTypeInfo);
+      tkDynArray: WriteDynArrayDictionary(AMap, KeySize, ValueSize,
+                                          KeyTypeInfo, ValueTypeInfo);
+      tkInterface: WriteInterfaceDictionary(AMap, KeySize, ValueSize,
+                                            KeyTypeInfo, ValueTypeInfo);
+      tkClass: WriteObjectDictionary(AMap, KeySize, ValueSize,
+                                     KeyTypeInfo, ValueTypeInfo);
+    else if GetTypeName(KeyTypeInfo) = 'Extended' then
+       WriteExtendedDictionary(AMap, KeySize, ValueSize,
+                               KeyTypeInfo, ValueTypeInfo)
+    else
+      case KeySize of
+        1: WriteB1Dictionary(AMap, KeySize, ValueSize, KeyTypeInfo, ValueTypeInfo);
+        2: WriteB2Dictionary(AMap, KeySize, ValueSize, KeyTypeInfo, ValueTypeInfo);
+        4: WriteB4Dictionary(AMap, KeySize, ValueSize, KeyTypeInfo, ValueTypeInfo);
+        8: WriteB8Dictionary(AMap, KeySize, ValueSize, KeyTypeInfo, ValueTypeInfo);
+      else
+        raise EHproseException.Create('Can not serialize ' + ClassName);
+      end;
+    end;
+  end;
+end;
+
+procedure THproseWriter.WriteObjectDictionary(const AMap);
+var
+  AObject: TObject absolute AMap;
+  ClassName: string;
+  KeyTypeName: string;
+  KeySize: Integer;
+  KeyTypeInfo: PTypeInfo;
+  ValueTypeName: string;
+  ValueSize: Integer;
+  ValueTypeInfo: PTypeInfo;
+  OMap: TObjectDictionary<TObject, TObject> absolute AMap;
+  O: TPair<TObject, TObject>;
+  Count: Integer;
+begin
+  ClassName := AObject.ClassName;
+  SplitKeyValueTypeName(GetElementName(ClassName), KeyTypeName, ValueTypeName);
+  KeyTypeInfo := GetTypeInfo(KeyTypeName, KeySize);
+  ValueTypeInfo := GetTypeInfo(ValueTypeName, ValueSize);
+  if (KeyTypeInfo = nil) or (ValueTypeInfo = nil) then
+    raise EHproseException.Create('Can not serialize ' + ClassName)
+  else begin
+    FRefList.Add(ObjToVar(AObject));
+    Count := OMap.Count;
+    FStream.WriteBuffer(HproseTagMap, 1);
+    if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+    FStream.WriteBuffer(HproseTagOpenbrace, 1);
+    for O in OMap do begin
+      Serialize(O.Key, KeyTypeInfo);
+      Serialize(O.Value, ValueTypeInfo);
+    end;
+    FStream.WriteBuffer(HproseTagClosebrace, 1);
+  end;
+end;
+
+procedure THproseWriter.Serialize<T>(const Value: T);
+begin
+  Serialize(Value, TypeInfo(T));
+end;
+
+procedure THproseWriter.WriteArray<T>(const Value: array of T);
+var
+  Count, I: Integer;
+begin
+  FRefList.Add(Null);
+  Count := Length(Value);
+  FStream.WriteBuffer(HproseTagList, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  for I := 0 to Count - 1 do Serialize(Value[I], TypeInfo(T));
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteArrayWithRef<T>(const Value: array of T);
+var
+  Ref: Integer;
+begin
+  Ref := FRefList.IndexOf(Null);
+  if Ref > -1 then WriteRef(Ref) else WriteArray<T>(Value);
+end;
+
+procedure THproseWriter.WriteArray<T>(const Value: TArray<T>);
+var
+  Count, I: Integer;
+begin
+  FRefList.Add(Integer(Pointer(Value)));
+  Count := Length(Value);
+  FStream.WriteBuffer(HproseTagList, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  for I := 0 to Count - 1 do Serialize(Value[I], TypeInfo(T));
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteArrayWithRef<T>(const Value: TArray<T>);
+var
+  Ref: Integer;
+begin
+  Ref := FRefList.IndexOf(Integer(Pointer(Value)));
+  if Ref > -1 then WriteRef(Ref) else WriteArray<T>(Value);
+end;
+
+procedure THproseWriter.WriteList<T>(const AList: TList<T>);
+var
+  Count, I: Integer;
+  Element: T;
+begin
+  FRefList.Add(ObjToVar(AList));
+  Count := AList.Count;
+  FStream.WriteBuffer(HproseTagList, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  for I := 0 to Count - 1 do begin
+    Element := AList[I];
+    Serialize(Element, TypeInfo(T));
+  end;
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteListWithRef<T>(const AList: TList<T>);
+var
+  Ref: Integer;
+begin
+  Ref := FRefList.IndexOf(ObjToVar(AList));
+  if Ref > -1 then WriteRef(Ref) else WriteList<T>(AList);
+end;
+
+procedure THproseWriter.WriteList<T>(const AList: TQueue<T>);
+var
+  Count, I: Integer;
+  Element: T;
+begin
+  FRefList.Add(ObjToVar(AList));
+  Count := AList.Count;
+  FStream.WriteBuffer(HproseTagList, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  for Element in AList do Serialize(Element, TypeInfo(T));
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteListWithRef<T>(const AList: TQueue<T>);
+var
+  Ref: Integer;
+begin
+  Ref := FRefList.IndexOf(ObjToVar(AList));
+  if Ref > -1 then WriteRef(Ref) else WriteList<T>(AList);
+end;
+
+procedure THproseWriter.WriteList<T>(const AList: TStack<T>);
+var
+  Count, I: Integer;
+  Element: T;
+begin
+  FRefList.Add(ObjToVar(AList));
+  Count := AList.Count;
+  FStream.WriteBuffer(HproseTagList, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  for Element in AList do Serialize(Element, TypeInfo(T));
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteListWithRef<T>(const AList: TStack<T>);
+var
+  Ref: Integer;
+begin
+  Ref := FRefList.IndexOf(ObjToVar(AList));
+  if Ref > -1 then WriteRef(Ref) else WriteList<T>(AList);
+end;
+
+procedure THproseWriter.WriteMap<TKey, TValue>(const AMap: TDictionary<TKey, TValue>);
+var
+  Count, I: Integer;
+  Pair: TPair<TKey, TValue>;
+begin
+  FRefList.Add(ObjToVar(AMap));
+  Count := AMap.Count;
+  FStream.WriteBuffer(HproseTagMap, 1);
+  if Count > 0 then WriteRawByteString(RawByteString(IntToStr(Count)));
+  FStream.WriteBuffer(HproseTagOpenbrace, 1);
+  for Pair in AMap do begin
+    Serialize(Pair.Key, TypeInfo(TKey));
+    Serialize(Pair.Value, TypeInfo(TKey));
+  end;
+  FStream.WriteBuffer(HproseTagClosebrace, 1);
+end;
+
+procedure THproseWriter.WriteMapWithRef<TKey, TValue>(const AMap: TDictionary<TKey, TValue>);
+var
+  Ref: Integer;
+begin
+  Ref := FRefList.IndexOf(ObjToVar(AMap));
+  if Ref > -1 then WriteRef(Ref) else WriteMap<TKey, TValue>(AMap);
+end;
+
+{$ELSE}
+
+procedure THproseWriter.Serialize(const Value: TObject);
+begin
+  Serialize(ObjToVar(Value));
+end;
+
+{$ENDIF}
 
 { HproseSerialize }
 
@@ -3365,12 +5197,6 @@ end;
 { THproseFormatter }
 
 class function THproseFormatter.Serialize(
-  const Value: TObject): RawByteString;
-begin
-  Result := HproseSerialize(Value);
-end;
-
-class function THproseFormatter.Serialize(
   const Value: Variant): RawByteString;
 begin
   Result := HproseSerialize(Value);
@@ -3383,6 +5209,7 @@ begin
 end;
 
 {$IFDEF Supports_Generics}
+
 class function THproseFormatter.Serialize<T>(const Value: T): RawByteString;
 var
   Writer: THproseWriter;
@@ -3403,6 +5230,14 @@ begin
     Stream.Free;
   end;
 end;
+
+{$ELSE}
+
+class function THproseFormatter.Serialize(const Value: TObject): RawByteString;
+begin
+  Result := HproseSerialize(Value);
+end;
+
 {$ENDIF}
 
 class function THproseFormatter.Unserialize(const Data: RawByteString;
@@ -3421,11 +5256,7 @@ begin
   try
     CacheValues := PropertiesCache.Values;
     for I := 0 to CacheValues.Count - 1 do begin
-{$IFDEF CPU64}
-      CachePointer := PSerializeCache(Int64(CacheValues[I]));
-{$ELSE}
-      CachePointer := PSerializeCache(Integer(CacheValues[I]));
-{$ENDIF}
+      CachePointer := PSerializeCache(NativeInt(CacheValues[I]));
       Dispose(CachePointer);
     end;
   finally
@@ -3435,7 +5266,6 @@ end;
 
 initialization
   PropertiesCache := THashMap.Create;
-
 finalization
   FreePropertiesCache;
 
