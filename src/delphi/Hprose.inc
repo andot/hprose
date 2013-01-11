@@ -50,6 +50,15 @@
   {$define DELPHI2012_UP}
 {$endif}
 
+{$ifdef VER240}
+  {$define DELPHI2013}
+  {$define DELPHI2013_UP}
+{$endif}
+
+{$ifdef DELPHI2013_UP}
+  {$define DELPHI2012_UP}
+{$endif}
+
 {$ifdef DELPHI2012_UP}
   {$define DELPHI2011_UP}
 {$endif}
@@ -102,6 +111,11 @@
 {$ifdef DELPHI2009_UP}
   {$define Supports_Unicode}
   {$define Supports_Generics}
+  {$define Supports_Anonymous_Method}
+{$endif}
+
+{$ifdef DELPHI2010_UP}
+  {$define Supports_Rtti}
 {$endif}
 
 // Free Pascal

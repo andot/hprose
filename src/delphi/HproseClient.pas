@@ -15,7 +15,7 @@
  *                                                        *
  * hprose client unit for delphi.                         *
  *                                                        *
- * LastModified: Nov 27, 2012                             *
+ * LastModified: Jan 11, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -29,7 +29,13 @@ interface
 uses HproseCommon, Classes, SysUtils;
 
 type
-
+{$IFDEF Supports_Anonymous_Method}
+  THproseCallback1 = reference to procedure(Result: Variant);
+  THproseCallback2 = reference to procedure(Result: Variant;
+    const Args: TVariants);
+  THproseErrorEvent = reference to procedure(const Name:string;
+                                const Error: Exception);
+{$ELSE}
   THproseCallback1 = procedure(Result: Variant) of object;
   THproseCallback2 = procedure(Result: Variant;
     const Args: TVariants) of object;
@@ -37,6 +43,7 @@ type
   THproseErrorEvent = procedure(const Name:string;
                                 const Error: Exception) of object;
 
+{$ENDIF}
   THproseClient = class(TComponent)
   private
     FErrorEvent: THproseErrorEvent;
