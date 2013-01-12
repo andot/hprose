@@ -15,7 +15,7 @@
  *                                                        *
  * hprose common unit for delphi.                         *
  *                                                        *
- * LastModified: Jan 11, 2013                             *
+ * LastModified: Jan 12, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -995,8 +995,8 @@ begin
 {$else}
     with PObjectFromInterfaceStub(PPointer(PPointer(Intf)^)^)^ do
     case Stub of
-      $04244483: result := Pointer(Integer(Intf) + ShortJmp);
-      $04244481: result := Pointer(Integer(Intf) + LongJmp);
+      $04244483: result := Pointer(NativeInt(Intf) + ShortJmp);
+      $04244481: result := Pointer(NativeInt(Intf) + LongJmp);
       else       result := nil;
     end;
 {$endif}
