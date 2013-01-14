@@ -103,9 +103,10 @@ function HproseService() {
     var m_filter = new HproseFilter();
 
     EventEmitter.call(this);
+
+    // private methods
     
-    // protected methods
-    this._sendError = function(writer, e, response) {
+    this.__sendError = function(writer, e, response) {
         this.emit('sendError', e);
         writer.stream.clear();
         writer.reset();
@@ -115,7 +116,7 @@ function HproseService() {
         responseEnd(writer, response, m_filter);
     }
 
-    this._doInvoke = function(reader, writer, request, response) {
+    this.__doInvoke = function(reader, writer, request, response) {
         var func, callback, async = false;
         do {
             reader.reset();
@@ -169,13 +170,19 @@ function HproseService() {
         }
     }
     
-    this._doFunctionList = function(response) {
-        var writer = new HproseWriter(new HproseBufferOutputStream());
+    this.__doFunctionList = function(writer, response) {
         var functions = arrayValues(m_funcNames);
         writer.stream.write(HproseTags.TagFunctions);
         writer.writeList(functions, false);
         writer.stream.write(HproseTags.TagEnd);
         responseEnd(writer, response, m_filter);
+    }
+
+    // protected methods
+
+    this._doFunctionList = function(response) {
+        var writer = new HproseWriter(new HproseBufferOutputStream());
+        this.__doFunctionList(writer, response);
     }
 
     this._handle = function(data, request, response) {
@@ -185,12 +192,12 @@ function HproseService() {
             var exceptTags = [HproseTags.TagCall, HproseTags.TagEnd];
             var tag = reader.checkTags(exceptTags);
             switch (tag) {
-                case HproseTags.TagCall: return this._doInvoke(reader, writer, request, response);
-                case HproseTags.TagEnd: return this._doFunctionList(response);
+                case HproseTags.TagCall: return this.__doInvoke(reader, writer, request, response);
+                case HproseTags.TagEnd: return this.__doFunctionList(writer, response);
             }
         }
         catch (e) {
-            this._sendError(writer, e, response);
+            this.__sendError(writer, e, response);
         }
     }
     
