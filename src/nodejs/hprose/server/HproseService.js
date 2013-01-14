@@ -14,7 +14,7 @@
  *                                                        *
  * HproseService for Node.js.                             *
  *                                                        *
- * LastModified: Nov 26, 2012                             *
+ * LastModified: Jan 14, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -186,7 +186,7 @@ function HproseService() {
             var tag = reader.checkTags(exceptTags);
             switch (tag) {
                 case HproseTags.TagCall: return this._doInvoke(reader, writer, request, response);
-                case HproseTags.TagEnd: return this._doFunctionList(writer, response);
+                case HproseTags.TagEnd: return this._doFunctionList(response);
             }
         }
         catch (e) {

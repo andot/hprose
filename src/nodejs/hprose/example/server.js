@@ -4,6 +4,10 @@ function hello(name) {
     return "Hello " + name + "!";
 }
 
+function hello2(name) {
+    return "Hello " + name + "!";
+}
+
 function asyncHello(name, callback) {
     callback("Hello " + name + "!");
 }
@@ -11,7 +15,8 @@ function asyncHello(name, callback) {
 var HproseHttpServer = hprose.server.HproseHttpServer;
 var server = new HproseHttpServer();
 server.setCrossDomainEnabled(true);
-server.addFunction(hello);
+server.setDebugEnabled(true);
+server.addFunctions([hello, hello2]);
 server.addAsyncFunction(asyncHello);
 server.setCrossDomainXmlFile('./crossdomain.xml');
 server.on('sendError', function(message) {
