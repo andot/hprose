@@ -15,7 +15,7 @@
  *                                                        *
  * hprose common unit for delphi.                         *
  *                                                        *
- * LastModified: Jan 12, 2013                             *
+ * LastModified: Jan 14, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -530,20 +530,19 @@ type
   TArray<T> = array of T;
 {$ENDIF}
 
-{$IFDEF FPC}
-const
-  varObject = 23;  {23 is not used by FreePascal and Delphi, so it's safe.}
-{$ELSE}
-var
-  varObject: TVarType;
-{$ENDIF}
-
 const
 {$IF SizeOf(NativeInt) = 8}
   varNativeInt = varInt64;
 {$ELSE}
   varNativeInt = varInteger;
 {$IFEND}
+
+{$IFDEF FPC}
+  varObject = 23;  {23 is not used by FreePascal and Delphi, so it's safe.}
+{$ELSE}
+var
+  varObject: TVarType;
+{$ENDIF}
 
 {$IFNDEF DELPHI2009_UP}
 function GetTypeName(const TypeInfo: PTypeInfo): string;
@@ -591,6 +590,7 @@ procedure RegisterClass(const AClass: TInterfacedClass; const IID: TGUID; const 
 function GetClassByAlias(const Alias: string): TClass;
 function GetClassAlias(const AClass: TClass): string;
 function GetClassByInterface(const IID: TGUID): TInterfacedClass;
+function HasRegisterWithInterface(const AClass: TInterfacedClass): Boolean;
 function GetInterfaceByClass(const AClass: TInterfacedClass): TGUID;
 
 type
@@ -2717,6 +2717,16 @@ begin
   HproseInterfaceMap.BeginRead;
   try
     Result := TInterfacedClass(GetClassByAlias(HproseInterfaceMap.Key[GuidToString(IID)]));
+  finally
+    HproseInterfaceMap.EndRead;
+  end;
+end;
+
+function HasRegisterWithInterface(const AClass: TInterfacedClass): Boolean;
+begin
+  HproseInterfaceMap.BeginRead;
+  try
+    Result := HproseInterfaceMap.ContainsKey(GetClassAlias(AClass));
   finally
     HproseInterfaceMap.EndRead;
   end;

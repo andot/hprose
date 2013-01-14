@@ -15,7 +15,7 @@
  *                                                        *
  * hprose io unit for delphi.                             *
  *                                                        *
- * LastModified: Jan 12, 2013                             *
+ * LastModified: Jan 14, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -27,7 +27,7 @@ unit HproseIO;
 interface
 
 uses Classes, HproseCommon
-{$IFDEF Supports_Generics}, Generics.Collections {$ENDIF};
+{$IFDEF Supports_Generics}, Generics.Collections {$ENDIF}, TypInfo;
 
 const
   { Hprose Serialize Tags }
@@ -76,71 +76,89 @@ type
     FRefList: IList;
     FClassRefList: IList;
     FAttrRefMap: IMap;
-    function Unserialize(Tag: AnsiChar; VType: TVarType;
-      AClass: TClass): Variant; overload;
+    function UnexpectedTag(Tag: AnsiChar;
+      const ExpectTags: string = ''): EHproseException;
+    function TagToString(Tag: AnsiChar): string;
     function ReadByte: Byte;
-    function ReadInt64(Tag: AnsiChar): Int64;
+    function ReadInt64(Tag: AnsiChar): Int64; overload;
 {$IF Defined(DELPHI2009_UP) or Defined(FPC)}
-    function ReadUInt64(Tag: AnsiChar): UInt64;
+    function ReadUInt64(Tag: AnsiChar): UInt64; overload;
 {$IFEND}
+    function ReadStringAsWideString: WideString;
+    function ReadBooleanArray(Count: Integer): Variant;
     function ReadShortIntArray(Count: Integer): Variant;
+    function ReadByteArray(Count: Integer): Variant;
     function ReadSmallIntArray(Count: Integer): Variant;
     function ReadWordArray(Count: Integer): Variant;
     function ReadIntegerArray(Count: Integer): Variant;
-    function ReadCurrencyArray(Count: Integer): Variant;
     function ReadLongWordArray(Count: Integer): Variant;
-    function ReadInt64Array(Count: Integer): Variant;
-{$IFDEF DELPHI2009_UP}
-    function ReadUInt64Array(Count: Integer): Variant;
-{$ENDIF}
-{$IFDEF FPC}
-    function ReadQWordArray(Count: Integer): Variant;
-{$ENDIF}
     function ReadSingleArray(Count: Integer): Variant;
     function ReadDoubleArray(Count: Integer): Variant;
-    function ReadBooleanArray(Count: Integer): Variant;
-    function ReadWideStringArray(Count: Integer): Variant;
+    function ReadCurrencyArray(Count: Integer): Variant;
     function ReadDateTimeArray(Count: Integer): Variant;
-    function ReadList(AClass: TClass; Count: Integer): Variant; overload;
-    function ReadRef: Variant;
+    function ReadWideStringArray(Count: Integer): Variant;
+    function ReadVariantArray(Count: Integer): Variant; overload;
+    function ReadInterfaceArray(Count: Integer): Variant;
+    function ReadDynArrayWithoutTag(varType: Integer): Variant;
+    function ReadIList(AClass: TClass): IList;
+    function ReadList(AClass: TClass): TAbstractList; overload;
+    function ReadIMap(AClass: TClass): IMap;
+    function ReadMap(AClass: TClass): TAbstractMap; overload;
+    function ReadMapAsInterface(AClass: TClass; const IID: TGUID): IInterface;
+    function ReadMapAsObject(AClass: TClass): TObject;
+    function ReadObjectAsIMap(AClass: TMapClass): IMap;
+    function ReadObjectAsMap(AClass: TMapClass): TAbstractMap;
+    function ReadObjectAsInterface(AClass: TClass; const IID: TGUID): IInterface;
+    function ReadObjectWithoutTag(AClass: TClass): TObject; overload;
     procedure ReadClass;
+    function ReadRef: Variant;
     procedure ReadRaw(const OStream: TStream; Tag: AnsiChar); overload;
     procedure ReadInfinityRaw(const OStream: TStream; Tag: AnsiChar);
     procedure ReadNumberRaw(const OStream: TStream; Tag: AnsiChar);
     procedure ReadDateTimeRaw(const OStream: TStream; Tag: AnsiChar);
     procedure ReadUTF8CharRaw(const OStream: TStream; Tag: AnsiChar);
-    procedure ReadBytesRaw(const OStream: TStream; Tag: AnsiChar);
     procedure ReadStringRaw(const OStream: TStream; Tag: AnsiChar);
+    procedure ReadBytesRaw(const OStream: TStream; Tag: AnsiChar);
     procedure ReadGuidRaw(const OStream: TStream; Tag: AnsiChar);
     procedure ReadComplexRaw(const OStream: TStream; Tag: AnsiChar);
   public
     constructor Create(AStream: TStream);
-    function Unserialize(VType: TVarType = varVariant;
-      AClass: TClass = nil): Variant; overload;
+    function Unserialize: Variant; overload;
+    function Unserialize(TypeInfo: PTypeInfo): Variant; overload;
     procedure CheckTag(expectTag: AnsiChar);
     function CheckTags(const expectTags: RawByteString): AnsiChar;
     function ReadUntil(Tag: AnsiChar): string;
-    function ReadInt(Tag: AnsiChar): Integer;    
-    function ReadInteger(IncludeTag:Boolean = True): Integer;
-    function ReadLong(IncludeTag:Boolean = True): Variant;
-    function ReadDouble(IncludeTag:Boolean = True): Extended;
-    function ReadCurrency(IncludeTag:Boolean = True): Currency;
-    function ReadNull(): Variant;
-    function ReadEmpty(): Variant;
-    function ReadBoolean(): Boolean;
-    function ReadNaN(): Extended;
-    function ReadInfinity(IncludeTag:Boolean = True): Extended;
-    function ReadDate(IncludeTag:Boolean = True): TDateTime;
-    function ReadTime(IncludeTag:Boolean = True): TDateTime;
-    function ReadBytes(IncludeTag:Boolean = True): Variant;
-    function ReadUTF8Char(IncludeTag:Boolean = True): WideChar;
-    function ReadString(IncludeTag:Boolean = True;
-      IncludeRef:Boolean = True): WideString;
-    function ReadGuid(IncludeTag:Boolean = True): AnsiString;
-    function ReadList(ElementType: TVarType; AClass: TClass = nil;
-      IncludeTag:Boolean = True): Variant; overload;
-    function ReadMap(AClass: TClass = nil; IncludeTag:Boolean = True): Variant;
-    function ReadObject(AClass: TClass = nil; IncludeTag:Boolean = True): Variant;
+    function ReadInt(Tag: AnsiChar): Integer;
+    function ReadIntegerWithoutTag: Integer;
+    function ReadLongWithoutTag: string;
+    function ReadInfinityWithoutTag: Extended;
+    function ReadDoubleWithoutTag: Extended;
+    function ReadDateWithoutTag: TDateTime;
+    function ReadTimeWithoutTag: TDateTime;
+    function ReadUTF8CharWithoutTag: WideChar;
+    function ReadStringWithoutTag: WideString;
+    function ReadBytesWithoutTag: Variant;
+    function ReadGuidWithoutTag: string;
+    function ReadListWithoutTag: Variant;
+    function ReadMapWithoutTag: Variant;
+    function ReadObjectWithoutTag: Variant; overload;
+    function ReadInteger: Integer;
+    function ReadInt64: Int64; overload;
+{$IF Defined(DELPHI2009_UP) or Defined(FPC)}
+    function ReadUInt64: UInt64; overload;
+{$IFEND}
+    function ReadExtended: Extended;
+    function ReadCurrency: Currency;
+    function ReadBoolean: Boolean;
+    function ReadDateTime: TDateTime;
+    function ReadUTF8Char: WideChar;
+    function ReadString: WideString;
+    function ReadBytes: Variant;
+    function ReadGuid: string;
+    function ReadDynArray(varType: Integer): Variant;
+    function ReadVariantArray: TVariants; overload;
+    function ReadInterface(AClass: TClass; const IID: TGUID): IInterface;
+    function ReadObject(AClass: TClass): TObject; overload;
     procedure Reset;
     function ReadRaw: TMemoryStream; overload;
     procedure ReadRaw(const OStream: TStream); overload;
@@ -161,13 +179,6 @@ type
     procedure WriteIntegerArray(var P; Count: Integer);
     procedure WriteCurrencyArray(var P; Count: Integer);
     procedure WriteLongWordArray(var P; Count: Integer);
-    procedure WriteInt64Array(var P; Count: Integer);
-{$IFDEF DELPHI2009_UP}
-    procedure WriteUInt64Array(var P; Count: Integer);
-{$ENDIF}
-{$IFDEF FPC}
-    procedure WriteQWordArray(var P; Count: Integer);
-{$ENDIF}
     procedure WriteSingleArray(var P; Count: Integer);
     procedure WriteDoubleArray(var P; Count: Integer);
     procedure WriteBooleanArray(var P; Count: Integer);
@@ -265,20 +276,19 @@ type
 {$ELSE}
     class function Serialize(const Value: TObject): RawByteString; overload;
 {$ENDIF}
-    class function Unserialize(const Data:RawByteString; VType: TVarType = varVariant;
-      AClass: TClass = nil): Variant;
+    class function Unserialize(const Data:RawByteString; TypeInfo: Pointer = nil): Variant;
   end;
 
 function HproseSerialize(const Value: TObject): RawByteString; overload;
 function HproseSerialize(const Value: Variant): RawByteString; overload;
 function HproseSerialize(const Value: array of const): RawByteString; overload;
-function HproseUnserialize(const Data:RawByteString; VType: TVarType = varVariant;
-  AClass: TClass = nil): Variant;
+function HproseUnserialize(const Data:RawByteString; TypeInfo: Pointer = nil): Variant;
 
 implementation
 
-uses DateUtils, Math, RTLConsts, StrUtils, SysConst, SysUtils, TypInfo, Variants;
-
+uses DateUtils, Math, RTLConsts,
+{$IFNDEF FPC}StrUtils, SysConst, {$ENDIF}
+     SysUtils, Variants;
 type
 
   PSmallIntArray = ^TSmallIntArray;
@@ -286,19 +296,6 @@ type
 
   PShortIntArray = ^TShortIntArray;
   TShortIntArray = array[0..MaxInt div Sizeof(ShortInt) - 1] of ShortInt;
-
-  PInt64Array = ^TInt64Array;
-  TInt64Array = array[0..MaxInt div Sizeof(Int64) - 1] of Int64;
-
-{$IFDEF DELPHI2009_UP}
-  PUInt64Array = ^TUInt64Array;
-  TUInt64Array = array[0..MaxInt div Sizeof(UInt64) - 1] of UInt64;
-{$ENDIF}
-
-{$IFDEF FPC}
-  PQWordArray = ^TQWordArray;
-  TQWordArray = array[0..MaxInt div Sizeof(QWord) - 1] of QWord;
-{$ENDIF}
 
   PLongWordArray = ^TLongWordArray;
   TLongWordArray = array[0..MaxInt div Sizeof(LongWord) - 1] of LongWord;
@@ -323,6 +320,9 @@ type
 
   PVariantArray = ^TVariantArray;
   TVariantArray = array[0..MaxInt div Sizeof(Variant) - 1] of Variant;
+
+  PInterfaceArray = ^TInterfaceArray;
+  TInterfaceArray = array[0..MaxInt div Sizeof(Variant) - 1] of IInterface;
 
   SerializeCache = record
     RefCount: Integer;
@@ -840,27 +840,6 @@ end;
 
 { THproseReader }
 
-procedure THproseReader.CheckTag(ExpectTag: AnsiChar);
-var
-  Tag: AnsiChar;
-begin
-  FStream.ReadBuffer(Tag, 1);
-  if Tag <> expectTag then
-    raise EHproseException.Create('Tag "' + ExpectTag + '" expected, but "' +
-                                  string(Tag) + '" found in stream');
-end;
-
-function THproseReader.CheckTags(const ExpectTags: RawByteString): AnsiChar;
-var
-  Tag: AnsiChar;
-begin
-  FStream.ReadBuffer(Tag, 1);
-  if Pos(Tag, ExpectTags) = 0 then
-    raise EHproseException.Create('Tags "' + string(ExpectTags) + '" expected, but "' +
-                                  string(Tag) + '" found in stream');
-  Result := Tag;
-end;
-
 constructor THproseReader.Create(AStream: TStream);
 begin
   FStream := AStream;
@@ -869,71 +848,171 @@ begin
   FAttrRefMap := THashMap.Create(False);
 end;
 
-function THproseReader.ReadBoolean: Boolean;
+function THproseReader.UnexpectedTag(Tag: AnsiChar;
+  const ExpectTags: string): EHproseException;
 begin
-  Result := CheckTags(HproseTagTrue + HproseTagFalse) = HproseTagTrue;
+  if ExpectTags = '' then
+    Result := EHproseException.Create('Unexpected serialize tag "' +
+                                       string(Tag) + '" in stream')
+  else
+    Result := EHproseException.Create('Tag "' + ExpectTags +
+                                       '" expected, but "' + string(Tag) +
+                                       '" found in stream');
 end;
 
+function THproseReader.TagToString(Tag: AnsiChar): string;
+begin
+  case Tag of
+    '0'..'9', htInteger: Result := 'Integer';
+    htLong: Result := 'BigInteger';
+    htDouble: Result := 'Double';
+    htNull: Result := 'Null';
+    htEmpty: Result := 'Empty String';
+    htTrue: Result := 'Boolean True';
+    htFalse: Result := 'Boolean False';
+    htNaN: Result := 'NaN';
+    htInfinity: Result := 'Infinity';
+    htDate: Result := 'DateTime';
+    htTime: Result := 'DateTime';
+    htBytes: Result := 'Binary Data';
+    htUTF8Char: Result := 'Char';
+    htString: Result := 'String';
+    htGuid: Result := 'Guid';
+    htList: Result := 'List';
+    htMap: Result := 'Map';
+    htClass: Result := 'Class';
+    htObject: Result := 'Object';
+    htRef: Result := 'Object Reference';
+    htError: raise EHproseException.Create(ReadString());
+  else
+    raise UnexpectedTag(Tag);
+  end;
+end;
+
+procedure THproseReader.CheckTag(ExpectTag: AnsiChar);
+var
+  Tag: AnsiChar;
+begin
+  FStream.ReadBuffer(Tag, 1);
+  if Tag <> expectTag then raise UnexpectedTag(Tag, string(ExpectTag));
+end;
+
+function THproseReader.CheckTags(const ExpectTags: RawByteString): AnsiChar;
+var
+  Tag: AnsiChar;
+begin
+  FStream.ReadBuffer(Tag, 1);
+  if Pos(Tag, ExpectTags) = 0 then raise UnexpectedTag(Tag, string(ExpectTags));
+  Result := Tag;
+end;
 
 function THproseReader.ReadByte: Byte;
 begin
   FStream.ReadBuffer(Result, 1);
 end;
 
-function THproseReader.ReadBytes(IncludeTag: Boolean): Variant;
+function THproseReader.ReadUntil(Tag: AnsiChar): string;
 var
-  Len: Integer;
-  P: PByteArray;
+  S: TStringBuffer;
+  C: AnsiChar;
 begin
-  if IncludeTag and
-     (CheckTags(HproseTagBytes + HproseTagRef) = HproseTagRef) then begin
-    Result := ReadRef();
-    Exit;
+  S := TStringBuffer.Create();
+  try
+    while (FStream.Read(C, 1) = 1) and (C <> Tag) do S.Write(C, 1);
+    Result := S.ToString;
+  finally
+    S.Free;
   end;
-  Len := ReadInt(HproseTagQuote);
-  Result := VarArrayCreate([0, Len - 1], varByte);
-  P := VarArrayLock(Result);
-  FStream.ReadBuffer(P^[0], Len);
-  VarArrayUnLock(Result);
-  CheckTag(HproseTagQuote);
-{$IFDEF FPC}
-  FRefList.Add(Result);
-{$ELSE}
-  FRefList.Add(VarArrayRef(Result));
-{$ENDIF}
 end;
 
-procedure THproseReader.ReadBytesRaw(const OStream: TStream; Tag: AnsiChar);
+function THproseReader.ReadInt(Tag: AnsiChar): Integer;
 var
-  Len: Integer;
+  S: Integer;
+  I: Integer;
+  C: AnsiChar;
 begin
-  OStream.WriteBuffer(Tag, 1);
-  Len := 0;
-  Tag := '0';
-  repeat
-    Len := Len * 10 + (Ord(Tag) - Ord('0'));
-    FStream.ReadBuffer(Tag, 1);
-    OStream.WriteBuffer(Tag, 1);
-  until (Tag = HproseTagQuote);
-  OStream.CopyFrom(FStream, Len + 1);
+  Result := 0;
+  S := 1;
+  I := FStream.Read(C, 1);
+  if I = 1 then
+    if C = '+' then
+      I := FStream.Read(C, 1)
+    else if C = '-' then begin
+      S := -1;
+      I := FStream.Read(C, 1);
+    end;
+  while (I = 1) and (C <> Tag) do begin
+    Result := Result * 10 + (Ord(C) - Ord('0')) * S;
+    I := FStream.Read(C, 1);
+  end;
 end;
 
-function THproseReader.ReadCurrency(IncludeTag: Boolean): Currency;
+function THproseReader.ReadInt64(Tag: AnsiChar): Int64;
+var
+  S: Int64;
+  I: Integer;
+  C: AnsiChar;
 begin
-  if IncludeTag then
-    CheckTags(HproseTagInteger + HproseTagLong + HproseTagDouble);
-  Result := StrToCurr(ReadUntil(HproseTagSemicolon));
+  Result := 0;
+  S := 1;
+  I := FStream.Read(C, 1);
+  if I = 1 then
+    if C = '+' then
+      I := FStream.Read(C, 1)
+    else if C = '-' then begin
+      S := -1;
+      I := FStream.Read(C, 1);
+    end;
+  while (I = 1) and (C <> Tag) do begin
+    Result := Result * 10 + Int64(Ord(C) - Ord('0')) * S;
+    I := FStream.Read(C, 1);
+  end;
 end;
 
-function THproseReader.ReadDate(IncludeTag: Boolean): TDateTime;
+{$IF Defined(DELPHI2009_UP) or Defined(FPC)}
+function THproseReader.ReadUInt64(Tag: AnsiChar): UInt64;
+var
+  I: Integer;
+  C: AnsiChar;
+begin
+  Result := 0;
+  I := FStream.Read(C, 1);
+  if (I = 1) and (C = '+') then I := FStream.Read(C, 1);
+  while (I = 1) and (C <> Tag) do begin
+    Result := Result * 10 + UInt64(Ord(C) - Ord('0'));
+    I := FStream.Read(C, 1);
+  end;
+end;
+{$IFEND}
+
+
+function THproseReader.ReadIntegerWithoutTag: Integer;
+begin
+  Result := ReadInt(HproseTagSemicolon);
+end;
+
+function THproseReader.ReadLongWithoutTag: string;
+begin
+  Result := ReadUntil(HproseTagSemicolon);
+end;
+
+function THproseReader.ReadInfinityWithoutTag: Extended;
+begin
+  if ReadByte = Ord(HproseTagNeg) then
+    Result := NegInfinity
+  else
+    Result := Infinity;
+end;
+
+function THproseReader.ReadDoubleWithoutTag: Extended;
+begin
+  Result := StrToFloat(ReadUntil(HproseTagSemicolon));
+end;
+
+function THproseReader.ReadDateWithoutTag: TDateTime;
 var
   Tag, Year, Month, Day, Hour, Minute, Second, Millisecond: Integer;
 begin
-  if IncludeTag and
-     (CheckTags(HproseTagDate + HproseTagRef) = HproseTagRef) then begin
-    Result := ReadRef;
-    Exit;
-  end;
   Year := ReadByte - Ord('0');
   Year := Year * 10 + ReadByte - Ord('0');
   Year := Year * 10 + ReadByte - Ord('0');
@@ -974,93 +1053,68 @@ begin
   FRefList.Add(Result);
 end;
 
-function THproseReader.ReadDouble(IncludeTag: Boolean): Extended;
+function THproseReader.ReadTimeWithoutTag: TDateTime;
 var
-  Tag: AnsiChar;
+  Tag, Hour, Minute, Second, Millisecond: Integer;
 begin
-  if IncludeTag then begin
-    Tag := CheckTags(HproseTagInteger +
-                     HproseTagLong +
-                     HproseTagDouble +
-                     HproseTagNaN +
-                     HproseTagInfinity);
-    if Tag = HproseTagNaN then begin
-      Result := NaN;
-      Exit;
-    end;
-    if Tag = HproseTagInfinity then begin
-      Result := ReadInfinity(False);
-      Exit;
+  Hour := ReadByte - Ord('0');
+  Hour := Hour * 10 + ReadByte - Ord('0');
+  Minute := ReadByte - Ord('0');
+  Minute := Minute * 10 + ReadByte - Ord('0');
+  Second := ReadByte - Ord('0');
+  Second := Second * 10 + ReadByte - Ord('0');
+  Millisecond := 0;
+  if ReadByte = Ord(HproseTagPoint) then begin
+    Millisecond := ReadByte - Ord('0');
+    Millisecond := Millisecond * 10 + ReadByte - Ord('0');
+    Millisecond := Millisecond * 10 + ReadByte - Ord('0');
+    Tag := ReadByte;
+    if (Tag >= Ord('0')) and (Tag <= Ord('9')) then begin
+      ReadByte;
+      ReadByte;
+      Tag := ReadByte;
+      if (Tag >= Ord('0')) and (Tag <= Ord('9')) then begin
+        ReadByte;
+        ReadByte;
+        ReadByte;
+      end;
     end;
   end;
-  Result := StrToFloat(ReadUntil(HproseTagSemicolon));
+  Result := EncodeTime(Hour, Minute, Second, Millisecond);
+  FRefList.Add(Result);
 end;
 
-function THproseReader.ReadInfinity(IncludeTag: Boolean): Extended;
+function THproseReader.ReadUTF8CharWithoutTag: WideChar;
+var
+  C, C2, C3: LongWord;
 begin
-  if IncludeTag then CheckTag(HproseTagInfinity);
-  if ReadByte = Ord(HproseTagNeg) then
-    Result := NegInfinity
+  C := ReadByte;
+  case C shr 4 of
+    0..7: { 0xxx xxxx } Result := WideChar(C);
+    12,13: begin
+      { 110x xxxx   10xx xxxx }
+      C2 := ReadByte;
+      Result := WideChar(((C and $1F) shl 6) or
+                          (C2 and $3F));
+    end;
+    14: begin
+      { 1110 xxxx  10xx xxxx  10xx xxxx }
+      C2 := ReadByte;
+      C3 := ReadByte;
+      Result := WideChar(((C and $0F) shl 12) or
+                         ((C2 and $3F) shl 6) or
+                          (C3 and $3F));
+    end;
   else
-    Result := Infinity;
+    raise EHproseException.Create('bad unicode encoding at $' + IntToHex(C, 4));
+  end;
 end;
 
-procedure THproseReader.ReadInfinityRaw(const OStream: TStream; Tag: AnsiChar);
-begin
-  OStream.WriteBuffer(Tag, 1);
-  FStream.ReadBuffer(Tag, 1);
-  OStream.WriteBuffer(Tag, 1);
-end;
-
-function THproseReader.ReadInteger(IncludeTag: Boolean): Integer;
-begin
-  if IncludeTag then CheckTag(HproseTagInteger);
-  Result := ReadInt(HproseTagSemicolon);
-end;
-
-function THproseReader.ReadLong(IncludeTag: Boolean): Variant;
-begin
-  if IncludeTag then CheckTags(HproseTagInteger + HproseTagLong);
-  Result := ReadUntil(HproseTagSemicolon);
-end;
-
-function THproseReader.ReadNaN: Extended;
-begin
-  CheckTag(HproseTagNaN);
-  Result := NaN;
-end;
-
-function THproseReader.ReadNull: Variant;
-begin
-  CheckTag(HproseTagNull);
-  Result := Null;
-end;
-
-procedure THproseReader.ReadNumberRaw(const OStream: TStream; Tag: AnsiChar);
-begin
-  OStream.WriteBuffer(Tag, 1);
-  repeat
-    FStream.ReadBuffer(Tag, 1);
-    OStream.WriteBuffer(Tag, 1);
-  until (Tag = HproseTagSemicolon);
-end;
-
-function THproseReader.ReadEmpty: Variant;
-begin
-  CheckTag(HproseTagEmpty);
-  Result := '';
-end;
-
-function THproseReader.ReadString(IncludeTag, IncludeRef: Boolean): WideString;
+function THproseReader.ReadStringAsWideString: WideString;
 var
   Count, I: Integer;
   C, C2, C3, C4: LongWord;
 begin
-  if IncludeTag and
-    (CheckTags(HproseTagString + HproseTagRef) = HproseTagRef) then begin
-    Result := ReadRef;
-    Exit;
-  end;
   Count := ReadInt(HproseTagQuote);
   SetLength(Result, Count);
   I := 0;
@@ -1107,7 +1161,1134 @@ begin
     end;
   end;
   CheckTag(HproseTagQuote);
-  if IncludeRef then FRefList.Add(Result);
+end;
+
+function THproseReader.ReadStringWithoutTag: WideString;
+begin
+  Result := ReadStringAsWideString;
+  FRefList.Add(Result);
+end;
+
+function THproseReader.ReadBytesWithoutTag: Variant;
+var
+  Len: Integer;
+  P: PByteArray;
+begin
+  Len := ReadInt(HproseTagQuote);
+  Result := VarArrayCreate([0, Len - 1], varByte);
+  P := VarArrayLock(Result);
+  FStream.ReadBuffer(P^[0], Len);
+  VarArrayUnLock(Result);
+  CheckTag(HproseTagQuote);
+  FRefList.Add(VarArrayRef(Result));
+end;
+
+function THproseReader.ReadGuidWithoutTag: string;
+begin
+  SetLength(Result, 38);
+  FStream.ReadBuffer(Result[1], 38);
+  FRefList.Add(Result);
+end;
+
+function THproseReader.ReadBooleanArray(Count: Integer): Variant;
+var
+  P: PWordBoolArray;
+  I, N: Integer;
+begin
+  Result := VarArrayCreate([0, Count - 1], varBoolean);
+  N := FRefList.Add(Null);
+  P := VarArrayLock(Result);
+  for I := 0 to Count - 1 do P^[I] := ReadBoolean;
+  VarArrayUnlock(Result);
+  FRefList[N] := VarArrayRef(Result);
+end;
+
+function THproseReader.ReadShortIntArray(Count: Integer): Variant;
+var
+  P: PShortIntArray;
+  I, N: Integer;
+begin
+  Result := VarArrayCreate([0, Count - 1], varShortInt);
+  N := FRefList.Add(Null);
+  P := VarArrayLock(Result);
+  for I := 0 to Count - 1 do P^[I] := ShortInt(ReadInteger);
+  VarArrayUnlock(Result);
+  FRefList[N] := VarArrayRef(Result);
+end;
+
+function THproseReader.ReadByteArray(Count: Integer): Variant;
+var
+  P: PShortIntArray;
+  I, N: Integer;
+begin
+  Result := VarArrayCreate([0, Count - 1], varByte);
+  N := FRefList.Add(Null);
+  P := VarArrayLock(Result);
+  for I := 0 to Count - 1 do P^[I] := Byte(ReadInteger);
+  VarArrayUnlock(Result);
+  FRefList[N] := VarArrayRef(Result);
+end;
+
+function THproseReader.ReadSmallIntArray(Count: Integer): Variant;
+var
+  P: PSmallIntArray;
+  I, N: Integer;
+begin
+  Result := VarArrayCreate([0, Count - 1], varSmallInt);
+  N := FRefList.Add(Null);
+  P := VarArrayLock(Result);
+  for I := 0 to Count - 1 do P^[I] := SmallInt(ReadInteger);
+  VarArrayUnlock(Result);
+  FRefList[N] := VarArrayRef(Result);
+end;
+
+function THproseReader.ReadWordArray(Count: Integer): Variant;
+var
+  P: PWordArray;
+  I, N: Integer;
+begin
+  Result := VarArrayCreate([0, Count - 1], varWord);
+  N := FRefList.Add(Null);
+  P := VarArrayLock(Result);
+  for I := 0 to Count - 1 do P^[I] := Word(ReadInteger);
+  VarArrayUnlock(Result);
+  FRefList[N] := VarArrayRef(Result);
+end;
+
+function THproseReader.ReadIntegerArray(Count: Integer): Variant;
+var
+  P: PIntegerArray;
+  I, N: Integer;
+begin
+  Result := VarArrayCreate([0, Count - 1], varInteger);
+  N := FRefList.Add(Null);
+  P := VarArrayLock(Result);
+  for I := 0 to Count - 1 do P^[I] := ReadInteger;
+  VarArrayUnlock(Result);
+  FRefList[N] := VarArrayRef(Result);
+end;
+
+function THproseReader.ReadLongWordArray(Count: Integer): Variant;
+var
+  P: PLongWordArray;
+  I, N: Integer;
+begin
+  Result := VarArrayCreate([0, Count - 1], varLongWord);
+  N := FRefList.Add(Null);
+  P := VarArrayLock(Result);
+  for I := 0 to Count - 1 do P^[I] := LongWord(ReadInt64);
+  VarArrayUnlock(Result);
+  FRefList[N] := VarArrayRef(Result);
+end;
+
+function THproseReader.ReadSingleArray(Count: Integer): Variant;
+var
+  P: PSingleArray;
+  I, N: Integer;
+begin
+  Result := VarArrayCreate([0, Count - 1], varSingle);
+  N := FRefList.Add(Null);
+  P := VarArrayLock(Result);
+  for I := 0 to Count - 1 do P^[I] := ReadExtended;
+  VarArrayUnlock(Result);
+  FRefList[N] := VarArrayRef(Result);
+end;
+
+function THproseReader.ReadDoubleArray(Count: Integer): Variant;
+var
+  P: PDoubleArray;
+  I, N: Integer;
+begin
+  Result := VarArrayCreate([0, Count - 1], varDouble);
+  N := FRefList.Add(Null);
+  P := VarArrayLock(Result);
+  for I := 0 to Count - 1 do P^[I] := ReadExtended;
+  VarArrayUnlock(Result);
+  FRefList[N] := VarArrayRef(Result);
+end;
+
+function THproseReader.ReadCurrencyArray(Count: Integer): Variant;
+var
+  P: PCurrencyArray;
+  I, N: Integer;
+begin
+  Result := VarArrayCreate([0, Count - 1], varCurrency);
+  N := FRefList.Add(Null);
+  P := VarArrayLock(Result);
+  for I := 0 to Count - 1 do P^[I] := ReadCurrency;
+  VarArrayUnlock(Result);
+  FRefList[N] := VarArrayRef(Result);
+end;
+
+function THproseReader.ReadDateTimeArray(Count: Integer): Variant;
+var
+  P: PDateTimeArray;
+  I, N: Integer;
+begin
+  Result := VarArrayCreate([0, Count - 1], varDate);
+  N := FRefList.Add(Null);
+  P := VarArrayLock(Result);
+  for I := 0 to Count - 1 do P^[I] := ReadDateTime;
+  VarArrayUnlock(Result);
+  FRefList[N] := VarArrayRef(Result);
+end;
+
+function THproseReader.ReadWideStringArray(Count: Integer): Variant;
+var
+  P: PWideStringArray;
+  I, N: Integer;
+begin
+  Result := VarArrayCreate([0, Count - 1], varOleStr);
+  N := FRefList.Add(Null);
+  P := VarArrayLock(Result);
+  for I := 0 to Count - 1 do P^[I] := ReadString;
+  VarArrayUnlock(Result);
+  FRefList[N] := VarArrayRef(Result);
+end;
+
+function THproseReader.ReadVariantArray(Count: Integer): Variant;
+var
+  P: PVariantArray;
+  I, N: Integer;
+begin
+  Result := VarArrayCreate([0, Count - 1], varVariant);
+  N := FRefList.Add(Null);
+  P := VarArrayLock(Result);
+  for I := 0 to Count - 1 do P^[I] := Unserialize;
+  VarArrayUnlock(Result);
+  FRefList[N] := VarArrayRef(Result);
+end;
+
+function THproseReader.ReadInterfaceArray(Count: Integer): Variant;
+var
+  P: PInterfaceArray;
+  I, N: Integer;
+begin
+  Result := VarArrayCreate([0, Count - 1], varVariant);
+  N := FRefList.Add(Null);
+  P := VarArrayLock(Result);
+  for I := 0 to Count - 1 do P^[I] := Unserialize;
+  VarArrayUnlock(Result);
+  FRefList[N] := VarArrayRef(Result);
+end;
+
+function THproseReader.ReadDynArrayWithoutTag(varType: Integer): Variant;
+var
+  Count: Integer;
+begin
+  Count := ReadInt(HproseTagOpenbrace);
+  case varType of
+    varBoolean:  Result := ReadBooleanArray(Count);
+    varShortInt: Result := ReadShortIntArray(Count);
+    varByte:     Result := ReadByteArray(Count);
+    varSmallint: Result := ReadSmallintArray(Count);
+    varWord:     Result := ReadWordArray(Count);
+    varInteger:  Result := ReadIntegerArray(Count);
+    varLongWord: Result := ReadLongWordArray(Count);
+    varSingle:   Result := ReadSingleArray(Count);
+    varDouble:   Result := ReadDoubleArray(Count);
+    varCurrency: Result := ReadCurrencyArray(Count);
+    varOleStr:   Result := ReadWideStringArray(Count);
+    varDate:     Result := ReadDateTimeArray(Count);
+    varVariant:  Result := ReadVariantArray(Count);
+    varUnknown:  Result := ReadInterfaceArray(Count);
+  end;
+  CheckTag(HproseTagClosebrace);
+end;
+
+function THproseReader.ReadIList(AClass: TClass): IList;
+var
+  Count, I: Integer;
+begin
+  Count := ReadInt(HproseTagOpenbrace);
+  Result := TListClass(AClass).Create(Count) as IList;
+  FRefList.Add(Result);
+  for I := 0 to Count - 1 do Result[I] := Unserialize;
+  CheckTag(HproseTagClosebrace);
+end;
+
+function THproseReader.ReadList(AClass: TClass): TAbstractList;
+var
+  Count, I: Integer;
+begin
+  Count := ReadInt(HproseTagOpenbrace);
+  Result := TListClass(AClass).Create(Count);
+  FRefList.Add(ObjToVar(Result));
+  for I := 0 to Count - 1 do Result[I] := Unserialize;
+  CheckTag(HproseTagClosebrace);
+end;
+
+function THproseReader.ReadListWithoutTag: Variant;
+begin
+  Result := ReadIList(TArrayList);
+end;
+
+function THproseReader.ReadIMap(AClass: TClass): IMap;
+var
+  Count, I: Integer;
+  Key: Variant;
+begin
+  Count := ReadInt(HproseTagOpenbrace);
+  Result := TMapClass(AClass).Create(Count) as IMap;
+  FRefList.Add(Result);
+  for I := 0 to Count - 1 do begin
+    Key := Unserialize;
+    Result[Key] := Unserialize;
+  end;
+  CheckTag(HproseTagClosebrace);
+end;
+
+function THproseReader.ReadMap(AClass: TClass): TAbstractMap;
+var
+  Count, I: Integer;
+  Key: Variant;
+begin
+  Count := ReadInt(HproseTagOpenbrace);
+  Result := TMapClass(AClass).Create(Count);
+  FRefList.Add(ObjToVar(Result));
+  for I := 0 to Count - 1 do begin
+    Key := Unserialize;
+    Result[Key] := Unserialize;
+  end;
+  CheckTag(HproseTagClosebrace);
+end;
+
+function THproseReader.ReadMapAsInterface(AClass: TClass; const IID: TGUID): IInterface;
+var
+  Count, I: Integer;
+  Instance: TObject;
+  PropInfo: PPropInfo;
+begin
+  Count := ReadInt(HproseTagOpenbrace);
+  Instance := AClass.Create;
+  Supports(Instance, IID, Result);
+  FRefList.Add(Result);
+  for I := 0 to Count - 1 do begin
+    PropInfo := GetPropInfo(AClass, ReadString);
+    if (PropInfo <> nil) then
+      SetPropValue(Instance, PropInfo,
+                   Unserialize(PropInfo^.PropType{$IFNDEF FPC}^{$ENDIF}))
+    else Unserialize;
+  end;
+  CheckTag(HproseTagClosebrace);
+end;
+
+function THproseReader.ReadMapAsObject(AClass: TClass): TObject;
+var
+  Count, I: Integer;
+  PropInfo: PPropInfo;
+begin
+  Count := ReadInt(HproseTagOpenbrace);
+  Result := AClass.Create;
+  FRefList.Add(ObjToVar(Result));
+  for I := 0 to Count - 1 do begin
+    PropInfo := GetPropInfo(AClass, ReadString);
+    if (PropInfo <> nil) then
+      SetPropValue(Result, PropInfo,
+                   Unserialize(PropInfo^.PropType{$IFNDEF FPC}^{$ENDIF}))
+    else Unserialize;
+  end;
+  CheckTag(HproseTagClosebrace);
+end;
+
+function THproseReader.ReadMapWithoutTag: Variant;
+begin
+  Result := ReadIMap(THashMap);
+end;
+
+procedure THproseReader.ReadClass;
+var
+  ClassName: string;
+  I, Count: Integer;
+  AttrNames: IList;
+  AClass: TClass;
+  Key: Variant;
+begin
+  ClassName := ReadStringAsWideString;
+  Count := ReadInt(HproseTagOpenbrace);
+  AttrNames := TArrayList.Create(Count, False) as IList;
+  for I := 0 to Count - 1 do AttrNames[I] := ReadString;
+  CheckTag(HproseTagClosebrace);
+  AClass := GetClassByAlias(ClassName);
+  if AClass = nil then begin
+    Key := IInterface(TInterfacedObject.Create);
+    FClassRefList.Add(Key);
+    FAttrRefMap[Key] := AttrNames;
+  end
+  else begin
+    Key := NativeInt(AClass);
+    FClassRefList.Add(Key);
+    FAttrRefMap[Key] := AttrNames;
+  end;
+end;
+
+function THproseReader.ReadObjectAsIMap(AClass: TMapClass): IMap;
+var
+  C: Variant;
+  AttrNames: IList;
+  I, Count: Integer;
+begin
+  C := FClassRefList[ReadInt(HproseTagOpenbrace)];
+  AttrNames := VarToList(FAttrRefMap[C]);
+  Count := AttrNames.Count;
+  Result := AClass.Create(Count) as IMap;
+  FRefList.Add(Result);
+  for I := 0 to Count - 1 do Result[AttrNames[I]] := Unserialize;
+  CheckTag(HproseTagClosebrace);
+end;
+
+function THproseReader.ReadObjectAsMap(AClass: TMapClass): TAbstractMap;
+var
+  C: Variant;
+  AttrNames: IList;
+  I, Count: Integer;
+begin
+  C := FClassRefList[ReadInt(HproseTagOpenbrace)];
+  AttrNames := VarToList(FAttrRefMap[C]);
+  Count := AttrNames.Count;
+  Result := AClass.Create(Count);
+  FRefList.Add(ObjToVar(Result));
+  for I := 0 to Count - 1 do Result[AttrNames[I]] := Unserialize;
+  CheckTag(HproseTagClosebrace);
+end;
+
+function THproseReader.ReadObjectAsInterface(AClass: TClass; const IID: TGUID): IInterface;
+var
+  C: Variant;
+  RegisteredClass: TClass;
+  AttrNames: IList;
+  I, Count: Integer;
+  Instance: TObject;
+  PropInfo: PPropInfo;
+begin
+  C := FClassRefList[ReadInt(HproseTagOpenbrace)];
+  if VarType(C) = varNativeInt then begin
+    RegisteredClass := TClass(NativeInt(C));
+    if (AClass = nil) or
+       RegisteredClass.InheritsFrom(AClass) then AClass := RegisteredClass;
+  end;
+  AttrNames := VarToList(FAttrRefMap[C]);
+  Count := AttrNames.Count;
+  Instance := AClass.Create;
+  Supports(Instance, IID, Result);
+  FRefList.Add(Result);
+  for I := 0 to Count - 1 do begin
+    PropInfo := GetPropInfo(Instance, AttrNames[I]);
+    if (PropInfo <> nil) then
+      SetPropValue(Instance, PropInfo,
+                   Unserialize(PropInfo^.PropType{$IFNDEF FPC}^{$ENDIF}))
+    else Unserialize;
+  end;
+  CheckTag(HproseTagClosebrace);
+end;
+
+function THproseReader.ReadObjectWithoutTag(AClass: TClass): TObject;
+var
+  C: Variant;
+  RegisteredClass: TClass;
+  AttrNames: IList;
+  I, Count: Integer;
+  PropInfo: PPropInfo;
+begin
+  C := FClassRefList[ReadInt(HproseTagOpenbrace)];
+  if VarType(C) = varNativeInt then begin
+    RegisteredClass := TClass(NativeInt(C));
+    if (AClass = nil) or
+       RegisteredClass.InheritsFrom(AClass) then AClass := RegisteredClass;
+  end;
+  AttrNames := VarToList(FAttrRefMap[C]);
+  Count := AttrNames.Count;
+  Result := AClass.Create;
+  FRefList.Add(ObjToVar(Result));
+  for I := 0 to Count - 1 do begin
+    PropInfo := GetPropInfo(Result, AttrNames[I]);
+    if (PropInfo <> nil) then
+      SetPropValue(Result, PropInfo,
+                   Unserialize(PropInfo^.PropType{$IFNDEF FPC}^{$ENDIF}))
+    else Unserialize;
+  end;
+  CheckTag(HproseTagClosebrace);
+end;
+
+function THproseReader.ReadObjectWithoutTag: Variant;
+var
+  C: Variant;
+  AttrNames: IList;
+  I, Count: Integer;
+  AClass: TClass;
+  AMap: IMap;
+  Intf: IInterface;
+  Instance: TObject;
+  Map: TAbstractMap;
+  PropInfo: PPropInfo;
+begin
+  C := FClassRefList[ReadInt(HproseTagOpenbrace)];
+  AttrNames := VarToList(FAttrRefMap[C]);
+  Count := AttrNames.Count;
+  if VarType(C) = varNativeInt then begin
+    AClass := TClass(NativeInt(C));
+    if AClass.InheritsFrom(TInterfacedObject) and
+       HasRegisterWithInterface(TInterfacedClass(AClass)) then begin
+      Instance := AClass.Create;
+      Supports(Instance, GetInterfaceByClass(TInterfacedClass(AClass)), Intf);
+      Result := Intf;
+    end
+    else begin
+      Instance := AClass.Create;
+      Result := ObjToVar(Instance);
+    end;
+    FRefList.Add(Result);
+    if Instance is TAbstractMap then begin
+      Map := TAbstractMap(Instance);
+      for I := 0 to Count - 1 do Map[AttrNames[I]] := Unserialize;
+    end
+    else for I := 0 to Count - 1 do begin
+      PropInfo := GetPropInfo(Instance, AttrNames[I]);
+      if (PropInfo <> nil) then
+        SetPropValue(Instance, PropInfo,
+                     Unserialize(PropInfo^.PropType{$IFNDEF FPC}^{$ENDIF}))
+      else Unserialize;
+    end;
+  end
+  else begin
+    AMap := TCaseInsensitiveHashMap.Create(Count) as IMap;
+    Result := AMap;
+    FRefList.Add(Result);
+    for I := 0 to Count - 1 do AMap[AttrNames[I]] := Unserialize;
+  end;
+  CheckTag(HproseTagClosebrace);
+end;
+
+function THproseReader.ReadRef: Variant;
+begin
+  Result := FRefList[ReadInt(HproseTagSemicolon)];
+end;
+
+function CastError(const SrcType, DestType: string): EHproseException;
+begin
+  Result := EHproseException.Create(SrcType + ' can''t change to ' + DestType);
+end;
+
+function THproseReader.ReadInteger: Integer;
+var
+  Tag: AnsiChar;
+begin
+  FStream.ReadBuffer(Tag, 1);
+  case Tag of
+    '0': Result := 0;
+    '1': Result := 1;
+    '2': Result := 2;
+    '3': Result := 3;
+    '4': Result := 4;
+    '5': Result := 5;
+    '6': Result := 6;
+    '7': Result := 7;
+    '8': Result := 8;
+    '9': Result := 9;
+    htInteger,
+    htLong: Result := ReadIntegerWithoutTag;
+    htDouble: Result := Integer(Trunc(ReadDoubleWithoutTag));
+    htNull,
+    htEmpty,
+    htFalse: Result := 0;
+    htTrue: Result := 1;
+    htUTF8Char: Result := StrToInt(string(ReadUTF8CharWithoutTag));
+    htString: Result := StrToInt(ReadStringWithoutTag);
+  else
+    raise CastError(TagToString(Tag), 'Integer');
+  end;
+end;
+
+function THproseReader.ReadInt64: Int64;
+var
+  Tag: AnsiChar;
+begin
+  FStream.ReadBuffer(Tag, 1);
+  case Tag of
+    '0': Result := 0;
+    '1': Result := 1;
+    '2': Result := 2;
+    '3': Result := 3;
+    '4': Result := 4;
+    '5': Result := 5;
+    '6': Result := 6;
+    '7': Result := 7;
+    '8': Result := 8;
+    '9': Result := 9;
+    htInteger,
+    htLong: Result := ReadInt64(HproseTagSemicolon);
+    htDouble: Result := Trunc(ReadDoubleWithoutTag);
+    htNull,
+    htEmpty,
+    htFalse: Result := 0;
+    htTrue: Result := 1;
+    htUTF8Char: Result := StrToInt64(string(ReadUTF8CharWithoutTag));
+    htString: Result := StrToInt64(ReadStringWithoutTag);
+  else
+    raise CastError(TagToString(Tag), 'Int64');
+  end;
+end;
+
+{$IF Defined(DELPHI2009_UP) or Defined(FPC)}
+function THproseReader.ReadUInt64: UInt64;
+var
+  Tag: AnsiChar;
+begin
+  FStream.ReadBuffer(Tag, 1);
+  case Tag of
+    '0': Result := 0;
+    '1': Result := 1;
+    '2': Result := 2;
+    '3': Result := 3;
+    '4': Result := 4;
+    '5': Result := 5;
+    '6': Result := 6;
+    '7': Result := 7;
+    '8': Result := 8;
+    '9': Result := 9;
+    htInteger,
+    htLong: Result := ReadUInt64(HproseTagSemicolon);
+    htDouble: Result := Trunc(ReadDoubleWithoutTag);
+    htNull,
+    htEmpty,
+    htFalse: Result := 0;
+    htTrue: Result := 1;
+{$IFDEF FPC}
+    htUTF8Char: Result := StrToQWord(string(ReadUTF8CharWithoutTag));
+    htString: Result := StrToQWord(ReadStringWithoutTag);
+{$ELSE}
+    htUTF8Char: Result := StrToInt64(string(ReadUTF8CharWithoutTag));
+    htString: Result := StrToInt64(ReadStringWithoutTag);
+{$ENDIF}
+  else
+    raise CastError(TagToString(Tag), 'UInt64');
+  end;
+end;
+{$IFEND}
+
+function THproseReader.ReadExtended: Extended;
+var
+  Tag: AnsiChar;
+begin
+  FStream.ReadBuffer(Tag, 1);
+  case Tag of
+    '0': Result := 0;
+    '1': Result := 1;
+    '2': Result := 2;
+    '3': Result := 3;
+    '4': Result := 4;
+    '5': Result := 5;
+    '6': Result := 6;
+    '7': Result := 7;
+    '8': Result := 8;
+    '9': Result := 9;
+    htInteger,
+    htLong,
+    htDouble: Result := ReadDoubleWithoutTag;
+    htNull,
+    htEmpty,
+    htFalse: Result := 0;
+    htTrue: Result := 1;
+    htNaN: Result := NaN;
+    htInfinity: Result := ReadInfinityWithoutTag;
+    htUTF8Char: Result := StrToFloat(string(ReadUTF8CharWithoutTag));
+    htString: Result := StrToFloat(ReadStringWithoutTag);
+  else
+    raise CastError(TagToString(Tag), 'Extended');
+  end;
+end;
+
+function THproseReader.ReadCurrency: Currency;
+var
+  Tag: AnsiChar;
+begin
+  FStream.ReadBuffer(Tag, 1);
+  case Tag of
+    '0': Result := 0;
+    '1': Result := 1;
+    '2': Result := 2;
+    '3': Result := 3;
+    '4': Result := 4;
+    '5': Result := 5;
+    '6': Result := 6;
+    '7': Result := 7;
+    '8': Result := 8;
+    '9': Result := 9;
+    htInteger,
+    htLong,
+    htDouble: Result := StrToCurr(ReadUntil(HproseTagSemicolon));
+    htNull,
+    htEmpty,
+    htFalse: Result := 0;
+    htTrue: Result := 1;
+    htUTF8Char: Result := StrToCurr(string(ReadUTF8CharWithoutTag));
+    htString: Result := StrToCurr(ReadStringWithoutTag);
+  else
+    raise CastError(TagToString(Tag), 'Currency');
+  end;
+end;
+
+function THproseReader.ReadBoolean: Boolean;
+var
+  Tag: AnsiChar;
+begin
+  FStream.ReadBuffer(Tag, 1);
+  case Tag of
+    '0': Result := False;
+    '1'..'9': Result := True;
+    htInteger,
+    htLong,
+    htDouble: Result := ReadDoubleWithoutTag <> 0;
+    htNull,
+    htEmpty,
+    htFalse: Result := False;
+    htTrue: Result := True;
+    htUTF8Char: Result := StrToBool(string(ReadUTF8CharWithoutTag));
+    htString: Result := StrToBool(ReadStringWithoutTag);
+  else
+    raise CastError(TagToString(Tag), 'Boolean');
+  end;
+end;
+
+function THproseReader.ReadDateTime: TDateTime;
+var
+  Tag: AnsiChar;
+begin
+  FStream.ReadBuffer(Tag, 1);
+  case Tag of
+    '0'..'9': Result := TimeStampToDateTime(MSecsToTimeStamp(Ord(Tag) - Ord('0')));
+    htInteger: Result := TimeStampToDateTime(MSecsToTimeStamp(ReadIntegerWithoutTag));
+    htLong: Result := TimeStampToDateTime(MSecsToTimeStamp(ReadInt64(HproseTagSemicolon)));
+    htDouble: Result := TimeStampToDateTime(MSecsToTimeStamp(Trunc(ReadDoubleWithoutTag)));
+    htDate: Result := ReadDateWithoutTag;
+    htTime: Result := ReadTimeWithoutTag;
+    htString: Result := StrToDateTime(ReadStringWithoutTag);
+    htRef: Result := ReadRef;
+  else
+    raise CastError(TagToString(Tag), 'TDateTime');
+  end;
+end;
+
+function THproseReader.ReadUTF8Char: WideChar;
+var
+  Tag: AnsiChar;
+begin
+  FStream.ReadBuffer(Tag, 1);
+  case Tag of
+    '0'..'9': Result := WideChar(Tag);
+    htInteger,
+    htLong: Result := WideChar(ReadIntegerWithoutTag);
+    htDouble: Result := WideChar(Trunc(ReadDoubleWithoutTag));
+    htNull: Result := #0;
+    htUTF8Char: Result := ReadUTF8CharWithoutTag;
+    htString: Result := ReadStringWithoutTag[1];
+  else
+    raise CastError(TagToString(Tag), 'WideChar');
+  end;
+end;
+
+function THproseReader.ReadString: WideString;
+var
+  Tag: AnsiChar;
+begin
+  FStream.ReadBuffer(Tag, 1);
+  case Tag of
+    '0'..'9': Result := WideString(Tag);
+    htInteger,
+    htLong,
+    htDouble: Result := ReadUntil(HproseTagSemicolon);
+    htNull,
+    htEmpty: Result := '';
+    htFalse: Result := 'False';
+    htTrue: Result := 'True';
+    htNaN: Result := FloatToStr(NaN);
+    htInfinity: Result := FloatToStr(ReadInfinityWithoutTag);
+    htDate: Result := DateTimeToStr(ReadDateWithoutTag);
+    htTime: Result := DateTimeToStr(ReadTimeWithoutTag);
+    htUTF8Char: Result := WideString(ReadUTF8CharWithoutTag);
+    htString: Result := ReadStringWithoutTag;
+    htGuid: Result := WideString(ReadGuidWithoutTag);
+    htRef: Result := ReadRef;
+  else
+    raise CastError(TagToString(Tag), 'String');
+  end;
+end;
+
+function THproseReader.ReadBytes: Variant;
+var
+  Tag: AnsiChar;
+begin
+  FStream.ReadBuffer(Tag, 1);
+  case Tag of
+    htNull,
+    htEmpty: Result := Null;
+    htBytes: Result := ReadBytesWithoutTag;
+    htList: Result := ReadDynArrayWithoutTag(varByte);
+    htRef: Result := ReadRef;
+  else
+    raise CastError(TagToString(Tag), 'Byte');
+  end;
+end;
+
+function THproseReader.ReadGuid: string;
+var
+  Tag: AnsiChar;
+begin
+  FStream.ReadBuffer(Tag, 1);
+  case Tag of
+    htNull,
+    htEmpty: Result := '';
+    htString: Result := GuidToString(StringToGuid(ReadStringWithoutTag));
+    htGuid: Result := ReadGuidWithoutTag;
+    htRef: Result := ReadRef;
+  else
+    raise CastError(TagToString(Tag), 'TGUID');
+  end;
+end;
+
+function THproseReader.ReadDynArray(varType: Integer): Variant;
+var
+  Tag: AnsiChar;
+begin
+  FStream.ReadBuffer(Tag, 1);
+  case Tag of
+    htNull,
+    htEmpty: Result := Null;
+    htList: Result := ReadDynArrayWithoutTag(varType);
+    htRef: Result := ReadRef;
+  else
+    raise CastError(TagToString(Tag), 'DynArray');
+  end;
+end;
+
+function THproseReader.ReadVariantArray: TVariants;
+var
+  Tag: AnsiChar;
+  I, Count: Integer;
+begin
+  FStream.ReadBuffer(Tag, 1);
+  case Tag of
+    htNull,
+    htEmpty: Result := Null;
+    htList: begin
+      Count := ReadInt(HproseTagOpenbrace);
+      SetLength(Result, Count);
+      FRefList.Add(Null);
+      for I := 0 to Count - 1 do Result[I] := Unserialize;
+      CheckTag(HproseTagClosebrace);
+    end;
+  else
+    raise CastError(TagToString(Tag), 'TVariants');
+  end;
+end;
+
+function THproseReader.ReadInterface(AClass: TClass; const IID: TGUID): IInterface;
+var
+  Tag: AnsiChar;
+begin
+  FStream.ReadBuffer(Tag, 1);
+  case Tag of
+    htNull,
+    htEmpty: Result := nil;
+    htList:
+      if AClass.InheritsFrom(TAbstractList) then
+        Result := ReadIList(AClass)
+      else
+        Result := nil;
+    htMap:
+      if AClass.InheritsFrom(TAbstractMap) then
+        Result := ReadIMap(AClass)
+      else
+        Result := ReadMapAsInterface(AClass, IID);
+    htClass: begin
+      ReadClass;
+      Result := ReadInterface(AClass, IID);
+    end;
+    htObject: begin
+      if AClass.InheritsFrom(TAbstractMap) then
+        Result := ReadObjectAsIMap(TMapClass(AClass))
+      else
+        Result := ReadObjectAsInterface(AClass, IID);
+    end;
+    htRef: Result := ReadRef;
+  else
+    raise CastError(TagToString(Tag), 'Interface');
+  end;
+end;
+
+function THproseReader.ReadObject(AClass: TClass): TObject;
+var
+  Tag: AnsiChar;
+begin
+  FStream.ReadBuffer(Tag, 1);
+  case Tag of
+    htNull,
+    htEmpty: Result := nil;
+    htList:
+      if AClass.InheritsFrom(TAbstractList) then
+        Result := ReadList(AClass)
+      else
+        Result := nil;
+    htMap:
+      if AClass.InheritsFrom(TAbstractMap) then
+        Result := ReadMap(AClass)
+      else
+        Result := ReadMapAsObject(AClass);
+    htClass: begin
+      ReadClass;
+      Result := ReadObject(AClass);
+    end;
+    htObject: begin
+      if AClass.InheritsFrom(TAbstractMap) then
+        Result := ReadObjectAsMap(TMapClass(AClass))
+      else
+        Result := ReadObjectWithoutTag(AClass);
+    end;
+    htRef: Result := VarToObj(ReadRef);
+  else
+    raise CastError(TagToString(Tag), 'Object');
+  end;
+end;
+
+function THproseReader.Unserialize: Variant;
+var
+  Tag: AnsiChar;
+begin
+  FStream.ReadBuffer(Tag, 1);
+  case Tag of
+    '0'..'9': Result := Ord(Tag) - Ord('0');
+    htInteger: Result := ReadIntegerWithoutTag;
+    htLong: Result := ReadLongWithoutTag;
+    htDouble: Result := ReadDoubleWithoutTag;
+    htNaN: Result := NaN;
+    htInfinity: Result := ReadInfinityWithoutTag;
+    htTrue: Result := True;
+    htFalse: Result := False;
+    htNull: Result := Null;
+    htEmpty: Result := '';
+    htDate: Result := ReadDateWithoutTag;
+    htTime: Result := ReadTimeWithoutTag;
+    htBytes: Result := ReadBytesWithoutTag;
+    htUTF8Char: Result := ReadUTF8CharWithoutTag;
+    htString: Result := ReadStringWithoutTag;
+    htGuid: Result := ReadGuidWithoutTag;
+    htList: Result := ReadListWithoutTag;
+    htMap: Result := ReadMapWithoutTag;
+    htClass: begin
+      ReadClass;
+      Result := Unserialize;
+    end;
+    htObject: Result := ReadObjectWithoutTag;
+    htRef: Result := ReadRef;
+  else
+    raise EHproseException.Create(TagToString(Tag) + 'can''t unserialize');
+  end;
+end;
+
+function THproseReader.Unserialize(TypeInfo: PTypeInfo): Variant;
+var
+  TypeData: PTypeData;
+  TypeName: string;
+  AClass: TClass;
+begin
+  if TypeInfo = nil then Result := Unserialize
+  else begin
+    Result := Unassigned;
+    TypeName := GetTypeName(TypeInfo);
+    if TypeName = 'Boolean' then
+      Result := ReadBoolean
+    else if (TypeName = 'TDateTime') or
+            (TypeName = 'TDate') or
+            (TypeName = 'TTime') then
+      Result := ReadDateTime
+{$IFDEF DELPHI2009_UP}
+    else if TypeName = 'UInt64' then
+      Result := ReadUInt64
+{$ENDIF}
+    else begin
+      TypeData := GetTypeData(TypeInfo);
+      case TypeInfo^.Kind of
+        tkInteger, tkEnumeration, tkSet:
+          case TypeData^.OrdType of
+            otSByte:
+              Result := ShortInt(ReadInteger);
+            otUByte:
+              Result := Byte(ReadInteger);
+            otSWord:
+              Result := SmallInt(ReadInteger);
+            otUWord:
+              Result := Word(ReadInteger);
+            otSLong:
+              Result := ReadInteger;
+            otULong:
+              Result := LongWord(ReadInt64);
+          end;
+        tkChar: begin
+          Result := AnsiChar(ReadUTF8Char);
+        end;
+        tkWChar: begin
+          Result := ReadUTF8Char;
+        end;
+{$IFDEF FPC}
+        tkBool:
+          Result := ReadBoolean;
+        tkQWord:
+          Result := ReadUInt64;
+{$ENDIF}
+        tkFloat:
+          case TypeData^.FloatType of
+            ftSingle:
+              Result := VarAsType(ReadExtended, varSingle);
+            ftDouble, ftExtended:
+              Result := ReadExtended;
+            ftComp:
+              Result := ReadInt64;
+            ftCurr:
+              Result := ReadCurrency;
+          end;
+        tkString:
+          Result := ShortString(ReadString());
+        tkLString{$IFDEF FPC}, tkAString{$ENDIF}:
+          Result := AnsiString(ReadString);
+        tkWString:
+          Result := ReadString;
+{$IFDEF DELPHI2009_UP}
+        tkUString:
+          Result := UnicodeString(ReadString);
+{$ENDIF}
+        tkInt64:
+          Result := ReadInt64;
+        tkInterface: begin
+          AClass := GetClassByInterface(TypeData^.Guid);
+          if AClass = nil then
+            raise EHproseException.Create(string(TypeInfo^.Name) + 'is not registered');
+          Result := ReadInterface(AClass, TypeData^.Guid);
+        end;
+        tkDynArray:
+          Result := ReadDynArray(TypeData^.varType and not varArray);
+        tkClass: begin
+          AClass := TypeData^.ClassType;
+          Result := ObjToVar(ReadObject(AClass));
+        end;
+      end;
+    end;
+  end;
+end;
+
+function THproseReader.ReadRaw: TMemoryStream;
+begin
+  Result := TMemoryStream.Create;
+  ReadRaw(Result);
+end;
+
+procedure THproseReader.ReadRaw(const OStream: TStream);
+var
+  Tag: AnsiChar;
+begin
+  FStream.ReadBuffer(Tag, 1);
+  ReadRaw(OStream, Tag);
+end;
+
+procedure THproseReader.ReadRaw(const OStream: TStream; Tag: AnsiChar);
+begin
+  case Tag of
+    '0'..'9',
+    htNull,
+    htEmpty,
+    htTrue,
+    htFalse,
+    htNaN: OStream.WriteBuffer(Tag, 1);
+    htInfinity: ReadInfinityRaw(OStream, Tag);
+    htInteger,
+    htLong,
+    htDouble,
+    htRef: ReadNumberRaw(OStream, Tag);
+    htDate,
+    htTime: ReadDateTimeRaw(OStream, Tag);
+    htUTF8Char: ReadUTF8CharRaw(OStream, Tag);
+    htBytes: ReadBytesRaw(OStream, Tag);
+    htString: ReadStringRaw(OStream, Tag);
+    htGuid: ReadGuidRaw(OStream, Tag);
+    htList,
+    htMap,
+    htObject: ReadComplexRaw(OStream, Tag);
+    htClass: begin
+      ReadComplexRaw(OStream, Tag);
+      ReadRaw(OStream);
+    end;
+    htError: begin
+      OStream.WriteBuffer(Tag, 1);
+      ReadRaw(OStream);
+    end;
+  else
+    raise EHproseException.Create('Unexpected serialize tag "' +
+                                  Tag + '" in stream');
+  end;
+end;
+
+procedure THproseReader.ReadInfinityRaw(const OStream: TStream; Tag: AnsiChar);
+begin
+  OStream.WriteBuffer(Tag, 1);
+  FStream.ReadBuffer(Tag, 1);
+  OStream.WriteBuffer(Tag, 1);
+end;
+
+procedure THproseReader.ReadNumberRaw(const OStream: TStream; Tag: AnsiChar);
+begin
+  OStream.WriteBuffer(Tag, 1);
+  repeat
+    FStream.ReadBuffer(Tag, 1);
+    OStream.WriteBuffer(Tag, 1);
+  until (Tag = HproseTagSemicolon);
+end;
+
+procedure THproseReader.ReadDateTimeRaw(const OStream: TStream; Tag: AnsiChar);
+begin
+  OStream.WriteBuffer(Tag, 1);
+  repeat
+    FStream.ReadBuffer(Tag, 1);
+    OStream.WriteBuffer(Tag, 1);
+  until (Tag = HproseTagSemicolon) or
+        (Tag = HproseTagUTC);
+end;
+
+procedure THproseReader.ReadUTF8CharRaw(const OStream: TStream; Tag: AnsiChar);
+begin
+  OStream.WriteBuffer(Tag, 1);
+  FStream.ReadBuffer(Tag, 1);
+  case Ord(Tag) shr 4 of
+    0..7: OStream.WriteBuffer(Tag, 1);
+    12,13: begin
+      OStream.WriteBuffer(Tag, 1);
+      FStream.ReadBuffer(Tag, 1);
+      OStream.WriteBuffer(Tag, 1);
+    end;
+    14: begin
+      OStream.WriteBuffer(Tag, 1);
+      FStream.ReadBuffer(Tag, 1);
+      OStream.WriteBuffer(Tag, 1);
+      FStream.ReadBuffer(Tag, 1);
+      OStream.WriteBuffer(Tag, 1);
+    end;
+  else
+    raise EHproseException.Create('bad unicode encoding at $' +
+                                  IntToHex(Ord(Tag), 4));
+  end;
+end;
+
+procedure THproseReader.ReadBytesRaw(const OStream: TStream; Tag: AnsiChar);
+var
+  Len: Integer;
+begin
+  OStream.WriteBuffer(Tag, 1);
+  Len := 0;
+  Tag := '0';
+  repeat
+    Len := Len * 10 + (Ord(Tag) - Ord('0'));
+    FStream.ReadBuffer(Tag, 1);
+    OStream.WriteBuffer(Tag, 1);
+  until (Tag = HproseTagQuote);
+  OStream.CopyFrom(FStream, Len + 1);
 end;
 
 procedure THproseReader.ReadStringRaw(const OStream: TStream; Tag: AnsiChar);
@@ -1160,1028 +2341,10 @@ begin
   end;
 end;
 
-function THproseReader.ReadTime(IncludeTag: Boolean): TDateTime;
-var
-  Tag, Hour, Minute, Second, Millisecond: Integer;
-begin
-  if IncludeTag and
-     (CheckTags(HproseTagTime + HproseTagRef) = HproseTagRef) then begin
-    Result := ReadRef;
-    Exit;
-  end;
-  Hour := ReadByte - Ord('0');
-  Hour := Hour * 10 + ReadByte - Ord('0');
-  Minute := ReadByte - Ord('0');
-  Minute := Minute * 10 + ReadByte - Ord('0');
-  Second := ReadByte - Ord('0');
-  Second := Second * 10 + ReadByte - Ord('0');
-  Millisecond := 0;
-  if ReadByte = Ord(HproseTagPoint) then begin
-    Millisecond := ReadByte - Ord('0');
-    Millisecond := Millisecond * 10 + ReadByte - Ord('0');
-    Millisecond := Millisecond * 10 + ReadByte - Ord('0');
-    Tag := ReadByte;
-    if (Tag >= Ord('0')) and (Tag <= Ord('9')) then begin
-      ReadByte;
-      ReadByte;
-      Tag := ReadByte;
-      if (Tag >= Ord('0')) and (Tag <= Ord('9')) then begin
-        ReadByte;
-        ReadByte;
-        ReadByte;
-      end;
-    end;
-  end;
-  Result := EncodeTime(Hour, Minute, Second, Millisecond);
-  FRefList.Add(Result);
-end;
-
-function THproseReader.ReadUntil(Tag: AnsiChar): string;
-var
-  S: TStringBuffer;
-  C: AnsiChar;
-begin
-  S := TStringBuffer.Create();
-  try
-    while (FStream.Read(C, 1) = 1) and (C <> Tag) do S.Write(C, 1);
-    Result := S.ToString;
-  finally
-    S.Free;
-  end;
-end;
-
-function THproseReader.ReadUTF8Char(IncludeTag: Boolean): WideChar;
-var
-  C, C2, C3: LongWord;
-begin
-  if IncludeTag then CheckTag(HproseTagUTF8Char);
-  C := ReadByte;
-  case C shr 4 of
-    0..7: { 0xxx xxxx } Result := WideChar(C);
-    12,13: begin
-      { 110x xxxx   10xx xxxx }
-      C2 := ReadByte;
-      Result := WideChar(((C and $1F) shl 6) or
-                          (C2 and $3F));
-    end;
-    14: begin
-      { 1110 xxxx  10xx xxxx  10xx xxxx }
-      C2 := ReadByte;
-      C3 := ReadByte;
-      Result := WideChar(((C and $0F) shl 12) or
-                         ((C2 and $3F) shl 6) or
-                          (C3 and $3F));
-    end;
-  else
-    raise EHproseException.Create('bad unicode encoding at $' + IntToHex(C, 4));
-  end;
-end;
-
-procedure THproseReader.ReadUTF8CharRaw(const OStream: TStream; Tag: AnsiChar);
+procedure THproseReader.ReadGuidRaw(const OStream: TStream; Tag: AnsiChar);
 begin
   OStream.WriteBuffer(Tag, 1);
-  FStream.ReadBuffer(Tag, 1);
-  case Ord(Tag) shr 4 of
-    0..7: OStream.WriteBuffer(Tag, 1);
-    12,13: begin
-      OStream.WriteBuffer(Tag, 1);
-      FStream.ReadBuffer(Tag, 1);
-      OStream.WriteBuffer(Tag, 1);
-    end;
-    14: begin
-      OStream.WriteBuffer(Tag, 1);
-      FStream.ReadBuffer(Tag, 1);
-      OStream.WriteBuffer(Tag, 1);
-      FStream.ReadBuffer(Tag, 1);
-      OStream.WriteBuffer(Tag, 1);
-    end;
-  else
-    raise EHproseException.Create('bad unicode encoding at $' +
-                                  IntToHex(Ord(Tag), 4));
-  end;
-end;
-
-function THproseReader.ReadInt(Tag: AnsiChar): Integer;
-var
-  S: Integer;
-  I: Integer;
-  C: AnsiChar;
-begin
-  Result := 0;
-  S := 1;
-  I := FStream.Read(C, 1);
-  if I = 1 then
-    if C = '+' then
-      I := FStream.Read(C, 1)
-    else if C = '-' then begin
-      S := -1;
-      I := FStream.Read(C, 1);
-    end;
-  while (I = 1) and (C <> Tag) do begin
-    Result := Result * 10 + (Ord(C) - Ord('0')) * S;
-    I := FStream.Read(C, 1);
-  end
-end;
-
-function THproseReader.ReadInt64(Tag: AnsiChar): Int64;
-var
-  S: Int64;
-  I: Integer;
-  C: AnsiChar;
-begin
-  Result := 0;
-  S := 1;
-  I := FStream.Read(C, 1);
-  if I = 1 then
-    if C = '+' then
-      I := FStream.Read(C, 1)
-    else if C = '-' then begin
-      S := -1;
-      I := FStream.Read(C, 1);
-    end;
-  while (I = 1) and (C <> Tag) do begin
-    Result := Result * 10 + Int64(Ord(C) - Ord('0')) * S;
-    I := FStream.Read(C, 1);
-  end
-end;
-
-{$IF Defined(DELPHI2009_UP) or Defined(FPC)}
-function THproseReader.ReadUInt64(Tag: AnsiChar): UInt64;
-var
-  I: Integer;
-  C: AnsiChar;
-begin
-  Result := 0;
-  I := FStream.Read(C, 1);
-  if (I = 1) and (C = '+') then I := FStream.Read(C, 1);
-  while (I = 1) and (C <> Tag) do begin
-    Result := Result * 10 + UInt64(Ord(C) - Ord('0'));
-    I := FStream.Read(C, 1);
-  end
-end;
-{$IFEND}
-
-function THproseReader.Unserialize(VType: TVarType;
-  AClass: TClass): Variant;
-var
-  Tag: AnsiChar;
-begin
-  if FStream.Read(Tag, 1) < 1 then
-    raise EHproseException.Create('No byte found in stream');
-  Result := Unserialize(Tag, VType, AClass);
-end;
-
-function THproseReader.Unserialize(Tag: AnsiChar; VType: TVarType;
-  AClass: TClass): Variant;
-begin
-  case Tag of
-    '0'..'9': begin
-      case VType of
-        varInteger, varVariant: Result := Ord(Tag) - Ord('0');
-        varByte: Result := Byte(Ord(Tag) - Ord('0'));
-        varShortInt: Result := ShortInt(Ord(Tag) - Ord('0'));
-        varWord: Result := Word(Ord(Tag) - Ord('0'));
-        varSmallint: Result := Smallint(Ord(Tag) - Ord('0'));
-        varLongWord: Result := LongWord(Ord(Tag) - Ord('0'));
-        varSingle: Result := VarAsType(Ord(Tag) - Ord('0'), varSingle);
-        varDouble: Result := VarAsType(Ord(Tag) - Ord('0'), varDouble);
-        varCurrency: Result := StrToCurr(string(Tag));
-        varInt64: Result := Int64(Ord(Tag) - Ord('0'));
-{$IFDEF DELPHI2009_UP}
-        varUInt64: Result := UInt64(Ord(Tag) - Ord('0'));
-{$ENDIF}
-{$IFDEF FPC}
-        varQWord: Result := QWord(Ord(Tag) - Ord('0'));
-{$ENDIF}
-        varString: Result := AnsiString(Tag);
-{$IFDEF DELPHI2009_UP}
-        varUString: Result := UnicodeString(Tag);
-{$ENDIF}
-        varOleStr: Result := WideString(Tag);
-        varBoolean: Result := Tag <> '0';
-        varDate: Result := TimeStampToDateTime(MSecsToTimeStamp(
-                           Ord(Tag) - Ord('0')));
-      else
-        Error(reInvalidCast);
-      end;
-    end;
-    htInteger: begin
-      case VType of
-        varInteger, varVariant: Result := ReadInteger(False);
-        varByte: Result := Byte(ReadInteger(False));
-        varShortInt: Result := ShortInt(ReadInteger(False));
-        varWord: Result := Word(ReadInteger(False));
-        varSmallint: Result := Smallint(ReadInteger(False));
-        varLongWord: Result := LongWord(ReadInteger(False));
-        varSingle: Result := VarAsType(ReadInteger(False), varSingle);
-        varDouble: Result := VarAsType(ReadInteger(False), varDouble);
-        varCurrency: Result := StrToCurr(ReadUntil(HproseTagSemicolon));
-        varInt64: Result := ReadInt64(HproseTagSemicolon);
-{$IFDEF DELPHI2009_UP}
-        varUInt64: Result := ReadUInt64(HproseTagSemicolon);
-{$ENDIF}
-{$IFDEF FPC}
-        varQWord: Result := ReadUInt64(HproseTagSemicolon);
-{$ENDIF}
-        varString: Result := ReadUntil(HproseTagSemicolon);
-{$IFDEF DELPHI2009_UP}
-        varUString: Result := ReadUntil(HproseTagSemicolon);
-{$ENDIF}
-        varOleStr: Result := WideString(ReadUntil(HproseTagSemicolon));
-        varBoolean: Result := ReadInteger(False) <> 0;
-        varDate: Result := TimeStampToDateTime(MSecsToTimeStamp(
-                           ReadInteger(False)));
-      else
-        Error(reInvalidCast);
-      end;
-    end;
-    htLong: begin
-      case VType of
-        varString, varVariant: Result := ReadLong(False);
-{$IFDEF DELPHI2009_UP}
-        varUString: Result := ReadLong(False);
-{$ENDIF}
-        varInteger: Result := ReadInteger(False);
-        varByte: Result := Byte(ReadInteger(False));
-        varShortInt: Result := ShortInt(ReadInteger(False));
-        varWord: Result := Word(ReadInteger(False));
-        varSmallint: Result := Smallint(ReadInteger(False));
-        varLongWord: Result := LongWord(ReadInt64(HproseTagSemicolon));
-        varSingle: Result := VarAsType(StrToFloat(ReadLong(False)), varSingle);
-        varDouble: Result := VarAsType(StrToFloat(ReadLong(False)), varDouble);
-        varCurrency: Result := StrToCurr(ReadUntil(HproseTagSemicolon));
-        varInt64: Result := ReadInt64(HproseTagSemicolon);
-{$IFDEF DELPHI2009_UP}
-        varUInt64: Result := ReadUInt64(HproseTagSemicolon);
-{$ENDIF}
-{$IFDEF FPC}
-        varQWord: Result := ReadUInt64(HproseTagSemicolon);
-{$ENDIF}
-        varOleStr: Result := WideString(ReadUntil(HproseTagSemicolon));
-        varBoolean: Result := ReadLong(False) <> '0';
-        varDate: Result := TimeStampToDateTime(MSecsToTimeStamp(
-                           StrToInt64(ReadLong(False))));
-      else
-        Error(reInvalidCast);
-      end;
-    end;
-    htDouble: begin
-      case VType of
-        varDouble, varVariant: Result := VarAsType(ReadDouble(False), varDouble);
-        varSingle: Result := VarAsType(ReadDouble(False), varSingle);
-        varCurrency: Result := ReadCurrency(False);
-        varInteger: Result := ReadInteger(False);
-        varByte: Result := Byte(ReadInteger(False));
-        varShortInt: Result := ShortInt(ReadInteger(False));
-        varWord: Result := Word(ReadInteger(False));
-        varSmallint: Result := Smallint(ReadInteger(False));
-        varLongWord: Result := LongWord(ReadInt64(HproseTagSemicolon));
-        varInt64: Result := ReadInt64(HproseTagSemicolon);
-{$IFDEF DELPHI2009_UP}
-        varUInt64: Result := ReadUInt64(HproseTagSemicolon);
-{$ENDIF}
-{$IFDEF FPC}
-        varQWord: Result := ReadUInt64(HproseTagSemicolon);
-{$ENDIF}
-        varString: Result := ReadUntil(HproseTagSemicolon);
-{$IFDEF DELPHI2009_UP}
-        varUString: Result := ReadUntil(HproseTagSemicolon);
-{$ENDIF}
-        varOleStr: Result := WideString(ReadUntil(HproseTagSemicolon));
-        varBoolean: Result := ReadDouble(False) <> 0.0;
-        varDate: Result := TimeStampToDateTime(MSecsToTimeStamp(
-                           StrToInt64(ReadLong(False))));
-      else
-        Error(reInvalidCast);
-      end;
-    end;
-    htNull: begin
-      case VType of
-        varEmpty: Result := Unassigned;
-        varBoolean: Result := False;
-        varSingle: Result := VarAsType(0, varSingle);
-        varDouble: Result := VarAsType(0, varDouble);
-        varCurrency: Result := VarAsType(0, varCurrency);
-        varInteger: Result := 0;
-        varByte: Result := Byte(0);
-        varShortInt: Result := ShortInt(0);
-        varWord: Result := Word(0);
-        varSmallint: Result := Smallint(0);
-        varLongWord: Result := LongWord(0);
-        varInt64: Result := Int64(0);
-{$IFDEF DELPHI2009_UP}
-        varUInt64: Result := UInt64(0);
-{$ENDIF}
-{$IFDEF FPC}
-        varQWord: Result := QWord(0);
-{$ENDIF}
-        varString: Result := '';
-{$IFDEF DELPHI2009_UP}
-        varUString: Result := '';
-{$ENDIF}
-        varOleStr: Result := WideString('');
-      else
-        Result := Null;
-      end;
-    end;
-    htEmpty: begin
-      case VType of
-        varEmpty: Result := Unassigned;
-        varBoolean: Result := False;
-        varSingle: Result := VarAsType(0, varSingle);
-        varDouble: Result := VarAsType(0, varDouble);
-        varCurrency: Result := VarAsType(0, varCurrency);
-        varInteger: Result := 0;
-        varByte: Result := Byte(0);
-        varShortInt: Result := ShortInt(0);
-        varWord: Result := Word(0);
-        varSmallint: Result := Smallint(0);
-        varLongWord: Result := LongWord(0);
-        varInt64: Result := Int64(0);
-{$IFDEF DELPHI2009_UP}
-        varUInt64: Result := UInt64(0);
-{$ENDIF}
-{$IFDEF FPC}
-        varQWord: Result := QWord(0);
-{$ENDIF}
-        varString: Result := '';
-{$IFDEF DELPHI2009_UP}
-        varUString: Result := '';
-{$ENDIF}
-        varOleStr: Result := WideString('');
-      else
-        Result := '';
-      end;
-    end;
-    htTrue: begin
-      case VType of
-        varBoolean, varVariant: Result := True;
-        varSingle: Result := VarAsType(1, varSingle);
-        varDouble: Result := VarAsType(1, varDouble);
-        varCurrency: Result := VarAsType(1, varCurrency);
-        varInteger: Result := 1;
-        varByte: Result := Byte(1);
-        varShortInt: Result := ShortInt(1);
-        varWord: Result := Word(1);
-        varSmallint: Result := Smallint(1);
-        varLongWord: Result := LongWord(1);
-        varInt64: Result := Int64(1);
-{$IFDEF DELPHI2009_UP}
-        varUInt64: Result := UInt64(1);
-{$ENDIF}
-{$IFDEF FPC}
-        varQWord: Result := QWord(1);
-{$ENDIF}
-        varString: Result := 'True';
-{$IFDEF DELPHI2009_UP}
-        varUString: Result := 'True';
-{$ENDIF}
-        varOleStr: Result := WideString('True');
-      else
-        Error(reInvalidCast);
-      end;
-    end;
-    htFalse: begin
-      case VType of
-        varBoolean, varVariant: Result := False;
-        varSingle: Result := VarAsType(0, varSingle);
-        varDouble: Result := VarAsType(0, varDouble);
-        varCurrency: Result := VarAsType(0, varCurrency);
-        varInteger: Result := 0;
-        varByte: Result := Byte(0);
-        varShortInt: Result := ShortInt(0);
-        varWord: Result := Word(0);
-        varSmallint: Result := Smallint(0);
-        varLongWord: Result := LongWord(0);
-        varInt64: Result := Int64(0);
-{$IFDEF DELPHI2009_UP}
-        varUInt64: Result := UInt64(0);
-{$ENDIF}
-{$IFDEF FPC}
-        varQWord: Result := QWord(0);
-{$ENDIF}
-        varString: Result := 'False';
-{$IFDEF DELPHI2009_UP}
-        varUString: Result := 'False';
-{$ENDIF}
-        varOleStr: Result := WideString('False');
-      else
-        Error(reInvalidCast);
-      end;
-    end;
-    htNaN: begin
-      case VType of
-        varDouble, varVariant: Result := VarAsType(NaN, varDouble);
-        varSingle: Result := VarAsType(NaN, varSingle);
-        varString: Result := 'NaN';
-{$IFDEF DELPHI2009_UP}
-        varUString: Result := 'NaN';
-{$ENDIF}
-        varOleStr: Result := WideString('NaN');
-      else
-        Error(reInvalidCast);
-      end;
-    end;
-    htInfinity: begin
-      case VType of
-        varDouble, varVariant:
-          if ReadByte = Ord(HproseTagNeg) then
-            Result := VarAsType(NegInfinity, varDouble)
-          else
-            Result := VarAsType(Infinity, varDouble);
-        varSingle:
-          if ReadByte = Ord(HproseTagNeg) then
-            Result := VarAsType(NegInfinity, varSingle)
-          else
-            Result := VarAsType(Infinity, varSingle);
-        varString:
-          if ReadByte = Ord(HproseTagNeg) then
-            Result := '-Infinity'
-          else
-            Result := 'Infinity';
-{$IFDEF DELPHI2009_UP}
-        varUString:
-          if ReadByte = Ord(HproseTagNeg) then
-            Result := '-Infinity'
-          else
-            Result := 'Infinity';
-{$ENDIF}
-        varOleStr:
-          if ReadByte = Ord(HproseTagNeg) then
-            Result := WideString('-Infinity')
-          else
-            Result := WideString('Infinity');
-      else
-        Error(reInvalidCast);
-      end;
-    end;
-    htUTF8Char: begin
-      case VType of
-        varOleStr, varVariant: Result := WideString(ReadUTF8Char(False));
-        varString: Result := AnsiString(ReadUTF8Char(False));
-{$IFDEF DELPHI2009_UP}
-        varUString: Result := UnicodeString(ReadUTF8Char(False));
-{$ENDIF}
-        varInteger: Result := Ord(ReadUTF8Char(False));
-        varByte: Result := Byte(Ord(AnsiString(ReadUTF8Char(False))[1]));
-        varWord: Result := Word(Ord(ReadUTF8Char(False)));
-        varShortInt: Result := VarAsType(Ord(ReadUTF8Char(False)), varShortInt);
-        varSmallint: Result := VarAsType(Ord(ReadUTF8Char(False)), varSmallint);
-        varLongWord: Result := VarAsType(Ord(ReadUTF8Char(False)), varLongWord);
-        varSingle: Result := VarAsType(Ord(ReadUTF8Char(False)), varSingle);
-        varDouble: Result := VarAsType(Ord(ReadUTF8Char(False)), varDouble);
-        varCurrency: Result := VarAsType(Ord(ReadUTF8Char(False)), varCurrency);
-        varInt64: Result := Int64(Ord(ReadUTF8Char(False)));
-{$IFDEF DELPHI2009_UP}
-        varUInt64: Result := UInt64(Ord(ReadUTF8Char(False)));
-{$ENDIF}
-{$IFDEF FPC}
-        varQWord: Result := UInt64(Ord(ReadUTF8Char(False)));
-{$ENDIF}
-        varBoolean: Result := not CharInSet(ReadUTF8Char(False), [#0, '0', 'F', 'f']);
-      else
-        Error(reInvalidCast);
-      end;
-    end;
-    htString   : begin
-      case VType of
-        varOleStr, varVariant: Result := ReadString(False);
-        varString: Result := AnsiString(ReadString(False));
-{$IFDEF DELPHI2009_UP}
-        varUString: Result := UnicodeString(ReadString(False));
-{$ENDIF}
-        varInteger: Result := StrToInt(ReadString(False));
-        varByte:
-          if AClass = nil then
-            Result := VarAsType(ReadString(False), varByte)
-          else
-            Result := StrToByte(ReadString(False));
-        varWord:
-          if AClass = nil then
-            Result := VarAsType(ReadString(False), varWord)
-          else
-            Result := OleStrToWord(ReadString(False));
-        varShortInt: Result := VarAsType(ReadString(False), varShortInt);
-        varSmallint: Result := VarAsType(ReadString(False), varSmallint);
-        varLongWord: Result := VarAsType(ReadString(False), varLongWord);
-        varSingle: Result := VarAsType(ReadString(False), varSingle);
-        varDouble: Result := VarAsType(ReadString(False), varDouble);
-        varCurrency: Result := StrToCurr(ReadString(False));
-        varInt64: Result := StrToInt64(ReadString(False));
-{$IFDEF DELPHI2009_UP}
-        varUInt64: Result := VarAsType(ReadString(False), varUInt64);
-{$ENDIF}
-{$IFDEF FPC}
-        varQWord: Result := VarAsType(ReadString(False), varQWord);
-{$ENDIF}
-        varBoolean: Result := VarAsType(ReadInteger(False), varBoolean);
-      else
-        Error(reInvalidCast);
-      end;
-    end;
-    htGuid   : begin
-      case VType of
-        varString, varVariant: Result := ReadGuid(False);
-        varOleStr: Result := WideString(ReadGuid(False));
-{$IFDEF DELPHI2009_UP}
-        varUString: Result := UnicodeString(ReadGuid(False));
-{$ENDIF}
-      else
-        Error(reInvalidCast);
-      end;
-    end;
-    htDate     : Result := ReadDate(False);
-    htTime     : Result := ReadTime(False);
-    htBytes    : Result := ReadBytes(False);
-    htList     : Result := ReadList(VType and varTypeMask, AClass, False);
-    htMap      : Result := ReadMap(AClass, False);
-    htClass    : begin
-      ReadClass;
-      Result := Unserialize(VType, AClass);
-    end;
-    htObject   : Result := ReadObject(AClass, False);
-    htRef      : Result := ReadRef;
-    htError    : raise EHproseException.Create(ReadString());
-  else
-    raise EHproseException.Create('Unexpected serialize tag "' +
-                                  Tag + '" in stream');
-  end;
-end;
-
-function THproseReader.ReadBooleanArray(Count: Integer): Variant;
-var
-  P: PWordBoolArray;
-  I, N: Integer;
-begin
-  Result := VarArrayCreate([0, Count - 1], varBoolean);
-  N := FRefList.Add(Null);
-  P := VarArrayLock(Result);
-  for I := 0 to Count - 1 do P^[I] := Unserialize(varBoolean);
-  VarArrayUnlock(Result);
-{$IFDEF FPC}
-  FRefList[N] := Result;
-{$ELSE}
-  FRefList[N] := VarArrayRef(Result);
-{$ENDIF}
-end;
-
-function THproseReader.ReadDoubleArray(Count: Integer): Variant;
-var
-  P: PDoubleArray;
-  I, N: Integer;
-begin
-  Result := VarArrayCreate([0, Count - 1], varDouble);
-  N := FRefList.Add(Null);
-  P := VarArrayLock(Result);
-  for I := 0 to Count - 1 do P^[I] := Unserialize(varDouble);
-  VarArrayUnlock(Result);
-{$IFDEF FPC}
-  FRefList[N] := Result;
-{$ELSE}
-  FRefList[N] := VarArrayRef(Result);
-{$ENDIF}
-end;
-
-function THproseReader.ReadInt64Array(Count: Integer): Variant;
-var
-  P: PInt64Array;
-  I, N: Integer;
-begin
-  Result := VarArrayCreate([0, Count - 1], varInt64);
-  N := FRefList.Add(Null);
-  P := VarArrayLock(Result);
-  for I := 0 to Count - 1 do P^[I] := Unserialize(varInt64);
-  VarArrayUnlock(Result);
-{$IFDEF FPC}
-  FRefList[N] := Result;
-{$ELSE}
-  FRefList[N] := VarArrayRef(Result);
-{$ENDIF}
-end;
-
-function THproseReader.ReadIntegerArray(Count: Integer): Variant;
-var
-  P: PIntegerArray;
-  I, N: Integer;
-begin
-  Result := VarArrayCreate([0, Count - 1], varInteger);
-  N := FRefList.Add(Null);
-  P := VarArrayLock(Result);
-  for I := 0 to Count - 1 do P^[I] := Unserialize(varInteger);
-  VarArrayUnlock(Result);
-{$IFDEF FPC}
-  FRefList[N] := Result;
-{$ELSE}
-  FRefList[N] := VarArrayRef(Result);
-{$ENDIF}
-end;
-
-function THproseReader.ReadList(ElementType: TVarType;
-  AClass: TClass; IncludeTag: Boolean): Variant;
-var
-  Count: Integer;
-begin
-  if IncludeTag and
-    (CheckTags(HproseTagList + HproseTagRef) = HproseTagRef) then begin
-    Result := ReadRef;
-    Exit;
-  end;
-  Count := ReadInt(HproseTagOpenbrace);
-  if AClass = nil then
-    case ElementType of
-      varInteger:  Result := ReadIntegerArray(Count);
-      varShortInt: Result := ReadShortIntArray(Count);
-      varWord:     Result := ReadWordArray(Count);
-      varSmallint: Result := ReadSmallintArray(Count);
-      varLongWord: Result := ReadLongWordArray(Count);
-      varSingle:   Result := ReadSingleArray(Count);
-      varDouble:   Result := ReadDoubleArray(Count);
-      varCurrency: Result := ReadCurrencyArray(Count);
-      varInt64:    Result := ReadInt64Array(Count);
-{$IFDEF DELPHI2009_UP}
-      varUInt64:   Result := ReadUInt64Array(Count);
-{$ENDIF}
-{$IFDEF FPC}
-      varQWord:    Result := ReadQWordArray(Count);
-{$ENDIF}
-      varOleStr:   Result := ReadWideStringArray(Count);
-      varBoolean:  Result := ReadBooleanArray(Count);
-      varDate:     Result := ReadDateTimeArray(Count);
-      varVariant:  Result := ReadList(TArrayList, Count);
-    end
-  else if AClass.InheritsFrom(TAbstractList) then
-    Result := ReadList(AClass, Count)
-  else
-    raise EHproseException.Create(AClass.ClassName + ' is not an IList class');
-  CheckTag(HproseTagClosebrace);
-end;
-
-function THproseReader.ReadList(AClass: TClass; Count: Integer): Variant;
-var
-  I: Integer;
-  AList: IList;
-begin
-    AList := TListClass(AClass).Create(Count) as IList;
-    Result := AList;
-    FRefList.Add(Result);
-    for I := 0 to Count - 1 do AList[I] := Unserialize;
-end;
-
-function THproseReader.ReadLongWordArray(Count: Integer): Variant;
-var
-  P: PLongWordArray;
-  I, N: Integer;
-begin
-  Result := VarArrayCreate([0, Count - 1], varLongWord);
-  N := FRefList.Add(Null);
-  P := VarArrayLock(Result);
-  for I := 0 to Count - 1 do P^[I] := Unserialize(varLongWord);
-  VarArrayUnlock(Result);
-{$IFDEF FPC}
-  FRefList[N] := Result;
-{$ELSE}
-  FRefList[N] := VarArrayRef(Result);
-{$ENDIF}
-end;
-
-function THproseReader.ReadMap(AClass: TClass; IncludeTag: Boolean): Variant;
-var
-  I, Count: Integer;
-  Key: Variant;
-  AMap: IMap;
-  Instance: TObject;
-  PropInfo: PPropInfo;
-  VType: TVarType;
-  PropClass: TClass;
-begin
-  if IncludeTag and
-    (CheckTags(HproseTagMap + HproseTagRef) = HproseTagRef) then begin
-    Result := ReadRef;
-    Exit;
-  end;
-  Count := ReadInt(HproseTagOpenbrace);
-  if AClass = nil then AClass := THashMap;
-  if AClass.InheritsFrom(TAbstractMap) then begin
-    AMap := TMapClass(AClass).Create(Count) as IMap;
-    Result := AMap;
-    FRefList.Add(Result);
-    for I := 0 to Count - 1 do begin
-      Key := Unserialize;
-      AMap[Key] := Unserialize;
-    end;
-  end
-  else begin
-    Instance := AClass.Create;
-    if AClass.InheritsFrom(TInterfacedObject) then
-      Result := IInterface(TInterfacedObject(Instance))
-    else
-      Result := ObjToVar(Instance);
-    FRefList.Add(Result);
-    for I := 0 to Count - 1 do begin
-      Key := ReadString;
-      PropInfo := GetPropInfo(AClass, Key);
-      if (PropInfo <> nil) then begin
-        VType := GetVarTypeAndClass(PropInfo^.PropType{$IFNDEF FPC}^{$ENDIF}, PropClass);
-        SetPropValue(Instance, PropInfo, Unserialize(VType, PropClass));
-      end
-      else Unserialize;
-    end;
-  end;
-  CheckTag(HproseTagClosebrace);
-end;
-
-function THproseReader.ReadObject(AClass: TClass; IncludeTag: Boolean): Variant;
-var
-  Tag: AnsiChar;
-  C: Variant;
-  AttrNames: IList;
-  I, Count: Integer;
-  Cls: TClass;
-  IID: TGUID;
-  AMap: IMap;
-  Intf: IInterface;
-  Instance: TObject;
-  PropInfo: PPropInfo;
-  VType: TVarType;
-  PropClass: TClass;
-begin
-  if IncludeTag then repeat
-    Tag := CheckTags(HproseTagObject + HproseTagClass + HproseTagRef);
-    if Tag = HproseTagRef then begin
-      Result := ReadRef;
-      Exit;
-    end;
-    if Tag = HproseTagClass then ReadClass;
-  until Tag = HproseTagObject;
-  C := FClassRefList[ReadInt(HproseTagOpenbrace)];
-  AttrNames := VarToList(FAttrRefMap[C]);
-  Count := AttrNames.Count;
-  if VarType(C) = varNativeInt then begin
-    Cls := TClass(NativeInt(C));
-    if (AClass = nil) or Cls.InheritsFrom(AClass) then AClass := Cls;
-  end;
-  if AClass <> nil then begin
-    if AClass.InheritsFrom(TInterfacedObject) then begin
-      IID := GetInterfaceByClass(TInterfacedClass(AClass));
-      Supports(TInterfacedClass(AClass).Create, IID, Intf);
-      Result := Intf;
-      Instance := IntfToObj(Intf);
-    end
-    else begin
-      Instance := AClass.Create;
-      Result := ObjToVar(Instance);
-    end;
-    FRefList.Add(Result);
-    for I := 0 to Count - 1 do begin
-      PropInfo := GetPropInfo(Instance, AttrNames[I]);
-      if (PropInfo <> nil) then begin
-        VType := GetVarTypeAndClass(PropInfo^.PropType{$IFNDEF FPC}^{$ENDIF}, PropClass);
-        SetPropValue(Instance, PropInfo, Unserialize(VType, PropClass));
-      end
-      else Unserialize;
-    end;
-  end
-  else begin
-    AMap := TCaseInsensitiveHashMap.Create(Count);
-    Result := AMap;
-    FRefList.Add(Result);
-    for I := 0 to Count - 1 do AMap[AttrNames[I]] := Unserialize;
-  end;
-  CheckTag(HproseTagClosebrace);  
-end;
-
-function THproseReader.ReadShortIntArray(Count: Integer): Variant;
-var
-  P: PShortIntArray;
-  I, N: Integer;
-begin
-  Result := VarArrayCreate([0, Count - 1], varShortInt);
-  N := FRefList.Add(Null);
-  P := VarArrayLock(Result);
-  for I := 0 to Count - 1 do P^[I] := Unserialize(varShortInt);
-  VarArrayUnlock(Result);
-{$IFDEF FPC}
-  FRefList[N] := Result;
-{$ELSE}
-  FRefList[N] := VarArrayRef(Result);
-{$ENDIF}
-end;
-
-function THproseReader.ReadSingleArray(Count: Integer): Variant;
-var
-  P: PSingleArray;
-  I, N: Integer;
-begin
-  Result := VarArrayCreate([0, Count - 1], varSingle);
-  N := FRefList.Add(Null);
-  P := VarArrayLock(Result);
-  for I := 0 to Count - 1 do P^[I] := Unserialize(varSingle);
-  VarArrayUnlock(Result);
-{$IFDEF FPC}
-  FRefList[N] := Result;
-{$ELSE}
-  FRefList[N] := VarArrayRef(Result);
-{$ENDIF}
-end;
-
-function THproseReader.ReadSmallIntArray(Count: Integer): Variant;
-var
-  P: PSmallIntArray;
-  I, N: Integer;
-begin
-  Result := VarArrayCreate([0, Count - 1], varSmallInt);
-  N := FRefList.Add(Null);
-  P := VarArrayLock(Result);
-  for I := 0 to Count - 1 do P^[I] := Unserialize(varSmallInt);
-  VarArrayUnlock(Result);
-{$IFDEF FPC}
-  FRefList[N] := Result;
-{$ELSE}
-  FRefList[N] := VarArrayRef(Result);
-{$ENDIF}
-end;
-
-function THproseReader.ReadWideStringArray(Count: Integer): Variant;
-var
-  P: PWideStringArray;
-  I, N: Integer;
-begin
-  Result := VarArrayCreate([0, Count - 1], varOleStr);
-  N := FRefList.Add(Null);
-  P := VarArrayLock(Result);
-  for I := 0 to Count - 1 do P^[I] := Unserialize(varOleStr);
-  VarArrayUnlock(Result);
-{$IFDEF FPC}
-  FRefList[N] := Result;
-{$ELSE}
-  FRefList[N] := VarArrayRef(Result);
-{$ENDIF}
-end;
-
-function THproseReader.ReadWordArray(Count: Integer): Variant;
-var
-  P: PWordArray;
-  I, N: Integer;
-begin
-  Result := VarArrayCreate([0, Count - 1], varWord);
-  N := FRefList.Add(Null);
-  P := VarArrayLock(Result);
-  for I := 0 to Count - 1 do P^[I] := Unserialize(varWord);
-  VarArrayUnlock(Result);
-{$IFDEF FPC}
-  FRefList[N] := Result;
-{$ELSE}
-  FRefList[N] := VarArrayRef(Result);
-{$ENDIF}
-end;
-
-function THproseReader.ReadCurrencyArray(Count: Integer): Variant;
-var
-  P: PCurrencyArray;
-  I, N: Integer;
-begin
-  Result := VarArrayCreate([0, Count - 1], varCurrency);
-  N := FRefList.Add(Null);
-  P := VarArrayLock(Result);
-  for I := 0 to Count - 1 do P^[I] := Unserialize(varCurrency);
-  VarArrayUnlock(Result);
-{$IFDEF FPC}
-  FRefList[N] := Result;
-{$ELSE}
-  FRefList[N] := VarArrayRef(Result);
-{$ENDIF}
-end;
-
-function THproseReader.ReadDateTimeArray(Count: Integer): Variant;
-var
-  P: PDateTimeArray;
-  I, N: Integer;
-begin
-  Result := VarArrayCreate([0, Count - 1], varDate);
-  N := FRefList.Add(Null);
-  P := VarArrayLock(Result);
-  for I := 0 to Count - 1 do P^[I] := Unserialize(varDate);
-  VarArrayUnlock(Result);
-{$IFDEF FPC}
-  FRefList[N] := Result;
-{$ELSE}
-  FRefList[N] := VarArrayRef(Result);
-{$ENDIF}
-end;
-
-procedure THproseReader.ReadDateTimeRaw(const OStream: TStream; Tag: AnsiChar);
-begin
-  OStream.WriteBuffer(Tag, 1);
-  repeat
-    FStream.ReadBuffer(Tag, 1);
-    OStream.WriteBuffer(Tag, 1);
-  until (Tag = HproseTagSemicolon) or
-        (Tag = HproseTagUTC);
-end;
-
-{$IFDEF DELPHI2009_UP}
-function THproseReader.ReadUInt64Array(Count: Integer): Variant;
-var
-  P: PUInt64Array;
-  I, N: Integer;
-begin
-  Result := VarArrayCreate([0, Count - 1], varUInt64);
-  N := FRefList.Add(Null);
-  P := VarArrayLock(Result);
-  for I := 0 to Count - 1 do P^[I] := Unserialize(varUInt64);
-  VarArrayUnlock(Result);
-{$IFDEF FPC}
-  FRefList[N] := Result;
-{$ELSE}
-  FRefList[N] := VarArrayRef(Result);
-{$ENDIF}
-end;
-{$ENDIF}
-
-{$IFDEF FPC}
-function THproseReader.ReadQWordArray(Count: Integer): Variant;
-var
-  P: PQWordArray;
-  I, N: Integer;
-begin
-  Result := VarArrayCreate([0, Count - 1], varQWord);
-  N := FRefList.Add(Null);
-  P := VarArrayLock(Result);
-  for I := 0 to Count - 1 do P^[I] := Unserialize(varQWord);
-  VarArrayUnlock(Result);
-  FRefList[N] := Result;
-end;
-{$ENDIF}
-
-function THproseReader.ReadRaw: TMemoryStream;
-begin
-  Result := TMemoryStream.Create;
-  ReadRaw(Result);
-end;
-
-procedure THproseReader.ReadRaw(const OStream: TStream);
-var
-  Tag: AnsiChar;
-begin
-  FStream.ReadBuffer(Tag, 1);
-  ReadRaw(OStream, Tag);
-end;
-
-procedure THproseReader.ReadRaw(const OStream: TStream; Tag: AnsiChar);
-begin
-  case Tag of
-    '0'..'9', htNull, htEmpty, htTrue, htFalse, htNaN: OStream.WriteBuffer(Tag, 1);
-    htInfinity: ReadInfinityRaw(OStream, Tag);
-    htInteger, htLong, htDouble, htRef: ReadNumberRaw(OStream, Tag);
-    htDate, htTime: ReadDateTimeRaw(OStream, Tag);
-    htUTF8Char: ReadUTF8CharRaw(OStream, Tag);
-    htBytes: ReadBytesRaw(OStream, Tag);
-    htString: ReadStringRaw(OStream, Tag);
-    htGuid: ReadGuidRaw(OStream, Tag);
-    htList, htMap, htObject: ReadComplexRaw(OStream, Tag);
-    htClass: begin
-      ReadComplexRaw(OStream, Tag);
-      ReadRaw(OStream);
-    end;
-    htError: begin
-      OStream.WriteBuffer(Tag, 1);
-      ReadRaw(OStream);
-    end;
-  else
-    raise EHproseException.Create('Unexpected serialize tag "' +
-                                  Tag + '" in stream');
-  end;
-end;
-
-function THproseReader.ReadRef: Variant;
-begin
-  Result := FRefList[ReadInt(HproseTagSemicolon)];
-end;
-
-procedure THproseReader.ReadClass;
-var
-  ClassName: string;
-  I, Count: Integer;
-  AttrNames: IList;
-  AClass: TClass;
-  Key: Variant;
-begin
-  ClassName := ReadString(False, False);
-  Count := ReadInt(HproseTagOpenbrace);
-  AttrNames := TArrayList.Create(Count, False);
-  for I := 0 to Count - 1 do AttrNames[I] := ReadString();
-  CheckTag(HproseTagClosebrace);
-  AClass := GetClassByAlias(ClassName);
-  if AClass = nil then begin
-    Key := IInterface(TInterfacedObject.Create());
-    FClassRefList.Add(Key);
-    FAttrRefMap[Key] := AttrNames;
-  end
-  else begin
-    Key := NativeInt(AClass);
-    FClassRefList.Add(Key);
-    FAttrRefMap[Key] := AttrNames;
-  end;
+  OStream.CopyFrom(FStream, 38);
 end;
 
 procedure THproseReader.ReadComplexRaw(const OStream: TStream; Tag: AnsiChar);
@@ -2197,24 +2360,6 @@ begin
     FStream.ReadBuffer(Tag, 1);
   end;
   OStream.WriteBuffer(Tag, 1);
-end;
-
-function THproseReader.ReadGuid(IncludeTag: Boolean): AnsiString;
-begin
-  if IncludeTag and
-     (CheckTags(HproseTagGuid + HproseTagRef) = HproseTagRef) then begin
-    Result := AnsiString(ReadRef());
-    Exit;
-  end;
-  SetLength(Result, 38);
-  FStream.ReadBuffer(Result[1], 38);
-  FRefList.Add(Result);
-end;
-
-procedure THproseReader.ReadGuidRaw(const OStream: TStream; Tag: AnsiChar);
-begin
-  OStream.WriteBuffer(Tag, 1);
-  OStream.CopyFrom(FStream, 38);
 end;
 
 procedure THproseReader.Reset;
@@ -2378,13 +2523,6 @@ begin
       varSingle: WriteSingleArray(P, Count);
       varDouble: WriteDoubleArray(P, Count);
       varCurrency: WriteCurrencyArray(P, Count);
-      varInt64: WriteInt64Array(P, Count);
-{$IFDEF DELPHI2009_UP}
-      varUInt64: WriteUInt64Array(P, Count);
-{$ENDIF}
-{$IFDEF FPC}
-      varQWord: WriteQWordArray(P, Count);
-{$ENDIF}
       varOleStr: WriteWideStringArray(P, Count);
       varBoolean: WriteBooleanArray(P, Count);
       varDate: WriteDateTimeArray(P, Count);
@@ -2642,34 +2780,6 @@ begin
   FStream.WriteBuffer(HproseTagInfinity, 1);
   FStream.WriteBuffer(HproseTagSign[Positive], 1);
 end;
-
-procedure THproseWriter.WriteInt64Array(var P; Count: Integer);
-var
-  AP: PInt64Array absolute P;
-  I: Integer;
-begin
-  for I := 0 to Count - 1 do WriteLong(AP^[I]);
-end;
-
-{$IFDEF DELPHI2009_UP}
-procedure THproseWriter.WriteUInt64Array(var P; Count: Integer);
-var
-  AP: PUInt64Array absolute P;
-  I: Integer;
-begin
-  for I := 0 to Count - 1 do WriteLong(AP^[I]);
-end;
-{$ENDIF}
-
-{$IFDEF FPC}
-procedure THproseWriter.WriteQWordArray(var P; Count: Integer);
-var
-  AP: PQWordArray absolute P;
-  I: Integer;
-begin
-  for I := 0 to Count - 1 do WriteLong(AP^[I]);
-end;
-{$ENDIF}
 
 procedure THproseWriter.WriteInteger(I: Integer);
 var
@@ -3865,8 +3975,7 @@ end;
 
 { HproseUnserialize }
 
-function HproseUnserialize(const Data: RawByteString; VType: TVarType;
-  AClass: TClass): Variant;
+function HproseUnserialize(const Data: RawByteString; TypeInfo: Pointer): Variant;
 var
   Reader: THproseReader;
   Stream: TMemoryStream;
@@ -3877,7 +3986,7 @@ begin
     Move(PAnsiChar(Data)^, Stream.Memory^, Stream.Size);
     Reader := THproseReader.Create(Stream);
     try
-      Result := Reader.Unserialize(VType, AClass);
+      Result := Reader.Unserialize(TypeInfo);
     finally
       Reader.Free;
     end;
@@ -3933,9 +4042,9 @@ end;
 {$ENDIF}
 
 class function THproseFormatter.Unserialize(const Data: RawByteString;
-  VType: TVarType; AClass: TClass): Variant;
+  TypeInfo: Pointer): Variant;
 begin
-  Result := HproseUnserialize(Data, VType, AClass);
+  Result := HproseUnserialize(Data, TypeInfo);
 end;
 
 procedure FreePropertiesCache;
