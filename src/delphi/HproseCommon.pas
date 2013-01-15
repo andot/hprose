@@ -15,7 +15,7 @@
  *                                                        *
  * hprose common unit for delphi.                         *
  *                                                        *
- * LastModified: Jan 14, 2013                             *
+ * LastModified: Jan 15, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -496,7 +496,7 @@ type
   end;
 
   TSmartObject = class(TInterfacedObject, ISmartObject)
-  private
+  protected
     FObject: TObject;
     constructor Create(const AClass: TClass);
   public
@@ -508,21 +508,15 @@ type
 {$IFDEF Supports_Generics}
   ISmartObject<T: constructor, class> = interface
   ['{91FEB85D-1284-4516-A9DA-5D370A338DA0}']
-    function Value: T;
+    function _: T;
   end;
 
-  TSmartObject<T: constructor, class> = class(TInterfacedObject, ISmartObject, ISmartObject<T>)
-  private
-    FObject: T;
-    constructor Create;
+  TSmartObject<T: constructor, class> = class(TSmartObject, ISmartObject<T>)
   protected
-    function Get: TObject;
-    function GetT: T;
+    constructor Create;
   public
     class function New: ISmartObject<T>;
-    function ISmartObject.Value = Get;
-    function ISmartObject<T>.Value = GetT;
-    destructor Destroy; override;
+    function _: T;
   end;
 {$ENDIF}
 
@@ -2782,23 +2776,12 @@ end;
 
 constructor TSmartObject<T>.Create();
 begin
-  FObject := T.Create;
+  inherited Create(GetTypeData(TypeInfo(T))^.ClassType);
 end;
 
-destructor TSmartObject<T>.Destroy;
+function TSmartObject<T>._: T;
 begin
-  FreeAndNil(FObject);
-  inherited;
-end;
-
-function TSmartObject<T>.Get: TObject;
-begin
-  Result := FObject;
-end;
-
-function TSmartObject<T>.GetT: T;
-begin
-  Result := FObject;
+  Result := T(Pointer(@FObject)^);
 end;
 
 class function TSmartObject<T>.New: ISmartObject<T>;
@@ -2832,14 +2815,12 @@ var
 begin
   TypeName := GetTypeName(TypeInfo);
   RegisterType(TypeName, Size, TypeInfo);
+{$IFDEF Supports_Rtti}
+  TypeName := TRttiContext.Create.GetType(TypeInfo).QualifiedName;
+{$ELSE}
   TypeData :=  GetTypeData(TypeInfo);
   case TypeInfo^.Kind of
-  tkEnumeration:
-{$IFDEF Supports_Rtti}
-     TypeName := TRttiContext.Create.GetType(TypeInfo).QualifiedName;
-{$ELSE}
-     UnitName := string(TypeData^.EnumUnitName);
-{$ENDIF}
+  tkEnumeration: UnitName := string(TypeData^.EnumUnitName);
   tkClass:       UnitName := string(TypeData^.UnitName);
   tkInterface:   UnitName := string(TypeData^.IntfUnit);
   tkDynArray:    UnitName := string(TypeData^.DynUnitName);
@@ -2847,6 +2828,7 @@ begin
     raise EHproseException.Create('Can not register this type: ' + TypeName);
   end;
   if UnitName <> '' then TypeName := UnitName + '.' + TypeName;
+{$ENDIF}
   RegisterType(TypeName, Size, TypeInfo);
 end;
 
