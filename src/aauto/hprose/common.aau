@@ -28,12 +28,12 @@ namespace hprose.common {
         _RawWithEndTag = 3;
     }
     class HproseFilter {
-    	ctor() {};
-    	inputFilter = function(data) {
-    		return data;
-    	};
-    	outputFilter = function(data) {
-    		return data;
-    	};
+        ctor() {};
+        inputFilter = function(data) {
+            return data;
+        };
+        outputFilter = function(data) {
+            return data;
+        };
     }
 }

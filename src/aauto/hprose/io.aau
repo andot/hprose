@@ -105,7 +105,7 @@ namespace hprose.io {
             return b;
         };
         readall = function() {
-        	return buf;
+            return buf;
         };
         skip = function(n) {
             pos += n;
@@ -263,7 +263,7 @@ namespace hprose.io {
     };
     class HproseReader {
         ctor(stream) {
-        	this.stream = stream;
+            this.stream = stream;
             var ref = { @{ _weak = "v" } };
             var classref = {};
             var tags = ..hprose.io.HproseTags;
@@ -278,7 +278,7 @@ namespace hprose.io {
                         error("tag '" ++ expectTags ++ "' expected, but '" ++ tag ++ "' found in stream");
                     }
                     else {
-                        error("Unexpected serialize tag '" ++ tag ++ "' in stream");	
+                        error("Unexpected serialize tag '" ++ tag ++ "' in stream");    
                     }
                 }
             }
@@ -750,20 +750,20 @@ namespace hprose.io {
         readObject = function() {
             var tag = stream.getc();
             select(tag) {
-        		case tags._TagRef {
-        			return this.readRef();
-        		}
-        		case tags._TagClass {
+                case tags._TagRef {
+                    return this.readRef();
+                }
+                case tags._TagClass {
                     this.readClass();
                     return this.readObject();
-        		}
-        		case tags._TagObject {
+                }
+                case tags._TagObject {
                     return this.readObjectWithoutTag();
-        		}
-        		else {
+                }
+                else {
                     unexpectedTag(tag);
-        		}
-        	}
+                }
+            }
         };
         readClass = function() {
             var classname = this._readString();
@@ -961,7 +961,7 @@ namespace hprose.io {
     };
     class HproseWriter {
         ctor(stream){
-        	this.stream = stream;
+            this.stream = stream;
             var ref = { @{ _weak = "v" } };
             var classref = {};
             var tags = ..hprose.io.HproseTags;
@@ -1089,8 +1089,8 @@ namespace hprose.io {
                 this.writeRef(r);
             }
             else {
-        		this.writeDateTime(date);
-        	}
+                this.writeDateTime(date);
+            }
         }
         writeBytes = function(bytes) {
             ref[[#ref + 1]] = bytes;
@@ -1102,8 +1102,8 @@ namespace hprose.io {
                 this.writeRef(r);
             }
             else {
-        		this.writeBytes(bytes);
-        	}
+                this.writeBytes(bytes);
+            }
         };
         writeUTF8Char = function(c) {
             stream.write(tags._TagUTF8Char, c);
@@ -1119,8 +1119,8 @@ namespace hprose.io {
                 this.writeRef(r);
             }
             else {
-        		this.writeString(str, len);
-        	}
+                this.writeString(str, len);
+            }
         };
         writeList = function(list) {
             ref[[#ref + 1]] = list;
@@ -1137,8 +1137,8 @@ namespace hprose.io {
                 this.writeRef(r);
             }
             else {
-        		this.writeList(list);
-        	}
+                this.writeList(list);
+            }
         };
         writeMap = function(map) {
             ref[[#ref + 1]] = map;
@@ -1164,8 +1164,8 @@ namespace hprose.io {
                 this.writeRef(r);
             }
             else {
-        		this.writeMap(map);
-        	}
+                this.writeMap(map);
+            }
         };
         writeObject = function(obj) {
             var classname = getClassName(obj);
@@ -1195,8 +1195,8 @@ namespace hprose.io {
                 this.writeRef(r);
             }
             else {
-        		this.writeObject(obj);
-        	}
+                this.writeObject(obj);
+            }
         };
         writeClass = function(classname, fields) {
             var count = #fields;
