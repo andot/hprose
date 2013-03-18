@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http request class for ActionScript 3.0.        *
  *                                                        *
- * LastModified: Nov 26, 2012                             *
+ * LastModified: Mar 18, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -72,7 +72,7 @@ package hprose.client {
                 stream.readBytes(data);
                 data.position = 0;
                 data = filter.inputFilter(data);
-                callback(stream);
+                callback(data);
             }
         }
         private function httpStatusHandler(event:HTTPStatusEvent):void {
