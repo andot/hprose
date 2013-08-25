@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for Java.                          *
  *                                                        *
- * LastModified: Jan 4, 2013                              *
+ * LastModified: Aug 25, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -234,6 +234,21 @@ public final class HproseWriter {
         else {
             stream.write(HproseTags.TagLong);
             stream.write(getAscii(l.toString()));
+            stream.write(HproseTags.TagSemicolon);
+        }
+    }
+
+    public void writeDouble(float d) throws IOException {
+        if (Float.isNaN(d)) {
+            stream.write(HproseTags.TagNaN);
+        }
+        else if (Float.isInfinite(d)) {
+            stream.write(HproseTags.TagInfinity);
+            stream.write(d > 0 ? HproseTags.TagPos : HproseTags.TagNeg);
+        }
+        else {
+            stream.write(HproseTags.TagDouble);
+            stream.write(getAscii(Float.toString(d)));
             stream.write(HproseTags.TagSemicolon);
         }
     }
