@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for Java.                          *
  *                                                        *
- * LastModified: Jan 4, 2013                              *
+ * LastModified: Aug 30, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -535,7 +535,7 @@ public final class HproseReader {
         }
         stream.read();
         Type type = HproseHelper.getClass(className);
-        Object key = (type == null) ? new Object() : type;
+        Object key = (type.equals(void.class)) ? new Object() : type;
         classref.add(key);
         membersref.put(key, memberNames);
     }
