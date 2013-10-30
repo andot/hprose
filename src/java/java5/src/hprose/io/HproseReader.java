@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for Java.                          *
  *                                                        *
- * LastModified: Aug 30, 2013                             *
+ * LastModified: Oct 30, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -773,8 +773,7 @@ public final class HproseReader {
         }
     }
 
-    public boolean readBoolean() throws IOException {
-        int tag = stream.read();
+    private boolean readBooleanWithTag(int tag) throws IOException {
         switch (tag) {
             case '0': return false;
             case '1':
@@ -789,7 +788,6 @@ public final class HproseReader {
             case HproseTags.TagInteger: return readIntWithoutTag() != 0;
             case HproseTags.TagLong: return !(BigInteger.ZERO.equals(readBigIntegerWithoutTag()));
             case HproseTags.TagDouble: return readDoubleWithoutTag() != 0.0;
-            case HproseTags.TagNull: return false;
             case HproseTags.TagEmpty: return false;
             case HproseTags.TagTrue: return true;
             case HproseTags.TagFalse: return false;
@@ -801,9 +799,24 @@ public final class HproseReader {
             default: throw castError(tagToString(tag), boolean.class);
         }
     }
-
-    public char readChar() throws IOException {
+    
+    public boolean readBoolean() throws IOException {
         int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return false;
+            default: return readBooleanWithTag(tag);
+        }
+    }
+
+    public Boolean readBooleanObject() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            default: return readBooleanWithTag(tag);
+        }
+    }
+
+    private char readCharWithTag(int tag) throws IOException {
         switch (tag) {
             case '0':
             case '1':
@@ -825,8 +838,23 @@ public final class HproseReader {
         }
     }
 
-    public byte readByte() throws IOException {
+    public char readChar() throws IOException {
         int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return (char)0;
+            default: return readCharWithTag(tag);
+        }
+    }
+
+    public Character readCharObject() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            default: return readCharWithTag(tag);
+        }
+    }
+
+    private byte readByteWithTag(int tag) throws IOException {
         switch (tag) {
             case '0': return 0;
             case '1': return 1;
@@ -841,7 +869,6 @@ public final class HproseReader {
             case HproseTags.TagInteger: return readByte(HproseTags.TagSemicolon);
             case HproseTags.TagLong: return readByte(HproseTags.TagSemicolon);
             case HproseTags.TagDouble: return Double.valueOf(readDoubleWithoutTag()).byteValue();
-            case HproseTags.TagNull: return 0;
             case HproseTags.TagEmpty: return 0;
             case HproseTags.TagTrue: return 1;
             case HproseTags.TagFalse: return 0;
@@ -852,8 +879,23 @@ public final class HproseReader {
         }
     }
 
-    public short readShort() throws IOException {
+    public byte readByte() throws IOException {
         int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return 0;
+            default: return readByteWithTag(tag);
+        }
+    }
+
+    public Byte readByteObject() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            default: return readByteWithTag(tag);
+        }
+    }
+
+    private short readShortWithTag(int tag) throws IOException {
         switch (tag) {
             case '0': return 0;
             case '1': return 1;
@@ -868,7 +910,6 @@ public final class HproseReader {
             case HproseTags.TagInteger: return readShort(HproseTags.TagSemicolon);
             case HproseTags.TagLong: return readShort(HproseTags.TagSemicolon);
             case HproseTags.TagDouble: return Double.valueOf(readDoubleWithoutTag()).shortValue();
-            case HproseTags.TagNull: return 0;
             case HproseTags.TagEmpty: return 0;
             case HproseTags.TagTrue: return 1;
             case HproseTags.TagFalse: return 0;
@@ -879,8 +920,23 @@ public final class HproseReader {
         }
     }
 
-    public int readInt() throws IOException {
+    public short readShort() throws IOException {
         int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return 0;
+            default: return readShortWithTag(tag);
+        }
+    }
+    
+    public Short readShortObject() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            default: return readShortWithTag(tag);
+        }
+    }
+    
+    private int readIntWithTag(int tag) throws IOException {
         switch (tag) {
             case '0': return 0;
             case '1': return 1;
@@ -895,7 +951,6 @@ public final class HproseReader {
             case HproseTags.TagInteger: return readInt(HproseTags.TagSemicolon);
             case HproseTags.TagLong: return readInt(HproseTags.TagSemicolon);
             case HproseTags.TagDouble: return Double.valueOf(readDoubleWithoutTag()).intValue();
-            case HproseTags.TagNull: return 0;
             case HproseTags.TagEmpty: return 0;
             case HproseTags.TagTrue: return 1;
             case HproseTags.TagFalse: return 0;
@@ -906,8 +961,23 @@ public final class HproseReader {
         }
     }
 
-    public long readLong() throws IOException {
+    public int readInt() throws IOException {
         int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return 0;
+            default: return readIntWithTag(tag);
+        }
+    }
+    
+    public Integer readIntObject() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            default: return readIntWithTag(tag);
+        }
+    }
+
+    private long readLongWithTag(int tag) throws IOException {
         switch (tag) {
             case '0': return 0L;
             case '1': return 1L;
@@ -922,7 +992,6 @@ public final class HproseReader {
             case HproseTags.TagInteger: return readLong(HproseTags.TagSemicolon);
             case HproseTags.TagLong: return readLong(HproseTags.TagSemicolon);
             case HproseTags.TagDouble: return Double.valueOf(readDoubleWithoutTag()).longValue();
-            case HproseTags.TagNull: return 0l;
             case HproseTags.TagEmpty: return 0l;
             case HproseTags.TagTrue: return 1l;
             case HproseTags.TagFalse: return 0l;
@@ -935,8 +1004,23 @@ public final class HproseReader {
         }
     }
 
-    public float readFloat() throws IOException {
+    public long readLong() throws IOException {
         int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return 0l;
+            default: return readLongWithTag(tag);
+        }
+    }
+
+    public Long readLongObject() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            default: return readLongWithTag(tag);
+        }
+    }
+
+    private float readFloatWithTag(int tag) throws IOException {
         switch (tag) {
             case '0': return 0.0f;
             case '1': return 1.0f;
@@ -951,7 +1035,6 @@ public final class HproseReader {
             case HproseTags.TagInteger: return readIntAsFloat();
             case HproseTags.TagLong: return readIntAsFloat();
             case HproseTags.TagDouble: return parseFloat(readUntil(HproseTags.TagSemicolon));
-            case HproseTags.TagNull: return 0.0f;
             case HproseTags.TagEmpty: return 0.0f;
             case HproseTags.TagTrue: return 1.0f;
             case HproseTags.TagFalse: return 0.0f;
@@ -966,8 +1049,23 @@ public final class HproseReader {
         }
     }
 
-    public double readDouble() throws IOException {
+    public float readFloat() throws IOException {
         int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return 0.0f;
+            default: return readFloatWithTag(tag);
+        }
+    }
+
+    public Float readFloatObject() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            default: return readFloatWithTag(tag);
+        }
+    }
+
+    private double readDoubleWithTag(int tag) throws IOException {
         switch (tag) {
             case '0': return 0.0;
             case '1': return 1.0;
@@ -982,7 +1080,6 @@ public final class HproseReader {
             case HproseTags.TagInteger: return readIntAsDouble();
             case HproseTags.TagLong: return readIntAsDouble();
             case HproseTags.TagDouble: return readDoubleWithoutTag();
-            case HproseTags.TagNull: return 0.0;
             case HproseTags.TagEmpty: return 0.0;
             case HproseTags.TagTrue: return 1.0;
             case HproseTags.TagFalse: return 0.0;
@@ -992,6 +1089,22 @@ public final class HproseReader {
             case HproseTags.TagString: return Double.parseDouble(readStringWithoutTag());
             case HproseTags.TagRef: return Double.parseDouble(readRef(String.class));
             default: throw castError(tagToString(tag), double.class);
+        }
+    }
+
+    public double readDouble() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return 0.0;
+            default: return readDoubleWithTag(tag);
+        }
+    }
+
+    public Double readDoubleObject() throws IOException {
+        int tag = stream.read();
+        switch (tag) {
+            case HproseTags.TagNull: return null;
+            default: return readDoubleWithTag(tag);
         }
     }
 
@@ -1976,14 +2089,14 @@ public final class HproseReader {
             case TypeCode.DoubleType: return readDouble();
             case TypeCode.Enum: return readEnum(cls);
             case TypeCode.Object: return unserialize();
-            case TypeCode.Boolean: return readBoolean();
-            case TypeCode.Character: return readChar();
-            case TypeCode.Byte: return readByte();
-            case TypeCode.Short: return readShort();
-            case TypeCode.Integer: return readInt();
-            case TypeCode.Long: return readLong();
-            case TypeCode.Float: return readFloat();
-            case TypeCode.Double: return readDouble();
+            case TypeCode.Boolean: return readBooleanObject();
+            case TypeCode.Character: return readCharObject();
+            case TypeCode.Byte: return readByteObject();
+            case TypeCode.Short: return readShortObject();
+            case TypeCode.Integer: return readIntObject();
+            case TypeCode.Long: return readLongObject();
+            case TypeCode.Float: return readFloatObject();
+            case TypeCode.Double: return readDoubleObject();
             case TypeCode.String: return readString();
             case TypeCode.BigInteger: return readBigInteger();
             case TypeCode.Date: return readDate();
