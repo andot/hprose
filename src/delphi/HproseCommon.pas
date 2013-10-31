@@ -15,7 +15,7 @@
  *                                                        *
  * hprose common unit for delphi.                         *
  *                                                        *
- * LastModified: Jan 15, 2013                             *
+ * LastModified: Nov 1, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -498,26 +498,32 @@ type
   TSmartObject = class(TInterfacedObject, ISmartObject)
   protected
     FObject: TObject;
-    constructor Create(const AClass: TClass);
+    constructor Create(const AClass: TClass); overload;
   public
+    constructor Create(AObject: TObject); overload; virtual;
     class function New(const AClass: TClass): ISmartObject;
     function Value: TObject;
     destructor Destroy; override;
   end;
 
+  TSmartClass = class of TSmartObject;
+
 {$IFDEF Supports_Generics}
-  ISmartObject<T: constructor, class> = interface
+  ISmartObject<T> = interface
   ['{91FEB85D-1284-4516-A9DA-5D370A338DA0}']
     function _: T;
   end;
 
-  TSmartObject<T: constructor, class> = class(TSmartObject, ISmartObject<T>)
+{$M+}
+  TSmartObject<T> = class(TSmartObject, ISmartObject<T>)
   protected
-    constructor Create;
+    constructor Create0;
   public
+    constructor Create(AObject: TObject); override;
     class function New: ISmartObject<T>;
     function _: T;
   end;
+{$M-}
 {$ENDIF}
 
 {$IFDEF DELPHI2009}
@@ -603,9 +609,12 @@ function GetTypeInfo(const TypeName: string; var Size: Integer): PTypeInfo;
 
 type
   TTypeManager = class
+  private
+    class procedure RegisterSmartObject<T, I>(const Alias: string);
+  public
     class procedure Register<T>; overload;
     class procedure Register<T: constructor, class>(const Alias: string); overload;
-    class procedure Register<T: constructor, TInterfacedObject; I>(const Alias: string); overload;
+    class procedure Register<T: constructor, TInterfacedObject; I: IInterface>(const Alias: string); overload;
     class function GetAlias<T: class>: string;
     class function GetInterface<T: TInterfacedObject>: TGUID;
     class function GetClass(const Alias: string): TClass; overload;
@@ -625,7 +634,7 @@ function MapSplit(MapClass: TMapClass; Str: string;
 
 implementation
 
-uses RTLConsts, Variants{$IFDEF Supports_Rtti}, Rtti{$ENDIF};
+uses RTLConsts, StrUtils, Variants{$IFDEF Supports_Rtti}, Rtti{$ENDIF};
 {$IFNDEF FPC}
 type
 
@@ -2638,16 +2647,45 @@ begin
     TrimKey, TrimValue, SkipEmptyKey, SkipEmptyValue);
 end;
 
+var
+  SmartObjectsRef: IMap;
+
 { TSmartObject }
 
 constructor TSmartObject.Create(const AClass: TClass);
 begin
+  SmartObjectsRef.Lock;
   FObject := AClass.Create;
+  SmartObjectsRef[ObjToVar(FObject)] := 1;
+  SmartObjectsRef.UnLock;
+end;
+
+constructor TSmartObject.Create(AObject: TObject);
+var
+  V: Variant;
+begin
+  SmartObjectsRef.Lock;
+  FObject := AObject;
+  V := ObjToVar(AObject);
+  if SmartObjectsRef.ContainsKey(V) then
+    SmartObjectsRef[V] := SmartObjectsRef[V] + 1
+  else
+    SmartObjectsRef[V] := 1;
+  SmartObjectsRef.UnLock;
 end;
 
 destructor TSmartObject.Destroy;
+var
+  V: Variant;
 begin
-  FreeAndNil(FObject);
+  SmartObjectsRef.Lock;
+  V := ObjToVar(FObject);
+  SmartObjectsRef[V] := SmartObjectsRef[V] - 1;
+  if SmartObjectsRef[V] = 0 then begin
+    SmartObjectsRef.Delete(V);
+    FreeAndNil(FObject);
+  end;
+  SmartObjectsRef.UnLock;
   inherited;
 end;
 
@@ -2774,9 +2812,26 @@ end;
 
 { TSmartObject<T> }
 
-constructor TSmartObject<T>.Create();
+constructor TSmartObject<T>.Create0();
+var
+  TI: PTypeInfo;
 begin
-  inherited Create(GetTypeData(TypeInfo(T))^.ClassType);
+  TI := TypeInfo(T);
+  if TI^.Kind <> tkClass then
+    raise EHproseException.Create(GetTypeName(TI) + 'is not a Class');
+  inherited Create(GetTypeData(TI)^.ClassType)
+end;
+
+constructor TSmartObject<T>.Create(AObject: TObject);
+var
+  TI: PTypeInfo;
+begin
+  TI := TypeInfo(T);
+  if TI^.Kind <> tkClass then
+    raise EHproseException.Create(GetTypeName(TI) + 'is not a Class');
+  if not AObject.ClassType.InheritsFrom(GetTypeData(TI)^.ClassType) then
+    raise EHproseException.Create(AObject.ClassName + 'is not a ' + GetTypeName(TI));
+  inherited Create(AObject);
 end;
 
 function TSmartObject<T>._: T;
@@ -2786,7 +2841,7 @@ end;
 
 class function TSmartObject<T>.New: ISmartObject<T>;
 begin
-  Result := TSmartObject<T>.Create as ISmartObject<T>;
+  Result := TSmartObject<T>.Create0 as ISmartObject<T>;
 end;
 
 var
@@ -2809,18 +2864,21 @@ end;
 
 procedure RegisterType(const Size: Integer; const TypeInfo: PTypeInfo);
 var
-  UnitName: string;
   TypeName: string;
+  UnitName: string;
   TypeData: PTypeData;
 begin
   TypeName := GetTypeName(TypeInfo);
   RegisterType(TypeName, Size, TypeInfo);
-{$IFDEF Supports_Rtti}
-  TypeName := TRttiContext.Create.GetType(TypeInfo).QualifiedName;
-{$ELSE}
-  TypeData :=  GetTypeData(TypeInfo);
+
+  TypeData := GetTypeData(TypeInfo);
   case TypeInfo^.Kind of
-  tkEnumeration: UnitName := string(TypeData^.EnumUnitName);
+  tkEnumeration:
+{$IFDEF Supports_Rtti}
+    TypeName := TRttiContext.Create.GetType(TypeInfo).QualifiedName;
+{$ELSE}
+    UnitName := string(TypeData^.EnumUnitName);
+{$ENDIF}
   tkClass:       UnitName := string(TypeData^.UnitName);
   tkInterface:   UnitName := string(TypeData^.IntfUnit);
   tkDynArray:    UnitName := string(TypeData^.DynUnitName);
@@ -2828,7 +2886,6 @@ begin
     raise EHproseException.Create('Can not register this type: ' + TypeName);
   end;
   if UnitName <> '' then TypeName := UnitName + '.' + TypeName;
-{$ENDIF}
   RegisterType(TypeName, Size, TypeInfo);
 end;
 
@@ -2847,9 +2904,29 @@ end;
 
 { TTypeManager }
 
-class procedure TTypeManager.Register<T>;
+class procedure TTypeManager.RegisterSmartObject<T, I>(const Alias: string);
+var
+  TTI, ITI: PTypeInfo;
 begin
-    RegisterType(SizeOf(T), System.TypeInfo(T));
+  TTI := System.TypeInfo(T);
+  ITI := System.TypeInfo(I);
+  RegisterClass(TInterfacedClass(GetTypeData(TTI)^.ClassType), GetTypeData(ITI)^.Guid, Alias);
+  RegisterType(SizeOf(T), TTI);
+  RegisterType(SizeOf(I), ITI);
+end;
+
+class procedure TTypeManager.Register<T>;
+var
+  TI: PTypeInfo;
+  TypeName: string;
+  TTI: PTypeInfo;
+begin
+  TI := System.TypeInfo(T);
+  RegisterType(SizeOf(T), TI);
+  TypeName := GetTypeName(TI);
+  if (TI^.Kind = tkClass) and
+     not StrUtils.AnsiStartsText('TSmartObject<', TypeName) then
+    TTypeManager.RegisterSmartObject<TSmartObject<T>, ISmartObject<T>>(TypeName);
 end;
 
 class procedure TTypeManager.Register<T>(const Alias: string);
@@ -2859,7 +2936,7 @@ begin
   TI := System.TypeInfo(T);
   if PTypeInfo(TI)^.Kind = tkClass then
     RegisterClass(GetTypeData(TI)^.ClassType, Alias);
-  RegisterType(SizeOf(T), TI);
+  TTypeManager.Register<T>;
 end;
 
 class procedure TTypeManager.Register<T, I>(const Alias: string);
@@ -2869,10 +2946,10 @@ begin
   TTI := System.TypeInfo(T);
   ITI := System.TypeInfo(I);
   if ITI^.Kind <> tkInterface then
-    raise EHproseException.Create('I must be a interface');
+    raise EHproseException.Create(GetTypeName(ITI) + ' must be a interface');
   RegisterClass(TInterfacedClass(GetTypeData(TTI)^.ClassType), GetTypeData(ITI)^.Guid, Alias);
-  RegisterType(SizeOf(T), TTI);
-  RegisterType(SizeOf(I), ITI);
+  TTypeManager.Register<T>;
+  TTypeManager.Register<I>;
 end;
 
 class function TTypeManager.GetAlias<T>: string;
@@ -2919,6 +2996,11 @@ end;
 {$ENDIF}
 
 initialization
+  SmartObjectsRef := THashMap.Create as IMap;
+
+  HproseClassMap := TCaseInsensitiveHashedMap.Create(False, True);
+  HproseInterfaceMap := TCaseInsensitiveHashedMap.Create(False, True);
+
 {$IFDEF Supports_Generics}
   HproseSizeMap := TCaseInsensitiveHashMap.Create(64, 0.75, False, True);
   HproseSizeMap.BeginWrite;
@@ -3011,8 +3093,6 @@ initialization
   TTypeManager.Register<ISmartObject>;
 {$ENDIF}
 
-  HproseClassMap := TCaseInsensitiveHashedMap.Create(False, True);
-  HproseInterfaceMap := TCaseInsensitiveHashedMap.Create(False, True);
 {$IFDEF Supports_Generics}
   TTypeManager.Register<TArrayList, IList>('!List');
   TTypeManager.Register<TArrayList, IArrayList>('!ArrayList');

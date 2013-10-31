@@ -15,7 +15,7 @@
  *                                                        *
  * hprose io unit for delphi.                             *
  *                                                        *
- * LastModified: Jan 14, 2013                             *
+ * LastModified: Nov 1, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -101,9 +101,9 @@ type
     function ReadInterfaceArray(Count: Integer): Variant;
     function ReadDynArrayWithoutTag(varType: Integer): Variant;
     function ReadIList(AClass: TClass): IList;
-    function ReadList(AClass: TClass): TAbstractList; overload;
+    function ReadList(AClass: TClass): TAbstractList;
     function ReadIMap(AClass: TClass): IMap;
-    function ReadMap(AClass: TClass): TAbstractMap; overload;
+    function ReadMap(AClass: TClass): TAbstractMap;
     function ReadMapAsInterface(AClass: TClass; const IID: TGUID): IInterface;
     function ReadMapAsObject(AClass: TClass): TObject;
     function ReadObjectAsIMap(AClass: TMapClass): IMap;
@@ -112,6 +112,27 @@ type
     function ReadObjectWithoutTag(AClass: TClass): TObject; overload;
     procedure ReadClass;
     function ReadRef: Variant;
+{$IFDEF Supports_Generics}
+    procedure ReadArray<T>(var DynArray: TArray<T>; TypeInfo: PTypeInfo); overload;
+    procedure ReadArray(TypeInfo: PTypeInfo; out DynArray); overload;
+    procedure ReadDynArray(TypeInfo: PTypeInfo; out DynArray); overload;
+{$IFDEF Supports_Rtti}
+    function ReadTList<T>(TypeInfo, ElementTypeInfo: PTypeInfo): TList<T>; overload;
+    function ReadTList(TypeInfo: PTypeInfo): TObject; overload;
+    function ReadTQueue<T>(TypeInfo, ElementTypeInfo: PTypeInfo): TQueue<T>; overload;
+    function ReadTQueue(TypeInfo: PTypeInfo): TObject; overload;
+    function ReadTStack<T>(TypeInfo, ElementTypeInfo: PTypeInfo): TStack<T>; overload;
+    function ReadTStack(TypeInfo: PTypeInfo): TObject; overload;
+    function ReadTDictionary2<TKey, TValue>(
+      TypeInfo, KeyTypeInfo, ValueTypeInfo: PTypeInfo): TDictionary<TKey, TValue>;
+    function ReadTDictionary1<TKey>(TypeInfo, KeyTypeInfo,
+      ValueTypeInfo: PTypeInfo; ValueSize: Integer): TObject;
+    function ReadTDictionary(TypeInfo: PTypeInfo): TObject;
+    function UnserializeTypeAsT<T>(TypeInfo: PTypeInfo): T;
+{$ENDIF}
+    function ReadSmartObject(TypeInfo: PTypeInfo): ISmartObject;
+    procedure Unserialize(TypeInfo: PTypeInfo; out Value); overload;
+{$ENDIF}
     procedure ReadRaw(const OStream: TStream; Tag: AnsiChar); overload;
     procedure ReadInfinityRaw(const OStream: TStream; Tag: AnsiChar);
     procedure ReadNumberRaw(const OStream: TStream; Tag: AnsiChar);
@@ -123,8 +144,6 @@ type
     procedure ReadComplexRaw(const OStream: TStream; Tag: AnsiChar);
   public
     constructor Create(AStream: TStream);
-    function Unserialize: Variant; overload;
-    function Unserialize(TypeInfo: PTypeInfo): Variant; overload;
     procedure CheckTag(expectTag: AnsiChar);
     function CheckTags(const expectTags: RawByteString): AnsiChar;
     function ReadUntil(Tag: AnsiChar): string;
@@ -155,13 +174,18 @@ type
     function ReadString: WideString;
     function ReadBytes: Variant;
     function ReadGuid: string;
-    function ReadDynArray(varType: Integer): Variant;
+    function ReadDynArray(varType: Integer): Variant; overload;
     function ReadVariantArray: TVariants; overload;
     function ReadInterface(AClass: TClass; const IID: TGUID): IInterface;
-    function ReadObject(AClass: TClass): TObject; overload;
-    procedure Reset;
+    function ReadObject(AClass: TClass): TObject;
+{$IFDEF Supports_Generics}
+    function Unserialize<T>: T; overload;
+{$ENDIF}
+    function Unserialize: Variant; overload;
+    function Unserialize(TypeInfo: PTypeInfo): Variant; overload;
     function ReadRaw: TMemoryStream; overload;
     procedure ReadRaw(const OStream: TStream); overload;
+    procedure Reset;
     property Stream: TStream read FStream;
   end;
 
@@ -195,17 +219,16 @@ type
     procedure WriteArrayWithRef(const DynArray; TypeInfo: Pointer); overload;
     procedure WriteList(const AList: TObject); overload;
     procedure WriteObjectList(const AList: TObject);
-    procedure WriteQueue(const AQueue: TObject); overload;
+    procedure WriteQueue(const AQueue: TObject);
     procedure WriteObjectQueue(const AQueue: TObject);
-    procedure WriteStack(const AStack: TObject); overload;
+    procedure WriteStack(const AStack: TObject);
     procedure WriteObjectStack(const AStack: TObject);
-    procedure WriteDictionary(const ADict: TObject); overload;
-    procedure WriteObjectDictionary(const ADict: TObject); overload;
-  protected
-    procedure WriteDictionary<TKey>(const ADict: TObject; ValueSize: Integer;
-              KeyTypeInfo, ValueTypeInfo: Pointer); overload;
-    procedure WriteDictionary<TKey, TValue>(const ADict: TDictionary<TKey, TValue>;
-              KeyTypeInfo, ValueTypeInfo: Pointer); overload;
+    procedure WriteDictionary(const ADict: TObject);
+    procedure WriteObjectDictionary(const ADict: TObject);
+    procedure WriteTDictionary1<TKey>(const ADict: TObject; ValueSize: Integer;
+              KeyTypeInfo, ValueTypeInfo: Pointer);
+    procedure WriteTDictionary2<TKey, TValue>(const ADict: TDictionary<TKey, TValue>;
+              KeyTypeInfo, ValueTypeInfo: Pointer);
 {$ENDIF}
   public
     constructor Create(AStream: TStream);
@@ -244,16 +267,16 @@ type
 {$IFDEF Supports_Generics}
     procedure Serialize<T>(const Value: T); overload;
     procedure WriteArray<T>(const DynArray: array of T); overload;
-    procedure WriteArray<T>(const DynArray: TArray<T>); overload;
-    procedure WriteArrayWithRef<T>(const DynArray: TArray<T>); overload;
-    procedure WriteList<T>(const AList: TList<T>); overload;
-    procedure WriteListWithRef<T>(const AList: TList<T>); overload;
-    procedure WriteQueue<T>(const AQueue: TQueue<T>); overload;
-    procedure WriteQueueWithRef<T>(const AQueue: TQueue<T>);
-    procedure WriteStack<T>(const AStack: TStack<T>); overload;
-    procedure WriteStackWithRef<T>(const AStack: TStack<T>);
-    procedure WriteDictionary<TKey, TValue>(const ADict: TDictionary<TKey, TValue>); overload;
-    procedure WriteDictionaryWithRef<TKey, TValue>(const ADict: TDictionary<TKey, TValue>);
+    procedure WriteDynArray<T>(const DynArray: TArray<T>);
+    procedure WriteDynArrayWithRef<T>(const DynArray: TArray<T>); overload;
+    procedure WriteTList<T>(const AList: TList<T>); overload;
+    procedure WriteTListWithRef<T>(const AList: TList<T>); overload;
+    procedure WriteTQueue<T>(const AQueue: TQueue<T>); overload;
+    procedure WriteTQueueWithRef<T>(const AQueue: TQueue<T>);
+    procedure WriteTStack<T>(const AStack: TStack<T>); overload;
+    procedure WriteTStackWithRef<T>(const AStack: TStack<T>);
+    procedure WriteTDictionary<TKey, TValue>(const ADict: TDictionary<TKey, TValue>); overload;
+    procedure WriteTDictionaryWithRef<TKey, TValue>(const ADict: TDictionary<TKey, TValue>);
 {$ELSE}
     procedure Serialize(const Value: TObject); overload;
 {$ENDIF}
@@ -273,10 +296,12 @@ type
     class function Serialize(const Value: array of const): RawByteString; overload;
 {$IFDEF Supports_Generics}
     class function Serialize<T>(const Value: T): RawByteString; overload;
+    class function Unserialize<T>(const Data:RawByteString): T; overload;
 {$ELSE}
     class function Serialize(const Value: TObject): RawByteString; overload;
 {$ENDIF}
-    class function Unserialize(const Data:RawByteString; TypeInfo: Pointer = nil): Variant;
+    class function Unserialize(const Data:RawByteString): Variant; overload;
+    class function Unserialize(const Data:RawByteString; TypeInfo: Pointer): Variant; overload;
   end;
 
 function HproseSerialize(const Value: TObject): RawByteString; overload;
@@ -288,6 +313,7 @@ implementation
 
 uses DateUtils, Math, RTLConsts,
 {$IFNDEF FPC}StrUtils, SysConst, {$ENDIF}
+{$IFDEF Supports_Rtti}Rtti, {$ENDIF}
      SysUtils, Variants;
 type
 
@@ -358,6 +384,55 @@ const
 
   HproseTagBoolean   :array[Boolean] of AnsiChar = ('f', 't');
   HproseTagSign      :array[Boolean] of AnsiChar = ('-', '+');
+
+{$IFDEF Supports_Generics}
+type
+  TB1 = Byte;
+  TB2 = Word;
+  TB4 = LongWord;
+  TB8 = UInt64;
+
+function IsSmartObject(const Name: string): Boolean; inline;
+begin
+  Result := AnsiStartsText('ISmartObject<', Name) or
+            AnsiStartsText('HproseCommon.ISmartObject<', Name);
+end;
+
+function GetElementName(const Name: string): string;
+var
+  I, L: Integer;
+begin
+  L := Length(Name);
+  for I := 1 to L do if Name[I] = '<' then begin
+    Result := AnsiMidStr(Name, I + 1, L - I - 1);
+    Break;
+  end;
+end;
+
+procedure SplitKeyValueTypeName(const Name: string;
+  var KeyName, ValueName: string);
+var
+  I, N, P, L: Integer;
+begin
+  L := Length(Name);
+  N := 0;
+  P := 0;
+  for I := 1 to L do begin
+    case Name[I] of
+      '<': Inc(N);
+      '>': Dec(N);
+      ',': if N = 0 then begin
+        P := I;
+        Break;
+      end;
+    end;
+  end;
+  if P > 0 then begin
+    KeyName := AnsiMidStr(Name, 1, P - 1);
+    ValueName := AnsiMidStr(Name, P + 1, L - P);
+  end;
+end;
+{$ENDIF}
 
 function GetStoredPropList(Instance: TObject; out PropList: PPropList): Integer;
 var
@@ -2018,8 +2093,16 @@ end;
 
 function THproseReader.ReadObject(AClass: TClass): TObject;
 var
+{$IFDEF Supports_Rtti}
+  ClassName: string;
+  TypeInfo: PTypeInfo;
+{$ENDIF}
   Tag: AnsiChar;
 begin
+{$IFDEF Supports_Rtti}
+  ClassName := AClass.ClassName;
+  TypeInfo := PTypeInfo(AClass.ClassInfo);
+{$ENDIF}
   FStream.ReadBuffer(Tag, 1);
   case Tag of
     htNull,
@@ -2027,11 +2110,27 @@ begin
     htList:
       if AClass.InheritsFrom(TAbstractList) then
         Result := ReadList(AClass)
+{$IFDEF Supports_Rtti}
+      else if AnsiStartsText('TList<', ClassName) or
+        AnsiStartsText('TObjectList<', ClassName) then
+        Result := ReadTList(TypeInfo)
+      else if AnsiStartsText('TQueue<', ClassName) or
+        AnsiStartsText('TObjectQueue<', ClassName) then
+        Result := ReadTQueue(TypeInfo)
+      else if AnsiStartsText('TStack<', ClassName) or
+        AnsiStartsText('TObjectStack<', ClassName) then
+        Result := ReadTStack(TypeInfo)
+{$ENDIF}
       else
         Result := nil;
     htMap:
       if AClass.InheritsFrom(TAbstractMap) then
         Result := ReadMap(AClass)
+{$IFDEF Supports_Rtti}
+      else if AnsiStartsText('TDictionary<', ClassName) or
+        AnsiStartsText('TObjectDictionary<', ClassName) then
+        Result := ReadTDictionary(TypeInfo)
+{$ENDIF}
       else
         Result := ReadMapAsObject(AClass);
     htClass: begin
@@ -2049,6 +2148,488 @@ begin
     raise CastError(TagToString(Tag), 'Object');
   end;
 end;
+
+{$IFDEF Supports_Generics}
+procedure THproseReader.ReadArray<T>(var DynArray: TArray<T>; TypeInfo: PTypeInfo);
+var
+  Count, I: Integer;
+begin
+  Count := ReadInt(HproseTagOpenbrace);
+  SetLength(DynArray, Count);
+  FRefList.Add(NativeInt(Pointer(DynArray)));
+  for I := 0 to Count - 1 do Unserialize(TypeInfo, DynArray[I]);
+  CheckTag(HproseTagClosebrace);
+end;
+
+procedure THproseReader.ReadArray(TypeInfo: PTypeInfo; out DynArray);
+var
+  TypeName, ElementName: string;
+  ElementTypeInfo: PTypeInfo;
+  Size: Integer;
+begin
+  TypeName := GetTypeName(TypeInfo);
+  ElementName := GetElementName(TypeName);
+  ElementTypeInfo := GetTypeInfo(ElementName, Size);
+  if ElementTypeInfo = nil then
+    raise EHproseException.Create(ElementName + 'is not registered');
+  case ElementTypeInfo^.Kind of
+    tkString: ReadArray<ShortString>(TArray<ShortString>(DynArray), ElementTypeInfo);
+    tkLString: ReadArray<AnsiString>(TArray<AnsiString>(DynArray), ElementTypeInfo);
+    tkWString: ReadArray<WideString>(TArray<WideString>(DynArray), ElementTypeInfo);
+    tkUString: ReadArray<UnicodeString>(TArray<UnicodeString>(DynArray), ElementTypeInfo);
+    tkVariant: ReadArray<Variant>(TArray<Variant>(DynArray), ElementTypeInfo);
+    tkDynArray: ReadArray<TArray<Pointer>>(TArray<TArray<Pointer>>(DynArray), ElementTypeInfo);
+    tkInterface: ReadArray<IInterface>(TArray<IInterface>(DynArray), ElementTypeInfo);
+    tkClass: ReadArray<TObject>(TArray<TObject>(DynArray), ElementTypeInfo);
+  else
+    case Size of
+      1: ReadArray<TB1>(TArray<TB1>(DynArray), ElementTypeInfo);
+      2: ReadArray<TB2>(TArray<TB2>(DynArray), ElementTypeInfo);
+      4: ReadArray<TB4>(TArray<TB4>(DynArray), ElementTypeInfo);
+      8: ReadArray<TB8>(TArray<TB8>(DynArray), ElementTypeInfo);
+    else if GetTypeName(TypeInfo) = 'Extended' then
+      ReadArray<Extended>(TArray<Extended>(DynArray), ElementTypeInfo)
+    else
+      raise EHproseException.Create('Can not unserialize ' + TypeName);
+    end;
+  end;
+end;
+
+type
+  PDynArrayRec = ^TDynArrayRec;
+  TDynArrayRec = packed record
+  {$IFDEF CPUX64}
+    _Padding: LongInt; // Make 16 byte align for payload..
+  {$ENDIF}
+    RefCnt: LongInt;
+    Length: NativeInt;
+  end;
+
+procedure DynArrayAddRef(P: Pointer);
+begin
+  if P <> nil then
+    Inc(PDynArrayRec(PByte(P) - SizeOf(TDynArrayRec))^.RefCnt);
+end;
+
+procedure THproseReader.ReadDynArray(TypeInfo: PTypeInfo; out DynArray);
+var
+  Tag: AnsiChar;
+begin
+  FStream.ReadBuffer(Tag, 1);
+  case Tag of
+    htNull,
+    htEmpty: Pointer(DynArray) := nil;
+    htList: ReadArray(TypeInfo, DynArray);
+    htRef: begin
+      Pointer(DynArray) := Pointer(NativeInt(ReadRef));
+      DynArrayAddRef(Pointer(DynArray));
+    end;
+  else
+    raise CastError(TagToString(Tag), 'DynArray');
+  end;
+end;
+
+{$IFDEF Supports_Rtti}
+function THproseReader.ReadTList<T>(TypeInfo, ElementTypeInfo: PTypeInfo): TList<T>;
+var
+  Count, I: Integer;
+  AClass: TClass;
+  Context: TRttiContext;
+  RttiType: TRttiType;
+  RttiMethod: TRttiMethod;
+begin
+  Count := ReadInt(HproseTagOpenbrace);
+  AClass := GetTypeData(TypeInfo)^.ClassType;
+  Context := TRttiContext.Create;
+  RttiType := Context.GetType(AClass);
+  RttiMethod := RttiType.GetMethod('Create');
+  Result := TList<T>(RttiMethod.Invoke(AClass, []).AsObject);
+  RttiMethod.Free;
+  RttiType.Free;
+  Context.Free;
+  Result.Count := Count;
+  FRefList.Add(ObjToVar(Result));
+  for I := 0 to Count - 1 do Result[I] := UnserializeTypeAsT<T>(ElementTypeInfo);
+  CheckTag(HproseTagClosebrace);
+end;
+
+function THproseReader.ReadTList(TypeInfo: PTypeInfo): TObject;
+var
+  TypeName, ElementName: string;
+  ElementTypeInfo: PTypeInfo;
+  Size: Integer;
+begin
+  TypeName := GetTypeName(TypeInfo);
+  ElementName := GetElementName(TypeName);
+  ElementTypeInfo := GetTypeInfo(ElementName, Size);
+  if ElementTypeInfo = nil then
+    raise EHproseException.Create(ElementName + 'is not registered');
+  case ElementTypeInfo^.Kind of
+    tkString: Result := ReadTList<ShortString>(TypeInfo, ElementTypeInfo);
+    tkLString: Result := ReadTList<AnsiString>(TypeInfo, ElementTypeInfo);
+    tkWString: Result := ReadTList<WideString>(TypeInfo, ElementTypeInfo);
+    tkUString: Result := ReadTList<UnicodeString>(TypeInfo, ElementTypeInfo);
+    tkVariant: Result := ReadTList<Variant>(TypeInfo, ElementTypeInfo);
+    tkDynArray: Result := ReadTList<TArray<Pointer>>(TypeInfo, ElementTypeInfo);
+    tkInterface: Result := ReadTList<IInterface>(TypeInfo, ElementTypeInfo);
+    tkClass: Result := ReadTList<TObject>(TypeInfo, ElementTypeInfo);
+  else
+    case Size of
+      1: Result := ReadTList<TB1>(TypeInfo, ElementTypeInfo);
+      2: Result := ReadTList<TB2>(TypeInfo, ElementTypeInfo);
+      4: Result := ReadTList<TB4>(TypeInfo, ElementTypeInfo);
+      8: Result := ReadTList<TB8>(TypeInfo, ElementTypeInfo);
+    else if GetTypeName(TypeInfo) = 'Extended' then
+      Result := ReadTList<Extended>(TypeInfo, ElementTypeInfo)
+    else
+      raise EHproseException.Create('Can not unserialize ' + TypeName);
+    end;
+  end;
+end;
+
+function THproseReader.ReadTQueue<T>(TypeInfo, ElementTypeInfo: PTypeInfo): TQueue<T>;
+var
+  Count, I: Integer;
+  AClass: TClass;
+  Context: TRttiContext;
+  RttiType: TRttiType;
+  RttiMethod: TRttiMethod;
+begin
+  Count := ReadInt(HproseTagOpenbrace);
+  AClass := GetTypeData(TypeInfo)^.ClassType;
+  Context := TRttiContext.Create;
+  RttiType := Context.GetType(AClass);
+  RttiMethod := RttiType.GetMethod('Create');
+  Result := TQueue<T>(RttiMethod.Invoke(AClass, []).AsObject);
+  RttiMethod.Free;
+  RttiType.Free;
+  Context.Free;
+  FRefList.Add(ObjToVar(Result));
+  for I := 1 to Count do Result.Enqueue(UnserializeTypeAsT<T>(ElementTypeInfo));
+  CheckTag(HproseTagClosebrace);
+end;
+
+function THproseReader.ReadTQueue(TypeInfo: PTypeInfo): TObject;
+var
+  TypeName, ElementName: string;
+  ElementTypeInfo: PTypeInfo;
+  Size: Integer;
+begin
+  TypeName := GetTypeName(TypeInfo);
+  ElementName := GetElementName(TypeName);
+  ElementTypeInfo := GetTypeInfo(ElementName, Size);
+  if ElementTypeInfo = nil then
+    raise EHproseException.Create(ElementName + 'is not registered');
+  case ElementTypeInfo^.Kind of
+    tkString: Result := ReadTQueue<ShortString>(TypeInfo, ElementTypeInfo);
+    tkLString: Result := ReadTQueue<AnsiString>(TypeInfo, ElementTypeInfo);
+    tkWString: Result := ReadTQueue<WideString>(TypeInfo, ElementTypeInfo);
+    tkUString: Result := ReadTQueue<UnicodeString>(TypeInfo, ElementTypeInfo);
+    tkVariant: Result := ReadTQueue<Variant>(TypeInfo, ElementTypeInfo);
+    tkDynArray: Result := ReadTQueue<TArray<Pointer>>(TypeInfo, ElementTypeInfo);
+    tkInterface: Result := ReadTQueue<IInterface>(TypeInfo, ElementTypeInfo);
+    tkClass: Result := ReadTQueue<TObject>(TypeInfo, ElementTypeInfo);
+  else
+    case Size of
+      1: Result := ReadTQueue<TB1>(TypeInfo, ElementTypeInfo);
+      2: Result := ReadTQueue<TB2>(TypeInfo, ElementTypeInfo);
+      4: Result := ReadTQueue<TB4>(TypeInfo, ElementTypeInfo);
+      8: Result := ReadTQueue<TB8>(TypeInfo, ElementTypeInfo);
+    else if GetTypeName(TypeInfo) = 'Extended' then
+      Result := ReadTQueue<Extended>(TypeInfo, ElementTypeInfo)
+    else
+      raise EHproseException.Create('Can not unserialize ' + TypeName);
+    end;
+  end;
+end;
+
+function THproseReader.ReadTStack<T>(TypeInfo, ElementTypeInfo: PTypeInfo): TStack<T>;
+var
+  Count, I: Integer;
+  AClass: TClass;
+begin
+  Count := ReadInt(HproseTagOpenbrace);
+  AClass := GetTypeData(TypeInfo)^.ClassType;
+  Result := TStack<T>(AClass.Create);
+  FRefList.Add(ObjToVar(Result));
+  for I := 1 to Count do Result.Push(UnserializeTypeAsT<T>(ElementTypeInfo));
+  CheckTag(HproseTagClosebrace);
+end;
+
+function THproseReader.ReadTStack(TypeInfo: PTypeInfo): TObject;
+var
+  TypeName, ElementName: string;
+  ElementTypeInfo: PTypeInfo;
+  Size: Integer;
+begin
+  TypeName := GetTypeName(TypeInfo);
+  ElementName := GetElementName(TypeName);
+  ElementTypeInfo := GetTypeInfo(ElementName, Size);
+  if ElementTypeInfo = nil then
+    raise EHproseException.Create(ElementName + 'is not registered');
+  case ElementTypeInfo^.Kind of
+    tkString: Result := ReadTStack<ShortString>(TypeInfo, ElementTypeInfo);
+    tkLString: Result := ReadTStack<AnsiString>(TypeInfo, ElementTypeInfo);
+    tkWString: Result := ReadTStack<WideString>(TypeInfo, ElementTypeInfo);
+    tkUString: Result := ReadTStack<UnicodeString>(TypeInfo, ElementTypeInfo);
+    tkVariant: Result := ReadTStack<Variant>(TypeInfo, ElementTypeInfo);
+    tkDynArray: Result := ReadTStack<TArray<Pointer>>(TypeInfo, ElementTypeInfo);
+    tkInterface: Result := ReadTStack<IInterface>(TypeInfo, ElementTypeInfo);
+    tkClass: Result := ReadTStack<TObject>(TypeInfo, ElementTypeInfo);
+  else
+    case Size of
+      1: Result := ReadTStack<TB1>(TypeInfo, ElementTypeInfo);
+      2: Result := ReadTStack<TB2>(TypeInfo, ElementTypeInfo);
+      4: Result := ReadTStack<TB4>(TypeInfo, ElementTypeInfo);
+      8: Result := ReadTStack<TB8>(TypeInfo, ElementTypeInfo);
+    else if GetTypeName(TypeInfo) = 'Extended' then
+      Result := ReadTStack<Extended>(TypeInfo, ElementTypeInfo)
+    else
+      raise EHproseException.Create('Can not unserialize ' + TypeName);
+    end;
+  end;
+end;
+
+function THproseReader.ReadTDictionary2<TKey, TValue>(
+  TypeInfo, KeyTypeInfo, ValueTypeInfo: PTypeInfo): TDictionary<TKey, TValue>;
+var
+  Count, I: Integer;
+  Key: TKey;
+  Value: TValue;
+  AClass: TClass;
+  Context: TRttiContext;
+  RttiType: TRttiType;
+  RttiMethod: TRttiMethod;
+begin
+  Count := ReadInt(HproseTagOpenbrace);
+  AClass := GetTypeData(TypeInfo)^.ClassType;
+  Context := TRttiContext.Create;
+  RttiType := Context.GetType(AClass);
+  RttiMethod := RttiType.GetMethod('Create');
+  Result := TDictionary<TKey, TValue>(RttiMethod.Invoke(AClass, [Count]).AsObject);
+  RttiMethod.Free;
+  RttiType.Free;
+  Context.Free;
+  FRefList.Add(ObjToVar(Result));
+  for I := 1 to Count do begin
+    Unserialize(KeyTypeInfo, Key);
+    Unserialize(ValueTypeInfo, Value);
+    Result.Add(Key, Value);
+  end;
+  CheckTag(HproseTagClosebrace);
+end;
+
+function THproseReader.ReadTDictionary1<TKey>(TypeInfo, KeyTypeInfo,
+   ValueTypeInfo: PTypeInfo; ValueSize: Integer): TObject;
+begin
+  case ValueTypeInfo^.Kind of
+    tkString: Result := ReadTDictionary2<TKey, ShortString>(
+                TypeInfo, KeyTypeInfo, ValueTypeInfo);
+    tkLString: Result := ReadTDictionary2<TKey, AnsiString>(
+                 TypeInfo, KeyTypeInfo, ValueTypeInfo);
+    tkWString: Result := ReadTDictionary2<TKey, WideString>(
+                 TypeInfo, KeyTypeInfo, ValueTypeInfo);
+    tkUString: Result := ReadTDictionary2<TKey, UnicodeString>(
+                 TypeInfo, KeyTypeInfo, ValueTypeInfo);
+    tkVariant: Result := ReadTDictionary2<TKey, Variant>(
+                 TypeInfo, KeyTypeInfo, ValueTypeInfo);
+    tkDynArray: Result := ReadTDictionary2<TKey, TArray<Pointer>>(
+                  TypeInfo, KeyTypeInfo, ValueTypeInfo);
+    tkInterface: Result := ReadTDictionary2<TKey, IInterface>(
+                   TypeInfo, KeyTypeInfo, ValueTypeInfo);
+    tkClass: Result := ReadTDictionary2<TKey, TObject>(
+               TypeInfo, KeyTypeInfo, ValueTypeInfo);
+  else
+    case ValueSize of
+      1: Result := ReadTDictionary2<TKey, TB1>(
+           TypeInfo, KeyTypeInfo, ValueTypeInfo);
+      2: Result := ReadTDictionary2<TKey, TB2>(
+           TypeInfo, KeyTypeInfo, ValueTypeInfo);
+      4: Result := ReadTDictionary2<TKey, TB4>(
+           TypeInfo, KeyTypeInfo, ValueTypeInfo);
+      8: Result := ReadTDictionary2<TKey, TB8>(
+           TypeInfo, KeyTypeInfo, ValueTypeInfo);
+    else if GetTypeName(ValueTypeInfo) = 'Extended' then
+      Result := ReadTDictionary2<TKey, Extended>(
+        TypeInfo, KeyTypeInfo, ValueTypeInfo)
+    else
+      raise EHproseException.Create('Can not unserialize ' + GetTypeName(TypeInfo));
+    end;
+  end;
+end;
+
+function THproseReader.ReadTDictionary(TypeInfo: PTypeInfo): TObject;
+var
+  TypeName, KeyName, ValueName: string;
+  KeyTypeInfo, ValueTypeInfo: PTypeInfo;
+  KeySize, ValueSize: Integer;
+begin
+  TypeName := GetTypeName(TypeInfo);
+  SplitKeyValueTypeName(GetElementName(TypeName), KeyName, ValueName);
+  KeyTypeInfo := GetTypeInfo(KeyName, KeySize);
+  ValueTypeInfo := GetTypeInfo(ValueName, ValueSize);
+  if KeyTypeInfo = nil then
+    raise EHproseException.Create(KeyName + 'is not registered');
+  if ValueTypeInfo = nil then
+    raise EHproseException.Create(ValueName + 'is not registered');
+  case KeyTypeInfo^.Kind of
+    tkString: Result := ReadTDictionary1<ShortString>(TypeInfo, KeyTypeInfo,
+                          ValueTypeInfo, ValueSize);
+    tkLString: Result := ReadTDictionary1<AnsiString>(TypeInfo, KeyTypeInfo,
+                           ValueTypeInfo, ValueSize);
+    tkWString: Result := ReadTDictionary1<WideString>(TypeInfo, KeyTypeInfo,
+                           ValueTypeInfo, ValueSize);
+    tkUString: Result := ReadTDictionary1<UnicodeString>(TypeInfo, KeyTypeInfo,
+                           ValueTypeInfo, ValueSize);
+    tkVariant: Result := ReadTDictionary1<Variant>(TypeInfo, KeyTypeInfo,
+                           ValueTypeInfo, ValueSize);
+    tkDynArray: Result := ReadTDictionary1<TArray<Pointer>>(TypeInfo, KeyTypeInfo,
+                           ValueTypeInfo, ValueSize);
+    tkInterface: Result := ReadTDictionary1<IInterface>(TypeInfo, KeyTypeInfo,
+                           ValueTypeInfo, ValueSize);
+    tkClass: Result := ReadTDictionary1<TObject>(TypeInfo, KeyTypeInfo,
+                           ValueTypeInfo, ValueSize);
+  else
+    case KeySize of
+      1: Result := ReadTDictionary1<TB1>(TypeInfo, KeyTypeInfo,
+                           ValueTypeInfo, ValueSize);
+      2: Result := ReadTDictionary1<TB2>(TypeInfo, KeyTypeInfo,
+                           ValueTypeInfo, ValueSize);
+      4: Result := ReadTDictionary1<TB4>(TypeInfo, KeyTypeInfo,
+                           ValueTypeInfo, ValueSize);
+      8: Result := ReadTDictionary1<TB8>(TypeInfo, KeyTypeInfo,
+                           ValueTypeInfo, ValueSize);
+    else if GetTypeName(KeyTypeInfo) = 'Extended' then
+      Result := ReadTDictionary1<Extended>(TypeInfo, KeyTypeInfo,
+                           ValueTypeInfo, ValueSize)
+    else
+      raise EHproseException.Create('Can not unserialize ' + TypeName);
+    end;
+  end;
+end;
+
+function THproseReader.UnserializeTypeAsT<T>(TypeInfo: PTypeInfo): T;
+begin
+  Unserialize(TypeInfo, Result);
+end;
+{$ENDIF}
+
+function THproseReader.ReadSmartObject(TypeInfo: PTypeInfo): ISmartObject;
+var
+  TypeName, ElementName: string;
+  ElementTypeInfo: PTypeInfo;
+  AObject: TObject;
+begin
+  TypeName := GetTypeName(TypeInfo);
+  if not IsSmartObject(TypeName) then
+    raise EHproseException.Create(TypeName + ' is not a ISmartObject interface');
+  ElementName := GetElementName(TypeName);
+  TypeName := 'TSmartObject<' + ElementName + '>';
+  TypeInfo := TTypeManager.TypeInfo(TypeName);
+  ElementTypeInfo := TTypeManager.TypeInfo(ElementName);
+  if (TypeInfo = nil) or (ElementTypeInfo = nil) then
+    raise EHproseException.Create(ElementName + 'is not registered');
+  if ElementTypeInfo^.Kind <> tkClass then
+    raise EHproseException.Create(ElementName + 'is not a Class');
+  AObject := ReadObject(GetTypeData(ElementTypeInfo)^.ClassType);
+  Result := TSmartClass(GetTypeData(TypeInfo)^.ClassType).Create(AObject) as ISmartObject;
+end;
+
+procedure THproseReader.Unserialize(TypeInfo: PTypeInfo; out Value);
+var
+  TypeData: PTypeData;
+  TypeName: string;
+  AClass: TClass;
+begin
+  TypeName := GetTypeName(TypeInfo);
+  if TypeName = 'Boolean' then
+    Boolean(Value) := ReadBoolean
+  else if (TypeName = 'TDateTime') or
+          (TypeName = 'TDate') or
+          (TypeName = 'TTime') then
+    TDateTime(Value) := ReadDateTime
+{$IFDEF DELPHI2009_UP}
+  else if TypeName = 'UInt64' then
+    UInt64(Value) := ReadUInt64
+{$ENDIF}
+  else begin
+    TypeData := GetTypeData(TypeInfo);
+    case TypeInfo^.Kind of
+      tkInteger, tkEnumeration, tkSet:
+        case TypeData^.OrdType of
+          otSByte:
+            ShortInt(Value) := ShortInt(ReadInteger);
+          otUByte:
+            Byte(Value) := Byte(ReadInteger);
+          otSWord:
+            SmallInt(Value) := SmallInt(ReadInteger);
+          otUWord:
+            Word(Value) := Word(ReadInteger);
+          otSLong:
+            Integer(Value) := ReadInteger;
+          otULong:
+            LongWord(Value) := LongWord(ReadInt64);
+        end;
+      tkChar:
+        AnsiChar(Value) := AnsiChar(ReadUTF8Char);
+      tkWChar:
+        WideChar(Value) := ReadUTF8Char;
+{$IFDEF FPC}
+      tkBool:
+        Boolean(Value) := ReadBoolean;
+      tkQWord:
+        QWord(Value) := ReadUInt64;
+{$ENDIF}
+      tkFloat:
+        case TypeData^.FloatType of
+          ftSingle:
+            Single(Value) := ReadExtended;
+          ftDouble:
+            Double(Value) := ReadExtended;
+          ftExtended:
+            Extended(Value) := ReadExtended;
+          ftComp:
+            Comp(Value) := ReadInt64;
+          ftCurr:
+            Currency(Value) := ReadCurrency;
+        end;
+      tkString:
+        ShortString(Value) := ShortString(ReadString());
+      tkLString{$IFDEF FPC}, tkAString{$ENDIF}:
+        AnsiString(Value) := AnsiString(ReadString);
+      tkWString:
+        WideString(Value) := ReadString;
+{$IFDEF DELPHI2009_UP}
+      tkUString:
+        UnicodeString(Value) := UnicodeString(ReadString);
+{$ENDIF}
+      tkInt64:
+        Int64(Value) := ReadInt64;
+      tkInterface: begin
+        AClass := GetClassByInterface(TypeData^.Guid);
+        if AClass = nil then
+          raise EHproseException.Create(GetTypeName(TypeInfo) + ' is not registered')
+        else if Supports(AClass, ISmartObject) then
+          ISmartObject(Value) := ReadSmartObject(TypeInfo)
+        else
+          IInterface(Value) := ReadInterface(AClass, TypeData^.Guid);
+      end;
+      tkDynArray:
+        ReadDynArray(TypeInfo, Value);
+      tkClass: begin
+        AClass := TypeData^.ClassType;
+        TObject(Value) := ReadObject(AClass);
+      end;
+    end;
+  end;
+end;
+
+function THproseReader.Unserialize<T>: T;
+begin
+  Unserialize(TypeInfo(T), Result);
+end;
+
+{$ENDIF}
 
 function THproseReader.Unserialize: Variant;
 var
@@ -2161,7 +2742,7 @@ begin
         tkInterface: begin
           AClass := GetClassByInterface(TypeData^.Guid);
           if AClass = nil then
-            raise EHproseException.Create(string(TypeInfo^.Name) + 'is not registered');
+            raise EHproseException.Create(GetTypeName(TypeInfo) + ' is not registered');
           Result := ReadInterface(AClass, TypeData^.Guid);
         end;
         tkDynArray:
@@ -3180,53 +3761,6 @@ end;
 
 {$IFDEF Supports_Generics}
 
-type
-  TB1 = Byte;
-  TB2 = Word;
-  TB4 = LongWord;
-  TB8 = UInt64;
-
-function IsSmartObject(const Name: string): Boolean; inline;
-begin
-  Result := AnsiStartsText('ISmartObject<', Name) or
-            AnsiStartsText('HproseCommon.ISmartObject<', Name);
-end;
-
-function GetElementName(const Name: string): string;
-var
-  I, L: Integer;
-begin
-  L := Length(Name);
-  for I := 1 to L do if Name[I] = '<' then begin
-    Result := AnsiMidStr(Name, I + 1, L - I - 1);
-    Break;
-  end;
-end;
-
-procedure SplitKeyValueTypeName(const Name: string;
-  var KeyName, ValueName: string);
-var
-  I, N, P, L: Integer;
-begin
-  L := Length(Name);
-  N := 0;
-  P := 0;
-  for I := 1 to L do begin
-    case Name[I] of
-      '<': Inc(N);
-      '>': Dec(N);
-      ',': if N = 0 then begin
-        P := I;
-        Break;
-      end;
-    end;
-  end;
-  if P > 0 then begin
-    KeyName := AnsiMidStr(Name, 1, P - 1);
-    ValueName := AnsiMidStr(Name, P + 1, L - P);
-  end;
-end;
-
 procedure THproseWriter.Serialize(const Value; TypeInfo: Pointer);
 var
   TypeData: PTypeData;
@@ -3655,6 +4189,46 @@ begin
   end;
 end;
 
+procedure THproseWriter.WriteTDictionary1<TKey>(const ADict: TObject;
+    ValueSize: Integer; KeyTypeInfo, ValueTypeInfo: Pointer);
+begin
+    case PTypeInfo(ValueTypeInfo)^.Kind of
+      tkString: WriteTDictionary2<TKey, ShortString>(
+        TDictionary<TKey, ShortString>(ADict), KeyTypeInfo, ValueTypeInfo);
+      tkLString: WriteTDictionary2<TKey, AnsiString>(
+        TDictionary<TKey, AnsiString>(ADict), KeyTypeInfo, ValueTypeInfo);
+      tkWString: WriteTDictionary2<TKey, WideString>(
+        TDictionary<TKey, WideString>(ADict), KeyTypeInfo, ValueTypeInfo);
+      tkUString: WriteTDictionary2<TKey, UnicodeString>(
+        TDictionary<TKey, UnicodeString>(ADict), KeyTypeInfo, ValueTypeInfo);
+      tkVariant: WriteTDictionary2<TKey, Variant>(
+        TDictionary<TKey, Variant>(ADict), KeyTypeInfo, ValueTypeInfo);
+      tkDynArray: WriteTDictionary2<TKey, TArray<Pointer>>(
+        TDictionary<TKey, TArray<Pointer>>(ADict), KeyTypeInfo, ValueTypeInfo);
+      tkInterface: WriteTDictionary2<TKey, IInterface>(
+        TDictionary<TKey, IInterface>(ADict), KeyTypeInfo, ValueTypeInfo);
+      tkClass: WriteTDictionary2<TKey, TObject>(
+        TDictionary<TKey, TObject>(ADict), KeyTypeInfo, ValueTypeInfo);
+    else
+      case ValueSize of
+        1: WriteTDictionary2<TKey, TB1>(
+          TDictionary<TKey, TB1>(ADict), KeyTypeInfo, ValueTypeInfo);
+        2: WriteTDictionary2<TKey, TB2>(
+          TDictionary<TKey, TB2>(ADict), KeyTypeInfo, ValueTypeInfo);
+        4: WriteTDictionary2<TKey, TB4>(
+          TDictionary<TKey, TB4>(ADict), KeyTypeInfo, ValueTypeInfo);
+        8: WriteTDictionary2<TKey, TB8>(
+          TDictionary<TKey, TB8>(ADict), KeyTypeInfo, ValueTypeInfo);
+      else if GetTypeName(ValueTypeInfo) = 'Extended' then
+        WriteTDictionary2<TKey, Extended>(
+          TDictionary<TKey, Extended>(ADict), KeyTypeInfo, ValueTypeInfo)
+      else
+        raise EHproseException.Create('Can not serialize ' + ClassName);
+      end;
+    end;
+end;
+
+
 procedure THproseWriter.WriteDictionary(const ADict: TObject);
 var
   ClassName: string;
@@ -3675,75 +4249,36 @@ begin
     raise EHproseException.Create('Can not serialize ' + ClassName)
   else begin
     case PTypeInfo(KeyTypeInfo)^.Kind of
-      tkString: WriteDictionary<ShortString>(ADict, ValueSize,
+      tkString: WriteTDictionary1<ShortString>(ADict, ValueSize,
                                            KeyTypeInfo, ValueTypeInfo);
-      tkLString: WriteDictionary<AnsiString>(ADict, ValueSize,
+      tkLString: WriteTDictionary1<AnsiString>(ADict, ValueSize,
                                            KeyTypeInfo, ValueTypeInfo);
-      tkWString: WriteDictionary<WideString>(ADict, ValueSize,
+      tkWString: WriteTDictionary1<WideString>(ADict, ValueSize,
                                            KeyTypeInfo, ValueTypeInfo);
-      tkUString: WriteDictionary<UnicodeString>(ADict, ValueSize,
+      tkUString: WriteTDictionary1<UnicodeString>(ADict, ValueSize,
                                               KeyTypeInfo, ValueTypeInfo);
-      tkVariant: WriteDictionary<Variant>(ADict, ValueSize,
+      tkVariant: WriteTDictionary1<Variant>(ADict, ValueSize,
                                         KeyTypeInfo, ValueTypeInfo);
-      tkDynArray: WriteDictionary<TArray<Pointer>>(ADict, ValueSize,
+      tkDynArray: WriteTDictionary1<TArray<Pointer>>(ADict, ValueSize,
                                           KeyTypeInfo, ValueTypeInfo);
-      tkInterface: WriteDictionary<IInterface>(ADict, ValueSize,
+      tkInterface: WriteTDictionary1<IInterface>(ADict, ValueSize,
                                             KeyTypeInfo, ValueTypeInfo);
-      tkClass: WriteDictionary<TObject>(ADict, ValueSize,
+      tkClass: WriteTDictionary1<TObject>(ADict, ValueSize,
                                      KeyTypeInfo, ValueTypeInfo);
     else
       case KeySize of
-        1: WriteDictionary<TB1>(ADict, ValueSize, KeyTypeInfo, ValueTypeInfo);
-        2: WriteDictionary<TB2>(ADict, ValueSize, KeyTypeInfo, ValueTypeInfo);
-        4: WriteDictionary<TB4>(ADict, ValueSize, KeyTypeInfo, ValueTypeInfo);
-        8: WriteDictionary<TB8>(ADict, ValueSize, KeyTypeInfo, ValueTypeInfo);
+        1: WriteTDictionary1<TB1>(ADict, ValueSize, KeyTypeInfo, ValueTypeInfo);
+        2: WriteTDictionary1<TB2>(ADict, ValueSize, KeyTypeInfo, ValueTypeInfo);
+        4: WriteTDictionary1<TB4>(ADict, ValueSize, KeyTypeInfo, ValueTypeInfo);
+        8: WriteTDictionary1<TB8>(ADict, ValueSize, KeyTypeInfo, ValueTypeInfo);
       else if GetTypeName(KeyTypeInfo) = 'Extended' then
-         WriteDictionary<Extended>(ADict, ValueSize,
+         WriteTDictionary1<Extended>(ADict, ValueSize,
                                KeyTypeInfo, ValueTypeInfo)
       else
         raise EHproseException.Create('Can not serialize ' + ClassName);
       end;
     end;
   end;
-end;
-
-procedure THproseWriter.WriteDictionary<TKey>(const ADict: TObject;
-    ValueSize: Integer; KeyTypeInfo, ValueTypeInfo: Pointer);
-begin
-    case PTypeInfo(ValueTypeInfo)^.Kind of
-      tkString: WriteDictionary<TKey, ShortString>(
-        TDictionary<TKey, ShortString>(ADict), KeyTypeInfo, ValueTypeInfo);
-      tkLString: WriteDictionary<TKey, AnsiString>(
-        TDictionary<TKey, AnsiString>(ADict), KeyTypeInfo, ValueTypeInfo);
-      tkWString: WriteDictionary<TKey, WideString>(
-        TDictionary<TKey, WideString>(ADict), KeyTypeInfo, ValueTypeInfo);
-      tkUString: WriteDictionary<TKey, UnicodeString>(
-        TDictionary<TKey, UnicodeString>(ADict), KeyTypeInfo, ValueTypeInfo);
-      tkVariant: WriteDictionary<TKey, Variant>(
-        TDictionary<TKey, Variant>(ADict), KeyTypeInfo, ValueTypeInfo);
-      tkDynArray: WriteDictionary<TKey, TArray<Pointer>>(
-        TDictionary<TKey, TArray<Pointer>>(ADict), KeyTypeInfo, ValueTypeInfo);
-      tkInterface: WriteDictionary<TKey, IInterface>(
-        TDictionary<TKey, IInterface>(ADict), KeyTypeInfo, ValueTypeInfo);
-      tkClass: WriteDictionary<TKey, TObject>(
-        TDictionary<TKey, TObject>(ADict), KeyTypeInfo, ValueTypeInfo);
-    else
-      case ValueSize of
-        1: WriteDictionary<TKey, TB1>(
-          TDictionary<TKey, TB1>(ADict), KeyTypeInfo, ValueTypeInfo);
-        2: WriteDictionary<TKey, TB2>(
-          TDictionary<TKey, TB2>(ADict), KeyTypeInfo, ValueTypeInfo);
-        4: WriteDictionary<TKey, TB4>(
-          TDictionary<TKey, TB4>(ADict), KeyTypeInfo, ValueTypeInfo);
-        8: WriteDictionary<TKey, TB8>(
-          TDictionary<TKey, TB8>(ADict), KeyTypeInfo, ValueTypeInfo);
-      else if GetTypeName(ValueTypeInfo) = 'Extended' then
-        WriteDictionary<TKey, Extended>(
-          TDictionary<TKey, Extended>(ADict), KeyTypeInfo, ValueTypeInfo)
-      else
-        raise EHproseException.Create('Can not serialize ' + ClassName);
-      end;
-    end;
 end;
 
 procedure THproseWriter.WriteObjectDictionary(const ADict: TObject);
@@ -3792,7 +4327,7 @@ begin
   FStream.WriteBuffer(HproseTagClosebrace, 1);
 end;
 
-procedure THproseWriter.WriteArray<T>(const DynArray: TArray<T>);
+procedure THproseWriter.WriteDynArray<T>(const DynArray: TArray<T>);
 var
   Count, I: Integer;
 begin
@@ -3805,15 +4340,15 @@ begin
   FStream.WriteBuffer(HproseTagClosebrace, 1);
 end;
 
-procedure THproseWriter.WriteArrayWithRef<T>(const DynArray: TArray<T>);
+procedure THproseWriter.WriteDynArrayWithRef<T>(const DynArray: TArray<T>);
 var
   Ref: Integer;
 begin
   Ref := FRefList.IndexOf(NativeInt(Pointer(DynArray)));
-  if Ref > -1 then WriteRef(Ref) else WriteArray<T>(DynArray);
+  if Ref > -1 then WriteRef(Ref) else WriteDynArray<T>(DynArray);
 end;
 
-procedure THproseWriter.WriteList<T>(const AList: TList<T>);
+procedure THproseWriter.WriteTList<T>(const AList: TList<T>);
 var
   Count, I: Integer;
   Element: T;
@@ -3830,15 +4365,15 @@ begin
   FStream.WriteBuffer(HproseTagClosebrace, 1);
 end;
 
-procedure THproseWriter.WriteListWithRef<T>(const AList: TList<T>);
+procedure THproseWriter.WriteTListWithRef<T>(const AList: TList<T>);
 var
   Ref: Integer;
 begin
   Ref := FRefList.IndexOf(ObjToVar(AList));
-  if Ref > -1 then WriteRef(Ref) else WriteList<T>(AList);
+  if Ref > -1 then WriteRef(Ref) else WriteTList<T>(AList);
 end;
 
-procedure THproseWriter.WriteQueue<T>(const AQueue: TQueue<T>);
+procedure THproseWriter.WriteTQueue<T>(const AQueue: TQueue<T>);
 var
   Count, I: Integer;
   Element: T;
@@ -3852,15 +4387,15 @@ begin
   FStream.WriteBuffer(HproseTagClosebrace, 1);
 end;
 
-procedure THproseWriter.WriteQueueWithRef<T>(const AQueue: TQueue<T>);
+procedure THproseWriter.WriteTQueueWithRef<T>(const AQueue: TQueue<T>);
 var
   Ref: Integer;
 begin
   Ref := FRefList.IndexOf(ObjToVar(AQueue));
-  if Ref > -1 then WriteRef(Ref) else WriteQueue<T>(AQueue);
+  if Ref > -1 then WriteRef(Ref) else WriteTQueue<T>(AQueue);
 end;
 
-procedure THproseWriter.WriteStack<T>(const AStack: TStack<T>);
+procedure THproseWriter.WriteTStack<T>(const AStack: TStack<T>);
 var
   Count, I: Integer;
   Element: T;
@@ -3874,15 +4409,15 @@ begin
   FStream.WriteBuffer(HproseTagClosebrace, 1);
 end;
 
-procedure THproseWriter.WriteStackWithRef<T>(const AStack: TStack<T>);
+procedure THproseWriter.WriteTStackWithRef<T>(const AStack: TStack<T>);
 var
   Ref: Integer;
 begin
   Ref := FRefList.IndexOf(ObjToVar(AStack));
-  if Ref > -1 then WriteRef(Ref) else WriteStack<T>(AStack);
+  if Ref > -1 then WriteRef(Ref) else WriteTStack<T>(AStack);
 end;
 
-procedure THproseWriter.WriteDictionary<TKey, TValue>(
+procedure THproseWriter.WriteTDictionary2<TKey, TValue>(
   const ADict: TDictionary<TKey, TValue>; KeyTypeInfo, ValueTypeInfo: Pointer);
 var
   Count, I: Integer;
@@ -3900,19 +4435,19 @@ begin
   FStream.WriteBuffer(HproseTagClosebrace, 1);
 end;
 
-procedure THproseWriter.WriteDictionary<TKey, TValue>(
+procedure THproseWriter.WriteTDictionary<TKey, TValue>(
   const ADict: TDictionary<TKey, TValue>);
 begin
-  WriteDictionary<TKey, TValue>(ADict, TypeInfo(TKey), TypeInfo(TValue));
+  WriteTDictionary2<TKey, TValue>(ADict, TypeInfo(TKey), TypeInfo(TValue));
 end;
 
-procedure THproseWriter.WriteDictionaryWithRef<TKey, TValue>(
+procedure THproseWriter.WriteTDictionaryWithRef<TKey, TValue>(
   const ADict: TDictionary<TKey, TValue>);
 var
   Ref: Integer;
 begin
   Ref := FRefList.IndexOf(ObjToVar(ADict));
-  if Ref > -1 then WriteRef(Ref) else WriteDictionary<TKey, TValue>(ADict);
+  if Ref > -1 then WriteRef(Ref) else WriteTDictionary<TKey, TValue>(ADict);
 end;
 
 {$ELSE}
@@ -4032,6 +4567,26 @@ begin
   end;
 end;
 
+class function THproseFormatter.Unserialize<T>(const Data:RawByteString): T;
+var
+  Reader: THproseReader;
+  Stream: TMemoryStream;
+begin
+  Stream := TMemoryStream.Create;
+  try
+    Stream.SetSize(Length(Data));
+    Move(PAnsiChar(Data)^, Stream.Memory^, Stream.Size);
+    Reader := THproseReader.Create(Stream);
+    try
+      Result := Reader.Unserialize<T>;
+    finally
+      Reader.Free;
+    end;
+  finally
+    Stream.Free;
+  end;
+end;
+
 {$ELSE}
 
 class function THproseFormatter.Serialize(const Value: TObject): RawByteString;
@@ -4045,6 +4600,11 @@ class function THproseFormatter.Unserialize(const Data: RawByteString;
   TypeInfo: Pointer): Variant;
 begin
   Result := HproseUnserialize(Data, TypeInfo);
+end;
+
+class function THproseFormatter.Unserialize(const Data:RawByteString): Variant;
+begin
+  Result := HproseUnserialize(Data, nil);
 end;
 
 procedure FreePropertiesCache;
