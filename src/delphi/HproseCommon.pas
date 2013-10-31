@@ -2656,17 +2656,17 @@ constructor TSmartObject.Create(const AClass: TClass);
 begin
   SmartObjectsRef.Lock;
   FObject := AClass.Create;
-  SmartObjectsRef[ObjToVar(FObject)] := 1;
+  SmartObjectsRef[NativeInt(Pointer(FObject))] := 1;
   SmartObjectsRef.UnLock;
 end;
 
 constructor TSmartObject.Create(AObject: TObject);
 var
-  V: Variant;
+  V: NativeInt;
 begin
   SmartObjectsRef.Lock;
   FObject := AObject;
-  V := ObjToVar(AObject);
+  V := NativeInt(Pointer(FObject));
   if SmartObjectsRef.ContainsKey(V) then
     SmartObjectsRef[V] := SmartObjectsRef[V] + 1
   else
@@ -2676,16 +2676,20 @@ end;
 
 destructor TSmartObject.Destroy;
 var
-  V: Variant;
+  V: NativeInt;
 begin
-  SmartObjectsRef.Lock;
-  V := ObjToVar(FObject);
-  SmartObjectsRef[V] := SmartObjectsRef[V] - 1;
-  if SmartObjectsRef[V] = 0 then begin
-    SmartObjectsRef.Delete(V);
+  if SmartObjectsRef <> nil then begin
+    SmartObjectsRef.Lock;
+    V := NativeInt(Pointer(FObject));
+    SmartObjectsRef[V] := SmartObjectsRef[V] - 1;
+    if SmartObjectsRef[V] = 0 then begin
+      SmartObjectsRef.Delete(V);
+      FreeAndNil(FObject);
+    end;
+    SmartObjectsRef.UnLock;
+  end
+  else
     FreeAndNil(FObject);
-  end;
-  SmartObjectsRef.UnLock;
   inherited;
 end;
 
@@ -2996,8 +3000,6 @@ end;
 {$ENDIF}
 
 initialization
-  SmartObjectsRef := THashMap.Create as IMap;
-
   HproseClassMap := TCaseInsensitiveHashedMap.Create(False, True);
   HproseInterfaceMap := TCaseInsensitiveHashedMap.Create(False, True);
 
@@ -3119,6 +3121,7 @@ initialization
   VarObjectType := TVarObjectType.Create;
   varObject := VarObjectType.VarType;
 
+  SmartObjectsRef := THashMap.Create;
 finalization
   FreeAndNil(VarObjectType);
 {$ENDIF}
