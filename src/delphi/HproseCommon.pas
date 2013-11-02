@@ -15,7 +15,7 @@
  *                                                        *
  * hprose common unit for delphi.                         *
  *                                                        *
- * LastModified: Nov 1, 2013                              *
+ * LastModified: Nov 2, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -531,11 +531,12 @@ type
 {$ENDIF}
 
 const
-{$IF SizeOf(NativeInt) = 8}
+
+{$IFDEF CPU64}
   varNativeInt = varInt64;
 {$ELSE}
   varNativeInt = varInteger;
-{$IFEND}
+{$ENDIF}
 
 {$IFDEF FPC}
   varObject = 23;  {23 is not used by FreePascal and Delphi, so it's safe.}
@@ -634,8 +635,11 @@ function MapSplit(MapClass: TMapClass; Str: string;
 
 implementation
 
-uses RTLConsts, StrUtils, Variants{$IFDEF Supports_Rtti}, Rtti{$ENDIF};
+uses RTLConsts, StrUtils, Variants
+{$IFDEF DELPHIXE4_UP}, AnsiStrings{$ENDIF}
+{$IFDEF Supports_Rtti}, Rtti{$ENDIF};
 {$IFNDEF FPC}
+
 type
 
   TVarObjectType = class(TCustomVariantType)
@@ -654,7 +658,7 @@ var
   VarObjectType: TVarObjectType;
 {$ENDIF}
 
-{$IFDEF DELPHI2012_UP}
+{$IFDEF DELPHIXE2_UP}
 const
 { Maximum TList size }
   MaxListSize = Maxint div 16;
@@ -1162,7 +1166,7 @@ begin
         Result.VString^ := Item.VString^;
       end;
     vtPChar:
-      Result.VPChar := StrNew(Item.VPChar);
+      Result.VPChar := {$IFDEF DELPHIXE4_UP}AnsiStrings.{$ENDIF}StrNew(Item.VPChar);
     // there is no StrNew for PWideChar
     vtPWideChar:
       begin
@@ -1249,7 +1253,7 @@ begin
   case Item.VType of
     vtExtended: Dispose(Item.VExtended);
     vtString: Dispose(Item.VString);
-    vtPChar: StrDispose(Item.VPChar);
+    vtPChar: {$IFDEF DELPHIXE4_UP}AnsiStrings.{$ENDIF}StrDispose(Item.VPChar);
     vtPWideChar: FreeMem(Item.VPWideChar);
     vtAnsiString: AnsiString(Item.VAnsiString) := '';
     vtCurrency: Dispose(Item.VCurrency);

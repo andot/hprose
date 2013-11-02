@@ -41,29 +41,47 @@
 {$endif}
 
 {$ifdef VER220}
-  {$define DELPHI2011}
-  {$define DELPHI2011_UP}
+  {$define DELPHIXE}
+  {$define DELPHIXE_UP}
 {$endif}
 
 {$ifdef VER230}
-  {$define DELPHI2012}
-  {$define DELPHI2012_UP}
+  {$define DELPHIXE2}
+  {$define DELPHIXE2_UP}
 {$endif}
 
 {$ifdef VER240}
-  {$define DELPHI2013}
-  {$define DELPHI2013_UP}
+  {$define DELPHIXE3}
+  {$define DELPHIXE3_UP}
 {$endif}
 
-{$ifdef DELPHI2013_UP}
-  {$define DELPHI2012_UP}
+{$ifdef VER250}
+  {$define DELPHIXE4}
+  {$define DELPHIXE4_UP}
 {$endif}
 
-{$ifdef DELPHI2012_UP}
-  {$define DELPHI2011_UP}
+{$ifdef VER260}
+  {$define DELPHIXE5}
+  {$define DELPHIXE5_UP}
 {$endif}
 
-{$ifdef DELPHI2011_UP}
+{$ifdef DELPHIXE5_UP}
+  {$define DELPHIXE4_UP}
+{$endif}
+
+{$ifdef DELPHIXE4_UP}
+  {$define DELPHIXE3_UP}
+{$endif}
+
+{$ifdef DELPHIXE3_UP}
+  {$define DELPHIXE2_UP}
+{$endif}
+
+{$ifdef DELPHIXE2_UP}
+  {$define DELPHIXE_UP}
+{$endif}
+
+{$ifdef DELPHIXE_UP}
   {$define DELPHI2010_UP}
 {$endif}
 
