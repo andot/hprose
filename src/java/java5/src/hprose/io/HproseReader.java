@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for Java.                          *
  *                                                        *
- * LastModified: Oct 30, 2013                             *
+ * LastModified: Nov 3, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -278,8 +278,7 @@ public final class HproseReader {
     }
 
     private Object readDateAs(Class<?> type) throws IOException {
-        Calendar calendar;
-        int nanosecond = 0;
+        int hour = 0, minute = 0, second = 0, nanosecond = 0;
         int year = stream.read() - '0';
         year = year * 10 + stream.read() - '0';
         year = year * 10 + stream.read() - '0';
@@ -290,11 +289,11 @@ public final class HproseReader {
         day = day * 10 + stream.read() - '0';
         int tag = stream.read();
         if (tag == HproseTags.TagTime) {
-            int hour = stream.read() - '0';
+            hour = stream.read() - '0';
             hour = hour * 10 + stream.read() - '0';
-            int minute = stream.read() - '0';
+            minute = stream.read() - '0';
             minute = minute * 10 + stream.read() - '0';
-            int second = stream.read() - '0';
+            second = stream.read() - '0';
             second = second * 10 + stream.read() - '0';
             tag = stream.read();
             if (tag == HproseTags.TagPoint) {
@@ -316,16 +315,11 @@ public final class HproseReader {
                     }
                 }
             }
-            calendar = Calendar.getInstance(tag == HproseTags.TagUTC ?
-                    HproseHelper.UTC : HproseHelper.DefaultTZ);
-            calendar.set(year, month - 1, day, hour, minute, second);
-            calendar.set(Calendar.MILLISECOND, nanosecond / 1000000);
         }
-        else {
-            calendar = Calendar.getInstance(tag == HproseTags.TagUTC ?
-                    HproseHelper.UTC : HproseHelper.DefaultTZ);
-            calendar.set(year, month - 1, day);
-        }
+        Calendar calendar = Calendar.getInstance(tag == HproseTags.TagUTC ?
+                HproseHelper.UTC : HproseHelper.DefaultTZ);
+        calendar.set(year, month - 1, day, hour, minute, second);
+        calendar.set(Calendar.MILLISECOND, nanosecond / 1000000);
         if (Timestamp.class.equals(type)) {
             Timestamp timestamp = new Timestamp(calendar.getTimeInMillis());
             timestamp.setNanos(nanosecond);
@@ -337,7 +331,6 @@ public final class HproseReader {
     }
 
     private Object readTimeAs(Class<?> type) throws IOException {
-        Calendar calendar;
         int hour = stream.read() - '0';
         hour = hour * 10 + stream.read() - '0';
         int minute = stream.read() - '0';
@@ -365,9 +358,10 @@ public final class HproseReader {
                 }
             }
         }
-        calendar = Calendar.getInstance(tag == HproseTags.TagUTC ?
+        Calendar calendar = Calendar.getInstance(tag == HproseTags.TagUTC ?
                 HproseHelper.UTC : HproseHelper.DefaultTZ);
         calendar.set(1970, 0, 1, hour, minute, second);
+        calendar.set(Calendar.MILLISECOND, nanosecond / 1000000);
         if (Timestamp.class.equals(type)) {
             Timestamp timestamp = new Timestamp(calendar.getTimeInMillis());
             timestamp.setNanos(nanosecond);
