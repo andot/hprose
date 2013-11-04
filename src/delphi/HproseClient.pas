@@ -26,7 +26,7 @@ unit HproseClient;
 
 interface
 
-uses HproseCommon, Classes, SysUtils, TypInfo, Generics.Defaults;
+uses HproseCommon, Classes, SysUtils, TypInfo;
 
 type
 {$IFDEF Supports_Anonymous_Method}
@@ -451,7 +451,7 @@ end;
 function THproseClient.Invoke(const Name: string;
   ResultMode: THproseResultMode): Variant;
 begin
-  Result := Invoke(Name, [], nil, ResultMode);
+  Result := Invoke(Name, [], PTypeInfo(nil), ResultMode);
 end;
 
 function THproseClient.Invoke(const Name: string;
@@ -463,7 +463,7 @@ end;
 function THproseClient.Invoke(const Name: string;
   const Args: array of const; ResultMode: THproseResultMode): Variant;
 begin
-  Result := Invoke(Name, Args, nil, ResultMode);
+  Result := Invoke(Name, Args, PTypeInfo(nil), ResultMode);
 end;
 
 function THproseClient.Invoke(const Name: string;
@@ -495,7 +495,7 @@ end;
 function THproseClient.Invoke(const Name: string; var Args: TVariants;
   ByRef: Boolean; ResultMode: THproseResultMode): Variant;
 begin
-  Result := Invoke(Name, Args, nil, ByRef, ResultMode);
+  Result := Invoke(Name, Args, PTypeInfo(nil), ByRef, ResultMode);
 end;
 
 function THproseClient.Invoke(const Name: string; var Args: TVariants;
