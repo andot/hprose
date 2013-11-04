@@ -15,7 +15,7 @@
  *                                                        *
  * hprose io unit for delphi.                             *
  *                                                        *
- * LastModified: Nov 1, 2013                              *
+ * LastModified: Nov 4, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -81,9 +81,9 @@ type
     function TagToString(Tag: AnsiChar): string;
     function ReadByte: Byte;
     function ReadInt64(Tag: AnsiChar): Int64; overload;
-{$IF Defined(DELPHI2009_UP) or Defined(FPC)}
+{$IFDEF Supports_UInt64}
     function ReadUInt64(Tag: AnsiChar): UInt64; overload;
-{$IFEND}
+{$ENDIF}
     function ReadStringAsWideString: WideString;
     function ReadBooleanArray(Count: Integer): Variant;
     function ReadShortIntArray(Count: Integer): Variant;
@@ -131,7 +131,6 @@ type
     function UnserializeTypeAsT<T>(TypeInfo: PTypeInfo): T;
 {$ENDIF}
     function ReadSmartObject(TypeInfo: PTypeInfo): ISmartObject;
-    procedure Unserialize(TypeInfo: PTypeInfo; out Value); overload;
 {$ENDIF}
     procedure ReadRaw(const OStream: TStream; Tag: AnsiChar); overload;
     procedure ReadInfinityRaw(const OStream: TStream; Tag: AnsiChar);
@@ -163,9 +162,9 @@ type
     function ReadObjectWithoutTag: Variant; overload;
     function ReadInteger: Integer;
     function ReadInt64: Int64; overload;
-{$IF Defined(DELPHI2009_UP) or Defined(FPC)}
+{$IFDEF Supports_UInt64}
     function ReadUInt64: UInt64; overload;
-{$IFEND}
+{$ENDIF}
     function ReadExtended: Extended;
     function ReadCurrency: Currency;
     function ReadBoolean: Boolean;
@@ -179,6 +178,7 @@ type
     function ReadInterface(AClass: TClass; const IID: TGUID): IInterface;
     function ReadObject(AClass: TClass): TObject;
 {$IFDEF Supports_Generics}
+    procedure Unserialize(TypeInfo: PTypeInfo; out Value); overload;
     function Unserialize<T>: T; overload;
 {$ENDIF}
     function Unserialize: Variant; overload;
@@ -1044,7 +1044,7 @@ begin
   end;
 end;
 
-{$IF Defined(DELPHI2009_UP) or Defined(FPC)}
+{$IFDEF Supports_UInt64}
 function THproseReader.ReadUInt64(Tag: AnsiChar): UInt64;
 var
   I: Integer;
@@ -1058,8 +1058,7 @@ begin
     I := FStream.Read(C, 1);
   end;
 end;
-{$IFEND}
-
+{$ENDIF}
 
 function THproseReader.ReadIntegerWithoutTag: Integer;
 begin
@@ -1804,7 +1803,7 @@ begin
   end;
 end;
 
-{$IF Defined(DELPHI2009_UP) or Defined(FPC)}
+{$IFDEF Supports_UInt64}
 function THproseReader.ReadUInt64: UInt64;
 var
   Tag: AnsiChar;
@@ -1839,7 +1838,7 @@ begin
     raise CastError(TagToString(Tag), 'UInt64');
   end;
 end;
-{$IFEND}
+{$ENDIF}
 
 function THproseReader.ReadExtended: Extended;
 var

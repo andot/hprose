@@ -130,6 +130,7 @@
   {$define Supports_Unicode}
   {$define Supports_Generics}
   {$define Supports_Anonymous_Method}
+  {$define Supports_UInt64}
 {$endif}
 
 {$ifdef DELPHI2010_UP}
@@ -139,6 +140,7 @@
 // Free Pascal
 
 {$ifdef FPC}
+  {$define Supports_UInt64}
   {$mode DELPHI}
 {$endif}
 
