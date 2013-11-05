@@ -14,7 +14,7 @@
  *                                                        *
  * POST data to HTTP Server (using Flash).                *
  *                                                        *
- * LastModified: Dec 29, 2012                             *
+ * LastModified: Nov 6, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -228,12 +228,12 @@ var HproseHttpRequest = (function() {
         xdr.timeout = timeout;
         xdr.onerror = function() {
             HproseHttpRequest.__callback(callbackid, HproseTags.TagError +
-                                         HproseFormatter.serialize("unknown error.") +
+                                         HproseFormatter.serialize("unknown error.", true) +
                                          HproseTags.TagEnd);
         };
         xdr.ontimeout = function() {
             HproseHttpRequest.__callback(callbackid, HproseTags.TagError +
-                                         HproseFormatter.serialize("timeout error.") +
+                                         HproseFormatter.serialize("timeout", true) +
                                          HproseTags.TagEnd);
         };
         xdr.onload = function() {
@@ -258,7 +258,7 @@ var HproseHttpRequest = (function() {
                 else {
                     var error = xmlhttp.status + ':' +  xmlhttp.statusText;
                     HproseHttpRequest.__callback(callbackid, HproseTags.TagError +
-                                            HproseFormatter.serialize(error) +
+                                            HproseFormatter.serialize(error, true) +
                                             HproseTags.TagEnd);
                 }
             }
@@ -272,7 +272,7 @@ var HproseHttpRequest = (function() {
         }
         var timeoutHandler = function () {
             HproseHttpRequest.__callback(callbackid, HproseTags.TagError +
-                                    HproseFormatter.serialize('timeout') +
+                                    HproseFormatter.serialize('timeout', true) +
                                     HproseTags.TagEnd);
         }
         if (xmlhttp.timeout === undefined) {
