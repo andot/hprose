@@ -635,7 +635,8 @@ function MapSplit(MapClass: TMapClass; Str: string;
 
 implementation
 
-uses RTLConsts, StrUtils, Variants
+uses RTLConsts, Variants
+{$IFNDEF FPC}, StrUtils{$ENDIF}
 {$IFDEF DELPHIXE4_UP}, AnsiStrings{$ENDIF}
 {$IFDEF Supports_Rtti}, Rtti{$ENDIF};
 {$IFNDEF FPC}
