@@ -14,7 +14,7 @@
  *                                                        *
  * hprose http client for Javascript.                     *
  *                                                        *
- * LastModified: Nov 6, 2013                              *
+ * LastModified: Nov 7, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -390,60 +390,58 @@ var HproseHttpClient = (function () {
             stream.write(r_HproseTags.TagEnd);
             var request = stream.toString();
             r_HproseHttpRequest.post(m_url, m_header, request, function(response) {
-                if (callback) {
-                    var result = null;
-                    var error = null;
-                    if (resultMode == r_HproseResultMode.RawWithEndTag) {
-                        result = response;
-                    }
-                    else if (resultMode == r_HproseResultMode.Raw) {
-                        result = response.substr(0, response.length - 1);
-                    }
-                    else {
-                        var stream = new r_HproseStringInputStream(response);
-                        var hproseReader = (simple ? new r_HproseSimpleReader(stream) : new r_HproseReader(stream));
-                        var tag;
-                        try {
-                            while ((tag = hproseReader.checkTags(
-                                [r_HproseTags.TagResult,
-                                 r_HproseTags.TagArgument,
-                                 r_HproseTags.TagError,
-                                 r_HproseTags.TagEnd])) !== r_HproseTags.TagEnd) {
-                                switch (tag) {
-                                    case r_HproseTags.TagResult:
-                                        if (resultMode == r_HproseResultMode.Serialized) {
-                                            result = hproseReader.readRaw().toString();
-                                        }
-                                        else {
-                                            result = hproseReader.unserialize();
-                                        }
-                                        break;
-                                    case r_HproseTags.TagArgument:
-                                        hproseReader.reset();
-                                        args = hproseReader.readList(true);
-                                        break;
-                                    case r_HproseTags.TagError:
-                                        hproseReader.reset();
-                                        error = new r_HproseException(hproseReader.readString(true));
-                                        break;
-                                }
+                var result = null;
+                var error = null;
+                if (resultMode == r_HproseResultMode.RawWithEndTag) {
+                    result = response;
+                }
+                else if (resultMode == r_HproseResultMode.Raw) {
+                    result = response.substr(0, response.length - 1);
+                }
+                else {
+                    var stream = new r_HproseStringInputStream(response);
+                    var hproseReader = (simple ? new r_HproseSimpleReader(stream) : new r_HproseReader(stream));
+                    var tag;
+                    try {
+                        while ((tag = hproseReader.checkTags(
+                            [r_HproseTags.TagResult,
+                             r_HproseTags.TagArgument,
+                             r_HproseTags.TagError,
+                             r_HproseTags.TagEnd])) !== r_HproseTags.TagEnd) {
+                            switch (tag) {
+                                case r_HproseTags.TagResult:
+                                    if (resultMode == r_HproseResultMode.Serialized) {
+                                        result = hproseReader.readRaw().toString();
+                                    }
+                                    else {
+                                        result = hproseReader.unserialize();
+                                    }
+                                    break;
+                                case r_HproseTags.TagArgument:
+                                    hproseReader.reset();
+                                    args = hproseReader.readList(true);
+                                    break;
+                                case r_HproseTags.TagError:
+                                    hproseReader.reset();
+                                    error = new r_HproseException(hproseReader.readString(true));
+                                    break;
                             }
                         }
-                        catch (e) {
-                            error = e;
-                        }
                     }
-                    if (error != null) {
-                        if (errorHandler) {
-                            errorHandler(func, error);
-                        }
-                        else {
-                            self.onError(func, error);
-                        }
+                    catch (e) {
+                        error = e;
+                    }
+                }
+                if (error != null) {
+                    if (errorHandler) {
+                        errorHandler(func, error);
                     }
                     else {
-                        callback(result, args);
+                        self.onError(func, error);
                     }
+                }
+                else if (callback) {
+                    callback(result, args);
                 }
             }, m_timeout, m_filter);
         }

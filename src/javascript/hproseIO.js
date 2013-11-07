@@ -14,7 +14,7 @@
  *                                                        *
  * hprose io stream library for JavaScript.               *
  *                                                        *
- * LastModified: Nov 6, 2013                              *
+ * LastModified: Nov 7, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -306,7 +306,7 @@ var HproseSimpleWriter, HproseWriter;
                 case HproseTags.TagLong:
                 case HproseTags.TagDouble:
                 case HproseTags.TagRef:
-                    readNumberRaw(ostream);
+                    readNumberRaw(ostream, tag);
                     break;
                 case HproseTags.TagDate:
                 case HproseTags.TagTime:
@@ -381,8 +381,8 @@ var HproseSimpleWriter, HproseWriter;
     
     // public class
     HproseSimpleReader = function hproseSimpleReader(stream) {
-        var classref = [];
         HproseRawReader.call(this, stream);
+        var classref = [];
         function checkTag(expectTag, tag) {
             if (tag === undefined) tag = stream.getc();
             if (tag != expectTag) {
@@ -433,7 +433,7 @@ var HproseSimpleWriter, HproseWriter;
                 case hproseTags.TagGuid: return this.readGuid();
                 case hproseTags.TagList: return this.readList();
                 case hproseTags.TagMap: return this.readMap();
-                case hproseTags.TagClass: readClass(); return this.unserialize();
+                case hproseTags.TagClass: this.readClass(); return this.unserialize();
                 case hproseTags.TagObject: return this.readObject();
                 case HproseTags.TagError: throw new hproseException(this.readString(true));
                 case '': throw new hproseException('No byte found in stream');
@@ -527,7 +527,7 @@ var HproseSimpleWriter, HproseWriter;
             return date;
         }
         function readTime(includeTag) {
-            if (includeTag) checkTags(hproseTags.TagTime);
+            if (includeTag) checkTag(hproseTags.TagTime);
             var time;
             var hour = parseInt(stream.read(2));
             var minute = parseInt(stream.read(2));
@@ -620,7 +620,7 @@ var HproseSimpleWriter, HproseWriter;
                 var tag = checkTags([hproseTags.TagClass,
                                      hproseTags.TagObject]);
                 if (tag == hproseTags.TagClass) {
-                    readClass();
+                    this.readClass();
                     return this.readObject(true);
                 }
             }
@@ -632,7 +632,7 @@ var HproseSimpleWriter, HproseWriter;
             var count = readInt(hproseTags.TagOpenbrace);
             var fields = [];
             for (var i = 0; i < count; i++) {
-                fields[i] = readString(true);
+                fields[i] = this.readString(true);
             }
             stream.skip(1);
             classname = getClass(classname);
@@ -669,11 +669,13 @@ var HproseSimpleWriter, HproseWriter;
         this.readObjectBegin = readObjectBegin;
         this.readObjectEnd = readObjectEnd;
         this.readObject = readObject;
+        this.readClass = readClass;
         this.reset = reset;
     }
 
     // public class
     HproseReader = function hproseReader(stream) {
+        HproseSimpleReader.call(this, stream);
         var ref = [];
         function readInt(tag) {
             var s = stream.readuntil(tag);
@@ -683,7 +685,6 @@ var HproseSimpleWriter, HproseWriter;
         function readRef() {
             return ref[readInt(hproseTags.TagSemicolon)];
         }
-        HproseSimpleReader.call(this, stream);
         var unserialize = this.unserialize;
         this.unserialize = function(tag) {
             if (tag === undefined) {
@@ -782,7 +783,7 @@ var HproseSimpleWriter, HproseWriter;
 
     // public class
     HproseSimpleWriter = function hproseSimpleWriter(stream) {
-        var classref = [];
+        var classref = Object.create(null);
         var fieldsref = [];
         function serialize(variable) {
             if (variable === undefined ||
@@ -881,15 +882,13 @@ var HproseSimpleWriter, HproseWriter;
             var millisecond = ('000' + date.getMilliseconds()).slice(-3);
             if ((hour == '00') && (minute == '00') &&
                 (second == '00') && (millisecond == '000')) {
-                stream.write(hproseTags.TagDate + year + month + day +
-                             hproseTags.TagSemicolon);
+                stream.write(hproseTags.TagDate + year + month + day);
             }
             else if ((year == '1970') && (month == '01') && (day == '01')) {
                 stream.write(hproseTags.TagTime + hour + minute + second);
                 if (millisecond != '000') {
                     stream.write(hproseTags.TagPoint + millisecond);
                 }                        
-                stream.write(hproseTags.TagSemicolon);
             }
             else {
                 stream.write(hproseTags.TagDate + year + month + day +
@@ -897,8 +896,8 @@ var HproseSimpleWriter, HproseWriter;
                 if (millisecond != '000') {
                     stream.write(hproseTags.TagPoint + millisecond);
                 }                        
-                stream.write(hproseTags.TagSemicolon);
             }
+            stream.write(hproseTags.TagSemicolon);
         }
         function writeTime(time) {
             var hour = ('00' + time.getHours()).slice(-2);
@@ -944,11 +943,11 @@ var HproseSimpleWriter, HproseWriter;
             }
             stream.write(hproseTags.TagClosebrace);
         }
-        function writeObject(obj) {
+        function writeObjectBegin(obj) {
             var classname = getClassName(obj);
-            var index = arrayIndexOf(classref, classname);
+            var index = classref[classname];
             var fields;
-            if (index >= 0) {
+            if (index !== undefined) {
                 fields = fieldsref[index];
             }
             else {
@@ -959,14 +958,20 @@ var HproseSimpleWriter, HproseWriter;
                         fields[fields.length] = key.toString();
                     }
                 }
-                index = writeClass(classname, fields);
+                index = writeClass.call(this, classname, fields);
             }
-            var count = fields.length;
             stream.write(hproseTags.TagObject + index + hproseTags.TagOpenbrace);
+            return fields;
+        }
+        function writeObjectEnd(obj, fields) {
+            var count = fields.length;
             for (var i = 0; i < count; i++) {
                 this.serialize(obj[fields[i]]);
             }
             stream.write(hproseTags.TagClosebrace);
+        }
+        function writeObject(obj) {
+            this.writeObjectEnd(obj, this.writeObjectBegin(obj));
         }
         function writeClass(classname, fields) {
             var count = fields.length;
@@ -974,16 +979,16 @@ var HproseSimpleWriter, HproseWriter;
                          hproseTags.TagQuote + classname + hproseTags.TagQuote +
                          (count > 0 ? count : '') + hproseTags.TagOpenbrace);
             for (var i = 0; i < count; i++) {
-                writeString(fields[i]);
+                this.writeString(fields[i]);
             }
             stream.write(hproseTags.TagClosebrace);
-            var index = classref.length;
-            classref[index] = classname;
+            var index = fieldsref.length;
+            classref[classname] = index;
             fieldsref[index] = fields;
             return index;
         }
         function reset() {
-            classref.length = 0;
+            classref = Object.create(null);
             fieldsref.length = 0;
         }
         this.serialize = serialize;
@@ -1002,51 +1007,54 @@ var HproseSimpleWriter, HproseWriter;
         this.writeString = writeString;
         this.writeList = writeList;
         this.writeMap = writeMap;
+        this.writeObjectBegin = writeObjectBegin;
+        this.writeObjectEnd = writeObjectEnd;
         this.writeObject = writeObject;
         this.reset = reset;
     }
 
     // public class
     HproseWriter = function hproseWriter(stream) {
+        HproseSimpleWriter.call(this, stream);
         var ref = [];
-        function writeRef(obj, checkRef, writeObj) {
+        function writeRef(obj, checkRef, writeBegin, writeEnd) {
             var index;
             if (checkRef && ((index = arrayIndexOf(ref, obj)) >= 0)) {
                 stream.write(hproseTags.TagRef + index + hproseTags.TagSemicolon);
             }
             else {
+                var result = writeBegin.call(this, obj);
                 ref[ref.length] = obj;
-                writeObj.call(this, obj);
+                writeEnd.call(this, obj, result);
             }
         }
-        HproseSimpleWriter.call(this, stream);
+        function doNothing() {};
         var writeUTCDate = this.writeUTCDate;
         this.writeUTCDate = function(date, checkRef) {
-            writeRef.call(this, date, checkRef, writeUTCDate);
+            writeRef.call(this, date, checkRef, doNothing, writeUTCDate);
         }
         var writeDate = this.writeDate;
         this.writeDate = function(date, checkRef) {
-            writeRef.call(this, date, checkRef, writeDate);
+            writeRef.call(this, date, checkRef, doNothing, writeDate);
         }
         var writeTime = this.writeTime;
         this.writeTime = function(time, checkRef) {
-            writeRef.call(this, time, checkRef, writeTime);
+            writeRef.call(this, time, checkRef, doNothing, writeTime);
         }
         var writeString = this.writeString;
         this.writeString = function(str, checkRef) {
-            writeRef.call(this, str, checkRef, writeString);
+            writeRef.call(this, str, checkRef, doNothing, writeString);
         }
         var writeList = this.writeList;
         this.writeList = function(list, checkRef) {
-            writeRef.call(this, list, checkRef, writeList);
+            writeRef.call(this, list, checkRef, doNothing, writeList);
         }
         var writeMap = this.writeMap;
         this.writeMap = function(map, checkRef) {
-            writeRef.call(this, map, checkRef, writeMap);
+            writeRef.call(this, map, checkRef, doNothing, writeMap);
         }
-        var writeObject = this.writeObject;
         this.writeObject = function(obj, checkRef) {
-            writeRef.call(this, obj, checkRef, writeObject);
+            writeRef.call(this, obj, checkRef, this.writeObjectBegin, this.writeObjectEnd);
         }
         var reset = this.reset;
         this.reset = function() {
