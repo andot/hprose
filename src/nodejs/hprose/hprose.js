@@ -14,7 +14,7 @@
  *                                                        *
  * hprose for Node.js.                                    *
  *                                                        *
- * LastModified: Nov 26, 2012                             *
+ * LastModified: Nov 7, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -26,12 +26,15 @@ module.exports = {
         HproseFilter: require('./common/HproseFilter.js'),
     },
     io: {
-        ClassManager: (typeof(Map) === 'undefined') ? require('./io/ClassManager.js') : require('./io/ClassManager2.js'),
+        ClassManager: require('./io/ClassManager.js'),
         HproseBufferInputStream: require('./io/HproseBufferInputStream.js'),
         HproseBufferOutputStream: require('./io/HproseBufferOutputStream.js'),
         HproseTags: require('./io/HproseTags.js'),
+        HproseRawReader: require('./io/HproseRawReader.js'),
+        HproseSimpleReader: require('./io/HproseSimpleReader.js'),
+        HproseSimpleWriter: require('./io/HproseSimpleWriter.js'),
         HproseReader: require('./io/HproseReader.js'),
-        HproseWriter: (typeof(Map) === 'undefined') ? require('./io/HproseWriter.js') : require('./io/HproseWriter2.js'),
+        HproseWriter: require('./io/HproseWriter.js'),
         HproseFormatter: require('./io/HproseFormatter.js'),
     },
     server: {

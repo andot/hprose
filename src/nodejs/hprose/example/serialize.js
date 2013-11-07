@@ -37,6 +37,12 @@ function User(name, age) {
 }
 var ClassManager = hprose.io.ClassManager;
 ClassManager.register(User, "MyUser");
-s = HproseFormatter.serialize([new User("马秉尧", 32), new User("周静", 28), new User("马秉尧", 32), new User("周静", 28)]);
+var user1 = new User("马秉尧", 32);
+var user2 = new User("周静", 28);
+s = HproseFormatter.serialize([user1, user2, user1, user2]);
+console.log(s.toString());
+console.log(HproseFormatter.unserialize(s));
+var arr = ['name', 'sex', 'sex'];
+s = HproseFormatter.serialize(arr);
 console.log(s.toString());
 console.log(HproseFormatter.unserialize(s));

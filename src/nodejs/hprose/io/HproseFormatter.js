@@ -14,26 +14,28 @@
  *                                                        *
  * HproseFormatter for Node.js.                           *
  *                                                        *
- * LastModified: Oct 29, 2012                             *
+ * LastModified: Nov 7, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 
 var HproseBufferInputStream = require('./HproseBufferInputStream.js');
 var HproseBufferOutputStream = require('./HproseBufferOutputStream.js');
+var HproseSimpleReader = require('./HproseSimpleReader.js');
+var HproseSimpleWriter = require('./HproseSimpleWriter.js');
 var HproseReader = require('./HproseReader.js');
-var HproseWriter = (typeof(Map) === 'undefined') ? require('./HproseWriter.js') : require('./HproseWriter2.js');
+var HproseWriter = require('./HproseWriter.js');
 
 var HproseFormatter = {
-    serialize: function(variable) {
+    serialize: function(variable, simple) {
         var stream = new HproseBufferOutputStream();
-        var hproseWriter = new HproseWriter(stream);
+        var hproseWriter = (simple ? new HproseSimpleWriter(stream) : new HproseWriter(stream));
         hproseWriter.serialize(variable);
         return stream.toBuffer();
     },
-    unserialize: function(variable_representation) {
+    unserialize: function(variable_representation, simple) {
         var stream = new HproseBufferInputStream(variable_representation);
-        var hproseReader = new HproseReader(stream);
+        var hproseReader = (simple ? new HproseSimpleReader(stream) :  new HproseReader(stream));
         return hproseReader.unserialize();
     }
 }
