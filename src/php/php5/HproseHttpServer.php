@@ -15,7 +15,7 @@
  *                                                        *
  * hprose http server library for php5.                   *
  *                                                        *
- * LastModified: Jan 4, 2013                              *
+ * LastModified: Nov 10, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -107,9 +107,8 @@ class HproseHttpServer {
                    'UNI PUR FIN COM NAV INT DEM CNT STA POL HEA PRE GOV"');
         }
         if ($this->crossDomain) {
-            $origin = $_SERVER['HTTP_ORIGIN'];
-            if ($origin && $origin != "null") {
-                header("Access-Control-Allow-Origin: " . $origin);
+            if (isset($_SERVER['HTTP_ORIGIN']) && $_SERVER['HTTP_ORIGIN'] != "null") {
+                header("Access-Control-Allow-Origin: " . $_SERVER['HTTP_ORIGIN']);
                 header("Access-Control-Allow-Credentials: true");  
             }
             else {

@@ -15,26 +15,25 @@
  *                                                        *
  * hprose http client library for php5.                   *
  *                                                        *
- * LastModified: Nov 28, 2012                             *
+ * LastModified: Nov 10, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 
 require_once('HproseCommon.php');
 require_once('HproseIO.php');
+require_once('HproseClient.php');
 
-class HproseHttpClient {
-    private $url;
-    private $host;
-    private $path;
-    private $secure;
-    private $proxy;
-    private $header;
-    private $timeout;
-    private $keepAlive;
-    private $keepAliveTimeout;
-    private $filter;
-    private static $cookieManager = array();
+abstract class HproseBaseHttpClient extends HproseClient {
+    protected $host;
+    protected $path;
+    protected $secure;
+    protected $proxy;
+    protected $header;
+    protected $timeout;
+    protected $keepAlive;
+    protected $keepAliveTimeout;
+    protected static $cookieManager = array();
     static function hproseKeepCookieInSession() {
         $_SESSION['HPROSE_COOKIE_MANAGER'] = self::$cookieManager;
     }
@@ -42,10 +41,9 @@ class HproseHttpClient {
         if (isset($_SESSION['HPROSE_COOKIE_MANAGER'])) {
             self::$cookieManager = $_SESSION['HPROSE_COOKIE_MANAGER'];
         }
-
-        register_shutdown_function(array('HproseHttpClient', 'hproseKeepCookieInSession'));
+        register_shutdown_function(array('HproseBaseHttpClient', 'hproseKeepCookieInSession'));
     }
-    private function setCookie($headers) {
+    protected function setCookie($headers) {
         foreach ($headers as $header) {
             @list($name, $value) = explode(':', $header, 2);
             if (strtolower($name) == 'set-cookie' ||
@@ -83,7 +81,8 @@ class HproseHttpClient {
             }
         }
     }
-    private function getCookie() {
+    protected abstract function formatCookie($cookies);
+    protected function getCookie() {
         $cookies = array();
         foreach (self::$cookieManager as $domain => $cookieList) {
             if (strpos($this->host, $domain) !== false) {
@@ -104,19 +103,15 @@ class HproseHttpClient {
                 }
             }
         }
-        if (count($cookies) > 0) {
-            return "Cookie: " . implode('; ', $cookies) . "\r\n";
-        }
-        return '';
+        return $this->formatCookie($cookies);
     }
     public function __construct($url = '') {
-        $this->useService($url);
+        parent::__construct($url);
         $this->header = array('Content-type' => 'application/hprose');
-        $this->filter = NULL;
     }
     public function useService($url = '', $namespace = '') {
+        $serviceProxy = parent::useService($url, $namespace);
         if ($url) {
-            $this->url = $url;
             $url = parse_url($url);
             $this->secure = (strtolower($url['scheme']) == 'https');
             $this->host = strtolower($url['host']);
@@ -125,94 +120,7 @@ class HproseHttpClient {
             $this->keepAlive = false;
             $this->keepAliveTimeout = 300;
         }
-        return new HproseProxy($this, $namespace);
-    }
-    public function __errorHandler($errno, $errstr, $errfile, $errline) {
-        throw new Exception($errstr, $errno);
-    }
-    public function invoke($functionName, &$arguments = array(), $byRef = false, $resultMode = HproseResultMode::Normal) {
-        $stream = new HproseStringStream(HproseTags::TagCall);
-        $hproseWriter = new HproseWriter($stream);
-        $hproseWriter->writeString($functionName, false);
-        if (count($arguments) > 0 || $byRef) {
-            $hproseWriter->reset();
-            $hproseWriter->writeList($arguments, false);
-            if ($byRef) {
-                $hproseWriter->writeBoolean(true);
-            }
-        }
-        $stream->write(HproseTags::TagEnd);
-        $request = $stream->toString();
-        if ($this->filter) $request = $this->filter->outputFilter($request);
-        $stream->close();
-        $opts = array (
-            'http' => array (
-                'method' => 'POST',
-                'header'=> $this->getCookie() .
-                           "Content-Length: " . strlen($request) . "\r\n" .
-                           ($this->keepAlive ?
-                           "Connection: keep-alive\r\n" .
-                           "Keep-Alive: " . $this->keepAliveTimeout . "\r\n" :
-                           "Connection: close\r\n"),
-                'content' => $request,
-                'timeout' => $this->timeout / 1000.0,
-            ),
-        );
-        foreach ($this->header as $name => $value) {
-            $opts['http']['header'] .= "$name: $value\r\n";
-        }
-        if ($this->proxy) {
-            $opts['http']['proxy'] = $this->proxy;
-            $opts['http']['request_fulluri'] = true;
-        }
-        $context = stream_context_create($opts);
-        set_error_handler(array(&$this, '__errorHandler'));
-        $response = file_get_contents($this->url, false, $context);
-        if ($this->filter) $response = $this->filter->inputFilter($response);
-        restore_error_handler();
-        $this->setCookie($http_response_header);
-        if ($resultMode == HproseResultMode::RawWithEndTag) {
-            return $response;
-        }
-        if ($resultMode == HproseResultMode::Raw) {
-            return substr($response, 0, -1);
-        }
-        $stream = new HproseStringStream($response);
-        $hproseReader = new HproseReader($stream);
-        $result = NULL;
-        $error = NULL;
-        while (($tag = $hproseReader->checkTags(
-            array(HproseTags::TagResult,
-                  HproseTags::TagArgument,
-                  HproseTags::TagError,
-                  HproseTags::TagEnd))) !== HproseTags::TagEnd) {
-            switch ($tag) {
-                case HproseTags::TagResult:
-                    if ($resultMode == HproseResultMode::Serialized) {
-                        $result = $hproseReader->readRaw()->toString();
-                    }
-                    else {
-                        $hproseReader->reset();
-                        $result = &$hproseReader->unserialize();
-                    }
-                    break;
-                case HproseTags::TagArgument:
-                    $hproseReader->reset();
-                    $args = &$hproseReader->readList();
-                    for ($i = 0; $i < count($arguments); $i++) {
-                        $arguments[$i] = &$args[$i];
-                    }
-                    break;
-                case HproseTags::TagError:
-                    $hproseReader->reset();
-                    $error = new HproseException($hproseReader->readString());
-                    break;
-            }
-        }
-        if (!is_null($error)) {
-            throw $error;
-        }
-        return $result;
+        return $serviceProxy;
     }
     public function setHeader($name, $value) {
         $lname = strtolower($name);
@@ -248,33 +156,159 @@ class HproseHttpClient {
     public function getKeepAliveTimeout() {
         return $this->keepAliveTimeout;
     }
-    public function getFilter() {
-        return $this->filter;
+}
+
+if (class_exists('SaeFetchurl')) {
+    class HproseHttpClient extends HproseBaseHttpClient {
+        protected function formatCookie($cookies) {
+            if (count($cookies) > 0) {
+                return implode('; ', $cookies);
+            }
+            return '';
+        }
+        protected function send($request) {
+            $f = new SaeFetchurl();
+            $cookie = $this->getCookie();
+            if ($cookie != '') {
+                $f->setHeader("Cookie", $cookie);
+            }
+            if ($this->keepAlive) {
+                $f->setHeader("Connection", "keep-alive");
+                $f->setHeader("Keep-Alive", $this->keepAliveTimeout);
+            }
+            else {
+                $f->setHeader("Connection", "close");
+            }
+            foreach ($this->header as $name => $value) {
+                $f->setHeader($name, $value);
+            }
+            $f->setMethod("post");
+            $f->setPostData($request);
+            $f->setConnectTimeout($this->timeout);        
+            $f->setSendTimeout($this->timeout);
+            $f->setReadTimeout($this->timeout);
+            $response = $f->fetch($this->url);
+            if ($f->errno()) {
+                throw new HproseException($f->errno() . ": " . $f->errmsg());
+            }
+            $http_response_header = $f->responseHeaders(false);
+            $this->setCookie($http_response_header);
+            return $response;
+        }
     }
-    public function setFilter($filter) {
-        $this->filter = $filter;
+}
+else if (function_exists('curl_init')) {
+    class HproseHttpClient extends HproseBaseHttpClient {
+        private $curl;
+        protected function formatCookie($cookies) {
+            if (count($cookies) > 0) {
+                return "Cookie: " . implode('; ', $cookies);
+            }
+            return '';
+        }
+        public function __construct($url = '') {
+            parent::__construct($url);
+            $this->curl = curl_init();
+        }
+        protected function send($request) {
+            curl_setopt($this->curl, CURLOPT_URL, $this->url);
+            curl_setopt($this->curl, CURLOPT_HEADER, TRUE);
+            curl_setopt($this->curl, CURLOPT_SSL_VERIFYPEER, FALSE);
+            curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, TRUE);
+            curl_setopt($this->curl, CURLOPT_POST, TRUE);
+            curl_setopt($this->curl, CURLOPT_POSTFIELDS, $request);
+            $headers_array = array($this->getCookie(),
+                                    "Content-Length: " . strlen($request));
+            if ($this->keepAlive) {
+                $headers_array[] = "Connection: keep-alive";
+                $headers_array[] = "Keep-Alive: " . $this->keepAliveTimeout;
+            }
+            else {
+                $headers_array[] = "Connection: close";
+            }
+            foreach ($this->header as $name => $value) {
+                $headers_array[] = $name . ": " . $value;
+            }
+            curl_setopt($this->curl, CURLOPT_HTTPHEADER, $headers_array);
+            if ($this->proxy) {
+                curl_setopt($this->curl, CURLOPT_PROXY, $this->proxy);
+            }
+            if (defined(CURLOPT_TIMEOUT_MS)) {
+                curl_setopt($this->curl, CURLOPT_TIMEOUT_MS, $this->timeout);
+            }
+            else {
+                curl_setopt($this->curl, CURLOPT_TIMEOUT, $this->timeout / 1000);
+            }
+            $response = curl_exec($this->curl);
+            $errno = curl_errno($this->curl);
+            if ($errno) {
+                throw new HproseException($errno . ": " . curl_error($this->curl));
+            }
+            do {
+                list($response_headers, $response) = explode("\r\n\r\n", $response, 2); 
+                $http_response_header = explode("\r\n", $response_headers);
+                $http_response_firstline = array_shift($http_response_header); 
+                if (preg_match('@^HTTP/[0-9]\.[0-9]\s([0-9]{3})\s(.*?)@',
+                               $http_response_firstline, $matches)) { 
+                    $response_code = $matches[1];
+                    $response_status = trim($matches[2]);
+                }
+                else {
+                    $response_code = "500";
+                    $response_status = "Unknown Error.";                
+                }
+            } while (substr($response_code, 0, 1) == "1");
+            if ($response_code != '200') {
+                throw new HproseException($response_code . ": " . $response_status);
+            }
+            $this->setCookie($http_response_header);
+            return $response;
+        }
+        public function __destruct() {
+            curl_close($this->curl);
+        }
     }
-    public function __call($function, $arguments) {
-        return $this->invoke($function, $arguments);
-    }
-    public function __get($name) {
-        return new HproseProxy($this, $name . '_');
+}
+else {
+    class HproseHttpClient extends HproseBaseHttpClient {
+        protected function formatCookie($cookies) {
+            if (count($cookies) > 0) {
+                return "Cookie: " . implode('; ', $cookies) . "\r\n";
+            }
+            return '';
+        }
+        public function __errorHandler($errno, $errstr, $errfile, $errline) {
+            throw new Exception($errstr, $errno);
+        }
+        protected function send($request) {
+            $opts = array (
+                'http' => array (
+                    'method' => 'POST',
+                    'header'=> $this->getCookie() .
+                               "Content-Length: " . strlen($request) . "\r\n" .
+                               ($this->keepAlive ?
+                               "Connection: keep-alive\r\n" .
+                               "Keep-Alive: " . $this->keepAliveTimeout . "\r\n" :
+                               "Connection: close\r\n"),
+                    'content' => $request,
+                    'timeout' => $this->timeout / 1000.0,
+                ),
+            );
+            foreach ($this->header as $name => $value) {
+                $opts['http']['header'] .= "$name: $value\r\n";
+            }
+            if ($this->proxy) {
+                $opts['http']['proxy'] = $this->proxy;
+                $opts['http']['request_fulluri'] = true;
+            }
+            $context = stream_context_create($opts);
+            set_error_handler(array(&$this, '__errorHandler'));
+            $response = file_get_contents($this->url, false, $context);
+            restore_error_handler();
+            $this->setCookie($http_response_header);
+            return $response;
+        }
     }
 }
 
-class HproseProxy {
-    private $client;
-    private $namespace;
-    public function __construct($client, $namespace = '') {
-        $this->client = $client;
-        $this->namespace = $namespace;
-    }
-    public function __call($function, $arguments) {
-        $function = $this->namespace . $function;
-        return $this->client->invoke($function, $arguments);
-    }
-    public function __get($name) {
-        return new HproseProxy($this->client, $this->namespace . $name . '_');
-    }
-}
 ?>

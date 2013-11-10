@@ -15,7 +15,7 @@
  *                                                        *
  * hprose common library for php5.                        *
  *                                                        *
- * LastModified: Nov 27, 2012                             *
+ * LastModified: Nov 9, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -684,37 +684,93 @@ class HproseDateTime extends HproseDate {
  integer is_utf8(string $s)
  if $s is UTF-8 String, return 1 else 0
  */
-function is_utf8($string) {
-   return preg_match('%^(?:[\x00-\x7F]|[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2})*$%xs', $string);
+if (function_exists('mb_detect_encoding')) {
+    function is_utf8($s) {
+        return mb_detect_encoding($s, 'UTF-8', true) === 'UTF-8';
+    }
+}
+else if (function_exists('iconv')) {
+    function is_utf8($s) {
+        return iconv('UTF-8', 'UTF-8//IGNORE', $s) === $s;
+    }
+}
+else {
+    function is_utf8($s) { 
+        $len = strlen($s); 
+        for($i = 0; $i < $len; ++$i){
+            $c = ord($s{$i});
+            switch ($c >> 4) {
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                case 5:
+                case 6:
+                case 7:
+                    break;
+                case 12:
+                case 13:
+                    if ((ord($s{++$i}) >> 6) != 0x2) return false;
+                    break;
+                case 14:
+                    if ((ord($s{++$i}) >> 6) != 0x2) return false;
+                    if ((ord($s{++$i}) >> 6) != 0x2) return false;
+                    break;
+                case 15:
+                    $b = $s{++$i};
+                    if ((ord($b) >> 6) != 0x2) return false;
+                    if ((ord($s{++$i}) >> 6) != 0x2) return false;
+                    if ((ord($s{++$i}) >> 6) != 0x2) return false;
+                    if (((($c & 0xf) << 2) | (($b >> 4) & 0x3)) > 0x10) return false;
+                    break;
+                default:
+                    return false;
+            }
+        }
+        return true;
+    }
 }
 
 /*
  integer ustrlen(string $s)
  $s must be a UTF-8 String, return the Unicode code unit (not code point) length
  */
-function ustrlen($s) {
-    $pos = 0;
-    $length = strlen($s);
-    $len = $length;
-    while ($pos < $length) {
-        $a = ord($s{$pos++});
-        if ($a < 0x80) {
-            continue;
-        }
-        elseif (($a & 0xE0) == 0xC0) {
-            ++$pos;
-            --$len;
-        }
-        elseif (($a & 0xF0) == 0xE0) {
-            $pos += 2;
-            $len -= 2;
-        }
-        elseif (($a & 0xF8) == 0xF0) {
-            $pos += 3;
-            $len -= 2;
-        }
+if (function_exists('iconv')) {
+    function ustrlen($s) {
+        return strlen(iconv('UTF-8', 'UTF-16LE', $s)) >> 1;
     }
-    return $len;
+}
+else if (function_exists('mb_convert_encoding')) {
+    function ustrlen($s) {
+        return strlen(mb_convert_encoding($s, "UTF-16LE", "UTF-8")) >> 1;
+    }
+}
+else {
+    function ustrlen($s) {
+        $pos = 0;
+        $length = strlen($s);
+        $len = $length;
+        while ($pos < $length) {
+            $a = ord($s{$pos++});
+            if ($a < 0x80) {
+                continue;
+            }
+            elseif (($a & 0xE0) == 0xC0) {
+                ++$pos;
+                --$len;
+            }
+            elseif (($a & 0xF0) == 0xE0) {
+                $pos += 2;
+                $len -= 2;
+            }
+            elseif (($a & 0xF8) == 0xF0) {
+                $pos += 3;
+                $len -= 2;
+            }
+        }
+        return $len;
+    }
 }
 
 /*
