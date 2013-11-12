@@ -14,7 +14,7 @@
  *                                                        *
  * HproseWriter for Node.js.                              *
  *                                                        *
- * LastModified: Nov 7, 2013                              *
+ * LastModified: Nov 13, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -80,6 +80,10 @@ function HproseWriter(stream) {
     var writeTime = this.writeTime;
     this.writeTime = function(time, checkRef) {
         writeRef.call(this, time, checkRef, doNothing, writeTime);
+    }
+    var writeBytes = this.writeBytes;
+    this.writeBytes = function(bytes, checkRef) {
+        writeRef.call(this, bytes, checkRef, doNothing, writeBytes);
     }
     var writeString = this.writeString;
     this.writeString = function(str, checkRef) {
