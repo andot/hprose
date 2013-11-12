@@ -280,9 +280,6 @@ class HproseWriter extends HproseSimpleWriter {
     public function writeString($str, $checkRef = false) {
         $this->writeRef($str, $checkRef, NULL, array(&$this, 'parent::writeString'));
     }
-    public function writeGuid($guid, $checkRef = false) {
-        $this->writeRef($guid, $checkRef, NULL, array(&$this, 'parent::writeGuid'));
-    }
     public function writeList(&$list, $checkRef = false) {
         $this->writeRef($list, $checkRef, NULL, array(&$this, 'parent::writeList'));
     }
