@@ -15,7 +15,7 @@
  *                                                        *
  * hprose writer library for php5.                        *
  *                                                        *
- * LastModified: Nov 12, 2013                             *
+ * LastModified: Nov 13, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -238,24 +238,34 @@ class HproseSimpleWriter {
 }
 class HproseWriter extends HproseSimpleWriter {
     private $ref;
+    private $arrayref;
     function __construct(&$stream) {
         parent::__construct($stream);
         $this->ref = array();
+        $this->arrayref = array();
     }
     private function writeRef(&$obj, $checkRef, $writeBegin, $writeEnd) {
-        if ($checkRef && (($index = array_ref_search($obj, $this->ref)) !== false)) {
-            $this->stream->write(HproseTags::TagRef . $index . HproseTags::TagSemicolon);
+        if (is_string($obj)) {
+            $key = 's_' . $obj;
+        }
+        elseif (is_array($obj)) {
+            if (($i = array_ref_search($obj, $this->arrayref)) === false) {
+                $i = count($this->arrayref);
+                $this->arrayref[$i] = &$obj;
+            }
+            $key = 'a_' . $i;
         }
         else {
-            if ($writeBegin) {
-                $result = call_user_func_array($writeBegin, array(&$obj));
-                $this->ref[] = &$obj;
-                call_user_func_array($writeEnd, array(&$obj, $result));
-            }
-            else {
-                $this->ref[] = &$obj;
-                call_user_func_array($writeEnd, array(&$obj));
-            }
+            $key = 'o_' . spl_object_hash($obj);
+        }
+        if ($checkRef && array_key_exists($key, $this->ref)) {
+            $this->stream->write(HproseTags::TagRef . $this->ref[$key] . HproseTags::TagSemicolon);
+        }
+        else {
+            $result = $writeBegin ? call_user_func_array($writeBegin, array(&$obj)) : false;
+            $index = count($this->ref);
+            $this->ref[$key] = $index;
+            call_user_func_array($writeEnd, array(&$obj, $result));
         }
     }
     public function writeDate($date, $checkRef = false) {
@@ -288,6 +298,7 @@ class HproseWriter extends HproseSimpleWriter {
     public function reset() {
         parent::reset();
         $this->ref = array();
+        $this->arrayref = array();
     }
 }
 ?>

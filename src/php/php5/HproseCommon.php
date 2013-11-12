@@ -797,4 +797,18 @@ function array_ref_search(&$value, &$array) {
     $value = $temp;
     return false;
 }
+
+/*
+ string spl_object_hash(object $obj)
+ This function returns a unique identifier for the object.
+ This id can be used as a hash key for storing objects or for identifying an object.
+*/
+if (!function_exists('spl_object_hash')) {
+    function spl_object_hash($object) {
+        ob_start();
+        var_dump($object);
+        preg_match('[#(\d+)]', ob_get_clean(), $match);
+        return $match[1];
+    }
+}
 ?>
