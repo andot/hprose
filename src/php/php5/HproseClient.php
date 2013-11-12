@@ -15,7 +15,7 @@
  *                                                        *
  * hprose client library for php5.                        *
  *                                                        *
- * LastModified: Nov 10, 2013                             *
+ * LastModified: Nov 12, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -25,11 +25,13 @@ require_once('HproseIO.php');
 
 abstract class HproseClient {
     protected $url;
-    protected $filter;
+    private $filter;
+    private $simple;
     protected abstract function send($request);
     public function __construct($url = '') {
         $this->useService($url);
         $this->filter = NULL;
+        $this->simple = false;
     }
     public function useService($url = '', $namespace = '') {
         if ($url) {
@@ -37,13 +39,14 @@ abstract class HproseClient {
         }
         return new HproseProxy($this, $namespace);
     }
-    public function invoke($functionName, &$arguments = array(), $byRef = false, $resultMode = HproseResultMode::Normal) {
+    public function invoke($functionName, &$arguments = array(), $byRef = false, $resultMode = HproseResultMode::Normal, $simple = NULL) {
+        if ($simple === NULL) $simple = $this->simple;
         $stream = new HproseStringStream(HproseTags::TagCall);
-        $hproseWriter = new HproseWriter($stream);
-        $hproseWriter->writeString($functionName, false);
+        $hproseWriter = ($simple ? new HproseSimpleWriter($stream) : new HproseWriter($stream));
+        $hproseWriter->writeString($functionName);
         if (count($arguments) > 0 || $byRef) {
             $hproseWriter->reset();
-            $hproseWriter->writeList($arguments, false);
+            $hproseWriter->writeList($arguments);
             if ($byRef) {
                 $hproseWriter->writeBoolean(true);
             }
@@ -61,7 +64,7 @@ abstract class HproseClient {
             return substr($response, 0, -1);
         }
         $stream = new HproseStringStream($response);
-        $hproseReader = new HproseReader($stream);
+        $hproseReader = ($simple ? new HproseSimpleReader($stream) : new HproseReader($stream));
         $result = NULL;
         while (($tag = $hproseReader->checkTags(
             array(HproseTags::TagResult,
@@ -80,14 +83,14 @@ abstract class HproseClient {
                     break;
                 case HproseTags::TagArgument:
                     $hproseReader->reset();
-                    $args = &$hproseReader->readList();
+                    $args = &$hproseReader->readList(true);
                     for ($i = 0; $i < count($arguments); $i++) {
                         $arguments[$i] = &$args[$i];
                     }
                     break;
                 case HproseTags::TagError:
                     $hproseReader->reset();
-                    throw new HproseException($hproseReader->readString());
+                    throw new HproseException($hproseReader->readString(true));
                     break;
             }
         }
@@ -98,6 +101,12 @@ abstract class HproseClient {
     }
     public function setFilter($filter) {
         $this->filter = $filter;
+    }
+    public function getSimpleMode() {
+        return $this->simple;
+    }
+    public function setSimpleMode($simple = true) {
+        $this->simple = $simple;
     }
     public function __call($function, $arguments) {
         return $this->invoke($function, $arguments);

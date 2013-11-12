@@ -15,7 +15,7 @@
  *                                                        *
  * hprose http client library for php5.                   *
  *                                                        *
- * LastModified: Nov 10, 2013                             *
+ * LastModified: Nov 12, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -38,7 +38,7 @@ abstract class HproseBaseHttpClient extends HproseClient {
         $_SESSION['HPROSE_COOKIE_MANAGER'] = self::$cookieManager;
     }
     public static function keepSession() {
-        if (isset($_SESSION['HPROSE_COOKIE_MANAGER'])) {
+        if (array_key_exists('HPROSE_COOKIE_MANAGER', $_SESSION)) {
             self::$cookieManager = $_SESSION['HPROSE_COOKIE_MANAGER'];
         }
         register_shutdown_function(array('HproseBaseHttpClient', 'hproseKeepCookieInSession'));
@@ -58,23 +58,23 @@ abstract class HproseBaseHttpClient extends HproseClient {
                     $cookie[strtoupper($name)] = $value;
                 }
                 // Tomcat can return SetCookie2 with path wrapped in "
-                if (isset($cookie['PATH'])) {
+                if (array_key_exists('PATH', $cookie)) {
                     $cookie['PATH'] = trim($cookie['PATH'], '"');
                 }
                 else {
                     $cookie['PATH'] = '/';
                 }
-                if (isset($cookie['EXPIRES'])) {
+                if (array_key_exists('EXPIRES', $cookie)) {
                     $cookie['EXPIRES'] = strtotime($cookie['EXPIRES']);
                 }
-                if (isset($cookie['DOMAIN'])) {
+                if (array_key_exists('DOMAIN', $cookie)) {
                     $cookie['DOMAIN'] = strtolower($cookie['DOMAIN']);
                 }
                 else {
                     $cookie['DOMAIN'] = $this->host;
                 }
-                $cookie['SECURE'] = isset($cookie['SECURE']);
-                if (!isset(self::$cookieManager[$cookie['DOMAIN']])) {
+                $cookie['SECURE'] = array_key_exists('SECURE', $cookie);
+                if (!array_key_exists($cookie['DOMAIN'], self::$cookieManager)) {
                     self::$cookieManager[$cookie['DOMAIN']] = array();
                 }
                 self::$cookieManager[$cookie['DOMAIN']][$cookie['name']] = $cookie;
@@ -88,10 +88,10 @@ abstract class HproseBaseHttpClient extends HproseClient {
             if (strpos($this->host, $domain) !== false) {
                 $names = array();
                 foreach ($cookieList as $cookie) {
-                    if (isset($cookie['EXPIRES']) && (time() > $cookie['EXPIRES'])) {
+                    if (array_key_exists('EXPIRES', $cookie) && (time() > $cookie['EXPIRES'])) {
                         $names[] = $cookie['name'];
                     }
-                    else if (strpos($this->path, $cookie['PATH']) === 0) {
+                    elseif (strpos($this->path, $cookie['PATH']) === 0) {
                         if ((($this->secure && $cookie['SECURE']) ||
                              !$cookie['SECURE']) && !is_null($cookie['value'])) {
                             $cookies[] = $cookie['name'] . '=' . $cookie['value'];
@@ -197,7 +197,7 @@ if (class_exists('SaeFetchurl')) {
         }
     }
 }
-else if (function_exists('curl_init')) {
+elseif (function_exists('curl_init')) {
     class HproseHttpClient extends HproseBaseHttpClient {
         private $curl;
         protected function formatCookie($cookies) {
@@ -248,7 +248,7 @@ else if (function_exists('curl_init')) {
                 list($response_headers, $response) = explode("\r\n\r\n", $response, 2); 
                 $http_response_header = explode("\r\n", $response_headers);
                 $http_response_firstline = array_shift($http_response_header); 
-                if (preg_match('@^HTTP/[0-9]\.[0-9]\s([0-9]{3})\s(.*?)@',
+                if (preg_match('@^HTTP/[0-9]\.[0-9]\s([0-9]{3})\s(.*)@',
                                $http_response_firstline, $matches)) { 
                     $response_code = $matches[1];
                     $response_status = trim($matches[2]);

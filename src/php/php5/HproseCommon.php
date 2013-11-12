@@ -15,7 +15,7 @@
  *                                                        *
  * hprose common library for php5.                        *
  *                                                        *
- * LastModified: Nov 9, 2013                              *
+ * LastModified: Nov 12, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -689,7 +689,7 @@ if (function_exists('mb_detect_encoding')) {
         return mb_detect_encoding($s, 'UTF-8', true) === 'UTF-8';
     }
 }
-else if (function_exists('iconv')) {
+elseif (function_exists('iconv')) {
     function is_utf8($s) {
         return iconv('UTF-8', 'UTF-8//IGNORE', $s) === $s;
     }
@@ -741,7 +741,7 @@ if (function_exists('iconv')) {
         return strlen(iconv('UTF-8', 'UTF-16LE', $s)) >> 1;
     }
 }
-else if (function_exists('mb_convert_encoding')) {
+elseif (function_exists('mb_convert_encoding')) {
     function ustrlen($s) {
         return strlen(mb_convert_encoding($s, "UTF-16LE", "UTF-8")) >> 1;
     }
@@ -775,10 +775,26 @@ else {
 
 /*
  bool is_list(array $a)
- if $s is list, return true else false
+ if $a is list, return true else false
  */
-function is_list($a) {
-    return is_array($a) && ((count($a) == 0) || (count(array_diff(range(0, count($a) - 1), array_keys($a))) == 0));
+function is_list(array $a) {
+    return !array_diff_key($a, array_fill(0, count($a), NULL));
 }
 
+/*
+ mixed array_ref_search(mixed &$value, array $array)
+ if $value ref in $array, return the index else false
+*/
+function array_ref_search(&$value, &$array) {
+    if(!is_array($value)) return array_search($value, $array, true);
+    $temp = $value;
+    foreach ($array as $i => &$ref) {
+        if (($ref === ($value = 1)) && ($ref === ($value = 0))) {
+            $value = $temp;
+            return $i;
+        }
+    }
+    $value = $temp;
+    return false;
+}
 ?>
