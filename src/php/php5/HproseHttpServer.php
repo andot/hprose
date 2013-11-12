@@ -15,7 +15,7 @@
  *                                                        *
  * hprose http server library for php5.                   *
  *                                                        *
- * LastModified: Nov 12, 2013                             *
+ * LastModified: Nov 13, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -149,15 +149,14 @@ class HproseHttpServer {
                 throw new HproseException("Can't find this function " . $functionName . "().");
             }
             if ($simple === NULL) $simple = $this->simple;
-            $reader = ($simple ? new HproseSimpleReader($this->input) : new HproseReader($this->input));
             $writer = ($simple ? new HproseSimpleWriter($this->output) : new HproseWriter($this->output));
             $args = array();
             $byref = false;
-            $tag = $reader->checkTags(array(HproseTags::TagList,
+            $tag = $simpleReader->checkTags(array(HproseTags::TagList,
                                             HproseTags::TagEnd,
                                             HproseTags::TagCall));
             if ($tag == HproseTags::TagList) {
-                $reader->reset();
+                $reader = new HproseReader($this->input);
                 $args = &$reader->readList();
                 $tag = $reader->checkTags(array(HproseTags::TagTrue,
                                                 HproseTags::TagEnd,

@@ -15,7 +15,7 @@
  *                                                        *
  * hprose common library for php5.                        *
  *                                                        *
- * LastModified: Nov 12, 2013                             *
+ * LastModified: Nov 13, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -786,7 +786,7 @@ function is_list(array $a) {
  if $value ref in $array, return the index else false
 */
 function array_ref_search(&$value, &$array) {
-    if(!is_array($value)) return array_search($value, $array, true);
+    if (!is_array($value)) return array_search($value, $array, true);
     $temp = $value;
     foreach ($array as $i => &$ref) {
         if (($ref === ($value = 1)) && ($ref === ($value = 0))) {

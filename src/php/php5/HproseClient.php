@@ -15,7 +15,7 @@
  *                                                        *
  * hprose client library for php5.                        *
  *                                                        *
- * LastModified: Nov 12, 2013                             *
+ * LastModified: Nov 13, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -64,7 +64,7 @@ abstract class HproseClient {
             return substr($response, 0, -1);
         }
         $stream = new HproseStringStream($response);
-        $hproseReader = ($simple ? new HproseSimpleReader($stream) : new HproseReader($stream));
+        $hproseReader = new HproseReader($stream);
         $result = NULL;
         while (($tag = $hproseReader->checkTags(
             array(HproseTags::TagResult,

@@ -14,7 +14,7 @@
  *                                                        *
  * HproseClient for Node.js.                              *
  *                                                        *
- * LastModified: Nov 7, 2013                              *
+ * LastModified: Nov 13, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -280,7 +280,7 @@ function HproseClient() {
         }
         else {
             var stream = new HproseBufferInputStream(data);
-            var reader = (simple ? new HproseSimpleReader(stream) : new HproseReader(stream));
+            var reader = new HproseReader(stream);
             var tag;
             var error;
             while ((tag = reader.checkTags(
@@ -294,6 +294,7 @@ function HproseClient() {
                             result = reader.readRaw().toBuffer();
                         }
                         else {
+                            reader.reset();
                             result = reader.unserialize();
                         }
                         break;

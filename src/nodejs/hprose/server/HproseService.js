@@ -14,7 +14,7 @@
  *                                                        *
  * HproseService for Node.js.                             *
  *                                                        *
- * LastModified: Nov 7, 2013                              *
+ * LastModified: Nov 13, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -117,10 +117,9 @@ function HproseService() {
             var functionName = simpleReader.readString(true);
             var aliasName = functionName.toLowerCase();
             var func = m_functions[aliasName] || m_functions['*'];
-            var simple, reader, writer;
+            var simple, writer;
             if (func) {
                 simple = (func.simple === undefined ? m_simple : func.simple);
-                reader = (simple ? new HproseSimpleReader(istream) : new HproseReader(istream));
                 writer = (simple ? new HproseSimpleWriter(ostream) : new HproseWriter(ostream));
             }
             else {
@@ -128,10 +127,11 @@ function HproseService() {
             }
             var functionArgs = [];
             var byref = false;
-            var tag = reader.checkTags([HproseTags.TagList,
-                                        HproseTags.TagEnd,
-                                        HproseTags.TagCall]);
+            var tag = simpleReader.checkTags([HproseTags.TagList,
+                                              HproseTags.TagEnd,
+                                              HproseTags.TagCall]);
             if (tag == HproseTags.TagList) {
+                var reader = new HproseReader(istream);
                 functionArgs = reader.readList();
                 tag = reader.checkTags([HproseTags.TagTrue,
                                         HproseTags.TagEnd,

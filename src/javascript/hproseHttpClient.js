@@ -14,7 +14,7 @@
  *                                                        *
  * hprose http client for Javascript.                     *
  *                                                        *
- * LastModified: Nov 7, 2013                              *
+ * LastModified: Nov 13, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -400,7 +400,7 @@ var HproseHttpClient = (function () {
                 }
                 else {
                     var stream = new r_HproseStringInputStream(response);
-                    var hproseReader = (simple ? new r_HproseSimpleReader(stream) : new r_HproseReader(stream));
+                    var hproseReader = new r_HproseReader(stream);
                     var tag;
                     try {
                         while ((tag = hproseReader.checkTags(
@@ -414,6 +414,7 @@ var HproseHttpClient = (function () {
                                         result = hproseReader.readRaw().toString();
                                     }
                                     else {
+                                        hproseReader.reset();
                                         result = hproseReader.unserialize();
                                     }
                                     break;

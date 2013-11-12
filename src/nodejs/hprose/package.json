@@ -1,6 +1,6 @@
 {
   "name": "hprose",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "author": "Ma Bingyao <mabingyao@gmail.com> (http://www.hprose.com/)",
 
   "description": "hprose for node.js",
