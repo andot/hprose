@@ -37,225 +37,223 @@ function HproseFilter() {
     this.outputFilter = function(value) { return value; }
 }
 
-if (!Array.isArray) {
+if (!('isArray' in Array)) {
     Array.isArray = function (arg) {
         return Object.prototype.toString.call(arg) === '[object Array]';
     }
 }
 
 (function (global) {
-    if (global.Map === undefined || global.WeakMap === undefined) {
-        if (global.ActiveXObject === undefined) {
-            "use strict";
-            var namespaces = {};
-            var count = 0;
-            function reDefineValueOf(obj) {
-                var privates = {};
-                var baseValueOf = obj.valueOf;
-                obj.valueOf = function valueOf(namespace) {
-                    var n;
-                    if ((this === obj) &&
-                        (typeof(namespace) === 'object') &&
-                        ('n' in namespace) &&
-                        ((n = namespace.n) in namespaces) &&
-                        (namespaces[n] === namespace)) {
-                        if (!(n in privates)) privates[n] = {};
-                        return privates[n];
+    if (('Map' in global) && ('WeakMap' in global)) return;
+    if ('ActiveXObject' in global) {
+        if (!('WeakMap' in global)) {
+            global.WeakMap = function() {
+                var dict =  new ActiveXObject("Scripting.Dictionary");
+                this.get = function(key) {
+                    if (dict.Exists(key)) {
+                        return dict.Item(key);
                     }
                     else {
-                        baseValueOf.apply(this, arguments);
+                        return undefined;
                     }
                 }
-            }
-            function ObjectMap() {
-                return {
-                    namespace: { n: count++ },
-                    nullMap: {},
-                    map: function map(key) {
-                        if (key === null) return this.nullMap;
-                        var n = this.namespace.n;
-                        if (!(n in namespaces)) namespaces[n] = this.namespace;
-                        var privates = key.valueOf(this.namespace);
-                        if (privates !== key.valueOf()) return privates;
-                        reDefineValueOf(key);
-                        return key.valueOf(this.namespace);
-                    },
-                    get: function(key) { return this.map(key).value; },
-                    set: function(key, value) { this.map(key).value = value; },
-                    has: function(key) { return 'value' in this.map(key); },
-                    'delete': function(key) { return delete this.map(key).value; },
-                    clear: function() {
-                        delete namespaces[this.namespace.n];
-                        this.namespace.n = count++;
+                this.set = function(key, value) {
+                    if (dict.Exists(key)) {
+                        dict.Item(key) = value;
+                    }
+                    else {
+                        dict.Add(key, value);
                     }
                 }
-            }
-            function ScalarMap() {
-                return {
-                    map: {},
-                    get: function(key) { return this.map[key]; },
-                    set: function(key, value) { this.map[key] = value; },
-                    has: function(key) { return key in this.map; },
-                    'delete': function(key) { return delete this.map[key]; },
-                    clear: function() { this.map = {}; }
+                this.has = function(key) {
+                    return dict.Exists(key);
                 }
-            }
-            function UndefinedMap() {
-                return {
-                    map: {},
-                    get: function(key) { return this.map.value; },
-                    set: function(key, value) { this.map.value = value; },
-                    has: function(key) { return 'value' in this.map; },
-                    'delete': function(key) { return delete this.map.value; },
-                    clear: function() { this.map = {}; }
+                this.delete = function(key) {
+                    if (dict.Exists(key)) {
+                        dict.Remove(key);
+                        return true;
+                    }
+                    return false;
                 }
-            }
-            function unsupport() {
-                throw new Error("the key is not a supported type.");
-            }
-            function doNothing() {}
-            var UnknownMap = {
-                get: unsupport,
-                set: unsupport,
-                has: unsupport,
-                'delete': unsupport,
-                clear: doNothing
-            }
-            if (global.WeakMap === undefined) {
-                global.WeakMap = function WeakMap() {
-                    var map = {
-                        'number': ScalarMap(),
-                        'string': ScalarMap(),
-                        'boolean': ScalarMap(),
-                        'object': ObjectMap(),
-                        'function': ObjectMap(),
-                        'undefined': UndefinedMap(),
-                        'unknown': UnknownMap
-                    };
-                    this.get = function(key) {
-                        return map[typeof(key)].get(key);
-                    }
-                    this.set = function(key, value) {
-                        map[typeof(key)].set(key, value);
-                    }
-                    this.has = function(key) {
-                        return map[typeof(key)].has(key);
-                    }
-                    this['delete'] = function(key) {
-                        return map[typeof(key)]['delete'](key);
-                    }
-                    this.clear = function() {
-                        for (var key in map) map[key].clear();
-                    }
-                }
-            }
-            if (global.Map === undefined) {
-                global.Map = function Map() {
-                    var map = {
-                        'number': ScalarMap(),
-                        'string': ScalarMap(),
-                        'boolean': ScalarMap(),
-                        'object': ObjectMap(),
-                        'function': ObjectMap(),
-                        'undefined': UndefinedMap(),
-                        'unknown': UnknownMap
-                    };
-                    this.size = 0;
-                    this.get = function(key) {
-                        return map[typeof(key)].get(key);
-                    }
-                    this.set = function(key, value) {
-                        if (!this.has(key)) this.size++;
-                        map[typeof(key)].set(key, value);
-                    }
-                    this.has = function(key) {
-                        return map[typeof(key)].has(key);
-                    }
-                    this['delete'] = function(key) {
-                        if (this.has(key)) {
-                            this.size--;
-                            return map[typeof(key)]['delete'](key);
-                        }
-                        return false;
-                    }
-                    this.clear = function() {
-                        for (var key in map) map[key].clear();
-                        this.size = 0;
-                    }
+                this.clear = function() {
+                    dict.RemoveAll();
                 }
             }
         }
-        else {
-            if (global.WeakMap === undefined) {
-                global.WeakMap = function WeakMap() {
-                    var dict =  new ActiveXObject("Scripting.Dictionary");
-                    this.get = function(key) {
-                        if (dict.Exists(key)) {
-                            return dict.Item(key);
-                        }
-                        else {
-                            return undefined;
-                        }
+        if (!('Map' in global)) {
+            global.Map = function() {
+                var dict =  new ActiveXObject("Scripting.Dictionary");
+                this.size = 0;
+                this.get = function(key) {
+                    if (dict.Exists(key)) {
+                        return dict.Item(key);
                     }
-                    this.set = function(key, value) {
-                        if (dict.Exists(key)) {
-                            dict.Item(key) = value;
-                        }
-                        else {
-                            dict.Add(key, value);
-                        }
-                    }
-                    this.has = function(key) {
-                        return dict.Exists(key);
-                    }
-                    this['delete'] = function(key) {
-                        if (dict.Exists(key)) {
-                            dict.Remove(key);
-                            return true;
-                        }
-                        return false;
-                    }
-                    this.clear = function() {
-                        dict.RemoveAll();
+                    else {
+                        return undefined;
                     }
                 }
-            }
-            if (global.Map === undefined) {
-                global.Map = function Map() {
-                    var dict =  new ActiveXObject("Scripting.Dictionary");
+                this.set = function(key, value) {
+                    if (dict.Exists(key)) {
+                        dict.Item(key) = value;
+                    }
+                    else {
+                        this.size++;
+                        dict.Add(key, value);
+                    }
+                }
+                this.has = function(key) {
+                    return dict.Exists(key);
+                }
+                this.delete = function(key) {
+                    if (dict.Exists(key)) {
+                        this.size--;
+                        dict.Remove(key);
+                        return true;
+                    }
+                    return false;
+                }
+                this.clear = function() {
+                    dict.RemoveAll();
                     this.size = 0;
-                    this.get = function(key) {
-                        if (dict.Exists(key)) {
-                            return dict.Item(key);
-                        }
-                        else {
-                            return undefined;
-                        }
+                }
+            }
+        }
+    }
+    else {
+        var namespaces = {};
+        var count = 0;
+        var reDefineValueOf = function(obj) {
+            var privates = {};
+            var baseValueOf = obj.valueOf;
+            obj.valueOf = function(namespace) {
+                var n;
+                if ((this === obj) &&
+                    (typeof(namespace) === 'object') &&
+                    ('n' in namespace) &&
+                    ((n = namespace.n) in namespaces) &&
+                    (namespaces[n] === namespace)) {
+                    if (!(n in privates)) privates[n] = {};
+                    return privates[n];
+                }
+                else {
+                    baseValueOf.apply(this, arguments);
+                }
+            }
+        }
+        var ObjectMap = function() {
+            return {
+                namespace: { n: count++ },
+                nullMap: {},
+                map: function map(key) {
+                    if (key === null) return this.nullMap;
+                    var n = this.namespace.n;
+                    if (!(n in namespaces)) namespaces[n] = this.namespace;
+                    var privates = key.valueOf(this.namespace);
+                    if (privates !== key.valueOf()) return privates;
+                    reDefineValueOf(key);
+                    return key.valueOf(this.namespace);
+                },
+                get: function(key) { return this.map(key).value; },
+                set: function(key, value) { this.map(key).value = value; },
+                has: function(key) { return 'value' in this.map(key); },
+                delete: function(key) { return delete this.map(key).value; },
+                clear: function() {
+                    delete namespaces[this.namespace.n];
+                    this.namespace.n = count++;
+                }
+            }
+        }
+        var ScalarMap = function() {
+            return {
+                map: {},
+                get: function(key) { return this.map[key]; },
+                set: function(key, value) { this.map[key] = value; },
+                has: function(key) { return key in this.map; },
+                delete: function(key) { return delete this.map[key]; },
+                clear: function() { this.map = {}; }
+            }
+        }
+        var UndefinedMap = function() {
+            return {
+                map: {},
+                get: function(key) { return this.map.value; },
+                set: function(key, value) { this.map.value = value; },
+                has: function(key) { return 'value' in this.map; },
+                delete: function(key) { return delete this.map.value; },
+                clear: function() { this.map = {}; }
+            }
+        }
+        var unsupport = function() {
+            throw new Error("the key is not a supported type.");
+        }
+        var doNothing = function() {}
+        var UnknownMap = {
+            get: unsupport,
+            set: unsupport,
+            has: unsupport,
+            delete: unsupport,
+            clear: doNothing
+        }
+        if (!('WeakMap' in global)) {
+            global.WeakMap = function() {
+                var map = {
+                    'number': ScalarMap(),
+                    'string': ScalarMap(),
+                    'boolean': ScalarMap(),
+                    'object': ObjectMap(),
+                    'function': ObjectMap(),
+                    'undefined': UndefinedMap(),
+                    'unknown': UnknownMap
+                };
+                this.get = function(key) {
+                    return map[typeof(key)].get(key);
+                }
+                this.set = function(key, value) {
+                    map[typeof(key)].set(key, value);
+                }
+                this.has = function(key) {
+                    return map[typeof(key)].has(key);
+                }
+                this.delete = function(key) {
+                    return map[typeof(key)].delete(key);
+                }
+                this.clear = function() {
+                    for (var key in map) map[key].clear();
+                }
+            }
+        }
+        if (!('Map' in global)) {
+            global.Map = function() {
+                var map = {
+                    'number': ScalarMap(),
+                    'string': ScalarMap(),
+                    'boolean': ScalarMap(),
+                    'object': ObjectMap(),
+                    'function': ObjectMap(),
+                    'undefined': UndefinedMap(),
+                    'unknown': UnknownMap
+                };
+                this.size = 0;
+                this.get = function(key) {
+                    return map[typeof(key)].get(key);
+                }
+                this.set = function(key, value) {
+                    if (!this.has(key)) this.size++;
+                    map[typeof(key)].set(key, value);
+                }
+                this.has = function(key) {
+                    return map[typeof(key)].has(key);
+                }
+                this.delete = function(key) {
+                    if (this.has(key)) {
+                        this.size--;
+                        return map[typeof(key)].delete(key);
                     }
-                    this.set = function(key, value) {
-                        if (dict.Exists(key)) {
-                            dict.Item(key) = value;
-                        }
-                        else {
-                            this.size++;
-                            dict.Add(key, value);
-                        }
-                    }
-                    this.has = function(key) {
-                        return dict.Exists(key);
-                    }
-                    this['delete'] = function(key) {
-                        if (dict.Exists(key)) {
-                            this.size--;
-                            dict.Remove(key);
-                            return true;
-                        }
-                        return false;
-                    }
-                    this.clear = function() {
-                        dict.RemoveAll();
-                        this.size = 0;
-                    }
+                    return false;
+                }
+                this.clear = function() {
+                    for (var key in map) map[key].clear();
+                    this.size = 0;
                 }
             }
         }
