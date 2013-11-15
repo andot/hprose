@@ -43,122 +43,221 @@ if (!Array.isArray) {
     }
 }
 
-if (!this.Map || !this.WeakMap) {
-    (function (global) {
-        "use strict";
-        var s_get = "get";
-        var s_set = "set";
-        var s_has = "has";
-        var s_delete = "delete";
-        var s_clear = "clear";
-        var s_value = "value";
-        
-        function reDefineValueOf(obj, namespace) {
-            var privates = {};
-            var baseValueOf = obj.valueOf;
-            obj.valueOf = function valueOf(value) {
-                return value !== namespace || this !== obj ?
-                    baseValueOf.apply(this, arguments) : privates;
+(function (global) {
+    if (global.Map === undefined || global.WeakMap === undefined) {
+        if (global.ActiveXObject === undefined) {
+            "use strict";
+            var namespaces = {};
+            var count = 0;
+            function reDefineValueOf(obj) {
+                var privates = {};
+                var baseValueOf = obj.valueOf;
+                obj.valueOf = function valueOf(namespace) {
+                    var n;
+                    if ((this === obj) &&
+                        (typeof(namespace) === 'object') &&
+                        ('n' in namespace) &&
+                        ((n = namespace.n) in namespaces) &&
+                        (namespaces[n] === namespace)) {
+                        if (!(n in privates)) privates[n] = {};
+                        return privates[n];
+                    }
+                    else {
+                        baseValueOf.apply(this, arguments);
+                    }
+                }
             }
-            return privates;
-        }
-        function ObjectDict() {
-            var namespace = {};
-            var nullDict = {};
-            function dict(key) {
-                if (key === null) return nullDict;
-                var privates = key.valueOf(namespace);
-                return privates !== key.valueOf() ? privates : reDefineValueOf(key, namespace);
+            function ObjectMap() {
+                return {
+                    namespace: { n: count++ },
+                    nullMap: {},
+                    map: function map(key) {
+                        if (key === null) return this.nullMap;
+                        var n = this.namespace.n;
+                        if (!(n in namespaces)) namespaces[n] = this.namespace;
+                        var privates = key.valueOf(this.namespace);
+                        if (privates !== key.valueOf()) return privates;
+                        reDefineValueOf(key);
+                        return key.valueOf(this.namespace);
+                    },
+                    get: function(key) { return this.map(key).value; },
+                    set: function(key, value) { this.map(key).value = value; },
+                    has: function(key) { return 'value' in this.map(key); },
+                    'delete': function(key) { return delete this.map(key).value; },
+                    clear: function() {
+                        delete namespaces[this.namespace.n];
+                        this.namespace.n = count++;
+                    }
+                }
             }
-            this[s_get] = function(key) { return dict(key).value; }
-            this[s_set] = function(key, value) { dict(key).value = value; }
-            this[s_has] = function(key) { return s_value in dict(key); }
-            this[s_delete] = function(key) { return delete dict(key).value; }
-            this[s_clear] = function() { namespace = {}; }
-        }
-        function ScalarDict() {
-            var dict = {};
-            this[s_get] = function(key) { return dict[key]; }
-            this[s_set] = function(key, value) { dict[key] = value; }
-            this[s_has] = function(key) { return key in dict; }
-            this[s_delete] = function(key) { return delete dict[key]; }
-            this[s_clear] = function() { dict = {}; }
-        }
-        function UndefinedDict() {
-            var dict = {};
-            this[s_get] = function(key) { return dict.value; }
-            this[s_set] = function(key, value) { dict.value = value; }
-            this[s_has] = function(key) { return s_value in dict; }
-            this[s_delete] = function(key) { return delete dict.value; }
-            this[s_clear] = function() { dict = {}; }
-        }
-        function UnknownDict() {
+            function ScalarMap() {
+                return {
+                    map: {},
+                    get: function(key) { return this.map[key]; },
+                    set: function(key, value) { this.map[key] = value; },
+                    has: function(key) { return key in this.map; },
+                    'delete': function(key) { return delete this.map[key]; },
+                    clear: function() { this.map = {}; }
+                }
+            }
+            function UndefinedMap() {
+                return {
+                    map: {},
+                    get: function(key) { return this.map.value; },
+                    set: function(key, value) { this.map.value = value; },
+                    has: function(key) { return 'value' in this.map; },
+                    'delete': function(key) { return delete this.map.value; },
+                    clear: function() { this.map = {}; }
+                }
+            }
             function unsupport() {
                 throw new Error("the key is not a supported type.");
             }
-            this[s_get] = unsupport;
-            this[s_set] = unsupport;
-            this[s_has] = unsupport;
-            this[s_delete] = unsupport;
-            this[s_clear] = function() {}
-        }
-        function getDict() {
-            return {
-                    'number': new ScalarDict(),
-                    'string': new ScalarDict(),
-                    'boolean': new ScalarDict(),
-                    'object': new ObjectDict(),
-                    'function': new ObjectDict(),
-                    'undefined': new UndefinedDict(),
-                    'unknown': new UnknownDict()
-                };
-        }
-        if (!global.WeakMap) {
-            global.WeakMap = function WeakMap() {
-                var dict = getDict();
-                this[s_get] = function(key) {
-                    return dict[typeof(key)][s_get](key);
-                }
-                this[s_set] = function(key, value) {
-                    dict[typeof(key)][s_set](key, value);
-                }
-                this[s_has] = function(key) {
-                    return dict[typeof(key)][s_has](key);
-                }
-                this[s_delete] = function(key) {
-                    return dict[typeof(key)][s_delete](key);
-                }
-                this[s_clear] = function() {
-                    for (var key in dict) dict[key][s_clear]();
-                }
+            function doNothing() {}
+            var UnknownMap = {
+                get: unsupport,
+                set: unsupport,
+                has: unsupport,
+                'delete': unsupport,
+                clear: doNothing
             }
-        }
-        if (!global.Map) {
-            global.Map = function Map() {
-                var dict = getDict();
-                this.size = 0;
-                this[s_get] = function(key) {
-                    return dict[typeof(key)][s_get](key);
-                }
-                this[s_set] = function(key, value) {
-                    if (!this[s_has](key)) this.size++;
-                    dict[typeof(key)][s_set](key, value);
-                }
-                this[s_has] = function(key) {
-                    return dict[typeof(key)][s_has](key);
-                }
-                this[s_delete] = function(key) {
-                    if (this.has(key)) {
-                        this.size--;
-                        return dict[typeof(key)][s_delete](key);
+            if (global.WeakMap === undefined) {
+                global.WeakMap = function WeakMap() {
+                    var map = {
+                        'number': ScalarMap(),
+                        'string': ScalarMap(),
+                        'boolean': ScalarMap(),
+                        'object': ObjectMap(),
+                        'function': ObjectMap(),
+                        'undefined': UndefinedMap(),
+                        'unknown': UnknownMap
+                    };
+                    this.get = function(key) {
+                        return map[typeof(key)].get(key);
                     }
-                    return false;
+                    this.set = function(key, value) {
+                        map[typeof(key)].set(key, value);
+                    }
+                    this.has = function(key) {
+                        return map[typeof(key)].has(key);
+                    }
+                    this['delete'] = function(key) {
+                        return map[typeof(key)]['delete'](key);
+                    }
+                    this.clear = function() {
+                        for (var key in map) map[key].clear();
+                    }
                 }
-                this[s_clear] = function() {
-                    for (var key in dict) dict[key][s_clear]();
+            }
+            if (global.Map === undefined) {
+                global.Map = function Map() {
+                    var map = {
+                        'number': ScalarMap(),
+                        'string': ScalarMap(),
+                        'boolean': ScalarMap(),
+                        'object': ObjectMap(),
+                        'function': ObjectMap(),
+                        'undefined': UndefinedMap(),
+                        'unknown': UnknownMap
+                    };
                     this.size = 0;
+                    this.get = function(key) {
+                        return map[typeof(key)].get(key);
+                    }
+                    this.set = function(key, value) {
+                        if (!this.has(key)) this.size++;
+                        map[typeof(key)].set(key, value);
+                    }
+                    this.has = function(key) {
+                        return map[typeof(key)].has(key);
+                    }
+                    this['delete'] = function(key) {
+                        if (this.has(key)) {
+                            this.size--;
+                            return map[typeof(key)]['delete'](key);
+                        }
+                        return false;
+                    }
+                    this.clear = function() {
+                        for (var key in map) map[key].clear();
+                        this.size = 0;
+                    }
                 }
             }
         }
-    })(this);
-}
+        else {
+            if (global.WeakMap === undefined) {
+                global.WeakMap = function WeakMap() {
+                    var dict =  new ActiveXObject("Scripting.Dictionary");
+                    this.get = function(key) {
+                        if (dict.Exists(key)) {
+                            return dict.Item(key);
+                        }
+                        else {
+                            return undefined;
+                        }
+                    }
+                    this.set = function(key, value) {
+                        if (dict.Exists(key)) {
+                            dict.Item(key) = value;
+                        }
+                        else {
+                            dict.Add(key, value);
+                        }
+                    }
+                    this.has = function(key) {
+                        return dict.Exists(key);
+                    }
+                    this['delete'] = function(key) {
+                        if (dict.Exists(key)) {
+                            dict.Remove(key);
+                            return true;
+                        }
+                        return false;
+                    }
+                    this.clear = function() {
+                        dict.RemoveAll();
+                    }
+                }
+            }
+            if (global.Map === undefined) {
+                global.Map = function Map() {
+                    var dict =  new ActiveXObject("Scripting.Dictionary");
+                    this.size = 0;
+                    this.get = function(key) {
+                        if (dict.Exists(key)) {
+                            return dict.Item(key);
+                        }
+                        else {
+                            return undefined;
+                        }
+                    }
+                    this.set = function(key, value) {
+                        if (dict.Exists(key)) {
+                            dict.Item(key) = value;
+                        }
+                        else {
+                            this.size++;
+                            dict.Add(key, value);
+                        }
+                    }
+                    this.has = function(key) {
+                        return dict.Exists(key);
+                    }
+                    this['delete'] = function(key) {
+                        if (dict.Exists(key)) {
+                            this.size--;
+                            dict.Remove(key);
+                            return true;
+                        }
+                        return false;
+                    }
+                    this.clear = function() {
+                        dict.RemoveAll();
+                        this.size = 0;
+                    }
+                }
+            }
+        }
+    }
+})(this);
