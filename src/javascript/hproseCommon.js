@@ -68,7 +68,7 @@ if (!('isArray' in Array)) {
                 this.has = function(key) {
                     return dict.Exists(key);
                 }
-                this.delete = function(key) {
+                this['delete'] = function(key) {
                     if (dict.Exists(key)) {
                         dict.Remove(key);
                         return true;
@@ -104,7 +104,7 @@ if (!('isArray' in Array)) {
                 this.has = function(key) {
                     return dict.Exists(key);
                 }
-                this.delete = function(key) {
+                this['delete'] = function(key) {
                     if (dict.Exists(key)) {
                         this.size--;
                         dict.Remove(key);
@@ -156,7 +156,7 @@ if (!('isArray' in Array)) {
                 get: function(key) { return this.map(key).value; },
                 set: function(key, value) { this.map(key).value = value; },
                 has: function(key) { return 'value' in this.map(key); },
-                delete: function(key) { return delete this.map(key).value; },
+                'delete': function(key) { return delete this.map(key).value; },
                 clear: function() {
                     delete namespaces[this.namespace.n];
                     this.namespace.n = count++;
@@ -169,7 +169,7 @@ if (!('isArray' in Array)) {
                 get: function(key) { return this.map[key]; },
                 set: function(key, value) { this.map[key] = value; },
                 has: function(key) { return key in this.map; },
-                delete: function(key) { return delete this.map[key]; },
+                'delete': function(key) { return delete this.map[key]; },
                 clear: function() { this.map = {}; }
             }
         }
@@ -179,7 +179,7 @@ if (!('isArray' in Array)) {
                 get: function(key) { return this.map.value; },
                 set: function(key, value) { this.map.value = value; },
                 has: function(key) { return 'value' in this.map; },
-                delete: function(key) { return delete this.map.value; },
+                'delete': function(key) { return delete this.map.value; },
                 clear: function() { this.map = {}; }
             }
         }
@@ -191,7 +191,7 @@ if (!('isArray' in Array)) {
             get: unsupport,
             set: unsupport,
             has: unsupport,
-            delete: unsupport,
+            'delete': unsupport,
             clear: doNothing
         }
         if (!('WeakMap' in global)) {
@@ -214,8 +214,8 @@ if (!('isArray' in Array)) {
                 this.has = function(key) {
                     return map[typeof(key)].has(key);
                 }
-                this.delete = function(key) {
-                    return map[typeof(key)].delete(key);
+                this['delete'] = function(key) {
+                    return map[typeof(key)]['delete'](key);
                 }
                 this.clear = function() {
                     for (var key in map) map[key].clear();
@@ -244,10 +244,10 @@ if (!('isArray' in Array)) {
                 this.has = function(key) {
                     return map[typeof(key)].has(key);
                 }
-                this.delete = function(key) {
+                this['delete'] = function(key) {
                     if (this.has(key)) {
                         this.size--;
-                        return map[typeof(key)].delete(key);
+                        return map[typeof(key)]['delete'](key);
                     }
                     return false;
                 }
