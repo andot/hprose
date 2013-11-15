@@ -15,7 +15,7 @@
  *                                                        *
  * hprose common library for php5.                        *
  *                                                        *
- * LastModified: Nov 13, 2013                             *
+ * LastModified: Nov 15, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -778,7 +778,9 @@ else {
  if $a is list, return true else false
  */
 function is_list(array $a) {
-    return !array_diff_key($a, array_fill(0, count($a), NULL));
+    $count = count($a);
+    if ($count === 0) return true;
+    return !array_diff_key($a, array_fill(0, $count, NULL));
 }
 
 /*
