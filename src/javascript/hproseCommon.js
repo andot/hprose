@@ -14,7 +14,7 @@
  *                                                        *
  * hprose common library for JavaScript.                  *
  *                                                        *
- * LastModified: Nov 15, 2013                             *
+ * LastModified: Nov 16, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -120,10 +120,13 @@ if (!('isArray' in Array)) {
         }
     }
     else {
-        var namespaces = {};
+        var createNPO = function() {
+            return ('create' in Object) ? Object.create(null) : {};
+        }
+        var namespaces = createNPO();
         var count = 0;
         var reDefineValueOf = function(obj) {
-            var privates = {};
+            var privates = createNPO();
             var baseValueOf = obj.valueOf;
             obj.valueOf = function(namespace) {
                 var n;
@@ -132,7 +135,7 @@ if (!('isArray' in Array)) {
                     ('n' in namespace) &&
                     ((n = namespace.n) in namespaces) &&
                     (namespaces[n] === namespace)) {
-                    if (!(n in privates)) privates[n] = {};
+                    if (!(n in privates)) privates[n] = createNPO();
                     return privates[n];
                 }
                 else {
@@ -143,7 +146,7 @@ if (!('isArray' in Array)) {
         var ObjectMap = function() {
             return {
                 namespace: { n: count++ },
-                nullMap: {},
+                nullMap: createNPO(),
                 map: function map(key) {
                     if (key === null) return this.nullMap;
                     var n = this.namespace.n;
@@ -165,22 +168,34 @@ if (!('isArray' in Array)) {
         }
         var ScalarMap = function() {
             return {
-                map: {},
+                map: createNPO(),
                 get: function(key) { return this.map[key]; },
                 set: function(key, value) { this.map[key] = value; },
                 has: function(key) { return key in this.map; },
                 'delete': function(key) { return delete this.map[key]; },
-                clear: function() { this.map = {}; }
+                clear: function() { this.map = createNPO(); }
+            }
+        }
+        if (!('create' in Object)) {
+            var StringMap = function() {
+                return {
+                    map: {},
+                    get: function(key) { return this.map['str_' + key]; },
+                    set: function(key, value) { this.map['str_' + key] = value; },
+                    has: function(key) { return ('str_' + key) in this.map; },
+                    'delete': function(key) { return delete this.map['str_' + key]; },
+                    clear: function() { this.map = {}; }
+                }
             }
         }
         var UndefinedMap = function() {
             return {
-                map: {},
+                map: createNPO(),
                 get: function(key) { return this.map.value; },
                 set: function(key, value) { this.map.value = value; },
                 has: function(key) { return 'value' in this.map; },
                 'delete': function(key) { return delete this.map.value; },
-                clear: function() { this.map = {}; }
+                clear: function() { this.map = createNPO(); }
             }
         }
         var unsupport = function() {
@@ -198,7 +213,7 @@ if (!('isArray' in Array)) {
             global.WeakMap = function() {
                 var map = {
                     'number': ScalarMap(),
-                    'string': ScalarMap(),
+                    'string': ('create' in Object) ? ScalarMap() : StringMap(),
                     'boolean': ScalarMap(),
                     'object': ObjectMap(),
                     'function': ObjectMap(),
@@ -226,7 +241,7 @@ if (!('isArray' in Array)) {
             global.Map = function() {
                 var map = {
                     'number': ScalarMap(),
-                    'string': ScalarMap(),
+                    'string': ('create' in Object) ? ScalarMap() : StringMap(),
                     'boolean': ScalarMap(),
                     'object': ObjectMap(),
                     'function': ObjectMap(),
