@@ -14,7 +14,7 @@
  *                                                        *
  * hprose http client for Javascript.                     *
  *                                                        *
- * LastModified: Nov 15, 2013                             *
+ * LastModified: Nov 16, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -46,10 +46,6 @@ var HproseHttpClient = (function () {
     var s_OnSuccess = "_OnSuccess";
     var s_onSuccess = "_onSuccess";
     var s_onsuccess = "_onsuccess";
-    
-    var s_corsSupport = ((typeof(XMLHttpRequest) != s_undefined &&
-                          "withCredentials" in new XMLHttpRequest()) ||
-                         typeof(XDomainRequest) != s_undefined);
 
     function HproseHttpClient(url, functions) {
         // private members
@@ -469,7 +465,6 @@ var HproseHttpClient = (function () {
     HproseHttpClient.create = function(url, functions) {
         return new HproseHttpClient(url, functions);
     }
-    HproseHttpClient.corsSupport = s_corsSupport;
-    HproseHttpClient.setFlash = r_HproseHttpRequest.setFlash;
+
     return HproseHttpClient;
 })();

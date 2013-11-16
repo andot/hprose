@@ -14,7 +14,7 @@
  *                                                        *
  * POST data to HTTP Server (using Flash).                *
  *                                                        *
- * LastModified: Nov 6, 2013                              *
+ * LastModified: Nov 16, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -28,10 +28,17 @@
  * static encapsulation environment for HproseHttpRequest
  */
 
-var HproseHttpRequest = (function() {
+var HproseHttpRequest = (function(global) {
+    // get flash path
+    var scripts = document.getElementsByTagName("script");
+    var s_flashpath = scripts[scripts.length - 1].getAttribute('flashpath') || '';
+    scripts = null;
+
     // static private members
-    
+    var s_nativeXHR = (typeof(XMLHttpRequest) !== 'undefined');
     var s_localfile = (location.protocol == "file:");
+    var s_corsSupport = (!s_localfile && s_nativeXHR && "withCredentials" in new XMLHttpRequest());
+    var s_flashID = 'hprosehttprequest_as3';
 
     /*
      * to save Flash Request
@@ -60,69 +67,68 @@ var HproseHttpRequest = (function() {
     var s_swfReady = false;
 
     var s_XMLHttpNameCache = null;
-    
-    var s_hasXDomainRequest = (typeof(window.XDomainRequest) == 'object');
 
-    function createXMLHttp() {
-        if (-[1,] && window.XMLHttpRequest) {
-            var objXMLHttp = new XMLHttpRequest();
-            // some older versions of Moz did not support the readyState property
-            // and the onreadystate event so we patch it!
-            if (objXMLHttp.readyState == null) {
-                objXMLHttp.readyState = 0;
-                objXMLHttp.addEventListener(
-                    "load",
-                    function () {
-                        objXMLHttp.readyState = 4;
-                        if (typeof(objXMLHttp.onreadystatechange) == "function") {
-                            objXMLHttp.onreadystatechange();
-                        }
-                    },
-                    false
-                );
-            }
-            return objXMLHttp;
+    function patchXHR(xhr) {
+        // some older versions of Moz did not support the readyState property
+        // and the onreadystate event so we patch it!
+        if (xhr.readyState == null) {
+            xhr.readyState = 0;
+            xhr.addEventListener(
+                "load",
+                function () {
+                    xhr.readyState = 4;
+                    if (typeof(xhr.onreadystatechange) === "function") {
+                        xhr.onreadystatechange();
+                    }
+                },
+                false
+            );
         }
-        else if (!s_localfile && window.XMLHttpRequest) {
-            return new XMLHttpRequest();
-        }
-        else if (s_XMLHttpNameCache != null) {
+        return xhr;
+    }
+    
+    function createMSXMLHttp() {
+        if (s_XMLHttpNameCache != null) {
             // Use the cache name first.
             return new ActiveXObject(s_XMLHttpNameCache);
         }
-        else {
-            var MSXML = ['MSXML2.XMLHTTP.6.0',
-                         'MSXML2.XMLHTTP.5.0',
-                         'MSXML2.XMLHTTP.4.0',
-                         'MSXML2.XMLHTTP.3.0',
-                         'MsXML2.XMLHTTP.2.6',
-                         'MSXML2.XMLHTTP',
-                         'Microsoft.XMLHTTP.1.0',
-                         'Microsoft.XMLHTTP.1',
-                         'Microsoft.XMLHTTP'];
-            var n = MSXML.length;
-            for(var i = 0; i < n; i++) {
-                try {
-                    objXMLHttp = new ActiveXObject(MSXML[i]);
-                    // Cache the XMLHttp ActiveX object name.
-                    s_XMLHttpNameCache = MSXML[i];
-                    return objXMLHttp;
-                }
-                catch(e) {}
+        var MSXML = ['MSXML2.XMLHTTP',
+                     'MSXML2.XMLHTTP.6.0',
+                     'MSXML2.XMLHTTP.5.0',
+                     'MSXML2.XMLHTTP.4.0',
+                     'MSXML2.XMLHTTP.3.0',
+                     'MsXML2.XMLHTTP.2.6',                         
+                     'Microsoft.XMLHTTP',
+                     'Microsoft.XMLHTTP.1.0',
+                     'Microsoft.XMLHTTP.1'];
+        var n = MSXML.length;
+        for(var i = 0; i < n; i++) {
+            try {
+                var xhr = new ActiveXObject(MSXML[i]);
+                // Cache the XMLHttp ActiveX object name.
+                s_XMLHttpNameCache = MSXML[i];
+                return xhr;
             }
-            return null;
+            catch(e) {}
+        }
+        throw new Error("Could not find an installed XML parser");
+    }
+
+    function createXHR() {
+        if (s_nativeXHR) {
+            return patchXHR(new XMLHttpRequest());
+        }
+        else {
+            return createMSXMLHttp();
         }
     }
 
-    function setJsReady() {
-        var id = 'hprosehttprequest_as3';
-        s_request = thisMovie(id);
-        s_jsReady = true;
-        while (s_jsTaskQueue.length > 0) {
-            var task = s_jsTaskQueue.shift();
-            if (typeof(task) == 'function') {
-                task();
-            }
+    function thisMovie(movieName) {
+        if (navigator.appName.indexOf("Microsoft") != -1) {
+            return global[movieName];
+        }
+        else {
+            return document[movieName];
         }
     }
 
@@ -142,7 +148,7 @@ var HproseHttpRequest = (function() {
                 version = parseInt(version.replace(/^(.*)\..*$/, "$1"));
             }
         }
-        else if (window.ActiveXObject) {
+        else if (global.ActiveXObject) {
             try {
                 ie = true;
                 var ax = new ActiveXObject(flashax);
@@ -167,12 +173,41 @@ var HproseHttpRequest = (function() {
         }
     }
 
-    function thisMovie(movieName) {
-        if (navigator.appName.indexOf("Microsoft") != -1) {
-            return window[movieName];
+    function setFlash() {
+        var div = document.createElement('div');
+        div.style.width = 0;
+        div.style.height = 0;
+        switch (checkFlash()) {
+            case 1:
+                div.innerHTML = ['<object ',
+                'classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" ',
+                'type="application/x-shockwave-flash" ',
+                'width="0" height="0" id="', s_flashID, '" name="', s_flashID, '">',
+                '<param name="movie" value="', s_flashpath , 'hproseHttpRequest.swf" />',
+                '<param name="allowScriptAccess" value="always" />',
+                '<param name="quality" value="high" />',
+                '<param name="wmode" value="opaque" />',                
+                '</object>'].join('');
+                break;
+            case 2:
+                div.innerHTML = '<embed id="' + s_flashID + '" ' +
+                'src="' + s_flashpath + 'hproseHttpRequest.swf" ' +
+                'type="application/x-shockwave-flash" ' +
+                'width="0" height="0" name="' + s_flashID + '" ' +
+                'allowScriptAccess="always" />';
+                break;
         }
-        else {
-            return document[movieName];
+        document.body.appendChild(div);
+    }
+
+    function setJsReady() {
+        if (!s_localfile && !s_corsSupport) setFlash();
+        s_jsReady = true;
+        while (s_jsTaskQueue.length > 0) {
+            var task = s_jsTaskQueue.shift();
+            if (typeof(task) == 'function') {
+                task();
+            }
         }
     }
 
@@ -203,11 +238,11 @@ var HproseHttpRequest = (function() {
                 }
             }
         }
-        else if (window.attachEvent) {
-            window.attachEvent('onload', setJsReady);
+        else if (global.attachEvent) {
+            global.attachEvent('onload', setJsReady);
         }
         else {
-            window.onload = setJsReady;
+            global.onload = setJsReady;
         }
     }
 
@@ -223,89 +258,57 @@ var HproseHttpRequest = (function() {
         }
     }
 
-    function xdrpost(url, header, data, callbackid, timeout) {
-        var xdr = new XDomainRequest();
-        xdr.timeout = timeout;
-        xdr.onerror = function() {
-            HproseHttpRequest.__callback(callbackid, HproseTags.TagError +
-                                         HproseFormatter.serialize("unknown error.", true) +
-                                         HproseTags.TagEnd);
-        };
-        xdr.ontimeout = function() {
-            HproseHttpRequest.__callback(callbackid, HproseTags.TagError +
-                                         HproseFormatter.serialize("timeout", true) +
-                                         HproseTags.TagEnd);
-        };
-        xdr.onload = function() {
-            HproseHttpRequest.__callback(callbackid, xdr.responseText, true);
-        };
-        xdr.open('POST', url);
-        xdr.send(data);
-    }
-
     function xhrpost(url, header, data, callbackid, timeout) {
-        var xmlhttp = createXMLHttp();
+        var xhr = createXHR();
         var timeoutId;
-        xmlhttp.onreadystatechange = function () {
-            if (xmlhttp.readyState == 4) {
-                xmlhttp.onreadystatechange = function () {};
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState == 4) {
+                xhr.onreadystatechange = function () {};
                 if (timeoutId !== undefined) {
-                    window.clearTimeout(timeoutId);
+                    global.clearTimeout(timeoutId);
                 }
-                if (xmlhttp.status == 200) {
-                    HproseHttpRequest.__callback(callbackid, xmlhttp.responseText, true);
+                if (xhr.status == 200) {
+                    HproseHttpRequest.__callback(callbackid, xhr.responseText, true);
                 }
                 else {
-                    var error = xmlhttp.status + ':' +  xmlhttp.statusText;
+                    var error = xhr.status + ':' +  xhr.statusText;
                     HproseHttpRequest.__callback(callbackid, HproseTags.TagError +
                                             HproseFormatter.serialize(error, true) +
                                             HproseTags.TagEnd);
                 }
             }
         }
-        xmlhttp.open('POST', url, true);
-        if (!s_localfile && "withCredentials" in xmlhttp) {
-            xmlhttp.withCredentials = 'true';
+        xhr.open('POST', url, true);
+        if (s_corsSupport) {
+            xhr.withCredentials = 'true';
         }
         for (var name in header) {
-            xmlhttp.setRequestHeader(name, header[name]);
+            xhr.setRequestHeader(name, header[name]);
         }
         var timeoutHandler = function () {
             HproseHttpRequest.__callback(callbackid, HproseTags.TagError +
                                     HproseFormatter.serialize('timeout', true) +
                                     HproseTags.TagEnd);
         }
-        if (xmlhttp.timeout === undefined) {
-            timeoutId = window.setTimeout(function() {
-                xmlhttp.onreadystatechange = function () {};
-                xmlhttp.abort();
+        if (xhr.timeout === undefined) {
+            timeoutId = global.setTimeout(function() {
+                xhr.onreadystatechange = function () {};
+                xhr.abort();
                 timeoutHandler();
             }, timeout);
         }
         else {
-            xmlhttp.timeout = timeout;
-            xmlhttp.ontimeout = timeoutHandler;
+            xhr.timeout = timeout;
+            xhr.ontimeout = timeoutHandler;
         }
-        xmlhttp.send(data);
+        xhr.send(data);
     }
 
     function post(url, header, data, callbackid, timeout) {
-        if (url.substr(0, 7).toLowerCase() == "http://" ||
-            url.substr(0, 8).toLowerCase() == "https://") {
-            if (!s_localfile && s_request) {
-                flashpost(url, header, data, callbackid, timeout);
-            }
-            else if (s_hasXDomainRequest) {
-                try {
-                    xdrpost(url, header, data, callbackid, timeout);
-                }
-                catch (e) {
-                    xhrpost(url, header, data, callbackid, timeout);
-                }
-            }
-            else {
-                xhrpost(url, header, data, callbackid, timeout);
-            }
+        if (s_request && !s_localfile && 
+           (url.substr(0, 7).toLowerCase() == "http://" ||
+            url.substr(0, 8).toLowerCase() == "https://")) {
+            flashpost(url, header, data, callbackid, timeout);
         }
         else {
             xhrpost(url, header, data, callbackid, timeout);
@@ -349,8 +352,9 @@ var HproseHttpRequest = (function() {
     }
 
     HproseHttpRequest.__setSwfReady = function () {
+        s_request = thisMovie(s_flashID);
         s_swfReady = true;
-        window["__flash__removeCallback"] = function(instance, name) {
+        global["__flash__removeCallback"] = function(instance, name) {
             try {
                 if (instance) {
                     instance[name] = null;
@@ -367,29 +371,7 @@ var HproseHttpRequest = (function() {
         }
     }
 
-    HproseHttpRequest.setFlash = function(path) {
-        if (path === undefined) path = '';
-        switch (checkFlash()) {
-            case 1:
-                document.write(['<object ',
-                'classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" ',
-                'type="application/x-shockwave-flash" ',
-                'width="0" height="0" id="hprosehttprequest_as3">',
-                '<param name="movie" value="', path , 'hproseHttpRequest.swf" />',
-                '<param name="allowScriptAccess" value="always" />',
-                '<param name="quality" value="high" />',
-                '</object>'].join(''));
-                break;
-            case 2:
-                document.write('<embed src="' + path + 'hproseHttpRequest.swf" ' +
-                'type="application/x-shockwave-flash" ' +
-                'width="0" height="0" name="hprosehttprequest_as3" ' +
-                'allowScriptAccess="always" />');
-                break;
-        }
-    }
-
     init();
 
     return HproseHttpRequest;
-})();
+})(this);

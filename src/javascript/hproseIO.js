@@ -14,7 +14,7 @@
  *                                                        *
  * hprose io stream library for JavaScript.               *
  *                                                        *
- * LastModified: Nov 15, 2013                             *
+ * LastModified: Nov 16, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -127,14 +127,14 @@ var HproseClassManager = new (function() {
 var HproseRawReader;
 var HproseSimpleReader, HproseReader;
 var HproseSimpleWriter, HproseWriter;
-(function() {
+(function(global) {
     // private static members
     var hproseTags = HproseTags;
     var hproseException = HproseException;
     var hproseClassManager = HproseClassManager;
 
     function getter(str) {
-        var obj = window; 
+        var obj = global; 
         var names = str.split('.'); 
         for(var i = 0; i < names.length; i++) { 
             obj = obj[names[i]];
@@ -1047,7 +1047,7 @@ var HproseSimpleWriter, HproseWriter;
             writeRef.call(this, obj, checkRef, this.writeObjectBegin, this.writeObjectEnd);
         }
     }
-})();
+})(this);
 
 var HproseFormatter = {
     serialize: function(variable, simple) {

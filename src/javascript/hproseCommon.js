@@ -192,7 +192,7 @@ if (!('isArray' in Array)) {
                 }
             }
         }
-        var UndefinedMap = function() {
+        var NoKeyMap = function() {
             return {
                 map: createNPO(),
                 get: function(key) { return this.map.value; },
@@ -221,7 +221,8 @@ if (!('isArray' in Array)) {
                     'boolean': ScalarMap(),
                     'object': ObjectMap(),
                     'function': ObjectMap(),
-                    'undefined': UndefinedMap(),
+                    'undefined': NoKeyMap(),
+                    'null': NoKeyMap(), 
                     'unknown': UnknownMap
                 };
                 this.get = function(key) {
@@ -249,7 +250,8 @@ if (!('isArray' in Array)) {
                     'boolean': ScalarMap(),
                     'object': ObjectMap(),
                     'function': ObjectMap(),
-                    'undefined': UndefinedMap(),
+                    'undefined': NoKeyMap(),
+                    'null': NoKeyMap(), 
                     'unknown': UnknownMap
                 };
                 this.size = 0;
