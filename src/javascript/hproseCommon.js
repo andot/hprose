@@ -44,9 +44,13 @@ if (!('isArray' in Array)) {
 }
 
 (function (global) {
-    if (('Map' in global) && ('WeakMap' in global)) return;
-    if ('ActiveXObject' in global) {
-        if (!('WeakMap' in global)) {
+    var hasMap = 'Map' in global;
+    var hasWeakMap = 'WeakMap' in global;
+    var hasActiveXObject = 'ActiveXObject' in global;
+    var hasObject_create = 'create' in Object;
+    if (hasMap && hasWeakMap) return;
+    if (hasActiveXObject) {
+        if (!hasWeakMap) {
             global.WeakMap = function() {
                 var dict =  new ActiveXObject("Scripting.Dictionary");
                 this.get = function(key) {
@@ -80,7 +84,7 @@ if (!('isArray' in Array)) {
                 }
             }
         }
-        if (!('Map' in global)) {
+        if (!hasMap) {
             global.Map = function() {
                 var dict =  new ActiveXObject("Scripting.Dictionary");
                 this.size = 0;
@@ -121,7 +125,7 @@ if (!('isArray' in Array)) {
     }
     else {
         var createNPO = function() {
-            return ('create' in Object) ? Object.create(null) : {};
+            return hasObject_create ? Object.create(null) : {};
         }
         var namespaces = createNPO();
         var count = 0;
@@ -176,7 +180,7 @@ if (!('isArray' in Array)) {
                 clear: function() { this.map = createNPO(); }
             }
         }
-        if (!('create' in Object)) {
+        if (!hasObject_create) {
             var StringMap = function() {
                 return {
                     map: {},
@@ -209,11 +213,11 @@ if (!('isArray' in Array)) {
             'delete': unsupport,
             clear: doNothing
         }
-        if (!('WeakMap' in global)) {
+        if (!hasWeakMap) {
             global.WeakMap = function() {
                 var map = {
                     'number': ScalarMap(),
-                    'string': ('create' in Object) ? ScalarMap() : StringMap(),
+                    'string': hasObject_create ? ScalarMap() : StringMap(),
                     'boolean': ScalarMap(),
                     'object': ObjectMap(),
                     'function': ObjectMap(),
@@ -237,11 +241,11 @@ if (!('isArray' in Array)) {
                 }
             }
         }
-        if (!('Map' in global)) {
+        if (!hasMap) {
             global.Map = function() {
                 var map = {
                     'number': ScalarMap(),
-                    'string': ('create' in Object) ? ScalarMap() : StringMap(),
+                    'string': hasObject_create ? ScalarMap() : StringMap(),
                     'boolean': ScalarMap(),
                     'object': ObjectMap(),
                     'function': ObjectMap(),
