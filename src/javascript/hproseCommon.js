@@ -14,7 +14,7 @@
  *                                                        *
  * hprose common library for JavaScript.                  *
  *                                                        *
- * LastModified: Nov 16, 2013                             *
+ * LastModified: Nov 17, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -87,7 +87,8 @@ if (!('isArray' in Array)) {
         if (!hasMap) {
             global.Map = function() {
                 var dict =  new ActiveXObject("Scripting.Dictionary");
-                this.size = 0;
+                var size = 0;
+                this.size = size;
                 this.get = function(key) {
                     if (dict.Exists(key)) {
                         return dict.Item(key);
@@ -101,7 +102,7 @@ if (!('isArray' in Array)) {
                         dict.Item(key) = value;
                     }
                     else {
-                        this.size++;
+                        this.size = ++size;
                         dict.Add(key, value);
                     }
                 }
@@ -110,7 +111,7 @@ if (!('isArray' in Array)) {
                 }
                 this['delete'] = function(key) {
                     if (dict.Exists(key)) {
-                        this.size--;
+                        this.size = --size;
                         dict.Remove(key);
                         return true;
                     }
@@ -118,7 +119,7 @@ if (!('isArray' in Array)) {
                 }
                 this.clear = function() {
                     dict.RemoveAll();
-                    this.size = 0;
+                    this.size = size = 0;
                 }
             }
         }
@@ -132,12 +133,9 @@ if (!('isArray' in Array)) {
         var reDefineValueOf = function(obj) {
             var privates = createNPO();
             var baseValueOf = obj.valueOf;
-            obj.valueOf = function(namespace) {
-                var n;
+            obj.valueOf = function(namespace, n) {
                 if ((this === obj) &&
-                    (typeof(namespace) === 'object') &&
-                    ('n' in namespace) &&
-                    ((n = namespace.n) in namespaces) &&
+                    (n in namespaces) &&
                     (namespaces[n] === namespace)) {
                     if (!(n in privates)) privates[n] = createNPO();
                     return privates[n];
@@ -148,58 +146,59 @@ if (!('isArray' in Array)) {
             }
         }
         var ObjectMap = function() {
+            var namespace = createNPO();
+            var n = count++;
+            var nullMap = createNPO();
+            namespaces[n] = namespace;
+            var map = function(key) {
+                if (key === null) return nullMap;
+                var privates = key.valueOf(namespace, n);
+                if (privates !== key.valueOf()) return privates;
+                reDefineValueOf(key);
+                return key.valueOf(namespace, n);
+            }
             return {
-                namespace: { n: count++ },
-                nullMap: createNPO(),
-                map: function map(key) {
-                    if (key === null) return this.nullMap;
-                    var n = this.namespace.n;
-                    if (!(n in namespaces)) namespaces[n] = this.namespace;
-                    var privates = key.valueOf(this.namespace);
-                    if (privates !== key.valueOf()) return privates;
-                    reDefineValueOf(key);
-                    return key.valueOf(this.namespace);
-                },
-                get: function(key) { return this.map(key).value; },
-                set: function(key, value) { this.map(key).value = value; },
-                has: function(key) { return 'value' in this.map(key); },
-                'delete': function(key) { return delete this.map(key).value; },
+                get: function(key) { return map(key).value; },
+                set: function(key, value) { map(key).value = value; },
+                has: function(key) { return 'value' in map(key); },
+                'delete': function(key) { return delete map(key).value; },
                 clear: function() {
-                    delete namespaces[this.namespace.n];
-                    this.namespace.n = count++;
+                    delete namespaces[n];
+                    n = count++;
+                    namespaces[n] = namespace;
                 }
             }
         }
         var ScalarMap = function() {
+            var map = createNPO();
             return {
-                map: createNPO(),
-                get: function(key) { return this.map[key]; },
-                set: function(key, value) { this.map[key] = value; },
-                has: function(key) { return key in this.map; },
-                'delete': function(key) { return delete this.map[key]; },
-                clear: function() { this.map = createNPO(); }
+                get: function(key) { return map[key]; },
+                set: function(key, value) { map[key] = value; },
+                has: function(key) { return key in map; },
+                'delete': function(key) { return delete map[key]; },
+                clear: function() { map = createNPO(); }
             }
         }
         if (!hasObject_create) {
             var StringMap = function() {
+                var map = {};
                 return {
-                    map: {},
-                    get: function(key) { return this.map['str_' + key]; },
-                    set: function(key, value) { this.map['str_' + key] = value; },
-                    has: function(key) { return ('str_' + key) in this.map; },
-                    'delete': function(key) { return delete this.map['str_' + key]; },
-                    clear: function() { this.map = {}; }
+                    get: function(key) { return map['str_' + key]; },
+                    set: function(key, value) { map['str_' + key] = value; },
+                    has: function(key) { return ('str_' + key) in map; },
+                    'delete': function(key) { return delete map['str_' + key]; },
+                    clear: function() { map = {}; }
                 }
             }
         }
         var NoKeyMap = function() {
+            var map = createNPO();
             return {
-                map: createNPO(),
-                get: function(key) { return this.map.value; },
-                set: function(key, value) { this.map.value = value; },
-                has: function(key) { return 'value' in this.map; },
-                'delete': function(key) { return delete this.map.value; },
-                clear: function() { this.map = createNPO(); }
+                get: function(key) { return map.value; },
+                set: function(key, value) { map.value = value; },
+                has: function(key) { return 'value' in map; },
+                'delete': function(key) { return delete map.value; },
+                clear: function() { map = createNPO(); }
             }
         }
         var unsupport = function() {
@@ -254,12 +253,13 @@ if (!('isArray' in Array)) {
                     'null': NoKeyMap(), 
                     'unknown': UnknownMap
                 };
-                this.size = 0;
+                var size = 0;
+                this.size = size;
                 this.get = function(key) {
                     return map[typeof(key)].get(key);
                 }
                 this.set = function(key, value) {
-                    if (!this.has(key)) this.size++;
+                    if (!this.has(key)) this.size = ++size;
                     map[typeof(key)].set(key, value);
                 }
                 this.has = function(key) {
@@ -267,14 +267,14 @@ if (!('isArray' in Array)) {
                 }
                 this['delete'] = function(key) {
                     if (this.has(key)) {
-                        this.size--;
+                        this.size = --size;
                         return map[typeof(key)]['delete'](key);
                     }
                     return false;
                 }
                 this.clear = function() {
                     for (var key in map) map[key].clear();
-                    this.size = 0;
+                    this.size = size = 0;
                 }
             }
         }
