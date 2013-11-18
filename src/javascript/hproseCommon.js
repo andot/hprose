@@ -14,7 +14,7 @@
  *                                                        *
  * hprose common library for JavaScript.                  *
  *                                                        *
- * LastModified: Nov 17, 2013                             *
+ * LastModified: Nov 18, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -46,14 +46,21 @@ if (!('isArray' in Array)) {
 (function (global) {
     var hasMap = 'Map' in global;
     var hasWeakMap = 'WeakMap' in global;
+    if (hasMap && hasWeakMap) return;
+
     var hasActiveXObject = 'ActiveXObject' in global;
     var hasObject_create = 'create' in Object;
-    if (hasMap && hasWeakMap) return;
+    var hasObject_freeze = 'freeze' in Object;
+
     if (hasActiveXObject) {
         if (!hasWeakMap) {
             global.WeakMap = function() {
                 var dict =  new ActiveXObject("Scripting.Dictionary");
+                var checkKey = function(key) {
+                    if (key !== Object(key)) throw new Error("value is not a non-null object");
+                }
                 this.get = function(key) {
+                    checkKey(key);
                     if (dict.Exists(key)) {
                         return dict.Item(key);
                     }
@@ -62,6 +69,7 @@ if (!('isArray' in Array)) {
                     }
                 }
                 this.set = function(key, value) {
+                    checkKey(key);
                     if (dict.Exists(key)) {
                         dict.Item(key) = value;
                     }
@@ -70,9 +78,11 @@ if (!('isArray' in Array)) {
                     }
                 }
                 this.has = function(key) {
+                    checkKey(key);
                     return dict.Exists(key);
                 }
                 this['delete'] = function(key) {
+                    checkKey(key);
                     if (dict.Exists(key)) {
                         dict.Remove(key);
                         return true;
@@ -145,136 +155,218 @@ if (!('isArray' in Array)) {
                 }
             }
         }
-        var ObjectMap = function() {
-            var namespace = createNPO();
-            var n = count++;
-            var nullMap = createNPO();
-            namespaces[n] = namespace;
-            var map = function(key) {
-                if (key === null) return nullMap;
-                var privates = key.valueOf(namespace, n);
-                if (privates !== key.valueOf()) return privates;
-                reDefineValueOf(key);
-                return key.valueOf(namespace, n);
-            }
-            return {
-                get: function(key) { return map(key).value; },
-                set: function(key, value) { map(key).value = value; },
-                has: function(key) { return 'value' in map(key); },
-                'delete': function(key) { return delete map(key).value; },
-                clear: function() {
-                    delete namespaces[n];
-                    n = count++;
-                    namespaces[n] = namespace;
-                }
-            }
-        }
-        var ScalarMap = function() {
-            var map = createNPO();
-            return {
-                get: function(key) { return map[key]; },
-                set: function(key, value) { map[key] = value; },
-                has: function(key) { return key in map; },
-                'delete': function(key) { return delete map[key]; },
-                clear: function() { map = createNPO(); }
-            }
-        }
-        if (!hasObject_create) {
-            var StringMap = function() {
-                var map = {};
-                return {
-                    get: function(key) { return map['str_' + key]; },
-                    set: function(key, value) { map['str_' + key] = value; },
-                    has: function(key) { return ('str_' + key) in map; },
-                    'delete': function(key) { return delete map['str_' + key]; },
-                    clear: function() { map = {}; }
-                }
-            }
-        }
-        var NoKeyMap = function() {
-            var map = createNPO();
-            return {
-                get: function(key) { return map.value; },
-                set: function(key, value) { map.value = value; },
-                has: function(key) { return 'value' in map; },
-                'delete': function(key) { return delete map.value; },
-                clear: function() { map = createNPO(); }
-            }
-        }
-        var unsupport = function() {
-            throw new Error("the key is not a supported type.");
-        }
-        var doNothing = function() {}
-        var UnknownMap = {
-            get: unsupport,
-            set: unsupport,
-            has: unsupport,
-            'delete': unsupport,
-            clear: doNothing
-        }
+        
         if (!hasWeakMap) {
-            global.WeakMap = function() {
-                var map = {
-                    'number': ScalarMap(),
-                    'string': hasObject_create ? ScalarMap() : StringMap(),
-                    'boolean': ScalarMap(),
-                    'object': ObjectMap(),
-                    'function': ObjectMap(),
-                    'undefined': NoKeyMap(),
-                    'null': NoKeyMap(), 
-                    'unknown': UnknownMap
-                };
-                this.get = function(key) {
-                    return map[typeof(key)].get(key);
+            global.WeakMap = function WeakMap() {
+                var namespace = createNPO();
+                var n = count++;
+                namespaces[n] = namespace;
+                var map = function(key) {
+                    if (key !== Object(key)) throw new Error("value is not a non-null object");
+                    var privates = key.valueOf(namespace, n);
+                    if (privates !== key.valueOf()) return privates;
+                    reDefineValueOf(key);
+                    return key.valueOf(namespace, n);
                 }
-                this.set = function(key, value) {
-                    map[typeof(key)].set(key, value);
+                if (hasObject_freeze) {
+                    return Object.freeze(Object.create(WeakMap.prototype, {
+                        get: {
+                            value: function(key) { return map(key).value; },
+                            writable: true,
+                            configurable: true,
+                            enumerable: false
+                        },
+                        set: {
+                            value: function(key, value) { map(key).value = value; },
+                            writable: true,
+                            configurable: true,
+                            enumerable: false
+                        },
+                        has: {
+                            value: function(key) { return 'value' in map(key); },
+                            writable: true,
+                            configurable: true,
+                            enumerable: false
+                        },
+                        'delete': {
+                            value: function(key) { return delete map(key).value; },
+                            writable: true,
+                            configurable: true,
+                            enumerable: false
+                        },
+                        clear: {
+                            value: function() {
+                                delete namespaces[n];
+                                n = count++;
+                                namespaces[n] = namespace;
+                            },
+                            writable: true,
+                            configurable: true,
+                            enumerable: false
+                        }
+                    }));
                 }
-                this.has = function(key) {
-                    return map[typeof(key)].has(key);
-                }
-                this['delete'] = function(key) {
-                    return map[typeof(key)]['delete'](key);
-                }
-                this.clear = function() {
-                    for (var key in map) map[key].clear();
+                else {
+                    this.get = function(key) { return map(key).value; };
+                    this.set = function(key, value) { map(key).value = value; };
+                    this.has = function(key) { return 'value' in map(key); };
+                    this['delete'] = function(key) { return delete map(key).value; };
+                    this.clear = function() {
+                        delete namespaces[n];
+                        n = count++;
+                        namespaces[n] = namespace;
+                    };
                 }
             }
         }
+        
         if (!hasMap) {
-            global.Map = function() {
+            var ObjectMap = function() {
+                var namespace = createNPO();
+                var n = count++;
+                var nullMap = createNPO();
+                namespaces[n] = namespace;
+                var map = function(key) {
+                    if (key === null) return nullMap;
+                    var privates = key.valueOf(namespace, n);
+                    if (privates !== key.valueOf()) return privates;
+                    reDefineValueOf(key);
+                    return key.valueOf(namespace, n);
+                }
+                return {
+                    get: function(key) { return map(key).value; },
+                    set: function(key, value) { map(key).value = value; },
+                    has: function(key) { return 'value' in map(key); },
+                    'delete': function(key) { return delete map(key).value; },
+                    clear: function() {
+                        delete namespaces[n];
+                        n = count++;
+                        namespaces[n] = namespace;
+                    }
+                }
+            }
+            var ScalarMap = function() {
+                var map = createNPO();
+                return {
+                    get: function(key) { return map[key]; },
+                    set: function(key, value) { map[key] = value; },
+                    has: function(key) { return key in map; },
+                    'delete': function(key) { return delete map[key]; },
+                    clear: function() { map = createNPO(); }
+                }
+            }
+            if (!hasObject_create) {
+                var StringMap = function() {
+                    var map = {};
+                    return {
+                        get: function(key) { return map['str_' + key]; },
+                        set: function(key, value) { map['str_' + key] = value; },
+                        has: function(key) { return ('str_' + key) in map; },
+                        'delete': function(key) { return delete map['str_' + key]; },
+                        clear: function() { map = {}; }
+                    }
+                }
+            }
+            var NoKeyMap = function() {
+                var map = createNPO();
+                return {
+                    get: function(key) { return map.value; },
+                    set: function(key, value) { map.value = value; },
+                    has: function(key) { return 'value' in map; },
+                    'delete': function(key) { return delete map.value; },
+                    clear: function() { map = createNPO(); }
+                }
+            }
+            global.Map = function Map() {
                 var map = {
                     'number': ScalarMap(),
                     'string': hasObject_create ? ScalarMap() : StringMap(),
                     'boolean': ScalarMap(),
                     'object': ObjectMap(),
                     'function': ObjectMap(),
+                    'unknown': ObjectMap(),
                     'undefined': NoKeyMap(),
-                    'null': NoKeyMap(), 
-                    'unknown': UnknownMap
+                    'null': NoKeyMap()
                 };
                 var size = 0;
-                this.size = size;
-                this.get = function(key) {
-                    return map[typeof(key)].get(key);
+                if (hasObject_freeze) {
+                    return Object.freeze(Object.create(Map.prototype, {
+                        size: {
+                            get : function() { return size; },
+                            configurable: true,
+                            enumerable: false
+                        },
+                        get: {
+                            value: function(key) {
+                                return map[typeof(key)].get(key);
+                            },
+                            writable: true,
+                            configurable: true,
+                            enumerable: false
+                        },
+                        set: {
+                            value: function(key, value) {
+                                if (!this.has(key)) size++;
+                                map[typeof(key)].set(key, value);
+                            },
+                            writable: true,
+                            configurable: true,
+                            enumerable: false
+                        },
+                        has: {
+                            value: function(key) {
+                                return map[typeof(key)].has(key);
+                            },
+                            writable: true,
+                            configurable: true,
+                            enumerable: false
+                        },
+                        'delete': {
+                            value: function(key) {
+                                if (this.has(key)) {
+                                    size--;
+                                    return map[typeof(key)]['delete'](key);
+                                }
+                                return false;
+                            },
+                            writable: true,
+                            configurable: true,
+                            enumerable: false
+                        },
+                        clear: {
+                            value: function() {
+                                for (var key in map) map[key].clear();
+                                size = 0;
+                            },
+                            writable: true,
+                            configurable: true,
+                            enumerable: false
+                        }               
+                    }));
                 }
-                this.set = function(key, value) {
-                    if (!this.has(key)) this.size = ++size;
-                    map[typeof(key)].set(key, value);
-                }
-                this.has = function(key) {
-                    return map[typeof(key)].has(key);
-                }
-                this['delete'] = function(key) {
-                    if (this.has(key)) {
-                        this.size = --size;
-                        return map[typeof(key)]['delete'](key);
+                else {
+                    this.size = size;
+                    this.get = function(key) {
+                        return map[typeof(key)].get(key);
                     }
-                    return false;
-                }
-                this.clear = function() {
-                    for (var key in map) map[key].clear();
-                    this.size = size = 0;
+                    this.set = function(key, value) {
+                        if (!this.has(key)) this.size = ++size;
+                        map[typeof(key)].set(key, value);
+                    }
+                    this.has = function(key) {
+                        return map[typeof(key)].has(key);
+                    }
+                    this['delete'] = function(key) {
+                        if (this.has(key)) {
+                            this.size = --size;
+                            return map[typeof(key)]['delete'](key);
+                        }
+                        return false;
+                    }
+                    this.clear = function() {
+                        for (var key in map) map[key].clear();
+                        this.size = size = 0;
+                    }
                 }
             }
         }

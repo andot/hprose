@@ -14,7 +14,7 @@
  *                                                        *
  * hprose io stream library for JavaScript.               *
  *                                                        *
- * LastModified: Nov 16, 2013                             *
+ * LastModified: Nov 18, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -999,7 +999,7 @@ var HproseSimpleWriter, HproseWriter;
     // public class
     HproseWriter = function hproseWriter(stream) {
         HproseSimpleWriter.call(this, stream);
-        var ref = new WeakMap();
+        var ref = new Map();
         var refcount = 0;
         var writeRef = function(obj, checkRef, writeBegin, writeEnd) {
             var index;
@@ -1015,7 +1015,7 @@ var HproseSimpleWriter, HproseWriter;
         var reset = this.reset;
         this.reset = function() {
             reset();
-            ref = new WeakMap();
+            ref = new Map();
             refcount = 0;
         }
         function doNothing() {};
