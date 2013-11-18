@@ -14,7 +14,7 @@
  *                                                        *
  * hprose io stream library for JavaScript.               *
  *                                                        *
- * LastModified: Jun 22, 2011                             *
+ * LastModified: Nov 18, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -45,6 +45,9 @@ function HproseStringInputStream(str) {
             pos = length;
         }
         return s;
+    }
+    this.rawData = function() {
+        return str;
     }
 }
 
@@ -110,22 +113,23 @@ var HproseTags = {
 }
 
 var HproseClassManager = new (function() {
-    var classCache = { 'Object': Object };
+    var classCache = {};
+    var aliasCache = new ActiveXObject("Scripting.Dictionary");
     this.register = function(cls, alias) {
+        aliasCache.Item(cls) = alias;
         classCache[alias] = cls;
     }
     this.getClassAlias = function(cls) {
-        for (var alias in classCache) {
-            if (cls === classCache[alias]) return alias;
-        }
-        return '';
+        return aliasCache.Item(cls);
     }
     this.getClass = function(alias) {
         return classCache[alias];
     } 
+    this.register(Object, 'Object');
 })();
 
-var HproseReader, HproseWriter;
+var HproseRawReader, HproseSimpleReader, HproseReader;
+var HproseSimpleWriter, HproseWriter;
 
 (function() {
     function freeEval(str) {
@@ -266,329 +270,7 @@ var HproseReader, HproseWriter;
         }
 
         // public class
-        HproseReader = function hproseReader(stream, vbs) {
-            var ref = [];
-            var classref = [];
-            function checkTag(expectTag, tag) {
-                if (tag === undefined) tag = stream.getc();
-                if (tag != expectTag) {
-                    throw new hproseException("Tag '" + expectTag +
-                                              "' expected, but '" +
-                                              tag + "' found in stream");
-                }
-            }
-            function checkTags(expectTags, tag) {
-                if (tag === undefined) tag = stream.getc();
-                if (arrayIndexOf(expectTags, tag) != -1) return tag;
-                throw new hproseException("'" + tag +
-                                      "' is not the expected tag");
-            }
-            function readInt(tag) {
-                var s = stream.readuntil(tag);
-                if (s.length == 0) return 0;
-                return parseInt(s);
-            }
-            function unserialize(tag) {
-                if (tag === undefined) {
-                    tag = stream.getc();
-                }
-                switch (tag) {
-                    case '0':
-                    case '1':
-                    case '2':
-                    case '3':
-                    case '4':
-                    case '5':
-                    case '6':
-                    case '7':
-                    case '8':
-                    case '9': return parseInt(tag);
-                    case hproseTags.TagInteger: return readInteger(false);
-                    case hproseTags.TagLong: return readLong(false);
-                    case hproseTags.TagDouble: return readDouble(false);
-                    case hproseTags.TagNull: return null;
-                    case hproseTags.TagEmpty: return '';
-                    case hproseTags.TagTrue: return true;
-                    case hproseTags.TagFalse: return false;
-                    case hproseTags.TagNaN: return NaN;
-                    case hproseTags.TagInfinity: return readInfinity(false);
-                    case hproseTags.TagDate: return readDate(false);
-                    case hproseTags.TagTime: return readTime(false);
-                    case hproseTags.TagUTF8Char: return stream.getc();
-                    case hproseTags.TagString: return readString(false);
-                    case hproseTags.TagGuid: return readGuid(false);
-                    case hproseTags.TagList: return readList(false);
-                    case hproseTags.TagMap: return readMap(false);
-                    case hproseTags.TagClass: readClass(); return unserialize();
-                    case hproseTags.TagObject: return readObject(false);
-                    case hproseTags.TagRef: return readRef();
-                    case HproseTags.TagError: throw new hproseException(readString());
-                    case '': throw new hproseException('No byte found in stream');
-                    default: throw new hproseException("Unexpected serialize tag '" +
-                                                       tag + "' in stream");
-                }
-            }
-            function readInteger(includeTag) {
-                if (includeTag === undefined) includeTag = true;
-                if (includeTag) {
-                    var tag = stream.getc();
-                    if ((tag >= '0') && (tag <= '9')) return parseInt(tag);
-                    checkTag(hproseTags.TagInteger, tag);
-                }
-                return readInt(hproseTags.TagSemicolon);
-            }
-            function readLong(includeTag) {
-                if (includeTag === undefined) includeTag = true;
-                if (includeTag) {
-                    var tag = stream.getc();
-                    if ((tag >= '0') && (tag <= '9')) return tag;
-                    checkTag(hproseTags.TagLong, tag);
-                }
-                return stream.readuntil(hproseTags.TagSemicolon);
-            }
-            function readDouble(includeTag) {
-                if (includeTag === undefined) includeTag = true;
-                if (includeTag) {
-                    var tag = stream.getc();
-                    if ((tag >= '0') && (tag <= '9')) return parseFloat(tag);
-                    checkTag(hproseTags.TagDouble, tag);
-                }
-                return parseFloat(stream.readuntil(hproseTags.TagSemicolon));
-            }
-            function readNaN() {
-                checkTag(hproseTags.TagNaN);
-                return NaN;
-            }
-            function readInfinity(includeTag) {
-                if (includeTag === undefined) includeTag = true;
-                if (includeTag) checkTag(hproseTags.TagInfinity);
-                return ((stream.getc() == hproseTags.TagNeg) ? -Infinity : Infinity);
-            }
-            function readNull() {
-                checkTag(hproseTags.TagNull);
-                return null;
-            }
-            function readEmpty() {
-                checkTag(hproseTags.TagEmpty);
-                return '';
-            }
-            function readBoolean() {
-                var tag = checkTags([hproseTags.TagTrue,
-                                     hproseTags.TagFalse]);
-                return (tag == hproseTags.TagTrue);
-            }
-            function readDate(includeTag) {
-                if (includeTag === undefined) includeTag = true;
-                var tag;
-                if (includeTag) {
-                    tag = checkTags([hproseTags.TagDate,
-                                     hproseTags.TagRef]);
-                    if (tag == hproseTags.TagRef) return readRef();
-                }
-                var year = parseInt(stream.read(4));
-                var month = parseInt(stream.read(2)) - 1;
-                var day = parseInt(stream.read(2));
-                var date;
-                tag = stream.getc();
-                if (tag == hproseTags.TagTime) {
-                    var hour = parseInt(stream.read(2));
-                    var minute = parseInt(stream.read(2));
-                    var second = parseInt(stream.read(2));
-                    var millisecond = 0;
-                    tag = stream.getc();
-                    if (tag == hproseTags.TagPoint) {
-                        millisecond = parseInt(stream.read(3));
-                        tag = stream.getc();
-                        if ((tag >= '0') && (tag <= '9')) {
-                            stream.skip(2);
-                            tag = stream.getc();
-                            if ((tag >= '0') && (tag <= '9')) {
-                                stream.skip(2);
-                                tag = stream.getc();
-                            }
-                        }
-                    }
-                    if (tag == hproseTags.TagUTC) {
-                        date = new Date(Date.UTC(year, month, day, hour, minute, second, millisecond));
-                    }
-                    else {
-                        date = new Date(year, month, day, hour, minute, second, millisecond);
-                    }
-                }
-                else if (tag == hproseTags.TagUTC) {
-                    date = new Date(Date.UTC(year, month, day));
-                }
-                else {
-                    date = new Date(year, month, day);
-                }
-                if (vbs) {
-                    date = date.getVarDate();
-                }
-                ref[ref.length] = date;
-                return date;
-            }
-            function readTime(includeTag) {
-                if (includeTag === undefined) includeTag = true;
-                var tag;
-                if (includeTag) {
-                    tag = checkTags([hproseTags.TagTime,
-                                     hproseTags.TagRef]);
-                    if (tag == hproseTags.TagRef) return readRef();
-                }
-                var time;
-                var hour = parseInt(stream.read(2));
-                var minute = parseInt(stream.read(2));
-                var second = parseInt(stream.read(2));
-                var millisecond = 0;
-                tag = stream.getc();
-                if (tag == hproseTags.TagPoint) {
-                    millisecond = parseInt(stream.read(3));
-                    tag = stream.getc();
-                    if ((tag >= '0') && (tag <= '9')) {
-                        stream.skip(2);
-                        tag = stream.getc();
-                        if ((tag >= '0') && (tag <= '9')) {
-                            stream.skip(2);
-                            tag = stream.getc();
-                        }
-                    }
-                }
-                if (tag == hproseTags.TagUTC) {
-                    if (vbs) {
-                        time = new Date(Date.UTC(1899, 11, 30, hour, minute, second, millisecond)).getVarDate();
-                    }
-                    else {
-                        time = new Date(Date.UTC(1970, 0, 1, hour, minute, second, millisecond));
-                    }
-                }
-                else {
-                    if (vbs) {
-                        time = new Date(1899, 11, 30, hour, minute, second, millisecond).getVarDate();
-                    }
-                    else {
-                        time = new Date(1970, 0, 1, hour, minute, second, millisecond);
-                    }
-                }
-                ref[ref.length] = time;
-                return time;
-            }
-            function readUTF8Char(includeTag) {
-                if (includeTag === undefined) includeTag = true;
-                if (includeTag) checkTag(hproseTags.TagUTF8Char);
-                return stream.getc();
-            }
-            function readString(includeTag, includeRef) {
-                if (includeTag === undefined) includeTag = true;
-                if (includeRef === undefined) includeRef = true;
-                if (includeTag) {
-                    var tag = checkTags([hproseTags.TagString,
-                                         hproseTags.TagRef]);
-                    if (tag == hproseTags.TagRef) return readRef();
-                }
-                var s = stream.read(readInt(hproseTags.TagQuote));
-                stream.skip(1);
-                if (includeRef) ref[ref.length] = s;
-                return s;
-            }
-            function readGuid(includeTag) {
-                if (includeTag === undefined) includeTag = true;
-                if (includeTag) {
-                    var tag = checkTags([hproseTags.TagGuid,
-                                         hproseTags.TagRef]);
-                    if (tag == hproseTags.TagRef) return readRef();
-                }
-                stream.skip(1);
-                var s = stream.read(36);
-                stream.skip(1);
-                ref[ref.length] = s;
-                return s;
-            }
-            function readList(includeTag) {
-                if (includeTag === undefined) includeTag = true;
-                if (includeTag) {
-                    var tag = checkTags([hproseTags.TagList,
-                                         hproseTags.TagRef]);
-                    if (tag == hproseTags.TagRef) return readRef();
-                }
-                var list = [];
-                var p = ref.length;
-                ref[p] = list;
-                var count = readInt(hproseTags.TagOpenbrace);
-                for (var i = 0; i < count; i++) {
-                    list[i] = unserialize();
-                }
-                stream.skip(1);
-                if (vbs) {
-                    list = hproseUtil.toVBArray(list);
-                    ref[p] = list;
-                }
-                return list;
-            }
-            function readMap(includeTag) {
-                if (includeTag === undefined) includeTag = true;
-                if (includeTag) {
-                    var tag = checkTags([hproseTags.TagMap,
-                                         hproseTags.TagRef]);
-                    if (tag == hproseTags.TagRef) return readRef();
-                }
-                var map = {};
-                if (vbs) {
-                    map = new ActiveXObject("Scripting.Dictionary");
-                }
-                ref[ref.length] = map;
-                var count = readInt(hproseTags.TagOpenbrace);
-                for (var i = 0; i < count; i++) {
-                    var key = unserialize();
-                    var value = unserialize();
-                    if (vbs) {
-                        map.Add(key, value);
-                    }
-                    else {
-                        map[key] = value;
-                    }
-                }
-                stream.skip(1);
-                return map;
-            }
-            function readObject(includeTag) {
-                if (includeTag === undefined) includeTag = true;
-                if (includeTag) {
-                    var tag = checkTags([hproseTags.TagClass,
-                                         hproseTags.TagObject,
-                                         hproseTags.TagRef]);
-                    if (tag == hproseTags.TagRef) return readRef();
-                    if (tag == hproseTags.TagClass) {
-                        readClass();
-                        return readObject();
-                    }
-                }
-                var cls = classref[readInt(hproseTags.TagOpenbrace)];
-                var obj = new cls.classname();
-                ref[ref.length] = obj;
-                for (var i = 0; i < cls.count; i++) {
-                    obj[cls.fields[i]] = unserialize();
-                }
-                stream.skip(1);
-                return obj;
-            }
-            function readClass() {
-                var classname = readString(false, false);
-                var count = readInt(hproseTags.TagOpenbrace);
-                var fields = [];
-                for (var i = 0; i < count; i++) {
-                    fields[i] = readString();
-                }
-                stream.skip(1);
-                classname = getClass(classname);
-                classref[classref.length] = {
-                    classname: classname,
-                    count: count,
-                    fields: fields
-                };
-            }
-            function readRef() {
-                return ref[readInt(hproseTags.TagSemicolon)];
-            }
+        HproseRawReader = function hproseRawReader(stream) {
             function readRaw(ostream, tag) {
                 if (ostream === undefined) ostream = new HproseStringOutputStream();
                 if (tag === undefined) tag = stream.getc();
@@ -619,7 +301,7 @@ var HproseReader, HproseWriter;
                     case HproseTags.TagLong:
                     case HproseTags.TagDouble:
                     case HproseTags.TagRef:
-                        readNumberRaw(ostream);
+                        readNumberRaw(ostream, tag);
                         break;
                     case HproseTags.TagDate:
                     case HproseTags.TagTime:
@@ -689,8 +371,292 @@ var HproseReader, HproseWriter;
                 }
                 ostream.write(tag);
             }
+            this.readRaw = readRaw;
+        }
+
+        // public class
+        HproseSimpleReader = function hproseSimpleReader(stream, vbs) {
+            HproseRawReader.call(this, stream);
+            var classref = [];
+            function checkTag(expectTag, tag) {
+                if (tag === undefined) tag = stream.getc();
+                if (tag != expectTag) {
+                    throw new hproseException("Tag '" + expectTag +
+                                              "' expected, but '" +
+                                              tag + "' found in stream");
+                }
+            }
+            function checkTags(expectTags, tag) {
+                if (tag === undefined) tag = stream.getc();
+                if (expectTags.indexOf(tag) >= 0) return tag;
+                    throw new hproseException("Tags '" + expectTags +
+                                              "' expected, but '" +
+                                              tag + "' found in stream");
+            }
+            function readInt(tag) {
+                var s = stream.readuntil(tag);
+                if (s.length == 0) return 0;
+                return parseInt(s);
+            }
+            function unserialize(tag) {
+                if (tag === undefined) {
+                    tag = stream.getc();
+                }
+                switch (tag) {
+                    case '0':
+                    case '1':
+                    case '2':
+                    case '3':
+                    case '4':
+                    case '5':
+                    case '6':
+                    case '7':
+                    case '8':
+                    case '9': return parseInt(tag);
+                    case hproseTags.TagInteger: return readInteger();
+                    case hproseTags.TagLong: return readLong();
+                    case hproseTags.TagDouble: return readDouble();
+                    case hproseTags.TagNull: return null;
+                    case hproseTags.TagEmpty: return '';
+                    case hproseTags.TagTrue: return true;
+                    case hproseTags.TagFalse: return false;
+                    case hproseTags.TagNaN: return NaN;
+                    case hproseTags.TagInfinity: return readInfinity();
+                    case hproseTags.TagDate: return this.readDate();
+                    case hproseTags.TagTime: return this.readTime();
+                    case hproseTags.TagUTF8Char: return stream.getc();
+                    case hproseTags.TagString: return this.readString();
+                    case hproseTags.TagGuid: return this.readGuid();
+                    case hproseTags.TagList: return this.readList();
+                    case hproseTags.TagMap: return this.readMap();
+                    case hproseTags.TagClass: this.readClass(); return this.unserialize();
+                    case hproseTags.TagObject: return this.readObject();
+                    case HproseTags.TagError: throw new hproseException(this.readString(true));
+                    case '': throw new hproseException('No byte found in stream');
+                    default: throw new hproseException("Unexpected serialize tag '" +
+                                                       tag + "' in stream");
+                }
+            }
+            function readInteger(includeTag) {
+                if (includeTag) {
+                    var tag = stream.getc();
+                    if ((tag >= '0') && (tag <= '9')) return parseInt(tag);
+                    checkTag(hproseTags.TagInteger, tag);
+                }
+                return readInt(hproseTags.TagSemicolon);
+            }
+            function readLong(includeTag) {
+                if (includeTag) {
+                    var tag = stream.getc();
+                    if ((tag >= '0') && (tag <= '9')) return tag;
+                    checkTag(hproseTags.TagLong, tag);
+                }
+                return stream.readuntil(hproseTags.TagSemicolon);
+            }
+            function readDouble(includeTag) {
+                if (includeTag) {
+                    var tag = stream.getc();
+                    if ((tag >= '0') && (tag <= '9')) return parseFloat(tag);
+                    checkTag(hproseTags.TagDouble, tag);
+                }
+                return parseFloat(stream.readuntil(hproseTags.TagSemicolon));
+            }
+            function readNaN() {
+                checkTag(hproseTags.TagNaN);
+                return NaN;
+            }
+            function readInfinity(includeTag) {
+                if (includeTag) checkTag(hproseTags.TagInfinity);
+                return ((stream.getc() == hproseTags.TagNeg) ? -Infinity : Infinity);
+            }
+            function readNull() {
+                checkTag(hproseTags.TagNull);
+                return null;
+            }
+            function readEmpty() {
+                checkTag(hproseTags.TagEmpty);
+                return '';
+            }
+            function readBoolean() {
+                var tag = checkTags(hproseTags.TagTrue +
+                                    hproseTags.TagFalse);
+                return (tag == hproseTags.TagTrue);
+            }
+            function readDate(includeTag) {
+                if (includeTag) checkTag(hproseTags.TagDate);
+                var year = parseInt(stream.read(4));
+                var month = parseInt(stream.read(2)) - 1;
+                var day = parseInt(stream.read(2));
+                var date;
+                var tag = stream.getc();
+                if (tag == hproseTags.TagTime) {
+                    var hour = parseInt(stream.read(2));
+                    var minute = parseInt(stream.read(2));
+                    var second = parseInt(stream.read(2));
+                    var millisecond = 0;
+                    tag = stream.getc();
+                    if (tag == hproseTags.TagPoint) {
+                        millisecond = parseInt(stream.read(3));
+                        tag = stream.getc();
+                        if ((tag >= '0') && (tag <= '9')) {
+                            stream.skip(2);
+                            tag = stream.getc();
+                            if ((tag >= '0') && (tag <= '9')) {
+                                stream.skip(2);
+                                tag = stream.getc();
+                            }
+                        }
+                    }
+                    if (tag == hproseTags.TagUTC) {
+                        date = new Date(Date.UTC(year, month, day, hour, minute, second, millisecond));
+                    }
+                    else {
+                        date = new Date(year, month, day, hour, minute, second, millisecond);
+                    }
+                }
+                else if (tag == hproseTags.TagUTC) {
+                    date = new Date(Date.UTC(year, month, day));
+                }
+                else {
+                    date = new Date(year, month, day);
+                }
+                if (vbs) date = date.getVarDate();
+                return date;
+            }
+            function readTime(includeTag) {
+                if (includeTag) checkTag(hproseTags.TagTime);
+                var time;
+                var hour = parseInt(stream.read(2));
+                var minute = parseInt(stream.read(2));
+                var second = parseInt(stream.read(2));
+                var millisecond = 0;
+                var tag = stream.getc();
+                if (tag == hproseTags.TagPoint) {
+                    millisecond = parseInt(stream.read(3));
+                    tag = stream.getc();
+                    if ((tag >= '0') && (tag <= '9')) {
+                        stream.skip(2);
+                        tag = stream.getc();
+                        if ((tag >= '0') && (tag <= '9')) {
+                            stream.skip(2);
+                            tag = stream.getc();
+                        }
+                    }
+                }
+                if (tag == hproseTags.TagUTC) {
+                    if (vbs) {
+                        time = new Date(Date.UTC(1899, 11, 30, hour, minute, second, millisecond)).getVarDate();
+                    }
+                    else {
+                        time = new Date(Date.UTC(1970, 0, 1, hour, minute, second, millisecond));
+                    }
+                }
+                else {
+                    if (vbs) {
+                        time = new Date(1899, 11, 30, hour, minute, second, millisecond).getVarDate();
+                    }
+                    else {
+                        time = new Date(1970, 0, 1, hour, minute, second, millisecond);
+                    }
+                }
+                return time;
+            }
+            function readUTF8Char(includeTag) {
+                if (includeTag) checkTag(hproseTags.TagUTF8Char);
+                return stream.getc();
+            }
+            function readString(includeTag) {
+                if (includeTag) checkTag(hproseTags.TagString);
+                var s = stream.read(readInt(hproseTags.TagQuote));
+                stream.skip(1);
+                return s;
+            }
+            function readGuid(includeTag) {
+                if (includeTag) checkTag(hproseTags.TagGuid);
+                stream.skip(1);
+                var s = stream.read(36);
+                stream.skip(1);
+                return s;
+            }
+            function readListBegin() {
+                return [];
+            }
+            function readListEnd(list) {
+                var count = readInt(hproseTags.TagOpenbrace);
+                for (var i = 0; i < count; i++) {
+                    list[i] = this.unserialize();
+                }
+                stream.skip(1);
+                if (vbs) list = hproseUtil.toVBArray(list);
+                return list;
+            }
+            function readList(includeTag) {
+                if (includeTag) checkTag(hproseTags.TagList);
+                return this.readListEnd(this.readListBegin());
+            }
+            function readMapBegin() {
+                if (vbs) return new ActiveXObject("Scripting.Dictionary");
+                return {};
+            }
+            function readMapEnd(map) {
+                var count = readInt(hproseTags.TagOpenbrace);
+                for (var i = 0; i < count; i++) {
+                    var key = this.unserialize();
+                    var value = this.unserialize();
+                    if (vbs) {
+                        map.Add(key, value);
+                    }
+                    else {
+                        map[key] = value;
+                    }
+                }
+                stream.skip(1);
+                return map;
+            }
+            function readMap(includeTag) {
+                if (includeTag) checkTag(hproseTags.TagMap);
+                return this.readMapEnd(this.readMapBegin());
+            }
+            function readObjectBegin() {
+                var cls = classref[readInt(hproseTags.TagOpenbrace)];
+                var obj = new cls.classname();
+                return {obj: obj, cls: cls};
+            }
+            function readObjectEnd(obj, cls) {
+                for (var i = 0; i < cls.count; i++) {
+                    obj[cls.fields[i]] = this.unserialize();
+                }
+                stream.skip(1);
+                return obj;
+            }
+            function readObject(includeTag) {
+                if (includeTag) {
+                    var tag = checkTags(hproseTags.TagClass +
+                                        hproseTags.TagObject);
+                    if (tag == hproseTags.TagClass) {
+                        this.readClass();
+                        return this.readObject(true);
+                    }
+                }
+                var result = this.readObjectBegin();
+                return this.readObjectEnd(result.obj, result.cls);
+            }
+            function readClass() {
+                var classname = readString();
+                var count = readInt(hproseTags.TagOpenbrace);
+                var fields = [];
+                for (var i = 0; i < count; i++) {
+                    fields[i] = this.readString(true);
+                }
+                stream.skip(1);
+                classname = getClass(classname);
+                classref[classref.length] = {
+                    classname: classname,
+                    count: count,
+                    fields: fields
+                };
+            }
             function reset() {
-                ref.length = 0;
                 classref.length = 0;
             }
             this.checkTag = checkTag;
@@ -708,37 +674,151 @@ var HproseReader, HproseWriter;
             this.readTime = readTime;
             this.readUTF8Char = readUTF8Char;
             this.readString = readString;
+            this.readListBegin = readListBegin;
+            this.readListEnd = readListEnd;
             this.readList = readList;
+            this.readMapBegin = readMapBegin;
+            this.readMapEnd = readMapEnd;
             this.readMap = readMap;
+            this.readObjectBegin = readObjectBegin;
+            this.readObjectEnd = readObjectEnd;
             this.readObject = readObject;
-            this.readRaw = readRaw;
+            this.readClass = readClass;
             this.reset = reset;
         }
 
-        HproseWriter = function hproseWriter(stream) {
+        // public class
+        HproseReader = function hproseReader(stream, vbs) {
+            HproseSimpleReader.call(this, stream, vbs);
             var ref = [];
-            var classref = [];
+            function readInt(tag) {
+                var s = stream.readuntil(tag);
+                if (s.length == 0) return 0;
+                return parseInt(s);
+            }
+            function readRef() {
+                return ref[readInt(hproseTags.TagSemicolon)];
+            }
+            var unserialize = this.unserialize;
+            this.unserialize = function(tag) {
+                if (tag === undefined) {
+                    tag = stream.getc();
+                }
+                if (tag == hproseTags.TagRef) {
+                    return readRef();
+                }
+                return unserialize.call(this, tag);
+            }
+            var readDate = this.readDate;
+            this.readDate = function(includeTag) {
+                if (includeTag) {
+                    var tag = this.checkTags(hproseTags.TagDate +
+                                             hproseTags.TagRef);
+                    if (tag == hproseTags.TagRef) return readRef();
+                }
+                var date = readDate();
+                ref[ref.length] = date;
+                return date;
+            }
+            var readTime = this.readTime;
+            this.readTime = function(includeTag) {
+                if (includeTag) {
+                    var tag = this.checkTags(hproseTags.TagTime +
+                                             hproseTags.TagRef);
+                    if (tag == hproseTags.TagRef) return readRef();
+                }
+                var time = readTime();
+                ref[ref.length] = time;
+                return time;
+            }
+            var readString = this.readString;
+            this.readString = function(includeTag) {
+                if (includeTag) {
+                    var tag = this.checkTags(hproseTags.TagString +
+                                             hproseTags.TagRef);
+                    if (tag == hproseTags.TagRef) return readRef();
+                }
+                var s = readString();
+                ref[ref.length] = s;
+                return s;
+            }
+            var readGuid = this.readGuid;
+            this.readGuid = function(includeTag) {
+                if (includeTag) {
+                    var tag = this.checkTags(hproseTags.TagGuid +
+                                             hproseTags.TagRef);
+                    if (tag == hproseTags.TagRef) return readRef();
+                }
+                var s = readGuid();
+                ref[ref.length] = s;
+                return s;
+            }
+            this.readList = function(includeTag) {
+                if (includeTag) {
+                    var tag = this.checkTags(hproseTags.TagList +
+                                             hproseTags.TagRef);
+                    if (tag == hproseTags.TagRef) return readRef();
+                }
+                var list = this.readListBegin();
+                var p = ref.length;
+                ref[p] = list;
+                list = this.readListEnd(list);
+                if (vbs) ref[p] = list;
+                return list;
+            }
+            this.readMap = function(includeTag) {
+                if (includeTag) {
+                    var tag = this.checkTags(hproseTags.TagMap +
+                                             hproseTags.TagRef);
+                    if (tag == hproseTags.TagRef) return readRef();
+                }
+                var map = this.readMapBegin();
+                ref[ref.length] = map;
+                return this.readMapEnd(map);
+            }
+            this.readObject = function(includeTag) {
+                if (includeTag) {
+                    var tag = this.checkTags(hproseTags.TagClass +
+                                             hproseTags.TagObject +
+                                             hproseTags.TagRef);
+                    if (tag == hproseTags.TagRef) return readRef();
+                    if (tag == hproseTags.TagClass) {
+                        this.readClass();
+                        return this.readObject(true);
+                    }
+                }
+                var result = this.readObjectBegin();
+                ref[ref.length] = result.obj;
+                return this.readObjectEnd(result.obj, result.cls);
+            }
+            var reset = this.reset;
+            this.reset = function() {
+                reset();
+                ref.length = 0;
+            }
+        }
+
+        // public class
+        HproseSimpleWriter = function hproseSimpleWriter(stream) {
+            var classref = {};
+            var fieldsref = [];
             function serialize(variable) {
-                if (typeof(variable) == 'date') {
-                    writeVBSDate(variable);
-                    return;
-                }
-                else if (hproseUtil.isVBArray(variable)) {
-                    variable = hproseUtil.toJSArray(variable);
-                }
-                else if (hproseUtil.isDictionary(variable)) {
-                    writeDict(variable);
-                    return;
-                }
-                else if (variable === undefined ||
+                if (variable === undefined ||
                     variable === null ||
                     variable.constructor == Function) {
-                    writeNull();
-                    return;
+                    return writeNull();
                 }
-                else if (variable === "") {
-                    writeEmpty();
-                    return;
+                if (variable === '') {
+                    return writeEmpty();
+                }
+                if (typeof(variable) == 'date') {
+                    return writeVBSDate(variable);
+                }
+                if (hproseUtil.isDictionary(variable)) {
+                    return writeDict(variable);
+                }
+                if (hproseUtil.isVBArray(variable)) {
+                    variable = hproseUtil.toJSArray(variable);
                 }
                 switch (variable.constructor) {
                     case Boolean: writeBoolean(variable); break;
@@ -749,23 +829,19 @@ var HproseReader, HproseWriter;
                                  writeDouble(variable); break;
                     case String: variable.length == 1 ?
                                  writeUTF8Char(variable) :
-                                 writeString(variable); break;
-                    case Date: writeDate(variable); break;
+                                 this.writeString(variable, true); break;
+                    case Date: this.writeDate(variable, true); break;
                     default: {
-                        var r = arrayIndexOf(ref, variable);
-                        if (r > -1) {
-                            writeRef(r);
-                        }
-                        else if (isArray(variable)) {
-                            writeList(variable, false);
+                        if (Array.isArray(variable)) {
+                            this.writeList(variable, true);
                         }
                         else {
                             var classname = getClassName(variable);
                             if (classname == "Object") {
-                                writeMap(variable, false);
+                                this.writeMap(variable, true);
                             }
                             else {
-                                writeObject(variable, false);
+                                this.writeObject(variable, true);
                             }
                         }
                     }
@@ -805,8 +881,7 @@ var HproseReader, HproseWriter;
             function writeBoolean(b) {
                 stream.write(b ? hproseTags.TagTrue : hproseTags.TagFalse);
             }
-            function writeUTCDate(date, checkRef) {
-                if (checkRef === undefined) checkRef = true;
+            function writeUTCDate(date) {
                 var year = ('0000' + date.getUTCFullYear()).slice(-4);
                 var month = ('00' + (date.getUTCMonth() + 1)).slice(-2);
                 var day = ('00' + date.getUTCDate()).slice(-2);
@@ -814,62 +889,14 @@ var HproseReader, HproseWriter;
                 var minute = ('00' + date.getUTCMinutes()).slice(-2);
                 var second = ('00' + date.getUTCSeconds()).slice(-2);
                 var millisecond = ('000' + date.getUTCMilliseconds()).slice(-3);
-                date = hproseTags.TagDate + year + month + day +
-                       hproseTags.TagTime + hour + minute + second;
+                stream.write(hproseTags.TagDate + year + month + day +
+                             hproseTags.TagTime + hour + minute + second);
                 if (millisecond != '000') {
-                    date += hproseTags.TagPoint + millisecond;
+                    stream.write(hproseTags.TagPoint + millisecond);
                 }
-                date += hproseTags.TagUTC;
-                var r;
-                if (checkRef && ((r = arrayIndexOf(ref, date)) > -1)) {
-                    writeRef(r);
-                }
-                else {
-                    ref[ref.length] = date;
-                    stream.write(date);
-                }
+                stream.write(hproseTags.TagUTC);
             }
-            function writeVBSDate(date, checkRef) {
-                if (checkRef === undefined) checkRef = true;
-                var r;
-                if (checkRef && ((r = arrayIndexOf(ref, date)) > -1)) {
-                    writeRef(r);
-                }
-                else {
-                    ref[ref.length] = date;
-                    date = new Date(date);
-                    var year = ('0000' + date.getFullYear()).slice(-4);
-                    var month = ('00' + (date.getMonth() + 1)).slice(-2);
-                    var day = ('00' + date.getDate()).slice(-2);
-                    var hour = ('00' + date.getHours()).slice(-2);
-                    var minute = ('00' + date.getMinutes()).slice(-2);
-                    var second = ('00' + date.getSeconds()).slice(-2);
-                    var millisecond = ('000' + date.getMilliseconds()).slice(-3);
-                    if ((hour == '00') && (minute == '00') &&
-                             (second == '00') && (millisecond == '000')) {
-                        date = hproseTags.TagDate + year + month + day +
-                               hproseTags.TagSemicolon;
-                    }
-                    else if ((year == '1899') && (month == '12') && (day == '30')) {
-                        date = hproseTags.TagTime + hour + minute + second;
-                        if (millisecond != '000') {
-                            date += hproseTags.TagPoint + millisecond;
-                        }                        
-                        date += hproseTags.TagSemicolon;
-                    }
-                    else {
-                        date = hproseTags.TagDate + year + month + day +
-                               hproseTags.TagTime + hour + minute + second;
-                        if (millisecond != '000') {
-                            date += hproseTags.TagPoint + millisecond;
-                        }                        
-                        date += hproseTags.TagSemicolon;
-                    }
-                    stream.write(date);
-                }
-            }
-            function writeDate(date, checkRef) {
-                if (checkRef === undefined) checkRef = true;
+            function writeXDate(date, y, m, d) {
                 var year = ('0000' + date.getFullYear()).slice(-4);
                 var month = ('00' + (date.getMonth() + 1)).slice(-2);
                 var day = ('00' + date.getDate()).slice(-2);
@@ -879,161 +906,115 @@ var HproseReader, HproseWriter;
                 var millisecond = ('000' + date.getMilliseconds()).slice(-3);
                 if ((hour == '00') && (minute == '00') &&
                     (second == '00') && (millisecond == '000')) {
-                    date = hproseTags.TagDate + year + month + day +
-                           hproseTags.TagSemicolon;
+                    stream.write(hproseTags.TagDate + year + month + day);
                 }
-                else if ((year == '1970') && (month == '01') && (day == '01')) {
-                    date = hproseTags.TagTime + hour + minute + second;
+                else if ((year == y) && (month == m) && (day == d)) {
+                    stream.write(hproseTags.TagTime + hour + minute + second);
                     if (millisecond != '000') {
-                        date += hproseTags.TagPoint + millisecond;
+                        stream.write(hproseTags.TagPoint + millisecond);
                     }                        
-                    date += hproseTags.TagSemicolon;
                 }
                 else {
-                    date = hproseTags.TagDate + year + month + day +
-                           hproseTags.TagTime + hour + minute + second;
+                    stream.write(hproseTags.TagDate + year + month + day +
+                                 hproseTags.TagTime + hour + minute + second);
                     if (millisecond != '000') {
-                        date += hproseTags.TagPoint + millisecond;
+                        stream.write(hproseTags.TagPoint + millisecond);
                     }                        
-                    date += hproseTags.TagSemicolon;
                 }
-                var r;
-                if (checkRef && ((r = arrayIndexOf(ref, date)) > -1)) {
-                    writeRef(r);
-                }
-                else {
-                    ref[ref.length] = date;
-                    stream.write(date);
-                }
+                stream.write(hproseTags.TagSemicolon);
             }
-            function writeTime(time, checkRef) {
-                if (checkRef === undefined) checkRef = true;
+            function writeVBSDate(date) {
+                writeXDate(new Date(date), '1899', '12', '30');
+            }
+
+            function writeDate(date) {
+                writeXDate(date, '1970', '01', '01');
+            }
+            function writeTime(time) {
                 var hour = ('00' + time.getHours()).slice(-2);
                 var minute = ('00' + time.getMinutes()).slice(-2);
                 var second = ('00' + time.getSeconds()).slice(-2);
                 var millisecond = ('000' + time.getMilliseconds()).slice(-3);
-                time = hproseTags.TagTime + hour + minute + second;
+                stream.write(hproseTags.TagTime + hour + minute + second);
                 if (millisecond != '000') {
-                    time += hproseTags.TagPoint + millisecond;
+                    stream.write(hproseTags.TagPoint + millisecond);
                 }                        
-                time += hproseTags.TagSemicolon;
-                var r;
-                if (checkRef && ((r = arrayIndexOf(ref, time)) > -1)) {
-                    writeRef(r);
-                }
-                else {
-                    ref[ref.length] = time;
-                    stream.write(time);
-                }
+                stream.write(hproseTags.TagSemicolon);
             }
             function writeUTF8Char(c) {
                 stream.write(hproseTags.TagUTF8Char + c);
             }
-            function writeString(s, checkRef) {
-                if (checkRef === undefined) checkRef = true;
-                s = hproseTags.TagString + (s.length > 0 ? s.length : '') +
-                    hproseTags.TagQuote + s + hproseTags.TagQuote;
-                var r;
-                if (checkRef && ((r = arrayIndexOf(ref, s)) > -1)) {
-                    writeRef(r);
-                }
-                else {
-                    ref[ref.length] = s;
-                    stream.write(s);
-                }
+            function writeString(s) {
+                stream.write(hproseTags.TagString +
+                    (s.length > 0 ? s.length : '') +
+                    hproseTags.TagQuote + s + hproseTags.TagQuote);
             }
-            function writeList(list, checkRef) {
-                if (checkRef === undefined) checkRef = true;
-                var r;
-                if (checkRef && ((r = arrayIndexOf(ref, list)) > -1)) {
-                    writeRef(r);
+            function writeList(list) {
+                var count = list.length;
+                stream.write(hproseTags.TagList + (count > 0 ? count : '') + hproseTags.TagOpenbrace);
+                for (var i = 0; i < count; i++) {
+                    this.serialize(list[i]);
                 }
-                else {
-                    ref[ref.length] = list;
-                    var count = list.length;
-                    stream.write(hproseTags.TagList + (count > 0 ? count : '') + hproseTags.TagOpenbrace);
-                    for (var i = 0; i < count; i++) {
-                        serialize(list[i]);
-                    }
-                    stream.write(hproseTags.TagClosebrace);
-                }
+                stream.write(hproseTags.TagClosebrace);
             }
-            function writeDict(dict, checkRef) {
-                if (checkRef === undefined) checkRef = true;
-                var r;
-                if (checkRef && ((r = arrayIndexOf(ref, dict)) > -1)) {
-                    writeRef(r);
+            function writeDict(dict) {
+                var fields = (new VBArray(dict.Keys())).toArray();
+                var count = fields.length;
+                stream.write(hproseTags.TagMap + (count > 0 ? count : '') + hproseTags.TagOpenbrace);
+                for (var i = 0; i < count; i++) {
+                    serialize(fields[i]);
+                    serialize(dict.Item(fields[i]));
                 }
-                else {
-                    ref[ref.length] = dict;
-                    var fields = (new VBArray(dict.Keys())).toArray();
-                    var count = fields.length;
-                    stream.write(hproseTags.TagMap + (count > 0 ? count : '') + hproseTags.TagOpenbrace);
-                    for (var i = 0; i < count; i++) {
-                        serialize(fields[i]);
-                        serialize(dict(fields[i]));
-                    }
-                    stream.write(hproseTags.TagClosebrace);
-                }
+                stream.write(hproseTags.TagClosebrace);
             }
-            function writeMap(map, checkRef) {
-                if (checkRef === undefined) checkRef = true;
-                var r;
-                if (checkRef && ((r = arrayIndexOf(ref, map)) > -1)) {
-                    writeRef(r);
-                }
-                else {
-                    ref[ref.length] = map;
-                    var fields = [];
-                    for (var key in map) {
-                        try {
-                            if (typeof(map[key]) != 'function' &&
-                                (typeof(map[key]) != 'unknown' ||
-                                hproseUtil.isVBArray(map[key])) &&
-                                !prototypePropertyOfObject[key] &&
-                                !prototypePropertyOfArray[key]) {
-                                fields[fields.length] = key;
-                            }
-                        }
-                        catch (e) {
-                        }
+            function writeMap(map) {
+                var fields = [];
+                for (var key in map) {
+                    if (typeof(map[key]) != 'function' &&
+                        (typeof(map[key]) != 'unknown' ||
+                        hproseUtil.isVBArray(map[key])) &&
+                        !prototypePropertyOfObject[key] &&
+                        !prototypePropertyOfArray[key]) {
+                        fields[fields.length] = key;
                     }
-                    var count = fields.length;
-                    stream.write(hproseTags.TagMap + (count > 0 ? count : '') + hproseTags.TagOpenbrace);
-                    for (var i = 0; i < count; i++) {
-                        serialize(fields[i]);
-                        serialize(map[fields[i]]);
-                    }
-                    stream.write(hproseTags.TagClosebrace);
                 }
+                var count = fields.length;
+                stream.write(hproseTags.TagMap + (count > 0 ? count : '') + hproseTags.TagOpenbrace);
+                for (var i = 0; i < count; i++) {
+                    this.serialize(fields[i]);
+                    this.serialize(map[fields[i]]);
+                }
+                stream.write(hproseTags.TagClosebrace);
             }
-            function writeObject(obj, checkRef) {
-                if (checkRef === undefined) checkRef = true;
+            function writeObjectBegin(obj) {
                 var classname = getClassName(obj);
-                var r;
-                if (checkRef && ((r = arrayIndexOf(ref, obj)) > -1)) {
-                    writeRef(r);
+                var index = classref[classname];
+                var fields;
+                if (index !== undefined) {
+                    fields = fieldsref[index];
                 }
                 else {
-                    var fields = [];
+                    fields = [];
                     for (var key in obj) {
                         if (typeof(obj[key]) != 'function' &&
                             !prototypePropertyOfObject[key]) {
                             fields[fields.length] = key.toString();
                         }
                     }
-                    var cr = arrayIndexOf(classref, classname);
-                    if (cr === -1) {
-                        cr = writeClass(classname, fields);
-                    }
-                    ref[ref.length] = obj;
-                    var count = fields.length;
-                    stream.write(hproseTags.TagObject + cr + hproseTags.TagOpenbrace);
-                    for (var i = 0; i < count; i++) {
-                        serialize(obj[fields[i]]);
-                    }
-                    stream.write(hproseTags.TagClosebrace);
+                    index = writeClass.call(this, classname, fields);
                 }
+                stream.write(hproseTags.TagObject + index + hproseTags.TagOpenbrace);
+                return fields;
+            }
+            function writeObjectEnd(obj, fields) {
+                var count = fields.length;
+                for (var i = 0; i < count; i++) {
+                    this.serialize(obj[fields[i]]);
+                }
+                stream.write(hproseTags.TagClosebrace);
+            }
+            function writeObject(obj) {
+                this.writeObjectEnd(obj, this.writeObjectBegin(obj));
             }
             function writeClass(classname, fields) {
                 var count = fields.length;
@@ -1041,19 +1022,17 @@ var HproseReader, HproseWriter;
                              hproseTags.TagQuote + classname + hproseTags.TagQuote +
                              (count > 0 ? count : '') + hproseTags.TagOpenbrace);
                 for (var i = 0; i < count; i++) {
-                    writeString(fields[i]);
+                    this.writeString(fields[i]);
                 }
                 stream.write(hproseTags.TagClosebrace);
-                var cr = classref.length;
-                classref[cr] = classname;
-                return cr;
-            }
-            function writeRef(ref) {
-                stream.write(hproseTags.TagRef + ref + hproseTags.TagSemicolon);
+                var index = fieldsref.length;
+                classref[classname] = index;
+                fieldsref[index] = fields;
+                return index;
             }
             function reset() {
-                ref.length = 0;
-                classref.length = 0;
+                classref = {};
+                fieldsref.length = 0;
             }
             this.serialize = serialize;
             this.writeInteger = writeInteger;
@@ -1071,23 +1050,85 @@ var HproseReader, HproseWriter;
             this.writeUTF8Char = writeUTF8Char;
             this.writeString = writeString;
             this.writeList = writeList;
+            this.writeDict = writeDict;
             this.writeMap = writeMap;
+            this.writeObjectBegin = writeObjectBegin;
+            this.writeObjectEnd = writeObjectEnd;
             this.writeObject = writeObject;
             this.reset = reset;
+        }
+
+        // public class
+        HproseWriter = function hproseWriter(stream) {
+            HproseSimpleWriter.call(this, stream);
+            var ref = new ActiveXObject("Scripting.Dictionary");
+            var refcount = 0;
+            var writeRef = function(obj, checkRef, writeBegin, writeEnd) {
+                if (checkRef && ref.Exists(obj)) {
+                    stream.write(hproseTags.TagRef + ref.Item(obj) + hproseTags.TagSemicolon);
+                }
+                else {
+                    var result = writeBegin.call(this, obj);
+                    ref.Item(obj) = refcount++;
+                    writeEnd.call(this, obj, result);
+                }
+            }
+            var reset = this.reset;
+            this.reset = function() {
+                reset();
+                ref.RemoveAll();
+                refcount = 0;
+            }
+            function doNothing() {};
+            var writeUTCDate = this.writeUTCDate;
+            this.writeUTCDate = function(date, checkRef) {
+                writeRef.call(this, date, checkRef, doNothing, writeUTCDate);
+            }
+            var writeVBSDate = this.writeVBSDate;
+            this.writeVBSDate = function(date, checkRef) {
+                writeRef.call(this, date, checkRef, doNothing, writeVBSDate);
+            }
+            var writeDate = this.writeDate;
+            this.writeDate = function(date, checkRef) {
+                writeRef.call(this, date, checkRef, doNothing, writeDate);
+            }
+            var writeTime = this.writeTime;
+            this.writeTime = function(time, checkRef) {
+                writeRef.call(this, time, checkRef, doNothing, writeTime);
+            }
+            var writeString = this.writeString;
+            this.writeString = function(str, checkRef) {
+                writeRef.call(this, str, checkRef, doNothing, writeString);
+            }
+            var writeList = this.writeList;
+            this.writeList = function(list, checkRef) {
+                writeRef.call(this, list, checkRef, doNothing, writeList);
+            }
+            var writeDict = this.writeDict;
+            this.writeDict = function(dist, checkRef) {
+                writeRef.call(this, dist, checkRef, doNothing, writeDict);
+            }
+            var writeMap = this.writeMap;
+            this.writeMap = function(map, checkRef) {
+                writeRef.call(this, map, checkRef, doNothing, writeMap);
+            }
+            this.writeObject = function(obj, checkRef) {
+                writeRef.call(this, obj, checkRef, this.writeObjectBegin, this.writeObjectEnd);
+            }
         }
     })();
 })();
 
 var HproseFormatter = {
-    serialize: function(variable) {
+    serialize: function(variable, simple) {
         var stream = new HproseStringOutputStream();
-        var hproseWriter = new HproseWriter(stream);
+        var hproseWriter = (simple ? new HproseSimpleWriter(stream) : new HproseWriter(stream));
         hproseWriter.serialize(variable);
         return stream.toString();
     },
-    unserialize: function(variable_representation) {
+    unserialize: function(variable_representation, simple) {
         var stream = new HproseStringInputStream(variable_representation);
-        var hproseReader = new HproseReader(stream);
+        var hproseReader = (simple ? new HproseSimpleReader(stream) : new HproseReader(stream));
         return hproseReader.unserialize();
     }
 }

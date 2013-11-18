@@ -14,7 +14,7 @@
  *                                                        *
  * hprose http server library for ASP.                    *
  *                                                        *
- * LastModified: Oct 28, 2012                             *
+ * LastModified: Nov 18, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -54,7 +54,9 @@ var HproseHttpServer = (function() {
         var r_HproseUtil = HproseUtil;
         var r_HproseStringInputStream = HproseStringInputStream;
         var r_HproseStringOutputStream = HproseStringOutputStream;
+        var r_HproseSimpleReader = HproseSimpleReader;
         var r_HproseReader = HproseReader;
+        var r_HproseSimpleWriter = HproseSimpleWriter;
         var r_HproseWriter = HproseWriter;
         var r_HproseTags = HproseTags;
         var r_HproseFormatter = HproseFormatter;
@@ -97,15 +99,15 @@ var HproseHttpServer = (function() {
             var m_functions = {};
             var m_funcNames = {};
             var m_resultMode = {};
+            var m_simpleMode = {};
             var m_debug = false;
             var m_crossDomain = false;
             var m_P3P = false;
             var m_get = true;
+            var m_simple = false;
             var m_filter = null;
             var m_input;
             var m_output;
-            var m_reader;
-            var m_writer;
             this.onBeforeInvoke = null;
             this.onAfterInvoke = null;
             this.onSendHeader = null;
@@ -125,14 +127,12 @@ var HproseHttpServer = (function() {
                     str = m_filter.inputFilter(str);
                 }
                 m_input = new r_HproseStringInputStream(str);
-                m_reader = new r_HproseReader(m_input, vbs);
                 if (m_filter) {
                     m_output = r_HproseStringOutputStream();
                 }
                 else {
                     m_output = Response;
                 }
-                m_writer = new r_HproseWriter(m_output);
             }
 
             function sendHeader() {
@@ -163,53 +163,60 @@ var HproseHttpServer = (function() {
                     this.onSendError(error);
                 }
                 m_output.clear();
-                m_writer.reset();
                 m_output.write(r_HproseTags.TagError);
-                m_writer.writeString(error, false);
+                var writer = new r_HproseSimpleWriter(m_output);
+                writer.writeString(error);
                 m_output.write(r_HproseTags.TagEnd);
             }
 
             function doInvoke() {
+                var simpleReader = new r_HproseSimpleReader(m_input, vbs);
                 do {
-                    m_reader.reset();
-                    var functionName = m_reader.readString();
-                    var aliasName = functionName.toLowerCase();
-                    var functionArgs = [];
+                    var name = simpleReader.readString(true);
+                    var alias = name.toLowerCase();
+                    var func, resultMode, simple;
+                    if (alias in m_functions) {
+                        func = m_functions[alias];
+                        resultMode = m_resultMode[alias];
+                        simple = m_simpleMode[alias];
+                    }
+                    else if ('*' in m_functions) {
+                        func = m_functions['*'];
+                        resultMode = m_resultMode['*'];
+                        simple = m_simpleMode['*'];
+                    }
+                    else {
+                        throw new r_HproseException("Can't find this function " + name + "().");
+                    }
+                    if (simple === undefined) simple = m_simple;
+                    var writer = (simple ? new r_HproseSimpleWriter(m_output) : new r_HproseWriter(m_output));
+                    var args = [];
                     var byref = false;
-                    var tag = m_reader.checkTags([r_HproseTags.TagList,
-                                                  r_HproseTags.TagEnd,
-                                                  r_HproseTags.TagCall]);
+                    var tag = simpleReader.checkTags(r_HproseTags.TagList +
+                                                     r_HproseTags.TagEnd +
+                                                     r_HproseTags.TagCall);
                     if (tag == r_HproseTags.TagList) {
-                        m_reader.reset();
-                        functionArgs = m_reader.readList(false);
-                        if (vbs) functionArgs = r_HproseUtil.toJSArray(functionArgs);
-                        tag = m_reader.checkTags([r_HproseTags.TagTrue,
-                                                  r_HproseTags.TagEnd,
-                                                  r_HproseTags.TagCall]);
+                        var reader = new r_HproseReader(m_input, vbs);
+                        args = reader.readList();
+                        if (vbs) args = r_HproseUtil.toJSArray(args);
+                        tag = reader.checkTags(r_HproseTags.TagTrue +
+                                               r_HproseTags.TagEnd +
+                                               r_HproseTags.TagCall);
                         if (tag == r_HproseTags.TagTrue) {
                             byref = true;
-                            tag = m_reader.checkTags([r_HproseTags.TagEnd,
-                                                      r_HproseTags.TagCall]);
+                            tag = reader.checkTags(r_HproseTags.TagEnd +
+                                                   r_HproseTags.TagCall);
                         }
                     }
                     if (this.onBeforeInvoke != null) {
-                        this.onBeforeInvoke(functionName, functionArgs, byref);
+                        this.onBeforeInvoke(name, args, byref);
                     }
-                    var func, resultMode, result;
-                    if (func = m_functions[aliasName]) {
-                        resultMode = m_resultMode[aliasName];
-                        result = callService(func.method, func.obj, func.context, functionArgs);
+                    if (('*' in m_functions) && (func === m_functions['*'])) {
+                        args = [name, args];
                     }
-                    else if (func = m_functions['*']) {
-                        resultMode = m_resultMode['*'];
-                        var args = [functionName, functionArgs];
-                        result = callService(func.method, func.obj, func.context, args);
-                    }
-                    else {
-                        throw new r_HproseException("Can't find this function " + functionName + "().");
-                    }
+                    var result = callService(func.method, func.obj, func.context, args);
                     if (this.onAfterInvoke != null) {
-                        this.onAfterInvoke(functionName, functionArgs, byref, result);
+                        this.onAfterInvoke(name, args, byref, result);
                     }
                     if (resultMode == r_HproseResultMode.RawWithEndTag) {
                         m_output.write(result);
@@ -224,13 +231,13 @@ var HproseHttpServer = (function() {
                             m_output.write(result);
                         }
                         else {
-                            m_writer.reset();
-                            m_writer.serialize(result);
+                            writer.reset();
+                            writer.serialize(result);
                         }
                         if (byref) {
                             m_output.write(r_HproseTags.TagArgument);
-                            m_writer.reset();
-                            m_writer.writeList(functionArgs, false);
+                            writer.reset();
+                            writer.writeList(args);
                         }
                     }
                 } while (tag == r_HproseTags.TagCall);
@@ -239,34 +246,43 @@ var HproseHttpServer = (function() {
 
             function doFunctionList() {
                 var functions = arrayValues(m_funcNames);
+                var writer = new r_HproseSimpleWriter(m_output);
                 m_output.write(r_HproseTags.TagFunctions);
-                m_writer.writeList(functions, false);
+                writer.writeList(functions);
                 m_output.write(r_HproseTags.TagEnd);
             }
 
             function handle() {
                 try {
                     var exceptTags = [r_HproseTags.TagCall, r_HproseTags.TagEnd];
-                    var tag = m_reader.checkTags(exceptTags);
+                    var tag = m_input.getc();
                     switch (tag) {
                         case r_HproseTags.TagCall: doInvoke.apply(this); break;
                         case r_HproseTags.TagEnd: doFunctionList(); break;
+                        default: throw new r_HproseException("Wrong Request: \r\n" . m_input.rawData());
                     }
                 }
                 catch (e) {
-                    sendError.call(this, e.description);
+                    if (m_debug) {
+                        sendError.call(this, "Error Name: " + e.name + "\r\n" +
+                                             "Error Code: " + e.number + "\r\n" +
+                                             "Error Message: " + e.message);
+                    }
+                    else {
+                        sendError.call(this, e.description);
+                    }
                 }
             }
 
-            this.addMissingFunction = function(func, resultMode) {
-                this.addFunction(func, "*", resultMode);
+            this.addMissingFunction = function(func, resultMode, simple) {
+                this.addFunction(func, "*", resultMode, simple);
             }
 
-            this.addMissingMethod = function(method, obj, context, resultMode) {
-                this.addMethod(method, obj, "*", context, resultMode);
+            this.addMissingMethod = function(method, obj, context, resultMode, simple) {
+                this.addMethod(method, obj, "*", context, resultMode, simple);
             }
 
-            this.addFunction = function(func, alias, resultMode) {
+            this.addFunction = function(func, alias, resultMode, simple) {
                 if (resultMode === undefined) {
                     resultMode = r_HproseResultMode.Normal;
                 }
@@ -290,20 +306,21 @@ var HproseHttpServer = (function() {
                     m_functions[aliasName] = {method: func, obj: null, context: null};
                     m_funcNames[aliasName] = alias;
                     m_resultMode[aliasName] = resultMode;
+                    m_simpleMode[aliasName] = simple;
                 }
                 else {
                     throw new r_HproseException('Argument alias is not a string');
                 }
             }
 
-            this.addFunctions = function(functions, aliases, resultMode) {
+            this.addFunctions = function(functions, aliases, resultMode, simple) {
                 if (r_HproseUtil.isVBArray(functions)) {
                     functions = r_HproseUtil.toJSArray(functions);
                 }
                 var count = functions.length;
                 var i;
                 if (aliases === undefined || aliases == null) {
-                    for (i = 0; i < count; i++) this.addFunction(functions[i], null, resultMode);
+                    for (i = 0; i < count; i++) this.addFunction(functions[i], null, resultMode, simple);
                     return;
                 }
                 else if (r_HproseUtil.isVBArray(aliases)) {
@@ -312,12 +329,12 @@ var HproseHttpServer = (function() {
                 if (count != aliases.length) {
                     throw new r_HproseException('The count of functions is not matched with aliases');
                 }
-                for (i = 0; i < count; i++) this.addFunction(functions[i], aliases[i], resultMode);
+                for (i = 0; i < count; i++) this.addFunction(functions[i], aliases[i], resultMode, simple);
             }
 
-            this.addMethod = function(method, obj, alias, context, resultMode) {
+            this.addMethod = function(method, obj, alias, context, resultMode, simple) {
                 if (obj === undefined || obj == null) {
-                    this.addFunction(method, alias, resultMode);
+                    this.addFunction(method, alias, resultMode, simple);
                     return;
                 }
                 if (context === undefined) {
@@ -346,13 +363,14 @@ var HproseHttpServer = (function() {
                     m_functions[aliasName] = {method: method, obj: obj, context: context};
                     m_funcNames[aliasName] = alias;
                     m_resultMode[aliasName] = resultMode;
+                    m_simpleMode[aliasName] = simple;
                 }
                 else {
                     throw new r_HproseException('Argument alias is not a string');
                 }
             }
 
-            this.addMethods = function(methods, obj, aliases, context, resultMode) {
+            this.addMethods = function(methods, obj, aliases, context, resultMode, simple) {
                 if (r_HproseUtil.isVBArray(methods)) {
                     methods = r_HproseUtil.toJSArray(methods);
                 }
@@ -360,7 +378,7 @@ var HproseHttpServer = (function() {
                 var i;
                 if (aliases === undefined || aliases == null) {
                     for (i = 0; i < count; i++) {
-                        this.addMethod(methods[i], obj, null, context, resultMode);
+                        this.addMethod(methods[i], obj, null, context, resultMode, simple);
                     }
                     return;
                 }
@@ -371,21 +389,21 @@ var HproseHttpServer = (function() {
                     throw new r_HproseException('The count of methods is not matched with aliases');
                 }
                 for (i = 0; i < count; i++) {
-                    this.addMethod(methods[i], obj, aliases[i], context, resultMode);
+                    this.addMethod(methods[i], obj, aliases[i], context, resultMode, simple);
                 }
             }
             
-            this.addInstanceMethods = function(obj, aliasPrefix, context, resultMode) {
+            this.addInstanceMethods = function(obj, aliasPrefix, context, resultMode, simple) {
                 var alias;
                 for (var name in obj) {
                     if (!prototypePropertyOfObject[name] &&
                         !prototypePropertyOfArray[name]) {
                         alias = (aliasPrefix ? aliasPrefix + "_" + name : name);
                         if (typeof(obj[name]) == 'function') {
-                            this.addMethod(obj[name], obj, alias, context, resultMode);
+                            this.addMethod(obj[name], obj, alias, context, resultMode, simple);
                         }
                         else if (typeof(obj[name]) == 'unknown') {
-                            this.addFunction(obj[name], alias, resultMode);
+                            this.addFunction(obj[name], alias, resultMode, simple);
                         }
                     }
                 }
@@ -418,6 +436,14 @@ var HproseHttpServer = (function() {
             this.setGetEnabled = function(enable) {
                 if (enable === undefined) enable = true;
                 m_get = enable;
+            }
+            this.getSimpleMode = function() {
+                return m_simple;
+            }
+
+            this.setSimpleMode = function(value) {
+                if (value === undefined) value = true;
+                m_simple = value;
             }
             this.handle = function() {
                 Response.clear();

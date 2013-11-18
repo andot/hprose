@@ -14,7 +14,7 @@
  *                                                        *
  * hprose http client for ASP.                            *
  *                                                        *
- * LastModified: Nov 27, 2012                             *
+ * LastModified: Nov 18, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -26,10 +26,26 @@ var HproseHttpClient = (function () {
     var r_HproseFilter = HproseFilter;
     var r_HproseStringInputStream = HproseStringInputStream;
     var r_HproseStringOutputStream = HproseStringOutputStream;
+    var r_HproseSimpleReader = HproseSimpleReader;
     var r_HproseReader = HproseReader;
+    var r_HproseSimpleWriter = HproseSimpleWriter;
     var r_HproseWriter = HproseWriter;
     var r_HproseTags = HproseTags;
     var r_HproseFormatter = HproseFormatter;
+
+    var s_undefined = "undefined";
+    var s_boolean = "boolean";
+    var s_string = "string";
+    var s_number = "number";
+    var s_function = "function";
+    var s_OnError = "_OnError";
+    var s_onError = "_onError";
+    var s_onerror = "_onerror";
+    var s_Callback = "_Callback";
+    var s_callback = "_callback";
+    var s_OnSuccess = "_OnSuccess";
+    var s_onSuccess = "_onSuccess";
+    var s_onsuccess = "_onsuccess";
 
     /* static private members */
     var s_keepSession = false;
@@ -146,12 +162,12 @@ var HproseHttpClient = (function () {
         if (xmlhttp.status == 200) {
             var headers = xmlhttp.getAllResponseHeaders().split("\r\n");
             setCookie(headers, host);
-            return filter.intputFilter(xmlhttp.responseText);
+            return filter.inputFilter(xmlhttp.responseText);
         }
         else {
             var error = xmlhttp.status + ':' +  xmlhttp.statusText;
             return r_HproseTags.TagError +
-                   r_HproseFormatter.serialize(error) +
+                   r_HproseFormatter.serialize(error, true) +
                    r_HproseTags.TagEnd;
         }
     }
@@ -224,12 +240,13 @@ var HproseHttpClient = (function () {
         var m_proxyPassword;
         var m_timeout = 30000;
         var m_byref = false;
+        var m_simple = false;
         var m_xhrs = [];
         var m_filter = new r_HproseFilter();
         var self = this;
         // public methods
         this.useService = function(url, functions, create) {
-            if (typeof(functions) == 'boolean' && create === undefined) {
+            if (typeof(functions) == s_boolean && create === undefined) {
                 create = functions;
             }
             var serviceProxy = this;
@@ -240,7 +257,7 @@ var HproseHttpClient = (function () {
                 return new r_HproseException("You should set server url first!");
             }
             m_url = url;
-            if (typeof(functions) == 'string' ||
+            if (typeof(functions) == s_string ||
                 (functions && functions.constructor == Object)) {
                 functions = [functions];
             }
@@ -327,6 +344,15 @@ var HproseHttpClient = (function () {
             m_filter = filter;
         }
 
+        this.getSimpleMode = function() {
+            return m_simple;
+        }
+
+        this.setSimpleMode = function(value) {
+            if (value === undefined) value = true;
+            m_simple = value;
+        }
+
         // events
         this.onError = function(name, error) {
             // your code for asynchronous invoke
@@ -356,17 +382,17 @@ var HproseHttpClient = (function () {
                                 m_proxy, m_proxyUsername, m_proxyPassword,
                                 m_timeout, m_filter);
             var stream = new r_HproseStringInputStream(response);
-            var hproseReader = new r_HproseReader(stream);
-            var tag = hproseReader.checkTags([r_HproseTags.TagFunctions,
-                                              r_HproseTags.TagError]);
+            var hproseReader = new r_HproseSimpleReader(stream, vbs);
+            var tag = hproseReader.checkTags(r_HproseTags.TagFunctions +
+                                             r_HproseTags.TagError);
             switch (tag) {
                 case r_HproseTags.TagFunctions:
-                    var functions = hproseReader.readList();
+                    var functions = hproseReader.readList(true);
                     hproseReader.checkTag(r_HproseTags.TagEnd);
                     setFunctions.call(this, functions);
                     break;
                 case r_HproseTags.TagError:
-                    throw new r_HproseException(hproseReader.readString());
+                    throw new r_HproseException(hproseReader.readString(true));
                     break;
             }
         }
@@ -381,13 +407,13 @@ var HproseHttpClient = (function () {
         function setMethods(obj, namespace, name, methods) {
             if (obj[name] !== undefined) return;
             obj[name] = {};
-            if (typeof(methods) == 'string' || methods.constructor == Object) {
+            if (typeof(methods) == s_string || methods.constructor == Object) {
                 methods = [methods]
             }
             if (Object.prototype.toString.apply(methods) === '[object Array]') {
                 for (var i = 0; i < methods.length; i++) {
                     var m = methods[i];
-                    if (typeof(m) == 'string') {
+                    if (typeof(m) == s_string) {
                         obj[name][m] = setFunction.call(this, namespace + name + '_' + m);
                     }
                     else {
@@ -402,7 +428,7 @@ var HproseHttpClient = (function () {
         function setFunctions(functions) {
             for (var i = 0; i < functions.length; i++) {
                 var f = functions[i];
-                if (typeof(f) == 'string') {
+                if (typeof(f) == s_string) {
                     if (this[f] === undefined) {
                         this[f] = setFunction(f);
                     }
@@ -429,10 +455,10 @@ var HproseHttpClient = (function () {
                 var tag;
                 var error = null;
                 while ((tag = hproseReader.checkTags(
-                    [r_HproseTags.TagResult,
-                     r_HproseTags.TagArgument,
-                     r_HproseTags.TagError,
-                     r_HproseTags.TagEnd])) !== r_HproseTags.TagEnd) {
+                    r_HproseTags.TagResult +
+                    r_HproseTags.TagArgument +
+                    r_HproseTags.TagError +
+                    r_HproseTags.TagEnd)) !== r_HproseTags.TagEnd) {
                     switch (tag) {
                         case r_HproseTags.TagResult:
                             if (resultMode == r_HproseResultMode.Serialized) {
@@ -444,14 +470,14 @@ var HproseHttpClient = (function () {
                             break;
                         case r_HproseTags.TagArgument:
                             hproseReader.reset();
-                            var a = hproseReader.readList();
+                            var a = hproseReader.readList(true);
                             for (var i = 0; i < a.length; i++) {
                                 args[i] = a[i];
                             }
                             break;
                         case r_HproseTags.TagError:
                             hproseReader.reset();
-                            error = new r_HproseException(hproseReader.readString());
+                            error = new r_HproseException(hproseReader.readString(true));
                             break;
                     }
                 }
@@ -463,44 +489,76 @@ var HproseHttpClient = (function () {
         function invoke(func, args) {
             var resultMode = r_HproseResultMode.Normal;
             var byref = m_byref;
+            var simple = m_simple;
             var lowerCaseFunc = func.toLowerCase();
-            var errorHandler = this[func + '_OnError'] ||
-                               this[func + '_onError'] ||
-                               this[func + '_onerror'] ||
-                               this[lowerCaseFunc + '_OnError'] ||
-                               this[lowerCaseFunc + '_onError'] ||
-                               this[lowerCaseFunc + '_onerror'] ||
-                               self[func + '_OnError'] ||
-                               self[func + '_onError'] ||
-                               self[func + '_onerror'] ||
-                               self[lowerCaseFunc + '_OnError'] ||
-                               self[lowerCaseFunc + '_onError'] ||
-                               self[lowerCaseFunc + '_onerror'];
-            var callback = this[func + '_Callback'] ||
-                           this[func + '_callback'] ||
-                           this[func + '_OnSuccess'] ||
-                           this[func + '_onSuccess'] ||
-                           this[func + '_onsuccess'] ||
-                           this[lowerCaseFunc + '_Callback'] ||
-                           this[lowerCaseFunc + '_callback'] ||
-                           this[lowerCaseFunc + '_OnSuccess'] ||
-                           this[lowerCaseFunc + '_onSuccess'] ||
-                           this[lowerCaseFunc + '_onsuccess'] ||
-                           self[func + '_Callback'] ||
-                           self[func + '_callback'] ||
-                           self[func + '_OnSuccess'] ||
-                           self[func + '_onSuccess'] ||
-                           self[func + '_onsuccess'] ||
-                           self[lowerCaseFunc + '_Callback'] ||
-                           self[lowerCaseFunc + '_callback'] ||
-                           self[lowerCaseFunc + '_OnSuccess'] ||
-                           self[lowerCaseFunc + '_onSuccess'] ||
-                           self[lowerCaseFunc + '_onsuccess'];
+            var errorHandler = this[func + s_OnError] ||
+                               this[func + s_onError] ||
+                               this[func + s_onerror] ||
+                               this[lowerCaseFunc + s_OnError] ||
+                               this[lowerCaseFunc + s_onError] ||
+                               this[lowerCaseFunc + s_onerror] ||
+                               self[func + s_OnError] ||
+                               self[func + s_onError] ||
+                               self[func + s_onerror] ||
+                               self[lowerCaseFunc + s_OnError] ||
+                               self[lowerCaseFunc + s_onError] ||
+                               self[lowerCaseFunc + s_onerror];
+            var callback = this[func + s_Callback] ||
+                           this[func + s_callback] ||
+                           this[func + s_OnSuccess] ||
+                           this[func + s_onSuccess] ||
+                           this[func + s_onsuccess] ||
+                           this[lowerCaseFunc + s_Callback] ||
+                           this[lowerCaseFunc + s_callback] ||
+                           this[lowerCaseFunc + s_OnSuccess] ||
+                           this[lowerCaseFunc + s_onSuccess] ||
+                           this[lowerCaseFunc + s_onsuccess] ||
+                           self[func + s_Callback] ||
+                           self[func + s_callback] ||
+                           self[func + s_OnSuccess] ||
+                           self[func + s_onSuccess] ||
+                           self[func + s_onsuccess] ||
+                           self[lowerCaseFunc + s_Callback] ||
+                           self[lowerCaseFunc + s_callback] ||
+                           self[lowerCaseFunc + s_OnSuccess] ||
+                           self[lowerCaseFunc + s_onSuccess] ||
+                           self[lowerCaseFunc + s_onsuccess];
             var count = args.length;
-            if (typeof(args[count - 1]) == 'number' &&
-                typeof(args[count - 2]) == 'boolean' &&
-                typeof(args[count - 3]) == 'function' &&
-                typeof(args[count - 4]) == 'function') {
+            if (typeof(args[count - 1]) == s_boolean &&
+                typeof(args[count - 2]) == s_number &&
+                typeof(args[count - 3]) == s_boolean &&
+                typeof(args[count - 4]) == s_function &&
+                typeof(args[count - 5]) == s_function) {
+                simple = args[count - 1];
+                resultMode = args[count - 2];
+                byref = args[count - 3];
+                errorHandler = args[count - 4];
+                callback = args[count - 5];
+                delete args[count - 1];
+                delete args[count - 2];
+                delete args[count - 3];
+                delete args[count - 4];
+                delete args[count - 5];
+                args.length -= 5;
+            }
+            else if (typeof(args[count - 1]) == s_boolean &&
+                     typeof(args[count - 2]) == s_number &&
+                     typeof(args[count - 3]) == s_function &&
+                     typeof(args[count - 4]) == s_function) {
+                simple = args[count - 1];
+                resultMode = args[count - 2];
+                errorHandler = args[count - 3];
+                callback = args[count - 4];
+                delete args[count - 1];
+                delete args[count - 2];
+                delete args[count - 3];
+                delete args[count - 4];
+                args.length -= 4;
+            }
+            else if (typeof(args[count - 1]) == s_number &&
+                     typeof(args[count - 2]) == s_boolean &&
+                     typeof(args[count - 3]) == s_function &&
+                     typeof(args[count - 4]) == s_function) {
                 resultMode = args[count - 1];
                 byref = args[count - 2];
                 errorHandler = args[count - 3];
@@ -511,9 +569,23 @@ var HproseHttpClient = (function () {
                 delete args[count - 4];
                 args.length -= 4;
             }
-            else if (typeof(args[count - 1]) == 'boolean' &&
-                     typeof(args[count - 2]) == 'function' &&
-                     typeof(args[count - 3]) == 'function') {
+            else if (typeof(args[count - 1]) == s_boolean &&
+                     typeof(args[count - 2]) == s_boolean &&
+                     typeof(args[count - 3]) == s_function &&
+                     typeof(args[count - 4]) == s_function) {
+                simple = args[count - 1];
+                byref = args[count - 2];
+                errorHandler = args[count - 3];
+                callback = args[count - 4];
+                delete args[count - 1];
+                delete args[count - 2];
+                delete args[count - 3];
+                delete args[count - 4];
+                args.length -= 4;
+            }
+            else if (typeof(args[count - 1]) == s_boolean &&
+                     typeof(args[count - 2]) == s_function &&
+                     typeof(args[count - 3]) == s_function) {
                 byref = args[count - 1];
                 errorHandler = args[count - 2];
                 callback = args[count - 3];
@@ -522,9 +594,9 @@ var HproseHttpClient = (function () {
                 delete args[count - 3];
                 args.length -= 3;
             }
-            else if (typeof(args[count - 1]) == 'number' &&
-                     typeof(args[count - 2]) == 'function' &&
-                     typeof(args[count - 3]) == 'function') {
+            else if (typeof(args[count - 1]) == s_number &&
+                     typeof(args[count - 2]) == s_function &&
+                     typeof(args[count - 3]) == s_function) {
                 resultMode = args[count - 1];
                 errorHandler = args[count - 2];
                 callback = args[count - 3];
@@ -533,17 +605,28 @@ var HproseHttpClient = (function () {
                 delete args[count - 3];
                 args.length -= 3;
             }
-            else if (typeof(args[count - 1]) == 'function' &&
-                     typeof(args[count - 2]) == 'function') {
+            else if (typeof(args[count - 1]) == s_function &&
+                     typeof(args[count - 2]) == s_function) {
                 errorHandler = args[count - 1];
                 callback = args[count - 2];
                 delete args[count - 1];
                 delete args[count - 2];
                 args.length -= 2;
             }
-            else if (typeof(args[count - 1]) == 'number' &&
-                     typeof(args[count - 2]) == 'boolean' &&
-                     typeof(args[count - 3]) == 'function') {
+            else if (typeof(args[count - 1]) == s_boolean &&
+                     typeof(args[count - 2]) == s_number &&
+                     typeof(args[count - 3]) == s_function) {
+                simple = args[count - 1];
+                resultMode = args[count - 2];
+                callback = args[count - 3];
+                delete args[count - 1];
+                delete args[count - 2];
+                delete args[count - 3];
+                args.length -= 3;
+            }
+            else if (typeof(args[count - 1]) == s_number &&
+                     typeof(args[count - 2]) == s_boolean &&
+                     typeof(args[count - 3]) == s_function) {
                 resultMode = args[count - 1];
                 byref = args[count - 2];
                 callback = args[count - 3];
@@ -552,33 +635,44 @@ var HproseHttpClient = (function () {
                 delete args[count - 3];
                 args.length -= 3;
             }
-            else if (typeof(args[count - 1]) == 'boolean' &&
-                     typeof(args[count - 2]) == 'function') {
+            else if (typeof(args[count - 1]) == s_boolean &&
+                     typeof(args[count - 2]) == s_boolean &&
+                     typeof(args[count - 3]) == s_function) {
+                simple = args[count - 1];
+                byref = args[count - 2];
+                callback = args[count - 3];
+                delete args[count - 1];
+                delete args[count - 2];
+                delete args[count - 3];
+                args.length -= 3;
+            }
+            else if (typeof(args[count - 1]) == s_boolean &&
+                     typeof(args[count - 2]) == s_function) {
                 byref = args[count - 1];
                 callback = args[count - 2];
                 delete args[count - 1];
                 delete args[count - 2];
                 args.length -= 2;
             }
-            else if (typeof(args[count - 1]) == 'number' &&
-                     typeof(args[count - 2]) == 'function') {
+            else if (typeof(args[count - 1]) == s_number &&
+                     typeof(args[count - 2]) == s_function) {
                 resultMode = args[count - 1];
                 callback = args[count - 2];
                 delete args[count - 1];
                 delete args[count - 2];
                 args.length -= 2;
             }
-            else if (typeof(args[count - 1]) == 'function') {
+            else if (typeof(args[count - 1]) == s_function) {
                 callback = args[count - 1];
                 delete args[count - 1];
                 args.length--;
             }
             var stream = new r_HproseStringOutputStream(r_HproseTags.TagCall);
-            var hproseWriter = new r_HproseWriter(stream);
-            hproseWriter.writeString(func, false);
+            var hproseWriter = (simple ? new r_HproseSimpleWriter(stream) : new r_HproseWriter(stream));
+            hproseWriter.writeString(func);
             if (args.length > 0 || byref) {
                 hproseWriter.reset();
-                hproseWriter.writeList(args, false);
+                hproseWriter.writeList(args);
                 if (byref) {
                     hproseWriter.writeBoolean(true);
                 }
@@ -614,7 +708,7 @@ var HproseHttpClient = (function () {
             }
         }
         /* constructor */ {
-            if (typeof(url) == "string") {
+            if (typeof(url) == s_string) {
                 this.useService(url, functions);
             }
         }
