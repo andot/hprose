@@ -4,10 +4,10 @@ Usage of Hprose for Node.js
 Hprose for Node.js is very easy to use. You can create a hprose server like this:
 
 <pre lang="javascript">
+require("hprose");
 function hello(name) {
     return "Hello " + name + "!";
 }
-var HproseHttpServer = require("hprose").server.HproseHttpServer;
 var server = new HproseHttpServer();
 server.addFunction(hello);
 server.listen(8080);
@@ -24,12 +24,12 @@ In fact most nodejs service methods are asynchronous, you can publish asynchrono
 function like this:
 
 <pre lang="javascript">
+require("hprose");
 function hello(name, callback) {
     setTimeout(function() {
         callback("Hello " + name + "!");
     }, 10);
 }
-var HproseHttpServer = require("hprose").server.HproseHttpServer;
 var server = new HproseHttpServer();
 server.addAsyncFunction(hello);
 server.listen(8080);
@@ -38,7 +38,7 @@ server.listen(8080);
 Then you can create a hprose client to invoke it like this:
 
 <pre lang="javascript">
-var HproseHttpClient = require("hprose").client.HproseHttpClient;
+require("hprose");
 var client = new HproseHttpClient('http://127.0.0.1:8080/');
 var proxy = client.useService();
 proxy.hello("world", function(result) {

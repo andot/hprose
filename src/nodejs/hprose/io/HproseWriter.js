@@ -14,59 +14,38 @@
  *                                                        *
  * HproseWriter for Node.js.                              *
  *                                                        *
- * LastModified: Nov 13, 2013                             *
+ * LastModified: Nov 18, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 
+require('../common/HarmonyMaps.js');
 var util = require('util');
 var HproseTags = require('./HproseTags.js');
 var HproseSimpleWriter = require('./HproseSimpleWriter.js');
 
 function HproseWriter(stream) {
     HproseSimpleWriter.call(this, stream);
-    var reset = this.reset;
-    if (typeof(Map) === 'undefined') {
-        var ref = [];
-        var writeRef = function(obj, checkRef, writeBegin, writeEnd) {
-            var index;
-            if (checkRef && ((index = ref.indexOf(obj)) >= 0)) {
-                stream.write(HproseTags.TagRef);
-                stream.write(index.toString());
-                stream.write(HproseTags.TagSemicolon);
-            }
-            else {
-                var result = writeBegin.call(this, obj);
-                ref[ref.length] = obj;
-                writeEnd.call(this, obj, result);
-            }
+    var ref = new Map();
+    var refcount = 0;
+    var writeRef = function(obj, checkRef, writeBegin, writeEnd) {
+        var index;
+        if (checkRef && ((index = ref.get(obj)) !== undefined)) {
+            stream.write(HproseTags.TagRef);
+            stream.write(index.toString());
+            stream.write(HproseTags.TagSemicolon);
         }
-        this.reset = function() {
-            reset();
-            ref.length = 0;
+        else {
+            var result = writeBegin.call(this, obj);
+            ref.set(obj, refcount++);
+            writeEnd.call(this, obj, result);
         }
     }
-    else {
-        var ref = new Map();
-        var refcount = 0;
-        var writeRef = function(obj, checkRef, writeBegin, writeEnd) {
-            var index;
-            if (checkRef && ((index = ref.get(obj)) !== undefined)) {
-                stream.write(HproseTags.TagRef);
-                stream.write(index.toString());
-                stream.write(HproseTags.TagSemicolon);
-            }
-            else {
-                var result = writeBegin.call(this, obj);
-                ref.set(obj, refcount++);
-                writeEnd.call(this, obj, result);
-            }
-        }
-        this.reset = function() {
-            reset();
-            ref = new Map();
-            refcount = 0;
-        }
+    var reset = this.reset;
+    this.reset = function() {
+        reset();
+        ref = new Map();
+        refcount = 0;
     }
     function doNothing() {}
     var writeUTCDate = this.writeUTCDate;

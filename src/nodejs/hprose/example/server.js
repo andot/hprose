@@ -25,7 +25,6 @@ function HproseFilter() {
     this.outputFilter = function(value) { console.log(value.toString()); return value; };
 }
 
-var HproseHttpServer = hprose.server.HproseHttpServer;
 var server = new HproseHttpServer();
 server.setCrossDomainEnabled(true);
 server.setDebugEnabled(true);

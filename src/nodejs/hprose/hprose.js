@@ -14,36 +14,55 @@
  *                                                        *
  * hprose for Node.js.                                    *
  *                                                        *
- * LastModified: Nov 7, 2013                              *
+ * LastModified: Nov 18, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 
+global.HproseException = require('./common/HproseException.js');
+global.HproseResultMode = require('./common/HproseResultMode.js');
+global.HproseFilter = require('./common/HproseFilter.js');
+global.HproseClassManager = require('./io/HproseClassManager.js'),
+global.HproseBufferInputStream = require('./io/HproseBufferInputStream.js');
+global.HproseBufferOutputStream = require('./io/HproseBufferOutputStream.js');
+global.HproseTags = require('./io/HproseTags.js');
+global.HproseRawReader = require('./io/HproseRawReader.js');
+global.HproseSimpleReader = require('./io/HproseSimpleReader.js');
+global.HproseSimpleWriter = require('./io/HproseSimpleWriter.js');
+global.HproseReader = require('./io/HproseReader.js');
+global.HproseWriter = require('./io/HproseWriter.js');
+global.HproseFormatter = require('./io/HproseFormatter.js');
+global.HproseService = require('./server/HproseService.js');
+global.HproseHttpService = require('./server/HproseHttpService.js');
+global.HproseHttpServer = require('./server/HproseHttpServer.js');
+global.HproseClient = require('./client/HproseClient.js');
+global.HproseHttpClient = require('./client/HproseHttpClient.js');
+
 module.exports = {
     common: {
-        HproseException: require('./common/HproseException.js'),
-        HproseResultMode: require('./common/HproseResultMode.js'),
-        HproseFilter: require('./common/HproseFilter.js'),
+        Exception: global.HproseException,
+        ResultMode: global.HproseResultMode,
+        Filter: global.HproseFilter
     },
     io: {
-        ClassManager: require('./io/ClassManager.js'),
-        HproseBufferInputStream: require('./io/HproseBufferInputStream.js'),
-        HproseBufferOutputStream: require('./io/HproseBufferOutputStream.js'),
-        HproseTags: require('./io/HproseTags.js'),
-        HproseRawReader: require('./io/HproseRawReader.js'),
-        HproseSimpleReader: require('./io/HproseSimpleReader.js'),
-        HproseSimpleWriter: require('./io/HproseSimpleWriter.js'),
-        HproseReader: require('./io/HproseReader.js'),
-        HproseWriter: require('./io/HproseWriter.js'),
-        HproseFormatter: require('./io/HproseFormatter.js'),
+        ClassManager: global.HproseClassManager,
+        BufferInputStream: global.HproseBufferInputStream,
+        BufferOutputStream: global.HproseBufferOutputStream,
+        Tags: global.HproseTags,
+        RawReader: global.HproseRawReader,
+        SimpleReader: global.HproseSimpleReader,
+        SimpleWriter: global.HproseSimpleWriter,
+        Reader: global.HproseReader,
+        Writer: global.HproseWriter,
+        Formatter: global.HproseFormatter
     },
     server: {
-        HproseService: require('./server/HproseService.js'),
-        HproseHttpService: require('./server/HproseHttpService.js'),
-        HproseHttpServer: require('./server/HproseHttpServer.js'),
+        Service: global.HproseService,
+        HttpService: global.HproseHttpService,
+        HttpServer: global.HproseHttpServer
     },
     client: {
-        HproseClient: require('./client/HproseClient.js'),
-        HproseHttpClient: require('./client/HproseHttpClient.js'),
+        Client: global.HproseClient,
+        HttpClient: global.HproseHttpClient
     }
 }

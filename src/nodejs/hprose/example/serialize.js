@@ -1,6 +1,5 @@
 var util = require("util");
-var hprose = require("hprose");
-var HproseFormatter = hprose.io.HproseFormatter;
+require("hprose");
 console.log(HproseFormatter.unserialize(HproseFormatter.serialize(0)));
 console.log(HproseFormatter.unserialize(HproseFormatter.serialize(1)));
 console.log(HproseFormatter.unserialize(HproseFormatter.serialize(9)));
@@ -35,8 +34,7 @@ function User(name, age) {
     this.name = name;
     this.age = age;
 }
-var ClassManager = hprose.io.ClassManager;
-ClassManager.register(User, "MyUser");
+HproseClassManager.register(User, "MyUser");
 var user1 = new User("马秉尧", 32);
 var user2 = new User("周静", 28);
 s = HproseFormatter.serialize([user1, user2, user1, user2]);
@@ -46,3 +44,7 @@ var arr = ['name', 'sex', 'sex'];
 s = HproseFormatter.serialize(arr);
 console.log(s.toString());
 console.log(HproseFormatter.unserialize(s));
+
+// Test HarmonyMaps
+var map = new Map();
+console.log(map);

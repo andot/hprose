@@ -14,21 +14,21 @@
  *                                                        *
  * HproseSimpleReader for Node.js.                        *
  *                                                        *
- * LastModified: Nov 7, 2013                              *
+ * LastModified: Nov 18, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 
 var HproseTags = require('./HproseTags.js');
-var ClassManager = require('./ClassManager.js');
+var HproseClassManager = require('./HproseClassManager.js');
 var HproseException = require('../common/HproseException.js');
 var HproseRawReader = require('./HproseRawReader.js');
 
 function getClass(classname) {
-    var cls = ClassManager.getClass(classname);
+    var cls = HproseClassManager.getClass(classname);
     if (cls) return cls;
     cls = function() {};
-    ClassManager.register(cls, classname);
+    HproseClassManager.register(cls, classname);
     return cls;
 }
 

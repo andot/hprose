@@ -10,47 +10,33 @@
 
 /**********************************************************\
  *                                                        *
- * ClassManager.js                                        *
+ * HproseClassManager.js                                  *
  *                                                        *
  * Hprose ClassManager for Node.js.                       *
  *                                                        *
- * LastModified: Nov 7, 2013                              *
+ * LastModified: Nov 18, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 
+require('../common/HarmonyMaps.js');
+
 var classCache = Object.create(null);
+var aliasCache = new WeakMap();
 
-if (typeof(WeakMap) === 'undefined') {
-    var ClassManager = {
-        register: function(cls, alias) {
-            classCache[alias] = cls;
-        },
-        getClassAlias: function(cls) {
-            for (var alias in classCache) {
-                if (cls === classCache[alias]) return alias;
-            }
-            return undefined;
-        }
-    };
-}
-else {
-    var aliasCache = new WeakMap();
-    var ClassManager = {
-        register: function(cls, alias) {
-            aliasCache.set(cls, alias);
-            classCache[alias] = cls;
-        },
-        getClassAlias: function(cls) {
-            return aliasCache.get(cls);
-        }
-    };
-}
+var HproseClassManager = {
+    register: function(cls, alias) {
+        aliasCache.set(cls, alias);
+        classCache[alias] = cls;
+    },
+    getClassAlias: function(cls) {
+        return aliasCache.get(cls);
+    },
+    getClass: function(alias) {
+        return classCache[alias];
+    }
+};
 
-ClassManager.getClass = function(alias) {
-    return classCache[alias];
-}
+HproseClassManager.register(Object, 'Object');
 
-ClassManager.register(Object, 'Object');
-
-module.exports = ClassManager;
+module.exports = HproseClassManager;

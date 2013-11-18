@@ -14,14 +14,14 @@
  *                                                        *
  * HproseSimpleWriter for Node.js.                        *
  *                                                        *
- * LastModified: Nov 7, 2013                              *
+ * LastModified: Nov 18, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 
 var util = require('util');
 var HproseTags = require('./HproseTags.js');
-var ClassManager = require('./ClassManager.js');
+var HproseClassManager = require('./HproseClassManager.js');
 
 function isDigit(value) {
     switch (value.toString()) {
@@ -56,7 +56,7 @@ function isInt32(value) {
 
 function getClassName(obj) {
     var cls = obj.constructor;
-    var classname = ClassManager.getClassAlias(cls);
+    var classname = HproseClassManager.getClassAlias(cls);
     if (classname) return classname;
     if (cls.name) {
         classname = cls.name;
@@ -69,7 +69,7 @@ function getClassName(obj) {
         }
     }
     if (classname != 'Object') {
-        ClassManager.register(cls, classname);       
+        HproseClassManager.register(cls, classname);       
     }
     return classname;
 }
