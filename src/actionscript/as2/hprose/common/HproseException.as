@@ -13,11 +13,12 @@
  *                                                        *
  * hprose exception for ActionScript 2.0.                 *
  *                                                        *
- * LastModified: May 16, 2010                             *
+ * LastModified: Nov 19, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
-dynamic class hprose.io.HproseException extends Error {
+
+dynamic class hprose.common.HproseException extends Error {
     public function HproseException(message:String) {
         super(message);
         this.name = "HproseException";

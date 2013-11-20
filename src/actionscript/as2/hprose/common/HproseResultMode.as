@@ -1,4 +1,4 @@
-/**********************************************************\
+﻿/**********************************************************\
 |                                                          |
 |                          hprose                          |
 |                                                          |
@@ -9,16 +9,18 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * IHproseFilter.as                                       *
+ * HproseResultMode.as                                    *
  *                                                        *
- * hprose filter interface for ActionScript 2.0.          *
+ * HproseResultMode enum for ActionScript 2.0.            *
  *                                                        *
- * LastModified: Jun 26, 2012                             *
+ * LastModified: Nov 19, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 
-interface hprose.client.IHproseFilter {
-    function inputFilter(data: String):String;
-    function outputFilter(data: String):String;
+class hprose.common.HproseResultMode {
+    public static var Normal:Number = 0;
+    public static var Serialized:Number = 1;
+    public static var Raw:Number = 2;
+    public static var RawWithEndTag:Number = 3;
 }

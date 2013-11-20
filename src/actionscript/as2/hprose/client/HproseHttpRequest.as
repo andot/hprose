@@ -13,11 +13,12 @@
  *                                                        *
  * hprose http request class for ActionScript 2.0.        *
  *                                                        *
- * LastModified: Nov 26, 2012                             *
+ * LastModified: Nov 20, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
-import hprose.client.IHproseFilter;
+
+import hprose.common.IHproseFilter;
 import hprose.io.HproseFormatter;
 import hprose.io.HproseTags;
 
@@ -86,7 +87,7 @@ class hprose.client.HproseHttpRequest {
                 Status['505'] = 'HTTP Version Not Supported';
                 var error:String = '[' + httpStatus + ':' + (Status[httpStatus] || "Unknown Error") + ']';
                 this.error = HproseTags.TagError +
-                             HproseFormatter.serialize(error) +
+                             HproseFormatter.serialize(error, null, true).toString() +
                              HproseTags.TagEnd;
             }
         };
@@ -99,8 +100,8 @@ class hprose.client.HproseHttpRequest {
                 lv.onHTTPStatus = function (httpStatus:Number) { };
                 delete(lv);
                 callback(HproseTags.TagError +
-                         HproseFormatter.serialize("timeout") +
-                         HproseTags.TagEnd);            
+                         HproseFormatter.serialize("timeout", null, true).toString() +
+                         HproseTags.TagEnd);
             }, timeout);
         }
         lv.sendAndLoad(url, lv, 'POST');

@@ -13,18 +13,20 @@
  *                                                        *
  * hprose http invoker class for ActionScript 2.0.        *
  *                                                        *
- * LastModified: Dec 13, 2012                             *
+ * LastModified: Nov 20, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
+
+import hprose.common.HproseException;
+import hprose.common.IHproseFilter;
+import hprose.common.HproseResultMode;
 import hprose.client.HproseHttpRequest;
 import hprose.client.HproseSuccessEvent;
 import hprose.client.HproseErrorEvent;
 import hprose.client.HproseProgressEvent;
-import hprose.client.HproseResultMode;
-import hprose.client.IHproseFilter;
-import hprose.io.HproseException;
 import hprose.io.HproseReader;
+import hprose.io.HproseSimpleWriter;
 import hprose.io.HproseStringInputStream;
 import hprose.io.HproseStringOutputStream;
 import hprose.io.HproseTags;
@@ -47,9 +49,10 @@ class hprose.client.HproseHttpInvoker {
     private var lv:LoadVars;
     private var timeout:Number;
     private var resultMode:Number;
+    private var simple:Boolean;
     private var filter:IHproseFilter;
     
-    public function HproseHttpInvoker(url:String, header:Object, func:String, args:Array, byref:Boolean, callback:Function, errorHandler:Function, progressHandler:Function, onerror:Array, timeout:Number, resultMode:Number, filter:IHproseFilter) {
+    public function HproseHttpInvoker(url:String, header:Object, func:String, args:Array, byref:Boolean, callback:Function, errorHandler:Function, progressHandler:Function, onerror:Array, timeout:Number, resultMode:Number, simple:Boolean, filter:IHproseFilter) {
         this.url = url;
         this.header = header;
         this.func = func;
@@ -66,6 +69,7 @@ class hprose.client.HproseHttpInvoker {
         this.lv = null;
         this.timeout = timeout;
         this.resultMode = resultMode;
+        this.simple = simple;
         this.filter = filter;
         if (callback) {
             start(callback, errorHandler, progressHandler);
@@ -156,7 +160,7 @@ class hprose.client.HproseHttpInvoker {
     public function start(callback, errorHandler, progressHandler) {
         var stream:HproseStringOutputStream = new HproseStringOutputStream();
         stream.write(HproseTags.TagCall);
-        var writer:HproseWriter = new HproseWriter(stream);
+        var writer:HproseWriter = (simple ? new HproseSimpleWriter(stream) : new HproseWriter(stream));
         writer.writeString(func);
         if (args.length > 0) {
             writer.reset();

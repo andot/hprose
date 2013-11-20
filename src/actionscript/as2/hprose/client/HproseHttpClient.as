@@ -13,21 +13,24 @@
  *                                                        *
  * hprose http client class for ActionScript 2.0.         *
  *                                                        *
- * LastModified: Jun 26, 2012                             *
+ * LastModified: Nov 20, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
+
+import hprose.common.HproseException;
+import hprose.common.IHproseFilter;
+import hprose.common.HproseFilter;
+import hprose.common.HproseResultMode;
+
 import hprose.client.HproseHttpInvoker;
-import hprose.client.HproseResultMode;
-import hprose.client.IHproseFilter;
-import hprose.client.HproseFilter;
-import hprose.io.HproseException;
 
 dynamic class hprose.client.HproseHttpClient extends Object {
     private var url:String;
     private var header:Object;
     private var onerror:Array;
     public var byref:Boolean;
+    public var simple:Boolean;
     public var timeout:Number;
     public var filter:IHproseFilter;
     public function HproseHttpClient(url:String) {
@@ -35,6 +38,7 @@ dynamic class hprose.client.HproseHttpClient extends Object {
         this.header = {};
         this.onerror = [];
         this.byref = false;
+        this.simple = false;
         this.timeout = 30000;
         this.filter = new HproseFilter();
         if (url) {
@@ -130,17 +134,56 @@ dynamic class hprose.client.HproseHttpClient extends Object {
         var args:Array = arguments;
         var func:String = args.shift().toString();
         var byref:Boolean = this.byref;
+        var simple:Boolean = this.simple;
         var resultMode:Number = HproseResultMode.Normal;
         var callback:Function = null;
         var errorHandler:Function = null;
         var progressHandler:Function = null;
         var count = args.length;
-        if (typeof(args[count - 1]) == 'number' &&
-            typeof(args[count - 2]) == 'boolean' &&
-            typeof(args[count - 3]) == 'function' &&
+        if (typeof(args[count - 1]) == 'boolean' &&
+            typeof(args[count - 2]) == 'number' &&
+            typeof(args[count - 3]) == 'boolean' &&
             typeof(args[count - 4]) == 'function' &&
-            typeof(args[count - 5]) == 'function') {
+            typeof(args[count - 5]) == 'function' &&
+            typeof(args[count - 6]) == 'function') {
+            simple = args[count - 1];
+            resultMode = args[count - 2];
+            byref = args[count - 3];
+            progressHandler = args[count - 4];
+            errorHandler = args[count - 5];
+            callback = args[count - 6];
+            args.length -= 6;
+        }
+        else if (typeof(args[count - 1]) == 'boolean' &&
+                 typeof(args[count - 2]) == 'number' &&
+                 typeof(args[count - 3]) == 'function' &&
+                 typeof(args[count - 4]) == 'function' &&
+                 typeof(args[count - 5]) == 'function') {
+            simple = args[count - 1];
+            resultMode = args[count - 2];
+            progressHandler = args[count - 3];
+            errorHandler = args[count - 4];
+            callback = args[count - 5];
+            args.length -= 5;
+        }
+        else if (typeof(args[count - 1]) == 'number' &&
+                 typeof(args[count - 2]) == 'boolean' &&
+                 typeof(args[count - 3]) == 'function' &&
+                 typeof(args[count - 4]) == 'function' &&
+                 typeof(args[count - 5]) == 'function') {
             resultMode = args[count - 1];
+            byref = args[count - 2];
+            progressHandler = args[count - 3];
+            errorHandler = args[count - 4];
+            callback = args[count - 5];
+            args.length -= 5;
+        }
+        else if (typeof(args[count - 1]) == 'boolean' &&
+                 typeof(args[count - 2]) == 'boolean' &&
+                 typeof(args[count - 3]) == 'function' &&
+                 typeof(args[count - 4]) == 'function' &&
+                 typeof(args[count - 5]) == 'function') {
+            simple = args[count - 1];
             byref = args[count - 2];
             progressHandler = args[count - 3];
             errorHandler = args[count - 4];
@@ -175,11 +218,31 @@ dynamic class hprose.client.HproseHttpClient extends Object {
             callback = args[count - 3];
             args.length -= 3;
         }
+        else if (typeof(args[count - 1]) == 'boolean' &&
+                 typeof(args[count - 2]) == 'number' &&
+                 typeof(args[count - 3]) == 'function' &&
+                 typeof(args[count - 4]) == 'function') {
+            simple = args[count - 1];
+            resultMode = args[count - 2];
+            errorHandler = args[count - 3];
+            callback = args[count - 4];
+            args.length -= 4;
+        }
         else if (typeof(args[count - 1]) == 'number' &&
                  typeof(args[count - 2]) == 'boolean' &&
                  typeof(args[count - 3]) == 'function' &&
                  typeof(args[count - 4]) == 'function') {
             resultMode = args[count - 1];
+            byref = args[count - 2];
+            errorHandler = args[count - 3];
+            callback = args[count - 4];
+            args.length -= 4;
+        }
+        else if (typeof(args[count - 1]) == 'boolean' &&
+                 typeof(args[count - 2]) == 'boolean' &&
+                 typeof(args[count - 3]) == 'function' &&
+                 typeof(args[count - 4]) == 'function') {
+            simple = args[count - 1];
             byref = args[count - 2];
             errorHandler = args[count - 3];
             callback = args[count - 4];
@@ -207,10 +270,26 @@ dynamic class hprose.client.HproseHttpClient extends Object {
             callback = args[count - 2];
             args.length -= 2;
         }
+        else if (typeof(args[count - 1]) == 'boolean' &&
+                 typeof(args[count - 2]) == 'number' &&
+                 typeof(args[count - 3]) == 'function') {
+            simple = args[count - 1];
+            resultMode = args[count - 2];
+            callback = args[count - 3];
+            args.length -= 3;
+        }
         else if (typeof(args[count - 1]) == 'number' &&
                  typeof(args[count - 2]) == 'boolean' &&
                  typeof(args[count - 3]) == 'function') {
             resultMode = args[count - 1];
+            byref = args[count - 2];
+            callback = args[count - 3];
+            args.length -= 3;
+        }
+        else if (typeof(args[count - 1]) == 'boolean' &&
+                 typeof(args[count - 2]) == 'boolean' &&
+                 typeof(args[count - 3]) == 'function') {
+            simple = args[count - 1];
             byref = args[count - 2];
             callback = args[count - 3];
             args.length -= 3;
@@ -231,6 +310,6 @@ dynamic class hprose.client.HproseHttpClient extends Object {
             callback = args[count - 1];
             args.length--;
         }
-        return new HproseHttpInvoker(url, header, func, args, byref, callback, errorHandler, progressHandler, onerror, timeout, resultMode, filter);
+        return new HproseHttpInvoker(url, header, func, args, byref, callback, errorHandler, progressHandler, onerror, timeout, resultMode, simple, filter);
     }
 }

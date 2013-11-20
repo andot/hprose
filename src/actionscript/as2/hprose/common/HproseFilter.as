@@ -9,17 +9,22 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * HproseResultMode.as                                    *
+ * HproseFilter.as                                        *
  *                                                        *
- * HproseResultMode enum for ActionScript 2.0.            *
+ * hprose filter class for ActionScript 2.0.              *
  *                                                        *
- * LastModified: Jun 22, 2011                             *
+ * LastModified: Nov 19, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
-class hprose.client.HproseResultMode {
-    public static var Normal:Number = 0;
-    public static var Serialized:Number = 1;
-    public static var Raw:Number = 2;
-    public static var RawWithEndTag:Number = 3;
+
+import hprose.common.IHproseFilter;
+
+class hprose.common.HproseFilter implements IHproseFilter {
+    public function inputFilter(data: String):String {
+        return data;
+    }
+    public function outputFilter(data: String):String {
+        return data;
+    }
 }
