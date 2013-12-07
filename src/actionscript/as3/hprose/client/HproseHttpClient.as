@@ -13,12 +13,15 @@
  *                                                        *
  * hprose http client class for ActionScript 3.0.         *
  *                                                        *
- * LastModified: Nov 26, 2012                             *
+ * LastModified: Dec 7, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 package hprose.client {
-    import hprose.io.HproseException;
+    import hprose.common.HproseException;
+    import hprose.common.HproseResultMode;
+    import hprose.common.IHproseFilter;
+    import hprose.common.HproseFilter;
     import flash.events.Event;
     import flash.events.IEventDispatcher;
     import flash.events.EventDispatcher;
@@ -30,6 +33,7 @@ package hprose.client {
         private var url:String = null;
         private const header:Object = { };
         public var byref:Boolean = false;
+        public var simple:Boolean = false;
         public var timeout:uint = 30000;
         public var filter:IHproseFilter = new HproseFilter();
         private var dispatcher:EventDispatcher;
@@ -102,17 +106,56 @@ package hprose.client {
         public function invoke(func:String, ...rest):HproseHttpInvoker {
             var args:Array = rest;
 ﻿            var byref:Boolean = this.byref;
+            var simple:Boolean = this.simple;
             var resultMode:int = HproseResultMode.Normal;
             var callback:Function = null;
             var errorHandler:Function = null;
             var progressHandler:Function = null;
             var count = args.length;
-            if (typeof(args[count - 1]) == 'number' &&
-                typeof(args[count - 2]) == 'boolean' &&
-                typeof(args[count - 3]) == 'function' &&
+            if (typeof(args[count - 1]) == 'boolean' &&
+                typeof(args[count - 2]) == 'number' &&
+                typeof(args[count - 3]) == 'boolean' &&
                 typeof(args[count - 4]) == 'function' &&
-                typeof(args[count - 5]) == 'function') {
+                typeof(args[count - 5]) == 'function' &&
+                typeof(args[count - 6]) == 'function') {
+                simple = args[count - 1];
+                resultMode = args[count - 2];
+                byref = args[count - 3];
+                progressHandler = args[count - 4];
+                errorHandler = args[count - 5];
+                callback = args[count - 6];
+                args.length -= 6;
+            }
+            else if (typeof(args[count - 1]) == 'boolean' &&
+                     typeof(args[count - 2]) == 'number' &&
+                     typeof(args[count - 3]) == 'function' &&
+                     typeof(args[count - 4]) == 'function' &&
+                     typeof(args[count - 5]) == 'function') {
+                simple = args[count - 1];
+                resultMode = args[count - 2];
+                progressHandler = args[count - 3];
+                errorHandler = args[count - 4];
+                callback = args[count - 5];
+                args.length -= 5;
+            }
+            else if (typeof(args[count - 1]) == 'number' &&
+                     typeof(args[count - 2]) == 'boolean' &&
+                     typeof(args[count - 3]) == 'function' &&
+                     typeof(args[count - 4]) == 'function' &&
+                     typeof(args[count - 5]) == 'function') {
                 resultMode = args[count - 1];
+                byref = args[count - 2];
+                progressHandler = args[count - 3];
+                errorHandler = args[count - 4];
+                callback = args[count - 5];
+                args.length -= 5;
+            }
+            else if (typeof(args[count - 1]) == 'boolean' &&
+                     typeof(args[count - 2]) == 'boolean' &&
+                     typeof(args[count - 3]) == 'function' &&
+                     typeof(args[count - 4]) == 'function' &&
+                     typeof(args[count - 5]) == 'function') {
+                simple = args[count - 1];
                 byref = args[count - 2];
                 progressHandler = args[count - 3];
                 errorHandler = args[count - 4];
@@ -147,11 +190,31 @@ package hprose.client {
                 callback = args[count - 3];
                 args.length -= 3;
             }
+            else if (typeof(args[count - 1]) == 'boolean' &&
+                     typeof(args[count - 2]) == 'number' &&
+                     typeof(args[count - 3]) == 'function' &&
+                     typeof(args[count - 4]) == 'function') {
+                simple = args[count - 1];
+                resultMode = args[count - 2];
+                errorHandler = args[count - 3];
+                callback = args[count - 4];
+                args.length -= 4;
+            }
             else if (typeof(args[count - 1]) == 'number' &&
                      typeof(args[count - 2]) == 'boolean' &&
                      typeof(args[count - 3]) == 'function' &&
                      typeof(args[count - 4]) == 'function') {
                 resultMode = args[count - 1];
+                byref = args[count - 2];
+                errorHandler = args[count - 3];
+                callback = args[count - 4];
+                args.length -= 4;
+            }
+            else if (typeof(args[count - 1]) == 'boolean' &&
+                     typeof(args[count - 2]) == 'boolean' &&
+                     typeof(args[count - 3]) == 'function' &&
+                     typeof(args[count - 4]) == 'function') {
+                simple = args[count - 1];
                 byref = args[count - 2];
                 errorHandler = args[count - 3];
                 callback = args[count - 4];
@@ -179,10 +242,26 @@ package hprose.client {
                 callback = args[count - 2];
                 args.length -= 2;
             }
+            else if (typeof(args[count - 1]) == 'boolean' &&
+                     typeof(args[count - 2]) == 'number' &&
+                     typeof(args[count - 3]) == 'function') {
+                simple = args[count - 1];
+                resultMode = args[count - 2];
+                callback = args[count - 3];
+                args.length -= 3;
+            }
             else if (typeof(args[count - 1]) == 'number' &&
                      typeof(args[count - 2]) == 'boolean' &&
                      typeof(args[count - 3]) == 'function') {
                 resultMode = args[count - 1];
+                byref = args[count - 2];
+                callback = args[count - 3];
+                args.length -= 3;
+            }
+            else if (typeof(args[count - 1]) == 'boolean' &&
+                     typeof(args[count - 2]) == 'boolean' &&
+                     typeof(args[count - 3]) == 'function') {
+                simple = args[count - 1];
                 byref = args[count - 2];
                 callback = args[count - 3];
                 args.length -= 3;
@@ -203,7 +282,7 @@ package hprose.client {
                 callback = args[count - 1];
                 args.length--;
             }
-            return new HproseHttpInvoker(url, header, func, args, byref, callback, errorHandler, progressHandler, dispatcher, timeout, resultMode, filter);
+            return new HproseHttpInvoker(url, header, func, args, byref, callback, errorHandler, progressHandler, dispatcher, timeout, resultMode, simple, filter);
         }
         
         public function toString():String {

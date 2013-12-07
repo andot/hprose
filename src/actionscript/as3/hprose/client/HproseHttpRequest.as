@@ -13,13 +13,14 @@
  *                                                        *
  * hprose http request class for ActionScript 3.0.        *
  *                                                        *
- * LastModified: Mar 18, 2013                             *
+ * LastModified: Dec 7, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 package hprose.client {
+    import hprose.common.IHproseFilter;
     import hprose.io.HproseTags;
-    import hprose.io.HproseWriter;
+    import hprose.io.HproseSimpleWriter;
     import flash.events.Event;
     import flash.events.HTTPStatusEvent;
     import flash.events.IOErrorEvent;
@@ -121,7 +122,7 @@ package hprose.client {
                 Status[505] = 'HTTP Version Not Supported';
                 var error:String = '[' + event.status + ':' + (Status[event.status] || "Unknown Error") + ']';
                 var data:ByteArray = new ByteArray();
-                var writer:HproseWriter = new HproseWriter(data);
+                var writer:HproseSimpleWriter = new HproseSimpleWriter(data);
                 data.writeByte(HproseTags.TagError);
                 writer.writeString(error);
                 data.writeByte(HproseTags.TagEnd);
@@ -134,7 +135,7 @@ package hprose.client {
                 complete = true;
                 timer.stop();
                 var data:ByteArray = new ByteArray();
-                var writer:HproseWriter = new HproseWriter(data);
+                var writer:HproseSimpleWriter = new HproseSimpleWriter(data);
                 data.writeByte(HproseTags.TagError);
                 writer.writeString(event.text);
                 data.writeByte(HproseTags.TagEnd);
@@ -147,7 +148,7 @@ package hprose.client {
                 complete = true;
                 timer.stop();
                 var data:ByteArray = new ByteArray();
-                var writer:HproseWriter = new HproseWriter(data);
+                var writer:HproseSimpleWriter = new HproseSimpleWriter(data);
                 data.writeByte(HproseTags.TagError);
                 writer.writeString(event.text);
                 data.writeByte(HproseTags.TagEnd);
@@ -167,7 +168,7 @@ package hprose.client {
                 Timer(event.target).stop();
                 stream.close();
                 var data:ByteArray = new ByteArray();
-                var writer:HproseWriter = new HproseWriter(data);
+                var writer:HproseSimpleWriter = new HproseSimpleWriter(data);
                 data.writeByte(HproseTags.TagError);
                 writer.writeString('timeout');
                 data.writeByte(HproseTags.TagEnd);

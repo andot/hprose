@@ -13,11 +13,11 @@
  *                                                        *
  * hprose filter interface for ActionScript 3.0.          *
  *                                                        *
- * LastModified: Jun 26, 2012                             *
+ * LastModified: Nov 24, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
-package hprose.client {
+package hprose.common {
     import flash.utils.ByteArray;
 
     public interface IHproseFilter {

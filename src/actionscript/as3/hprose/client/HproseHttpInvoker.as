@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http invoker class for ActionScript 3.0.        *
  *                                                        *
- * LastModified: Nov 26, 2012                             *
+ * LastModified: Dec 7, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -26,9 +26,13 @@ package hprose.client {
     import flash.utils.ByteArray;
     import flash.utils.IDataInput;
     
-    import hprose.io.HproseException;
+    import hprose.common.HproseException;
+    import hprose.common.HproseResultMode;
+    import hprose.common.IHproseFilter;
+
     import hprose.io.HproseReader;
     import hprose.io.HproseTags;
+    import hprose.io.HproseSimpleWriter;
     import hprose.io.HproseWriter;
     
     [Event(name="error", type="hprose.client.HproseErrorEvent")]
@@ -47,10 +51,11 @@ package hprose.client {
         private var completed:Boolean;
         private var timeout:uint;
         private var resultMode:int;
+        private var simple:Boolean;
         private var filter:IHproseFilter;
         private var httpRequest:HproseHttpRequest = null;
         
-        public function HproseHttpInvoker(url:String, header:Object, func:String, args:Array, byref:Boolean, callback:Function, errorHandler:Function, progressHandler:Function, dispatcher:EventDispatcher, timeout:uint, resultMode:int, filter:IHproseFilter) {
+        public function HproseHttpInvoker(url:String, header:Object, func:String, args:Array, byref:Boolean, callback:Function, errorHandler:Function, progressHandler:Function, dispatcher:EventDispatcher, timeout:uint, resultMode:int, simple:Boolean, filter:IHproseFilter) {
             this.url = url;
             this.header = header;
             this.func = func;
@@ -59,6 +64,7 @@ package hprose.client {
             this.dispatcher = dispatcher;
             this.timeout = timeout;
             this.resultMode = resultMode;
+            this.simple = simple;
             this.filter = filter;
             if (callback != null) {
                 start(callback, errorHandler, progressHandler);
@@ -92,7 +98,7 @@ package hprose.client {
         public function start(callback:Function = null, errorHandler:Function = null, progressHandler:Function = null):HproseHttpInvoker {
             var stream:ByteArray = new ByteArray();
             stream.writeByte(HproseTags.TagCall);
-            var writer:HproseWriter = new HproseWriter(stream);
+            var writer:HproseSimpleWriter = (simple ? new HproseSimpleWriter(stream) : new HproseWriter(stream));
             writer.writeString(func);
             if (args.length > 0) {
                 writer.reset();

@@ -9,21 +9,22 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * ClassManager.as                                        *
+ * HproseClassManager.as                                  *
  *                                                        *
- * hprose ClassManager for ActionScript 3.0.              *
+ * hprose class manager for ActionScript 3.0.             *
  *                                                        *
- * LastModified: Dec 12, 2012                             *
+ * LastModified: Nov 24, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 
 package hprose.io {
+    import flash.utils.Dictionary;
     import flash.utils.getDefinitionByName;
     import flash.utils.getQualifiedClassName;
 
-    public final class ClassManager {
-        private static const classCache1:Object = {};
+    public final class HproseClassManager {
+        private static const classCache1:Dictionary = new Dictionary();
         private static const classCache2:Object = {};
         
         public static function register(classReference:*, alias:String):void {
@@ -47,7 +48,7 @@ package hprose.io {
                 alias = 'Object';
             }
             alias = alias.replace(/\./g, '_').replace(/\:\:/g, '_');
-            ClassManager.register(classReference, alias);
+            HproseClassManager.register(classReference, alias);
             return alias;
         }
 

@@ -1,4 +1,4 @@
-﻿/**********************************************************\
+/**********************************************************\
 |                                                          |
 |                          hprose                          |
 |                                                          |
@@ -9,19 +9,22 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * HproseResultMode.as                                    *
+ * HproseFilter.as                                        *
  *                                                        *
- * HproseResultMode enum for ActionScript 3.0.            *
+ * hprose filter class for ActionScript 3.0.              *
  *                                                        *
- * LastModified: Jun 22, 2011                             *
+ * LastModified: Nov 24, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
-package hprose.client {
-    public class HproseResultMode {
-        public static const Normal:int = 0;
-        public static const Serialized:int = 1;
-        public static const Raw:int = 2;
-        public static const RawWithEndTag:int = 3;
+package hprose.common {
+    import flash.utils.ByteArray;
+    public class HproseFilter implements IHproseFilter {
+        public function inputFilter(data: ByteArray):ByteArray {
+            return data;
+        }
+        public function outputFilter(data: ByteArray):ByteArray {
+            return data;
+        }
     }
 }

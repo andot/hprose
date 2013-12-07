@@ -13,11 +13,11 @@
  *                                                        *
  * hprose exception for ActionScript 3.0.                 *
  *                                                        *
- * LastModified: May 16, 2010                             *
+ * LastModified: Nov 24, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
-package hprose.io {
+package hprose.common {
     import flash.errors.IOError;
     public dynamic class HproseException extends IOError {
         public function HproseException(message:String = "") {

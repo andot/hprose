@@ -13,7 +13,7 @@
  *                                                        *
  * hprose formatter class for ActionScript 3.0.           *
  *                                                        *
- * LastModified: May 16, 2010                             *
+ * LastModified: Dec 7, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -23,16 +23,16 @@ package hprose.io {
     import flash.utils.IDataOutput;
     
     public final class HproseFormatter {
-        public static function serialize(o:*, stream:IDataOutput = null):IDataOutput {
+        public static function serialize(o:*, stream:IDataOutput = null, simple:Boolean = false):IDataOutput {
             if (stream == null) {
                 stream = new ByteArray();
             }
-            var writer:HproseWriter = new HproseWriter(stream);
+            var writer:* = (simple ? new HproseSimpleWriter(stream) : new HproseWriter(stream));
             writer.serialize(o);
             return stream;
         }
-        public static function unserialize(stream:IDataInput):* {
-            var reader:HproseReader = new HproseReader(stream);
+        public static function unserialize(stream:IDataInput, simple:Boolean = false):* {
+            var reader:* = (simple ? new HproseSimpleReader(stream) : new HproseReader(stream));
             return reader.unserialize();
         }
     }
