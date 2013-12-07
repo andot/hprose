@@ -19,7 +19,6 @@
 \**********************************************************/
 
 import hprose.common.Map;
-import hprose.io.HproseClassManager;
 import hprose.io.HproseStringOutputStream;
 import hprose.io.HproseSimpleWriter;
 import hprose.io.HproseTags;

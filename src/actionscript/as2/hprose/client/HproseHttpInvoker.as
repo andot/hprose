@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http invoker class for ActionScript 2.0.        *
  *                                                        *
- * LastModified: Nov 20, 2013                             *
+ * LastModified: Dec 7, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -160,7 +160,7 @@ class hprose.client.HproseHttpInvoker {
     public function start(callback, errorHandler, progressHandler) {
         var stream:HproseStringOutputStream = new HproseStringOutputStream();
         stream.write(HproseTags.TagCall);
-        var writer:HproseWriter = (simple ? new HproseSimpleWriter(stream) : new HproseWriter(stream));
+        var writer:HproseSimpleWriter = (simple ? new HproseSimpleWriter(stream) : new HproseWriter(stream));
         writer.writeString(func);
         if (args.length > 0) {
             writer.reset();
