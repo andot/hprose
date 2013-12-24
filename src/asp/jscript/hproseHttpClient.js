@@ -14,7 +14,7 @@
  *                                                        *
  * hprose http client for ASP.                            *
  *                                                        *
- * LastModified: Nov 18, 2013                             *
+ * LastModified: Dec 24, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -612,6 +612,20 @@ var HproseHttpClient = (function () {
                 delete args[count - 1];
                 delete args[count - 2];
                 args.length -= 2;
+            }
+            else if (typeof(args[count - 1]) == s_boolean &&
+                     typeof(args[count - 2]) == s_number &&
+                     typeof(args[count - 3]) == s_boolean &&
+                     typeof(args[count - 4]) == s_function) {
+                simple = args[count - 1];
+                resultMode = args[count - 2];
+                byref = args[count - 3];
+                callback = args[count - 4];
+                delete args[count - 1];
+                delete args[count - 2];
+                delete args[count - 3];
+                delete args[count - 4];
+                args.length -= 4;
             }
             else if (typeof(args[count - 1]) == s_boolean &&
                      typeof(args[count - 2]) == s_number &&

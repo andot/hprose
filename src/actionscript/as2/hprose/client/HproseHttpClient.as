@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http client class for ActionScript 2.0.         *
  *                                                        *
- * LastModified: Nov 20, 2013                             *
+ * LastModified: Dec 24, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -220,6 +220,18 @@ dynamic class hprose.client.HproseHttpClient extends Object {
         }
         else if (typeof(args[count - 1]) == 'boolean' &&
                  typeof(args[count - 2]) == 'number' &&
+                 typeof(args[count - 3]) == 'boolean' &&
+                 typeof(args[count - 4]) == 'function' &&
+                 typeof(args[count - 5]) == 'function') {
+            simple = args[count - 1];
+            resultMode = args[count - 2];
+            byref = args[count - 3];
+            errorHandler = args[count - 4];
+            callback = args[count - 5];
+            args.length -= 5;
+        }
+        else if (typeof(args[count - 1]) == 'boolean' &&
+                 typeof(args[count - 2]) == 'number' &&
                  typeof(args[count - 3]) == 'function' &&
                  typeof(args[count - 4]) == 'function') {
             simple = args[count - 1];
@@ -269,6 +281,16 @@ dynamic class hprose.client.HproseHttpClient extends Object {
             errorHandler = args[count - 1];
             callback = args[count - 2];
             args.length -= 2;
+        }
+        else if (typeof(args[count - 1]) == 'boolean' &&
+                 typeof(args[count - 2]) == 'number' &&
+                 typeof(args[count - 3]) == 'boolean' &&
+                 typeof(args[count - 4]) == 'function') {
+            simple = args[count - 1];
+            resultMode = args[count - 2];
+            byref = args[count - 3];
+            callback = args[count - 4];
+            args.length -= 4;
         }
         else if (typeof(args[count - 1]) == 'boolean' &&
                  typeof(args[count - 2]) == 'number' &&
