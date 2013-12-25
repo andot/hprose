@@ -15,7 +15,7 @@
  *                                                        *
  * Hprose Client library for AAuto Quicker                *
  *                                                        *
- * LastModified: Dec 13, 2012                             *
+ * LastModified: Dec 26, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -37,7 +37,86 @@ namespace hprose.client {
                 return ..hprose.client.DynamicMethod(invoker, funcname ++ "_" ++ name);
             }
             _call = function(...) {
-                return invoker.invoke(funcname, {...});
+                var args = {...};
+                var callback = null;
+                var onerror = null;
+                var byRef = false;
+                var resultMode = 0;
+                var simple = false;
+                var count = #args;
+                if (type(args[[count]]) === type.boolean &&
+                    type(args[[count - 1]]) === type.number &&
+                    type(args[[count - 2]]) === type.boolean &&
+                    type(args[[count - 3]]) === type.function &&
+                    type(args[[count - 4]]) === type.function) {
+                    callback, onerror, byRef, resultMode, simple = ..table.pop(args, 5);
+                }
+                else if (type(args[[count]]) === type.boolean &&
+                         type(args[[count - 1]]) === type.number &&
+                         type(args[[count - 2]]) === type.function &&
+                         type(args[[count - 3]]) === type.function) {
+                    callback, onerror, resultMode, simple = ..table.pop(args, 4);
+                }
+                else if (type(args[[count]]) === type.number &&
+                         type(args[[count - 1]]) === type.boolean &&
+                         type(args[[count - 2]]) === type.function &&
+                         type(args[[count - 3]]) === type.function) {
+                    callback, onerror, byRef, resultMode = ..table.pop(args, 4);
+                }
+                else if (type(args[[count]]) === type.boolean &&
+                         type(args[[count - 1]]) === type.boolean &&
+                         type(args[[count - 2]]) === type.function &&
+                         type(args[[count - 3]]) === type.function) {
+                    callback, onerror, byRef, simple = ..table.pop(args, 4);
+                }
+                else if (type(args[[count]]) === type.boolean &&
+                         type(args[[count - 1]]) === type.function &&
+                         type(args[[count - 2]]) === type.function) {
+                    callback, onerror, byRef = ..table.pop(args, 3);
+                }
+                else if (type(args[[count]]) === type.number &&
+                         type(args[[count - 1]]) === type.function &&
+                         type(args[[count - 2]]) === type.function) {
+                    callback, onerror, resultMode = ..table.pop(args, 3);
+                }
+                else if (type(args[[count]]) === type.function &&
+                         type(args[[count - 1]]) === type.function) {
+                    callback, onerror = ..table.pop(args, 2);
+                }
+                else if (type(args[[count]]) === type.boolean &&
+                    type(args[[count - 1]]) === type.number &&
+                    type(args[[count - 2]]) === type.boolean &&
+                    type(args[[count - 3]]) === type.function) {
+                    callback, byRef, resultMode, simple = ..table.pop(args, 4);
+                }
+                else if (type(args[[count]]) === type.boolean &&
+                         type(args[[count - 1]]) === type.number &&
+                         type(args[[count - 2]]) === type.function) {
+                    callback, resultMode, simple = ..table.pop(args, 3);
+                }
+                else if (type(args[[count]]) === type.number &&
+                         type(args[[count - 1]]) === type.boolean &&
+                         type(args[[count - 2]]) === type.function) {
+                    callback, byRef, resultMode = ..table.pop(args, 3);
+                }
+                else if (type(args[[count]]) === type.boolean &&
+                         type(args[[count - 1]]) === type.boolean &&
+                         type(args[[count - 2]]) === type.function) {
+                    callback, byRef, simple = ..table.pop(args, 3);
+                }
+                else if (type(args[[count]]) === type.boolean &&
+                         type(args[[count - 1]]) === type.function) {
+                    callback, byRef = ..table.pop(args, 2);
+                }
+                else if (type(args[[count]]) === type.number &&
+                         type(args[[count - 1]]) === type.function) {
+                    callback, resultMode = ..table.pop(args, 2);
+                }
+                else if (type(args[[count]]) === type.function) {
+                    callback = ..table.pop(args);
+                }
+
+                return invoker.invoke(funcname, args, callback, onerror, byRef, resultMode, simple);
             }
         }
     }
@@ -54,14 +133,15 @@ namespace hprose.client {
     var threadManager = ..thread.manage();
     
     class HproseClient {
-        ctor() {
+        ctor(uri) {
+            this.uri = uri;        
             this.filter =  ..hprose.common.HproseFilter();
             this.onerror = function(){};
             this.send = null;
         };
-        invoke = function(name, args = {}, callback = null, onerror = null, byRef = false, resultMode = 0) {
+        invoke = function(name, args, callback, onerror, byRef = false, resultMode = 0, simple = false) {
             if (callback == null) {
-                var ok, result = call(owner.syncInvoke, owner, name, args, byRef, resultMode, owner.send, owner.filter.inputFilter, owner.filter.outputFilter);
+                var ok, result = call(owner.syncInvoke, owner, name, args, byRef, resultMode, simple, owner.send, owner.filter.inputFilter, owner.filter.outputFilter);
                 if (ok) {
                     return result;
                 }
@@ -86,7 +166,7 @@ namespace hprose.client {
                 var command = ..thread.command();
                 command.callback = callback;
                 command.onerror = onerror;
-                threadManager.create(function(name, args, callback, onerror, byRef, resultMode, hwnd) {
+                threadManager.create(function(name, args, callback, onerror, byRef, resultMode, simple, hwnd) {
                     import hprose.common;
                     import hprose.io;
                     import hprose.client;
@@ -97,31 +177,32 @@ namespace hprose.client {
 
                     var errstr = null;
                     var tab = ..thread.table('f9ccdb4e-61c8-4dc3-8bbb-0963910e42de');
-                    var ok, result = call(tab.get('syncInvoke'), tab.get('hproseClient'), name, args, byRef, resultMode, tab.get('send'), tab.get('inputFilter'), tab.get('outputFilter'));
+                    var ok, result = call(tab.get('syncInvoke'), tab.get('hproseClient'), name, args, byRef, resultMode, simple, tab.get('send'), tab.get('inputFilter'), tab.get('outputFilter'));
                     if (ok) {
                         ..thread.command.post(hwnd, "callback", result, args);
                     }
                     else {
                         ..thread.command.post(hwnd, "onerror", name, result);
                     }
-                }, name, args, callback, onerror, byRef, resultMode, command._form.hwnd);
+                }, name, args, callback, onerror, byRef, resultMode, simple, command._form.hwnd);
             }
         };
-        useService = function(uri = null) {
-            if (uri != null) this.uri = uri;
+        useService = function(uri) {
+            if (uri !== null) this.uri = uri;
             return ..hprose.client.DynamicProxy(this);
         };
-        syncInvoke = function(name, args, byRef, resultMode, send, inputFilter, outputFilter) {
+        syncInvoke = function(name, args, byRef, resultMode, simple, send, inputFilter, outputFilter) {
+            args := {};
             var stream = ..hprose.io.OutputStream();
-            stream.write(..hprose.io.HproseTags._TagCall);
-            var hproseWriter = ..hprose.io.HproseWriter(stream);
-            hproseWriter.writeString(name, ..hprose.io.ulen(name));
+            stream.write(..hprose.io.HproseTags.TagCall);
+            var hproseWriter = (simple ? ..hprose.io.HproseSimpleWriter(stream) : ..hprose.io.HproseWriter(stream));
+            hproseWriter.writeString(name);
             if ((#args > 0) || byRef) {
                 hproseWriter.reset();
                 hproseWriter.writeList(args);
                 if (byRef) hproseWriter.writeBoolean(true);
             }
-            stream.write(..hprose.io.HproseTags._TagEnd);
+            stream.write(..hprose.io.HproseTags.TagEnd);
             var result = null;
             var errstr = null;
             try {
@@ -129,7 +210,7 @@ namespace hprose.client {
                 ok, data = call(send, owner, data);
                 ok, data = call(inputFilter, owner.filter, data);
                 stream = ..hprose.io.InputStream(data);
-                if (resultMode == ..hprose.common.HproseResultMode._RawWithEndTag) {
+                if (resultMode == ..hprose.common.HproseResultMode.RawWithEndTag) {
                     result = stream.readall();
                     return;
                 }
@@ -140,15 +221,15 @@ namespace hprose.client {
                 }
                 var hproseReader = ..hprose.io.HproseReader(stream);
                 var tag;
-                var expectTags = ..hprose.io.HproseTags._TagResult ++
-                                 ..hprose.io.HproseTags._TagArgument ++
-                                 ..hprose.io.HproseTags._TagError ++
-                                 ..hprose.io.HproseTags._TagEnd;
+                var expectTags = ..hprose.io.HproseTags.TagResult ++
+                                 ..hprose.io.HproseTags.TagArgument ++
+                                 ..hprose.io.HproseTags.TagError ++
+                                 ..hprose.io.HproseTags.TagEnd;
                 while (true) {
                     tag = stream.getc();
                     select(tag) {
-                        case ..hprose.io.HproseTags._TagResult {
-                            if (resultMode == ..hprose.common.HproseResultMode._Serialized) {
+                        case ..hprose.io.HproseTags.TagResult {
+                            if (resultMode == ..hprose.common.HproseResultMode.Serialized) {
                                 s = hproseReader.readRaw()
                                 result = tostring(s);
                             }
@@ -157,18 +238,18 @@ namespace hprose.client {
                                 result = hproseReader.unserialize();
                             }
                         }
-                        case ..hprose.io.HproseTags._TagArgument {
+                        case ..hprose.io.HproseTags.TagArgument {
                             hproseReader.reset();
                             a = hproseReader.readList();
                             for (i = 1; #args; 1) {
                                 args[[i]] = a[[i]];
                             }
                         }
-                        case ..hprose.io.HproseTags._TagError {
+                        case ..hprose.io.HproseTags.TagError {
                             hproseReader.reset()
                             errstr = hproseReader.readString();
                         }
-                        case ..hprose.io.HproseTags._TagEnd {
+                        case ..hprose.io.HproseTags.TagEnd {
                             break;
                         }
                         else {
@@ -190,20 +271,21 @@ namespace hprose.client {
         }
     }
 
-    var cookieManager = ..thread.table("a6e9e45d-5cee-4695-9b60-8645fa63ea9a");
+    cookieManagerID = "a6e9e45d-5cee-4695-9b60-8645fa63ea9a";
+    var cookieManager = ..thread.table(..hprose.client.cookieManagerID);
     if (!cookieManager.data) {
         cookieManager.data = ..table.tostring({});
         cookieManager.getCookie = function(host, path, secure) {
             import thread.table;
             var cookies = {};
-            ..thread.lock("a6e9e45d-5cee-4695-9b60-8645fa63ea9a");
-            var cookieManager = ..thread.table("a6e9e45d-5cee-4695-9b60-8645fa63ea9a");
+            ..thread.lock(..hprose.client.cookieManagerID);
+            var cookieManager = ..thread.table(..hprose.client.cookieManagerID);
             var data = eval(cookieManager.data);
             for (domain, domainCookie in data) {
                 if (..string.indexAny(host, domain)) {
                     var names = {};
                     for (name, cookie in domainCookie) {
-                        if (cookie['EXPIRES'] && (tonumber(..time())) > (tonumber(cookie['EXPIRES']))) {
+                        if (cookie['EXPIRES'] && (tonumber(..time(), 10)) > (tonumber(cookie['EXPIRES'], 10))) {
                             ..table.push(names, name);
                         }
                         else if (..string.indexAny(path, cookie['PATH']) === 1) {
@@ -219,7 +301,7 @@ namespace hprose.client {
                 }
             }
             cookieManager.data = ..table.tostring(data);
-            ..thread.unlock("a6e9e45d-5cee-4695-9b60-8645fa63ea9a");
+            ..thread.unlock(..hprose.client.cookieManagerID);
             if (#cookies > 0) {
                 return ..string.join(cookies, '; ');
             }
@@ -227,8 +309,8 @@ namespace hprose.client {
         };
         cookieManager.setCookie = function(cookieList, host) {
             import thread.table;
-            ..thread.lock("a6e9e45d-5cee-4695-9b60-8645fa63ea9a");
-            var cookieManager = ..thread.table("a6e9e45d-5cee-4695-9b60-8645fa63ea9a");
+            ..thread.lock(..hprose.client.cookieManagerID);
+            var cookieManager = ..thread.table(..hprose.client.cookieManagerID);
             var data = eval(cookieManager.data);
             for (i = 1; #cookieList; 1) {
                 var cookies = ..string.split(..string.trim(cookieList[i]), ';');
@@ -270,14 +352,13 @@ namespace hprose.client {
                 data[cookie['DOMAIN']][cookie['name']] = cookie;
             }
             cookieManager.data = ..table.tostring(data);
-            ..thread.unlock("a6e9e45d-5cee-4695-9b60-8645fa63ea9a");
+            ..thread.unlock(..hprose.client.cookieManagerID);
         };
     }
 
     class HproseHttpClient {
         ctor(uri) {
-            this = ..hprose.client.HproseClient();
-            this.uri = uri;
+            this = ..hprose.client.HproseClient(uri);
             this.headers = {};
             this.proxy = '';
             this.proxyBypass = '';
@@ -288,7 +369,7 @@ namespace hprose.client {
             this.pass = '';
         };
         send = function(data) {
-            var cookieManager = ..thread.table("a6e9e45d-5cee-4695-9b60-8645fa63ea9a");
+            var cookieManager = ..thread.table(..hprose.client.cookieManagerID);
             var getCookie = cookieManager.get('getCookie');
             var setCookie = cookieManager.get('setCookie');
             var uri = owner.uri;

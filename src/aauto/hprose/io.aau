@@ -15,7 +15,7 @@
  *                                                        *
  * Hprose IO library for AAuto Quicker                    *
  *                                                        *
- * LastModified: Dec 13, 2012                             *
+ * LastModified: Dec 26, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -196,7 +196,7 @@ namespace hprose.io {
             };
         }
     }
-    namespace ClassManager {
+    namespace HproseClassManager {
         var classCache = {};
         var aliasCache = {};
         register = function(cls, alias) {
@@ -212,60 +212,58 @@ namespace hprose.io {
     }
     namespace HproseTags {
         /* Serialize Tags */
-        _TagInteger = 'i';
-        _TagLong = 'l';
-        _TagDouble = 'd';
-        _TagNull = 'n';
-        _TagEmpty = 'e';
-        _TagTrue = 't';
-        _TagFalse = 'f';
-        _TagNaN = 'N';
-        _TagInfinity = 'I';
-        _TagDate = 'D';
-        _TagTime = 'T';
-        _TagUTC = 'Z';
-        _TagBytes = 'b';
-        _TagUTF8Char = 'u';
-        _TagString = 's';
-        _TagGuid = 'g';
-        _TagList = 'a';
-        _TagMap = 'm';
-        _TagClass = 'c';
-        _TagObject = 'o';
-        _TagRef = 'r';
+        TagInteger = 'i';
+        TagLong = 'l';
+        TagDouble = 'd';
+        TagNull = 'n';
+        TagEmpty = 'e';
+        TagTrue = 't';
+        TagFalse = 'f';
+        TagNaN = 'N';
+        TagInfinity = 'I';
+        TagDate = 'D';
+        TagTime = 'T';
+        TagUTC = 'Z';
+        TagBytes = 'b';
+        TagUTF8Char = 'u';
+        TagString = 's';
+        TagGuid = 'g';
+        TagList = 'a';
+        TagMap = 'm';
+        TagClass = 'c';
+        TagObject = 'o';
+        TagRef = 'r';
         /* Serialize Marks */
-        _TagPos = '+';
-        _TagNeg = '-';
-        _TagSemicolon = ';';
-        _TagOpenbrace = '{';
-        _TagClosebrace = '}';
-        _TagQuote = '"';
-        _TagPoint = '.';
+        TagPos = '+';
+        TagNeg = '-';
+        TagSemicolon = ';';
+        TagOpenbrace = '{';
+        TagClosebrace = '}';
+        TagQuote = '"';
+        TagPoint = '.';
         /* Protocol Tags */
-        _TagFunctions = 'F';
-        _TagCall = 'C';
-        _TagResult = 'R';
-        _TagArgument = 'A';
-        _TagError = 'E';
-        _TagEnd = 'z';
+        TagFunctions = 'F';
+        TagCall = 'C';
+        TagResult = 'R';
+        TagArgument = 'A';
+        TagError = 'E';
+        TagEnd = 'z';
     }
     var getClass = function(classname) {
-        var cls = ClassManager.getClass(classname);
+        var cls = HproseClassManager.getClass(classname);
         if (cls) return cls;
-        cls = eval("class " ++ classname ++ "{ @{ _type = classname } }");
-        ClassManager.register(cls, classname);
+        cls = class { @{ _type = classname } };
+        HproseClassManager.register(cls, classname);
         return cls;
     };
     var readNumber = function(stream, tag){
         var s = stream.readuntil(tag);
         if (#s == 0) return 0;
-        return (tonumber(s));
+        return (tonumber(s, 10));
     };
-    class HproseReader {
+    class HproseRawReader {
         ctor(stream) {
             this.stream = stream;
-            var ref = { @{ _weak = "v" } };
-            var classref = {};
             var tags = ..hprose.io.HproseTags;
         };
         unexpectedTag = function(tag, expectTags) {
@@ -283,505 +281,6 @@ namespace hprose.io {
                 }
             }
         };
-        _checkTag = function(expectTag, tag) {
-            if (tag != expectTag) unexpectedTag(tag, expectTag);
-        };
-        checkTag = function(expectTag) {
-            this._checkTag(expectTag, stream.getc());
-        };
-        _checkTags = function(expectTags, tag) {
-            if (!indexAny(expectTags, tag)) unexpectedTag(tag, expectTags);
-            return tag;
-        };
-        checkTags = function(expectTags) {
-            return this._checkTags(expectTags, stream.getc());
-        };
-        unserialize = function() {
-            var tag = stream.getc();
-            select(tag) {
-                case '0';'9' {
-                    return tag[1] - 48;
-                }
-                case tags._TagInteger {
-                    return this.readIntegerWithoutTag(); 
-                }
-                case tags._TagLong {
-                    return this.readLongWithoutTag(); 
-                }
-                case tags._TagDouble {
-                    return this.readDoubleWithoutTag();
-                }
-                case tags._TagNull {
-                    return null;
-                }
-                case tags._TagEmpty {
-                    return '';
-                }
-                case tags._TagTrue {
-                    return true;
-                }
-                case tags._TagFalse {
-                    return false;
-                }
-                case tags._TagNaN {
-                    return NaN;
-                }
-                case tags._TagInfinity {
-                    return this.readInfinityWithoutTag();
-                }
-                case tags._TagDate {
-                    return this.readDateWithoutTag();
-                }
-                case tags._TagTime {
-                    return this.readTimeWithoutTag();
-                }
-                case tags._TagBytes {
-                    return this.readBytesWithoutTag();
-                }
-                case tags._TagUTF8Char {
-                    return this.readUTF8CharWithoutTag();
-                }
-                case tags._TagString {
-                    return this.readStringWithoutTag();
-                }
-                case tags._TagGuid {
-                    return this.readGuidWithoutTag();
-                }
-                case tags._TagList {
-                    return this.readListWithoutTag();
-                }
-                case tags._TagMap {
-                    return this.readMapWithoutTag();
-                }
-                case tags._TagClass {
-                    this.readClass();
-                    return this.readObject();
-                }
-                case tags._TagObject {
-                    return this.readObjectWithoutTag();
-                }
-                case tags._TagRef {
-                    return this.readRef();
-                }
-                case tags._TagError {
-                    error(this.readString());
-                }
-                else {
-                    unexpectedTag(tag);
-                }
-            }
-        };
-        readIntegerWithoutTag = function() {
-            return readNumber(stream, tags._TagSemicolon);
-        };
-        readInteger = function() {
-            var tag = stream.getc();
-            select(tag) {
-                case '0';'9' {
-                    return tag[1] - 48;
-                }
-                case tags._TagInteger {
-                    return this.readIntegerWithoutTag();
-                }
-                else {
-                    unexpectedTag(tag);
-                }
-            }
-        };
-        readLongWithoutTag = function() {
-            return stream.readuntil(tags._TagSemicolon);
-        };
-        readLong = function() {
-            var tag = stream.getc();
-            select(tag) {
-                case '0';'9' {
-                    return tag;
-                }
-                case tags._TagInteger, tags._TagLong {
-                    return this.readLongWithoutTag();
-                }
-                else {
-                    unexpectedTag(tag);
-                }
-            }
-        };
-        readDoubleWithoutTag = function() {
-            return readNumber(stream, tags._TagSemicolon);
-        };
-        readDouble = function() {
-            var tag = stream.getc();
-            select(tag) {
-                case '0';'9' {
-                    return tag[1] - 48;
-                }
-                case tags._TagInteger, tags._TagLong, tags._TagDouble {
-                    return this.readDoubleWithoutTag();
-                }
-                case tags._TagNaN {
-                    return NaN;
-                }
-                case tags._TagInfinity {
-                    return this.readInfinityWithoutTag();
-                }
-                else {
-                    unexpectedTag(tag);
-                }
-            }
-        };
-        readNaN = function() {
-            var tag = stream.getc();
-            select(tag) {
-                case tags._TagNaN {
-                    return NaN;
-                }
-                else {
-                    unexpectedTag(tag);
-                }
-            }
-        };        
-        readInfinityWithoutTag = function() {
-            if (stream.getc() == tags._TagNeg) {
-                return -Inf;
-            }
-            else {
-                return Inf;
-            }
-        };
-        readInfinity = function() {
-            var tag = stream.getc();
-            select(tag) {
-                case tags._TagInfinity {
-                    return this.readInfinityWithoutTag();
-                }
-                else {
-                    unexpectedTag(tag);
-                }
-            }
-        };
-        readNull = function() {
-            var tag = stream.getc();
-            select(tag) {
-                case tags._TagNull {
-                    return null;
-                }
-                else {
-                    unexpectedTag(tag);
-                }
-            }
-        };
-        readEmpty = function() {
-            var tag = stream.getc();
-            select(tag) {
-                case tags._TagEmpty {
-                    return '';
-                }
-                else {
-                    unexpectedTag(tag);
-                }
-            }
-        };
-        readBoolean = function() {
-            var tag = stream.getc();
-            select(tag) {
-                case tags._TagTrue {
-                    return true;
-                }
-                case tags._TagFalse {
-                    return false;
-                }
-                else {
-                    unexpectedTag(tag);
-                }
-            }
-        };
-        readDateWithoutTag = function() {
-            var year = tonumber(stream.read(4));
-            var month = tonumber(stream.read(2));
-            var day = tonumber(stream.read(2));
-            var date;
-            var tag = stream.getc();
-            if (tag == tags._TagTime) {
-                var hour = tonumber(stream.read(2));
-                var minute = tonumber(stream.read(2));
-                var second = tonumber(stream.read(2));
-                var millisecond = 0;
-                tag = stream.getc();
-                if (tag == tags._TagPoint) {
-                    millisecond = tonumber(stream.read(3));
-                    tag = stream.getc();
-                    if ((tag >= '0') && (tag <= '9')) {
-                        stream.skip(2);
-                        tag = stream.getc();
-                        if ((tag >= '0') && (tag <= '9')) {
-                            stream.skip(2);
-                            tag = stream.getc();
-                        }
-                    }
-                }
-                if (tag == tags._TagUTC) {
-                    date = time(null, "!%c");
-                }
-                else {
-                    date = time();
-                }
-                date.hour = hour;
-                date.minute = minute;
-                date.second = second;
-                date.milliseconds = millisecond;
-            }
-            else if (tag == tags._TagUTC) {
-                date = time(null, "!%c");
-            }
-            else {
-                date = time();
-            }
-            date.year = year;
-            date.month = month;
-            date.day = day;
-            date.update();
-            ref[[#ref + 1]] = date;
-            return date;
-        };
-        readDate = function() {
-            var tag = stream.getc();
-            select(tag) {
-                case tags._TagRef {
-                    return this.readRef();
-                }
-                case tags._TagDate {
-                    return this.readDateWithoutTag();
-                }
-                else {
-                    unexpectedTag(tag);
-                }
-            }
-        };
-        readTimeWithoutTag = function() {
-            var hour = tonumber(stream.read(2));
-            var minute = tonumber(stream.read(2));
-            var second = tonumber(stream.read(2));
-            var millisecond = 0;
-            var tag = stream.getc();
-            if (tag == tags._TagPoint) {
-                millisecond = tonumber(stream.read(3));
-                tag = stream.getc();
-                if ((tag >= '0') && (tag <= '9')) {
-                    stream.skip(2);
-                    tag = stream.getc();
-                    if ((tag >= '0') && (tag <= '9')) {
-                        stream.skip(2);
-                        tag = stream.getc();
-                    }
-                }
-            }
-            var date;
-            if (tag == tags._TagUTC) {
-                date = time(null, "!%c");
-            }
-            else {
-                date = time();
-            }
-            date.year = 1970;
-            date.month = 1;
-            date.day = 1;
-            date.hour = hour;
-            date.minute = minute;
-            date.second = second;
-            date.milliseconds = millisecond;
-            date.update();
-            ref[[#ref + 1]] = date;
-            return date;
-        };
-        readTime = function() {
-            var tag = stream.getc();
-            select(tag) {
-                case tags._TagRef {
-                    return this.readRef();
-                }
-                case tags._TagTime {
-                    return this.readTimeWithoutTag();
-                }
-                else {
-                    unexpectedTag(tag);
-                }
-            }
-        };
-        readBytesWithoutTag = function() {
-            var count = readNumber(stream, tags._TagQuote);
-            var bytes = stream.read(count);
-            stream.skip(1);
-            ref[[#ref + 1]] = bytes;
-            return bytes;
-        };
-        readBytes = function() {
-            var tag = stream.getc();
-            select(tag) {
-                case tags._TagRef {
-                    return this.readRef();
-                }
-                case tags._TagBytes {
-                    return this.readBytesWithoutTag();
-                }
-                else {
-                    unexpectedTag(tag);
-                }
-            }
-        };
-        readUTF8CharWithoutTag = function() {
-            return stream.readUTF8String(1);
-        };
-        readUTF8Char = function() {
-            var tag = stream.getc();
-            select(tag) {
-                case tags._TagUTF8Char {
-                    return this.readUTF8CharWithoutTag();
-                }
-                else {
-                    unexpectedTag(tag);
-                }
-            }
-        };
-        _readString = function() {
-            var count = readNumber(stream, tags._TagQuote);
-            var s = stream.readUTF8String(count);
-            stream.skip(1);
-            return s;
-        };
-        readStringWithoutTag = function() {
-            var s = this._readString();
-            ref[[#ref + 1]] = s;
-            return s;
-        };
-        readString = function() {
-            var tag = stream.getc();
-            select(tag) {
-                case tags._TagRef {
-                    return this.readRef();
-                }
-                case tags._TagString {
-                    return this.readStringWithoutTag();
-                }
-                else {
-                    unexpectedTag(tag);
-                }
-            }
-        };
-        readGuidWithoutTag = function() {
-            stream.skip(1);
-            var s = stream.read(36);
-            stream.skip(1);
-            ref[[#ref + 1]] = s;
-            return s;
-        };
-        readGuid = function() {
-            var tag = stream.getc();
-            select(tag) {
-                case tags._TagRef {
-                    return this.readRef();
-                }
-                case tags._TagGuid {
-                    return this.readGuidWithoutTag();
-                }
-                else {
-                    unexpectedTag(tag);
-                }
-            }
-        };
-        readListWithoutTag = function() {
-            var list = {};
-            ref[[#ref + 1]] = list;
-            var count = readNumber(stream, tags._TagOpenbrace);
-            for (i = 1; count; 1) {
-                list[[i]] = this.unserialize();
-            }
-            stream.skip(1);
-            return list;
-        };
-        readList = function() {
-            var tag = stream.getc();
-            select(tag) {
-                case tags._TagRef {
-                    return this.readRef();
-                }
-                case tags._TagList {
-                    return this.readListWithoutTag();
-                }
-                else {
-                    unexpectedTag(tag);
-                }
-            }
-        };
-        readMapWithoutTag = function() {
-            var map = {};
-            ref[[#ref + 1]] = map;
-            var count = readNumber(stream, tags._TagOpenbrace);
-            for (i = 1; count; 1) {
-                var key = this.unserialize();
-                var value = this.unserialize();
-                map[[key]] = value;
-            }
-            stream.skip(1);
-            return map;
-        };
-        readMap = function() {
-            var tag = stream.getc();
-            select(tag) {
-                case tags._TagRef {
-                    return this.readRef();
-                }
-                case tags._TagMap {
-                    return this.readMapWithoutTag();
-                }
-                else {
-                    unexpectedTag(tag);
-                }
-            }
-        };
-        readObjectWithoutTag = function() {
-            var clsinfo = classref[[readNumber(stream, tags._TagOpenbrace) + 1]];
-            var obj = clsinfo[["cls"]]();
-            ref[[#ref + 1]] = obj;
-            for (i = 1; clsinfo[["count"]]; 1) {
-                obj[[clsinfo[["fields"]][[i]]]] = this.unserialize();
-            }
-            stream.skip(1);
-            return obj;
-        };
-        readObject = function() {
-            var tag = stream.getc();
-            select(tag) {
-                case tags._TagRef {
-                    return this.readRef();
-                }
-                case tags._TagClass {
-                    this.readClass();
-                    return this.readObject();
-                }
-                case tags._TagObject {
-                    return this.readObjectWithoutTag();
-                }
-                else {
-                    unexpectedTag(tag);
-                }
-            }
-        };
-        readClass = function() {
-            var classname = this._readString();
-            var count = readNumber(stream, tags._TagOpenbrace);
-            var fields = {};
-            for (i = 1; count; 1) {
-                fields[[i]] = this.readString();
-            }
-            stream.skip(1);
-            var clsinfo = {};
-            clsinfo[["cls"]] = getClass(classname);
-            clsinfo[["count"]] = count;
-            clsinfo[["fields"]] = fields;
-            classref[[#classref + 1]] = clsinfo;
-        };
-        readRef = function() {
-            return ref[[readNumber(stream, tags._TagSemicolon) + 1]];
-        };
         readRaw = function(ostream, tag) {
             ostream := ..hprose.io.OutputStream();
             tag := stream.getc();
@@ -789,43 +288,43 @@ namespace hprose.io {
                 case '0';'9' {
                     ostream.write(tag);
                 }
-                case tags._TagNull,tags._TagEmpty,tags._TagTrue,tags._TagFalse,tags._TagNaN {
+                case tags.TagNull,tags.TagEmpty,tags.TagTrue,tags.TagFalse,tags.TagNaN {
                     ostream.write(tag);
                 }
-                case tags._TagInfinity {
+                case tags.TagInfinity {
                     ostream.write(tag, stream.getc());
                 }
-                case tags._TagInteger,tags._TagLong,tags._TagDouble,tags._TagRef {
+                case tags.TagInteger,tags.TagLong,tags.TagDouble,tags.TagRef {
                     this.readNumberRaw(ostream);
                 }
-                case tags._TagDate,tags._TagTime {
+                case tags.TagDate,tags.TagTime {
                     this.readDateTimeRaw(ostream, tag);
                 }
-                case tags._TagUTF8Char {
+                case tags.TagUTF8Char {
                     this.readUTF8CharRaw(ostream, tag);
                 }
-                case tags._TagBytes {
+                case tags.TagBytes {
                     this.readBytesRaw(ostream, tag);
                 }
-                case tags._TagString {
+                case tags.TagString {
                     this.readStringRaw(ostream, tag);
                 }
-                case tags._TagGuid {
+                case tags.TagGuid {
                     this.readGuidRaw(ostream, tag);
                 }
-                case tags._TagList,tags._TagMap,tags._TagObject {
+                case tags.TagList,tags.TagMap,tags.TagObject {
                     this.readComplexRaw(ostream, tag);
                 }
-                case tags._TagClass {
+                case tags.TagClass {
                     this.readComplexRaw(ostream, tag);
                     this.readRaw(ostream);
                 }
-                case tags._TagError {
+                case tags.TagError {
                     ostream.write(tag);
                     this.readRaw(ostream);
                 }
                 else {
-                    unexpectedTag(tag);
+                    this.unexpectedTag(tag);
                 }
             }
             return ostream;
@@ -835,14 +334,14 @@ namespace hprose.io {
             do {
                 tag = stream.getc();
                 ostream.write(tag);
-            } while (tag != tags._TagSemicolon);
+            } while (tag != tags.TagSemicolon);
         };
         readDateTimeRaw = function(ostream, tag) {
             ostream.write(tag);
             do {
                 tag = stream.getc();
                 ostream.write(tag);
-            } while ((tag != tags._TagSemicolon) && (tag != tags._TagUTC));
+            } while ((tag != tags.TagSemicolon) && (tag != tags.TagUTC));
         };
         readUTF8CharRaw = function(ostream, tag) {
             ostream.write(tag, stream.readUTF8String(1));
@@ -856,7 +355,7 @@ namespace hprose.io {
                 count += tag[1] - 48;
                 tag = stream.getc();
                 ostream.write(tag);
-            } while (tag != tags._TagQuote);
+            } while (tag != tags.TagQuote);
             ostream.write(stream.read(count + 1));
         };
         readStringRaw = function(ostream, tag) {
@@ -868,7 +367,7 @@ namespace hprose.io {
                 count += tag[1] - 48;
                 tag = stream.getc();
                 ostream.write(tag);
-            } while (tag != tags._TagQuote);
+            } while (tag != tags.TagQuote);
             ostream.write(stream.readUTF8String(count + 1));
         };
         readGuidRaw = function(ostream, tag) {
@@ -879,19 +378,585 @@ namespace hprose.io {
             do {
                 tag = stream.getc();
                 ostream.write(tag);
-            } while (tag != tags._TagOpenbrace);
-            while ((tag = stream.getc()) != tags._TagClosebrace) {
+            } while (tag != tags.TagOpenbrace);
+            while ((tag = stream.getc()) != tags.TagClosebrace) {
                 this.readRaw(ostream, tag);
             }
             ostream.write(tag);
         };
-        reset = function() {
-            ref = { @{ _weak = "v" } };
-            classref = {};
+    }
+    class HproseSimpleReader {
+        ctor(stream) {
+            this = ..hprose.io.HproseRawReader(stream);
+            var classref = {};
+            var tags = ..hprose.io.HproseTags;
         };
-        @{
-            _type = "hprose.io.HproseReader";
+        _checkTag = function(expectTag, tag) {
+            if (tag != expectTag) this.unexpectedTag(tag, expectTag);
+        };
+        checkTag = function(expectTag) {
+            this._checkTag(expectTag, stream.getc());
+        };
+        _checkTags = function(expectTags, tag) {
+            if (!indexAny(expectTags, tag)) this.unexpectedTag(tag, expectTags);
+            return tag;
+        };
+        checkTags = function(expectTags) {
+            return this._checkTags(expectTags, stream.getc());
+        };
+        unserialize = function() {
+            var tag = stream.getc();
+            select(tag) {
+                case '0';'9' {
+                    return tag[1] - 48;
+                }
+                case tags.TagInteger {
+                    return this.readIntegerWithoutTag(); 
+                }
+                case tags.TagLong {
+                    return this.readLongWithoutTag(); 
+                }
+                case tags.TagDouble {
+                    return this.readDoubleWithoutTag();
+                }
+                case tags.TagNull {
+                    return null;
+                }
+                case tags.TagEmpty {
+                    return '';
+                }
+                case tags.TagTrue {
+                    return true;
+                }
+                case tags.TagFalse {
+                    return false;
+                }
+                case tags.TagNaN {
+                    return NaN;
+                }
+                case tags.TagInfinity {
+                    return this.readInfinityWithoutTag();
+                }
+                case tags.TagDate {
+                    return this.readDateWithoutTag();
+                }
+                case tags.TagTime {
+                    return this.readTimeWithoutTag();
+                }
+                case tags.TagBytes {
+                    return this.readBytesWithoutTag();
+                }
+                case tags.TagUTF8Char {
+                    return this.readUTF8CharWithoutTag();
+                }
+                case tags.TagString {
+                    return this.readStringWithoutTag();
+                }
+                case tags.TagGuid {
+                    return this.readGuidWithoutTag();
+                }
+                case tags.TagList {
+                    return this.readListWithoutTag();
+                }
+                case tags.TagMap {
+                    return this.readMapWithoutTag();
+                }
+                case tags.TagClass {
+                    this.readClass();
+                    return this.readObject();
+                }
+                case tags.TagObject {
+                    return this.readObjectWithoutTag();
+                }
+                case tags.TagRef {
+                    return this.readRef();
+                }
+                case tags.TagError {
+                    error(this.readString());
+                }
+                else {
+                    this.unexpectedTag(tag);
+                }
+            }
+        };
+        readIntegerWithoutTag = function() {
+            return readNumber(stream, tags.TagSemicolon);
+        };
+        readInteger = function() {
+            var tag = stream.getc();
+            select(tag) {
+                case '0';'9' {
+                    return tag[1] - 48;
+                }
+                case tags.TagInteger {
+                    return this.readIntegerWithoutTag();
+                }
+                else {
+                    this.unexpectedTag(tag);
+                }
+            }
+        };
+        readLongWithoutTag = function() {
+            return stream.readuntil(tags.TagSemicolon);
+        };
+        readLong = function() {
+            var tag = stream.getc();
+            select(tag) {
+                case '0';'9' {
+                    return tag;
+                }
+                case tags.TagInteger, tags.TagLong {
+                    return this.readLongWithoutTag();
+                }
+                else {
+                    this.unexpectedTag(tag);
+                }
+            }
+        };
+        readDoubleWithoutTag = function() {
+            return readNumber(stream, tags.TagSemicolon);
+        };
+        readDouble = function() {
+            var tag = stream.getc();
+            select(tag) {
+                case '0';'9' {
+                    return tag[1] - 48;
+                }
+                case tags.TagInteger, tags.TagLong, tags.TagDouble {
+                    return this.readDoubleWithoutTag();
+                }
+                case tags.TagNaN {
+                    return NaN;
+                }
+                case tags.TagInfinity {
+                    return this.readInfinityWithoutTag();
+                }
+                else {
+                    this.unexpectedTag(tag);
+                }
+            }
+        };
+        readNaN = function() {
+            var tag = stream.getc();
+            select(tag) {
+                case tags.TagNaN {
+                    return NaN;
+                }
+                else {
+                    this.unexpectedTag(tag);
+                }
+            }
+        };        
+        readInfinityWithoutTag = function() {
+            if (stream.getc() == tags.TagNeg) {
+                return -Inf;
+            }
+            else {
+                return Inf;
+            }
+        };
+        readInfinity = function() {
+            var tag = stream.getc();
+            select(tag) {
+                case tags.TagInfinity {
+                    return this.readInfinityWithoutTag();
+                }
+                else {
+                    this.unexpectedTag(tag);
+                }
+            }
+        };
+        readNull = function() {
+            var tag = stream.getc();
+            select(tag) {
+                case tags.TagNull {
+                    return null;
+                }
+                else {
+                    this.unexpectedTag(tag);
+                }
+            }
+        };
+        readEmpty = function() {
+            var tag = stream.getc();
+            select(tag) {
+                case tags.TagEmpty {
+                    return '';
+                }
+                else {
+                    this.unexpectedTag(tag);
+                }
+            }
+        };
+        readBoolean = function() {
+            var tag = stream.getc();
+            select(tag) {
+                case tags.TagTrue {
+                    return true;
+                }
+                case tags.TagFalse {
+                    return false;
+                }
+                else {
+                    this.unexpectedTag(tag);
+                }
+            }
+        };
+        _readDate = function() {
+            var year = tonumber(stream.read(4), 10);
+            var month = tonumber(stream.read(2), 10);
+            var day = tonumber(stream.read(2), 10);
+            var date;
+            var tag = stream.getc();
+            if (tag == tags.TagTime) {
+                var hour = tonumber(stream.read(2), 10);
+                var minute = tonumber(stream.read(2), 10);
+                var second = tonumber(stream.read(2), 10);
+                var millisecond = 0;
+                tag = stream.getc();
+                if (tag == tags.TagPoint) {
+                    millisecond = tonumber(stream.read(3), 10);
+                    tag = stream.getc();
+                    if ((tag >= '0') && (tag <= '9')) {
+                        stream.skip(2);
+                        tag = stream.getc();
+                        if ((tag >= '0') && (tag <= '9')) {
+                            stream.skip(2);
+                            tag = stream.getc();
+                        }
+                    }
+                }
+                if (tag == tags.TagUTC) {
+                    date = time(null, "!%c");
+                }
+                else {
+                    date = time();
+                }
+                date.hour = hour;
+                date.minute = minute;
+                date.second = second;
+                date.milliseconds = millisecond;
+            }
+            else if (tag == tags.TagUTC) {
+                date = time(null, "!%c");
+            }
+            else {
+                date = time();
+            }
+            date.year = year;
+            date.month = month;
+            date.day = day;
+            date.update();
+            return date;
+        };
+        readDateWithoutTag = _readDate;
+        readDate = function() {
+            var tag = stream.getc();
+            select(tag) {
+                case tags.TagRef {
+                    return this.readRef();
+                }
+                case tags.TagDate {
+                    return this.readDateWithoutTag();
+                }
+                else {
+                    this.unexpectedTag(tag);
+                }
+            }
+        };
+        _readTime = function() {
+            var hour = tonumber(stream.read(2), 10);
+            var minute = tonumber(stream.read(2), 10);
+            var second = tonumber(stream.read(2), 10);
+            var millisecond = 0;
+            var tag = stream.getc();
+            if (tag == tags.TagPoint) {
+                millisecond = tonumber(stream.read(3), 10);
+                tag = stream.getc();
+                if ((tag >= '0') && (tag <= '9')) {
+                    stream.skip(2);
+                    tag = stream.getc();
+                    if ((tag >= '0') && (tag <= '9')) {
+                        stream.skip(2);
+                        tag = stream.getc();
+                    }
+                }
+            }
+            var date;
+            if (tag == tags.TagUTC) {
+                date = time(null, "!%c");
+            }
+            else {
+                date = time();
+            }
+            date.year = 1970;
+            date.month = 1;
+            date.day = 1;
+            date.hour = hour;
+            date.minute = minute;
+            date.second = second;
+            date.milliseconds = millisecond;
+            date.update();
+            return date;
+        };
+        readTimeWithoutTag = _readTime;
+        readTime = function() {
+            var tag = stream.getc();
+            select(tag) {
+                case tags.TagRef {
+                    return this.readRef();
+                }
+                case tags.TagTime {
+                    return this.readTimeWithoutTag();
+                }
+                else {
+                    this.unexpectedTag(tag);
+                }
+            }
+        };
+        _readBytes = function() {
+            var count = readNumber(stream, tags.TagQuote);
+            var bytes = stream.read(count);
+            stream.skip(1);
+            return bytes;
+        };
+        readBytesWithoutTag = _readBytes;
+        readBytes = function() {
+            var tag = stream.getc();
+            select(tag) {
+                case tags.TagRef {
+                    return this.readRef();
+                }
+                case tags.TagBytes {
+                    return this.readBytesWithoutTag();
+                }
+                else {
+                    this.unexpectedTag(tag);
+                }
+            }
+        };
+        readUTF8CharWithoutTag = function() {
+            return stream.readUTF8String(1);
+        };
+        readUTF8Char = function() {
+            var tag = stream.getc();
+            select(tag) {
+                case tags.TagUTF8Char {
+                    return this.readUTF8CharWithoutTag();
+                }
+                else {
+                    this.unexpectedTag(tag);
+                }
+            }
+        };
+        _readString = function() {
+            var count = readNumber(stream, tags.TagQuote);
+            var s = stream.readUTF8String(count);
+            stream.skip(1);
+            return s;
+        };
+        readStringWithoutTag = _readString;
+        readString = function() {
+            var tag = stream.getc();
+            select(tag) {
+                case tags.TagRef {
+                    return this.readRef();
+                }
+                case tags.TagString {
+                    return this.readStringWithoutTag();
+                }
+                else {
+                    this.unexpectedTag(tag);
+                }
+            }
+        };
+        _readGuid = function() {
+            stream.skip(1);
+            var guid = stream.read(36);
+            stream.skip(1);
+            return guid;
+        };
+        readGuidWithoutTag = _readGuid;
+        readGuid = function() {
+            var tag = stream.getc();
+            select(tag) {
+                case tags.TagRef {
+                    return this.readRef();
+                }
+                case tags.TagGuid {
+                    return this.readGuidWithoutTag();
+                }
+                else {
+                    this.unexpectedTag(tag);
+                }
+            }
+        };
+        _readListBegin = function() {
+        	return {};
+        };
+        _readListEnd = function(list) {
+            var count = readNumber(stream, tags.TagOpenbrace);
+            for (i = 1; count; 1) {
+                list[[i]] = this.unserialize();
+            }
+            stream.skip(1);
+            return list;
+        };
+        readListWithoutTag = function() {
+            return this._readListEnd(this._readListBegin());
+        };
+        readList = function() {
+            var tag = stream.getc();
+            select(tag) {
+                case tags.TagRef {
+                    return this.readRef();
+                }
+                case tags.TagList {
+                    return this.readListWithoutTag();
+                }
+                else {
+                    this.unexpectedTag(tag);
+                }
+            }
+        };
+        _readMapBegin = function() {
+        	return {};
+        };
+        _readMapEnd = function(map) {
+            var count = readNumber(stream, tags.TagOpenbrace);
+            for (i = 1; count; 1) {
+                var key = this.unserialize();
+                var value = this.unserialize();
+                map[[key]] = value;
+            }
+            stream.skip(1);
+            return map;
+        };
+        readMapWithoutTag = function() {
+            return this._readMapEnd(this._readMapBegin());
+        };
+        readMap = function() {
+            var tag = stream.getc();
+            select(tag) {
+                case tags.TagRef {
+                    return this.readRef();
+                }
+                case tags.TagMap {
+                    return this.readMapWithoutTag();
+                }
+                else {
+                    this.unexpectedTag(tag);
+                }
+            }
+        };
+        _readObjectBegin = function() {
+        	var clsinfo = classref[[readNumber(stream, tags.TagOpenbrace) + 1]];
+            var obj = clsinfo[["cls"]]();
+            return obj, clsinfo;
         }
+        _readObjectEnd = function(obj, clsinfo) {
+            for (i = 1; clsinfo[["count"]]; 1) {
+                obj[[clsinfo[["fields"]][[i]]]] = this.unserialize();
+            }
+            stream.skip(1);
+            return obj;
+        }
+        readObjectWithoutTag = function() {
+            return this._readObjectEnd(this._readObjectBegin());
+        };
+        readObject = function() {
+            var tag = stream.getc();
+            select(tag) {
+                case tags.TagRef {
+                    return this.readRef();
+                }
+                case tags.TagClass {
+                    this.readClass();
+                    return this.readObject();
+                }
+                case tags.TagObject {
+                    return this.readObjectWithoutTag();
+                }
+                else {
+                    this.unexpectedTag(tag);
+                }
+            }
+        };
+        readClass = function() {
+            var classname = this._readString();
+            var count = readNumber(stream, tags.TagOpenbrace);
+            var fields = {};
+            for (i = 1; count; 1) {
+                fields[[i]] = this.readString();
+            }
+            stream.skip(1);
+            var clsinfo = {};
+            clsinfo[["cls"]] = getClass(classname);
+            clsinfo[["count"]] = count;
+            clsinfo[["fields"]] = fields;
+            classref[[#classref + 1]] = clsinfo;
+        };
+        readRef = function() {
+            this.unexpectedTag(tags.TagRef);
+        };
+        _reset = function() {
+            classref = {};        
+        }
+        reset = _reset;
+    }
+    class HproseReader {
+        ctor(stream) {
+            this = ..hprose.io.HproseSimpleReader(stream);
+            var ref = { @{ _weak = "v" } };
+            var tags = ..hprose.io.HproseTags;
+        };
+        readDateWithoutTag = function() {
+            var date = this._readDate();
+            ref[[#ref + 1]] = date;
+            return date;
+        };
+        readTimeWithoutTag = function() {
+            var time = this._readTime();
+            ref[[#ref + 1]] = time;
+            return time;
+        };
+        readBytesWithoutTag = function() {
+            var bytes = this._readBytes();
+            ref[[#ref + 1]] = bytes;
+            return bytes;
+        };
+        readStringWithoutTag = function() {
+            var str = this._readString();
+            ref[[#ref + 1]] = str;
+            return str;
+        };
+        readGuidWithoutTag = function() {
+            var guid = this._readGuid();
+            ref[[#ref + 1]] = guid;
+            return guid;
+        };
+        readListWithoutTag = function() {
+            var list = this._readListBegin();
+            ref[[#ref + 1]] = list;
+            return this._readListEnd(list);
+        };
+        readMapWithoutTag = function() {
+            var map = this._readMapBegin();
+            ref[[#ref + 1]] = map;
+            return this._readMapEnd(map);
+        };
+        readObjectWithoutTag = function() {
+            var obj, clsinfo = this._readObjectBegin();
+            ref[[#ref + 1]] = obj;
+            return this._readObjectEnd(obj, clsinfo);
+        };
+        readRef = function() {
+            return ref[[readNumber(stream, tags.TagSemicolon) + 1]];
+        };
+        reset = function() {
+            this._reset();
+            ref = { @{ _weak = "v" } };
+        };
     }
     var isDigit = function(value) {
         select(value) {
@@ -918,9 +983,9 @@ namespace hprose.io {
     var getClassName = function(obj) {
         var typename = obj@._type;
         var cls = eval(typename);
-        var classname = ClassManager.getClassAlias(cls);
+        var classname = HproseClassManager.getClassAlias(cls);
         if (classname) return classname;
-        ClassManager.register(cls, typename);
+        HproseClassManager.register(cls, typename);
         return typename;
     };
     var isPosInf = function(value) {
@@ -953,17 +1018,11 @@ namespace hprose.io {
     var isarray = function(value) {
         return ((type(value) === type.table) && (count(value) === #value))
     };
-    var indexof = function(array, value) {
-        for (i=1;#array;1) {
-            if (array[[i]] === value) return i;
-        }
-        return 0;
-    };
-    class HproseWriter {
+    class HproseSimpleWriter {
         ctor(stream){
             this.stream = stream;
-            var ref = { @{ _weak = "v" } };
             var classref = {};
+            var fieldsref = {};
             var tags = ..hprose.io.HproseTags;
         };
         serialize = function (variable) {
@@ -988,7 +1047,7 @@ namespace hprose.io {
                 case type.string {
                     var len = ulen(variable);
                     if (len < 0) {
-                        this.writeBytesWithRef(variable);
+                        this.writeBytes(variable, true);
                     }
                     elseif (len == 0) {
                         this.writeEmpty();
@@ -997,63 +1056,58 @@ namespace hprose.io {
                         this.writeUTF8Char(variable);
                     }
                     else {
-                        this.writeBytesWithRef(variable, len);
+                        this.writeString(variable, true, len);
                     }
                 }
                 case type.table {
-                    var r = indexof(ref, variable);
-                    if (r > 0) {
-                        this.writeRef(r);
-                    }
-                    elseif (istime(variable)) {
-                        this.writeDateTime(variable);
+                    if (istime(variable)) {
+                        this.writeDateTime(variable, true);
                     }
                     elseif (isarray(variable)) {
-                        this.writeList(variable);
+                        this.writeList(variable, true);
                     }
                     elseif (isobject(variable)) {
-                        this.writeObject(variable);
+                        this.writeObject(variable, true);
                     }
                     else {
-                        this.writeMap(variable);
+                        this.writeMap(variable, true);
                     }
                 }
             }
         };
         writeInteger = function(i) {
-            stream.write(tags._TagInteger, tostring(i), tags._TagSemicolon);
+            stream.write(tags.TagInteger, tostring(i), tags.TagSemicolon);
         };
         writeLong = function(l) {
-            stream.write(tags._TagLong, tostring(l), tags._TagSemicolon);
+            stream.write(tags.TagLong, tostring(l), tags.TagSemicolon);
         };
         writeDouble = function(d) {
             if (isNaN(d)) {
                 this.writeNaN();
             }
             else if (isFinite(d)) {
-                stream.write(tags._TagDouble, tostring(d), tags._TagSemicolon);
+                stream.write(tags.TagDouble, tostring(d), tags.TagSemicolon);
             }
             else {
                 this.writeInfinity(d > 0);
             }
         };
         writeNaN = function() {
-            stream.write(tags._TagNaN);
+            stream.write(tags.TagNaN);
         };
         writeInfinity = function(positive) {
-            stream.write(tags._TagInfinity, (positive ? tags._TagPos : tags._TagNeg));
+            stream.write(tags.TagInfinity, (positive ? tags.TagPos : tags.TagNeg));
         };
         writeNull = function() {
-            stream.write(tags._TagNull);
+            stream.write(tags.TagNull);
         };
         writeEmpty = function() {
-            stream.write(tags._TagEmpty);
+            stream.write(tags.TagEmpty);
         };
         writeBoolean = function(b) {
-            stream.write(b ? tags._TagTrue : tags._TagFalse);
+            stream.write(b ? tags.TagTrue : tags.TagFalse);
         };
-        writeDateTime = function(date) {
-            ref[[#ref + 1]] = date;
+        _writeDateTime = function(date) {
             var year = format("%04i",date.year);
             var month = format("%02i",date.month);
             var day = format("%02i",date.day);
@@ -1061,88 +1115,61 @@ namespace hprose.io {
             var minute = format("%02i",date.minute);
             var second = format("%02i",date.second);
             var millisecond = format("%03i",date.milliseconds);
-            var timezone = (date.format[[1]] == '!') ? tags._TagUTC : tags._TagSemicolon;
+            var timezone = (date.format[[1]] == '!') ? tags.TagUTC : tags.TagSemicolon;
             
             if ((hour == '00') && (minute == '00') &&
                 (second == '00') && (millisecond == '000')) {
-                stream.write(tags._TagDate, year, month, day, timezone);
+                stream.write(tags.TagDate, year, month, day, timezone);
             }
             else if ((year == '1970') && (month == '01') && (day == '01')) {
-                stream.write(tags._TagTime, hour, minute, second);
+                stream.write(tags.TagTime, hour, minute, second);
                 if (millisecond != '000') {
-                    stream.write(tags._TagPoint, millisecond);
+                    stream.write(tags.TagPoint, millisecond);
                 }                        
                 stream.write(timezone);
             }
             else {
-                stream.write(tags._TagDate, year, month, day,
-                             tags._TagTime, hour, minute, second);
+                stream.write(tags.TagDate, year, month, day,
+                             tags.TagTime, hour, minute, second);
                 if (millisecond != '000') {
-                    stream.write(tags._TagPoint, millisecond);
+                    stream.write(tags.TagPoint, millisecond);
                 }
                 stream.write(timezone);
             }
-        };
-        writeDateTimeWithRef = function(date) {
-            var r = indexof(ref, date);
-            if (r > 0) {
-                this.writeRef(r);
-            }
-            else {
-                this.writeDateTime(date);
-            }
         }
-        writeBytes = function(bytes) {
-            ref[[#ref + 1]] = bytes;
-            stream.write(tags._TagBytes, (#bytes : ''), tags._TagQuote, bytes, tags._TagQuote);
+        writeDateTime = function(date, checkRef = false) {
+            this._writeDateTime(date);
         };
-        writeBytesWithRef = function(bytes) {
-            var r = indexof(ref, bytes);
-            if (r > 0) {
-                this.writeRef(r);
-            }
-            else {
-                this.writeBytes(bytes);
-            }
+        _writeBytes = function(bytes) {
+            stream.write(tags.TagBytes, (#bytes : ''), tags.TagQuote, bytes, tags.TagQuote);
         };
+        writeBytes = function(bytes, checkRef = false) {
+            this._writeBytes(bytes);
+        }
         writeUTF8Char = function(c) {
-            stream.write(tags._TagUTF8Char, c);
+            stream.write(tags.TagUTF8Char, c);
         };
-        writeString = function(str, len) {
-            ref[[#ref + 1]] = str;
+        _writeString = function(str, len) {
+        	len := ulen(str);
             if (len < 0) error("must be encoding in utf8.");
-            stream.write(tags._TagString, (len : ''), tags._TagQuote, str, tags._TagQuote);
+            stream.write(tags.TagString, (len : ''), tags.TagQuote, str, tags.TagQuote);
         };
-        writeStringWithRef = function(str, len) {
-            var r = indexof(ref, str);
-            if (r > 0) {
-                this.writeRef(r);
-            }
-            else {
-                this.writeString(str, len);
-            }
-        };
-        writeList = function(list) {
-            ref[[#ref + 1]] = list;
+        writeString = function(str, checkRef = false, len) {
+            this._writeString(str, len);
+        }
+        _writeList = function(list) {
             var count = #list;
-            stream.write(tags._TagList, (count : ''), tags._TagOpenbrace);
+            stream.write(tags.TagList, (count : ''), tags.TagOpenbrace);
             for (i = 1; count; 1) {
                 this.serialize(list[[i]]);
             }
-            stream.write(tags._TagClosebrace);
+            stream.write(tags.TagClosebrace);
         };
-        writeListWithRef = function(list) {
-            var r = indexof(ref, list);
-            if (r > 0) {
-                this.writeRef(r);
-            }
-            else {
-                this.writeList(list);
-            }
-        };
-        writeMap = function(map) {
-            ref[[#ref + 1]] = map;
-               var fields = {};
+        writeList = function(list, checkRef = false) {
+            this._writeList(list);
+        }
+        _writeMap = function(map) {
+            var fields = {};
             for (key, value in map) {
                 select(type(value)) {
                     case type.null, type.boolean, type.number, type.string, type.table {
@@ -1151,88 +1178,145 @@ namespace hprose.io {
                 }
             }
             var count = #fields;
-            stream.write(tags._TagMap, (count : ''), tags._TagOpenbrace);
+            stream.write(tags.TagMap, (count : ''), tags.TagOpenbrace);
             for (i = 1; count; 1) {
                 this.serialize(fields[[i]]);
                 this.serialize(map[[fields[[i]]]]);
             }
-            stream.write(tags._TagClosebrace);
+            stream.write(tags.TagClosebrace);
         };
-        writeMapWithRef = function(map) {
-            var r = indexof(ref, map);
-            if (r > 0) {
-                this.writeRef(r);
-            }
-            else {
-                this.writeMap(map);
-            }
-        };
-        writeObject = function(obj) {
+        writeMap = function(map, checkRef = false) {
+            this._writeMap(map);
+        }
+        _writeObjectBegin = function(obj) {
             var classname = getClassName(obj);
-            var fields = {};
-            for (key, value in obj) {
-                select(type(value)) {
-                    case type.null, type.boolean, type.number, type.string, type.table {
-                        fields[[#fields + 1]] = tostring(key);
+        	var fields;
+        	var index = classref[[classname]];
+            if (index === null) {
+                fields = {};
+                for (key, value in obj) {
+                    select(type(value)) {
+                        case type.null, type.boolean, type.number, type.string, type.table {
+                            fields[[#fields + 1]] = tostring(key);
+                        }
                     }
                 }
-            }
-            var cr = indexof(classref, classname);
-            if (cr === 0) {
-                cr = this.writeClass(classname, fields);
-            }
-            ref[[#ref + 1]] = obj;
+                index = this.writeClass(classname, fields);
+        	}
+        	else {
+        	    fields = fieldsref[[index]];
+        	}
+            stream.write(tags.TagObject, index - 1, tags.TagOpenbrace);
+            return fields;
+        }
+        _writeObjectEnd = function(obj, fields) {
             var count = #fields;
-            stream.write(tags._TagObject, cr - 1, tags._TagOpenbrace);
             for (i = 1; count; 1) {
                 this.serialize(obj[[fields[[i]]]]);
             }
-            stream.write(tags._TagClosebrace);
-        };
-        writeObjectWithRef = function(obj) {
-            var r = indexof(ref, obj);
-            if (r > 0) {
-                this.writeRef(r);
-            }
-            else {
-                this.writeObject(obj);
-            }
+            stream.write(tags.TagClosebrace);
+        }
+        writeObject = function(obj, checkRef = false) {
+            this._writeObjectEnd(obj, this._writeObjectBegin(obj));
         };
         writeClass = function(classname, fields) {
             var count = #fields;
             var len = ulen(classname);
             if (len < 0) error("class name must be encoding in utf8.");
-            stream.write(tags._TagClass, len, tags._TagQuote, classname, tags._TagQuote, (count : ''), tags._TagOpenbrace);
+            stream.write(tags.TagClass, len, tags.TagQuote, classname, tags.TagQuote, (count : ''), tags.TagOpenbrace);
             for (i = 1; count; 1) {
-                this.writeString(fields[i], ulen(fields[i]));
+                this.writeString(fields[i]);
             }
-            stream.write(tags._TagClosebrace);
-            var cr = #classref + 1;
-            classref[cr] = classname;
-            return cr;
+            stream.write(tags.TagClosebrace);
+            var index = #fieldsref + 1;
+            classref[classname] = index;
+            fieldsref[index] = fields;
+            return index;
         };
-        writeRef = function(ref) {
-            stream.write(tags._TagRef, ref - 1, tags._TagSemicolon);
-        };
-        reset = function() {
-            ref = { @{ _weak = "v" } };
+        _reset = function() {
             classref = {};
+            fieldsref = {};
         };
-        @{
-            _type = "hprose.io.HproseWriter";
-        }
+        reset = _reset;
     }
+    class HproseWriter {
+    	ctor(stream) {
+    	    this = ..hprose.io.HproseSimpleWriter(stream);
+    	    var ref = { @{ _weak = "k" } };
+    	    var refcount = 0;
+            var tags = ..hprose.io.HproseTags;
+    	};
+        writeDateTime = function(date, checkRef = false) {
+            if (!this.writeRef(date, checkRef)) {
+                ref[[date]] = refcount;
+            	refcount += 1;
+                this._writeDateTime(date);
+            }
+        };
+        writeBytes = function(bytes, checkRef = false) {
+            if (!this.writeRef(bytes, checkRef)) {
+                ref[[bytes]] = refcount;
+            	refcount += 1;
+                this._writeBytes(bytes);
+            }
+        }
+        writeString = function(str, checkRef = false, len) {
+            if (!this.writeRef(str, checkRef)) {
+                ref[[str]] = refcount;
+            	refcount += 1;
+            	this._writeString(str, len);
+            }
+        }
+        writeList = function(list, checkRef = false) {
+            if (!this.writeRef(list, checkRef)) {
+                ref[[list]] = refcount;
+            	refcount += 1;
+                this._writeList(list);
+            }
+        }
+        writeMap = function(map, checkRef = false) {
+            if (!this.writeRef(map, checkRef)) {
+                ref[[map]] = refcount;
+            	refcount += 1;
+                this._writeMap(map);
+            }
+        }
+        writeObject = function(obj, checkRef = false) {
+            if (!this.writeRef(obj, checkRef)) {
+                var fields = this._writeObjectBegin(obj);
+                ref[[obj]] = refcount;
+            	refcount += 1;
+                this._writeObjectEnd(obj, fields);
+            }
+        }
+        writeRef = function(obj, checkRef) {
+            if (checkRef) {
+                var index = ref[obj];
+                if (index !== null) {
+                    stream.write(tags.TagRef, index, tags.TagSemicolon);
+                    return true;
+                }
+            }
+            return false;
+        };
+    	reset = function() {
+    	    this._reset();
+            ref = { @{ _weak = "k" } };
+            refcount = 0;
+    	}
+    }
+    
     namespace HproseFormatter {
-        serialize = function(variable) {
+        serialize = function(variable, simple = false) {
             var stream = ..hprose.io.OutputStream();
-            var writer = ..hprose.io.HproseWriter(stream);
+            var writer = (simple ? ..hprose.io.HproseSimpleWriter(stream) : ..hprose.io.HproseWriter(stream));
             writer.serialize(variable);
             return tostring(stream);
         }
-        unserialize = function(variable_representation) {
+        unserialize = function(variable_representation, simple = false) {
             var stream = ..hprose.io.InputStream(variable_representation);
-            var reader = ..hprose.io.HproseReader(stream);
+            var reader = (simple ? ..hprose.io.HproseSimpleReader(stream) : ..hprose.io.HproseReader(stream));
             return reader.unserialize();
         }
-    }    
+    }
 }
