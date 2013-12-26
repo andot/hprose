@@ -49,10 +49,10 @@ class hprose.io.HproseSimpleReader extends HproseRawReader {
             case HproseTags.TagLong: return readLongWithoutTag();
             case HproseTags.TagDouble: return readDoubleWithoutTag();
             case HproseTags.TagNull: return null;
+            case HproseTags.TagEmpty: return "";
             case HproseTags.TagTrue: return true;
             case HproseTags.TagFalse: return false;
             case HproseTags.TagNaN: return NaN;
-            case HproseTags.TagEmpty: return "";
             case HproseTags.TagInfinity: return readInfinityWithoutTag();
             case HproseTags.TagDate: return readDateWithoutTag();
             case HproseTags.TagTime: return readTimeWithoutTag();
@@ -64,7 +64,7 @@ class hprose.io.HproseSimpleReader extends HproseRawReader {
             case HproseTags.TagClass: readClass(); return readObject();
             case HproseTags.TagObject: return readObjectWithoutTag();
             case HproseTags.TagRef: return readRef();
-            case HproseTags.TagError: throw new HproseException(readString(true));
+            case HproseTags.TagError: throw new HproseException(readString());
             default: unexpectedTag(tag);
         }
     }
