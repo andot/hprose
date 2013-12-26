@@ -13,7 +13,7 @@
  *                                                        *
  * hprose simple writer class for ActionScript 3.0.       *
  *                                                        *
- * LastModified: Dec 7, 2013                              *
+ * LastModified: Dec 26, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -116,22 +116,22 @@ package hprose.io {
                 writeEmpty() :
                 o.length == 1 ?
                 writeUTF8Char(o) :
-                writeString(o, true);
+                writeStringWithRef(o);
                 break;
             case ByteArray:
-                writeBytes(o, true);
+                writeBytesWithRef(o);
                 break;
             case Date:
-                writeDate(o, true);
+                writeDateWithRef(o);
                 break;
             case Array:
-                writeList(o, true);
+                writeListWithRef(o);
                 break;
             default:
                 switch (HproseClassManager.getClassAlias(o)) {
-                    case "Object": writeMap(o, true); break;
-                    case "mx_collections_ArrayCollection": writeList(o.source, true); break;
-                    default: writeObject(o, true); break;
+                    case "Object": writeMapWithRef(o); break;
+                    case "mx_collections_ArrayCollection": writeListWithRef(o.source); break;
+                    default: writeObjectWithRef(o); break;
                 }
                 break;
             }
@@ -184,7 +184,7 @@ package hprose.io {
             stream.writeByte(bool ? HproseTags.TagTrue : HproseTags.TagFalse);
         }
 
-        public function writeUTCDate(date:Date, checkRef:Boolean = false):void {
+        public function writeUTCDate(date:Date):void {
             var year:String = ('0000' + date.getUTCFullYear()).slice(-4);
             var month:String = ('00' + (date.getUTCMonth() + 1)).slice(-2);
             var day:String = ('00' + date.getUTCDate()).slice(-2);
@@ -218,8 +218,12 @@ package hprose.io {
                 stream.writeByte(HproseTags.TagUTC);
             }
         }
+        
+        public function writeUTCDateWithRef(date:Date):void {
+            if (!writeRef(date)) writeUTCDate(date);
+        }
 
-        public function writeDate(date:Date, checkRef:Boolean = false):void {
+        public function writeDate(date:Date):void {
             var year:String = ('0000' + date.getFullYear()).slice(-4);
             var month:String = ('00' + (date.getMonth() + 1)).slice(-2);
             var day:String = ('00' + date.getDate()).slice(-2);
@@ -254,7 +258,11 @@ package hprose.io {
             }
         }
 
-        public function writeTime(time:Date, checkRef:Boolean = false):void {
+        public function writeDateWithRef(date:Date):void {
+            if (!writeRef(date)) writeDate(date);
+        }
+
+        public function writeTime(time:Date):void {
             var hour:String = ('00' + time.getHours()).slice(-2);
             var minute:String = ('00' + time.getMinutes()).slice(-2);
             var second:String = ('00' + time.getSeconds()).slice(-2);
@@ -268,14 +276,22 @@ package hprose.io {
             stream.writeByte(HproseTags.TagSemicolon);
         }
 
-        public function writeBytes(b:ByteArray, checkRef:Boolean = false):void {
+        public function writeTimeWithRef(time:Date):void {
+            if (!writeRef(time)) writeTime(time);
+        }
+
+        public function writeBytes(bytes:ByteArray):void {
             stream.writeByte(HproseTags.TagBytes);
-            if (b.length > 0) {
-                stream.writeUTFBytes(b.length.toString());
+            if (bytes.length > 0) {
+                stream.writeUTFBytes(bytes.length.toString());
             }
             stream.writeByte(HproseTags.TagQuote);
-            stream.writeBytes(b);
+            stream.writeBytes(bytes);
             stream.writeByte(HproseTags.TagQuote);
+        }
+
+        public function writeBytesWithRef(bytes:ByteArray):void {
+            if (!writeRef(bytes)) writeBytes(bytes);
         }
 
         public function writeUTF8Char(c:String):void {
@@ -283,7 +299,7 @@ package hprose.io {
             stream.writeUTFBytes(c);
         }
 
-        public function writeString(s:String, checkRef:Boolean = false):void {
+        public function writeString(s:String):void {
             stream.writeByte(HproseTags.TagString);
             if (s.length > 0) {
                 stream.writeUTFBytes(s.length.toString());
@@ -293,7 +309,11 @@ package hprose.io {
             stream.writeByte(HproseTags.TagQuote);
         }
 
-        public function writeList(list:Array, checkRef:Boolean = false):void {
+        public function writeStringWithRef(s:String):void {
+            if (!writeRef(s)) writeString(s);
+        }
+
+        public function writeList(list:Array):void {
             var count:uint = list.length;
             stream.writeByte(HproseTags.TagList);
             if (count > 0) {
@@ -306,7 +326,11 @@ package hprose.io {
             stream.writeByte(HproseTags.TagClosebrace);
         }
 
-        public function writeMap(map:*, checkRef:Boolean = false):void {
+        public function writeListWithRef(list:Array):void {
+            if (!writeRef(list)) writeList(list);
+        }
+
+        public function writeMap(map:*):void {
             var fields:Array = [];
             for (var key:* in map) {
                 if (typeof(map[key]) != 'function') {
@@ -326,10 +350,14 @@ package hprose.io {
             stream.writeByte(HproseTags.TagClosebrace);
         }
 
+        public function writeMapWithRef(map:*):void {
+            if (!writeRef(map)) writeMap(map);
+        }
+
         protected function writeObjectBegin(obj:*):Array {
             var alias:String = HproseClassManager.getClassAlias(obj);
             var fields:Array;
-            var index;
+            var index:int;
             if (alias in classref) {
                 index = classref[alias];
                 fields = fieldsref[index];
@@ -358,10 +386,14 @@ package hprose.io {
             stream.writeByte(HproseTags.TagClosebrace);    
         }
 
-        public function writeObject(obj:*, checkRef:Boolean = false):void {
+        public function writeObject(obj:*):void {
             writeObjectEnd(obj, writeObjectBegin(obj));
         }
-    
+
+        public function writeObjectWithRef(obj:*):void {
+            if (!writeRef(obj)) writeObject(obj);
+        }
+
         private function writeClass(alias:String, fields:Array):uint {
             var count:uint = fields.length;
             stream.writeByte(HproseTags.TagClass);
@@ -381,6 +413,10 @@ package hprose.io {
             classref[alias] = index;
             fieldsref[index] = fields;
             return index;
+        }
+
+        protected function writeRef(obj:*):Boolean {
+            return false;
         }
 
         public function reset():void {

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for ActionScript 3.0.              *
  *                                                        *
- * LastModified: Dec 7, 2013                              *
+ * LastModified: Dec 26, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -33,58 +33,62 @@ package hprose.io {
             super(stream);
         }
 
-        private function writeRef(obj:*, checkRef:Boolean, writeBegin:Function, writeEnd:Function):void {
-            var index:*;
-            if (checkRef && ((index = ref[obj]) !== null)) {
+        public override function writeUTCDate(date:Date):void {
+            ref.set(date, refcount++);
+            super.writeUTCDate(date);
+        }
+
+        public override function writeDate(date:Date):void {
+            ref.set(date, refcount++);
+            super.writeDate(date);
+        }
+
+        public override function writeTime(time:Date):void {
+            ref.set(time, refcount++);
+            super.writeTime(time);
+        }
+
+        public override function writeBytes(bytes:ByteArray):void {
+            ref.set(bytes, refcount++);
+            super.writeBytes(bytes);
+        }
+
+        public override function writeString(str:String):void {
+            ref.set(str, refcount++);
+            super.writeString(str);
+        }
+
+        public override function writeList(list:Array):void {
+            ref.set(list, refcount++);
+            super.writeList(list);
+        }
+
+        public override function writeMap(map:*):void {
+            ref.set(map, refcount++);
+            super.writeMap(map);
+        }
+
+        public override function writeObject(obj:*):void {
+            var fields = writeObjectBegin(obj);
+            ref.set(obj, refcount++);
+            writeObjectEnd(obj, fields);
+        }
+
+        protected override function writeRef(obj:*):Boolean {
+            var index:* = ref[obj];
+            if (index !== null) {
                 stream.writeByte(HproseTags.TagRef);
                 stream.writeUTFBytes(index.toString());
                 stream.writeByte(HproseTags.TagSemicolon);
+                return true;
             }
-            else {
-                var result = writeBegin.call(this, obj);
-                ref[obj] = refcount++;
-                writeEnd.call(this, obj, result);
-            }
+            return false;
         }
-        
+
         public override function reset():void {
             super.reset();
             ref = new Dictionary();
             refcount = 0;
-        }
-    
-        private function doNothing():void {};
-        
-        public override function writeUTCDate(date:Date, checkRef:Boolean = false):void {
-            writeRef.call(this, date, checkRef, doNothing, super.writeUTCDate);
-        }
-
-        public override function writeDate(date:Date, checkRef:Boolean = false):void {
-            writeRef.call(this, date, checkRef, doNothing, super.writeDate);
-        }
-
-        public override function writeTime(time:Date, checkRef:Boolean = false):void {
-            writeRef.call(this, time, checkRef, doNothing, super.writeTime);
-        }
-
-        public override function writeBytes(b:ByteArray, checkRef:Boolean = false):void {
-            writeRef.call(this, b, checkRef, doNothing, super.writeBytes);
-        }
-
-        public override function writeString(str:String, checkRef:Boolean = false):void {
-            writeRef.call(this, str, checkRef, doNothing, super.writeString);
-        }
-
-        public override function writeList(list:Array, checkRef:Boolean = false):void {
-            writeRef.call(this, list, checkRef, doNothing, super.writeList);
-        }
-
-        public override function writeMap(map:*, checkRef:Boolean = false):void {
-            writeRef.call(this, map, checkRef, doNothing, super.writeMap);
-        }
-
-        public override function writeObject(obj:*, checkRef:Boolean = false):void {
-            writeRef.call(this, obj, checkRef, writeObjectBegin, writeObjectEnd);
         }
     }
 }

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for ActionScript 2.0.              *
  *                                                        *
- * LastModified: Nov 20, 2013                             *
+ * LastModified: Dec 26, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -33,51 +33,54 @@ class hprose.io.HproseWriter extends HproseSimpleWriter {
         refcount = 0;
     }
 
-    private function writeRef(obj, checkRef, writeBegin, writeEnd) {
-        var index;
-        if (checkRef && ((index = ref.get(obj)) !== undefined)) {
-            stream.write(HproseTags.TagRef + index + HproseTags.TagSemicolon);
-        }
-        else {
-            var result = writeBegin.call(this, obj);
-            ref.set(obj, refcount++);
-            writeEnd.call(this, obj, result);
-        }
+    public function writeUTCDate(date):Void {
+        ref.set(date, refcount++);
+        super.writeUTCDate(date);
     }
-    
-    public function reset() {
+
+    public function writeDate(date):Void {
+        ref.set(date, refcount++);
+        super.writeDate(date);
+    }
+
+    public function writeTime(time):Void {
+        ref.set(time, refcount++);
+        super.writeTime(time);
+    }
+
+    public function writeString(str):Void {
+        ref.set(str, refcount++);
+        super.writeString(str);
+    }
+
+    public function writeList(list):Void {
+        ref.set(list, refcount++);
+        super.writeList(list);
+    }
+
+    public function writeMap(map):Void {
+        ref.set(map, refcount++);
+        super.writeMap(map);
+    }
+
+    public function writeObject(obj):Void {
+        var fields = writeObjectBegin(obj);
+        ref.set(obj, refcount++);
+        writeObjectEnd(obj, fields);
+    }
+
+    public function writeRef(obj):Boolean {
+        var index = ref.get(obj);
+        if (index !== undefined) {
+            stream.write(HproseTags.TagRef + index + HproseTags.TagSemicolon);
+            return true;
+        }
+        return false;
+    }
+
+    public function reset():Void {
         super.reset();
         ref = new Map();
         refcount = 0;
-    }
-    
-    private function doNothing() {};
-    
-    public function writeUTCDate(date, checkRef) {
-        writeRef.call(this, date, checkRef, doNothing, super.writeUTCDate);
-    }
-
-    public function writeDate(date, checkRef) {
-        writeRef.call(this, date, checkRef, doNothing, super.writeDate);
-    }
-
-    public function writeTime(time, checkRef) {
-        writeRef.call(this, time, checkRef, doNothing, super.writeTime);
-    }
-
-    public function writeString(str, checkRef) {
-        writeRef.call(this, str, checkRef, doNothing, super.writeString);
-    }
-
-    public function writeList(list, checkRef) {
-        writeRef.call(this, list, checkRef, doNothing, super.writeList);
-    }
-
-    public function writeMap(map, checkRef) {
-        writeRef.call(this, map, checkRef, doNothing, super.writeMap);
-    }
-
-    private function writeObject(obj, checkRef) {
-        writeRef.call(this, obj, checkRef, writeObjectBegin, writeObjectEnd);
     }
 }

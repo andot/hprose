@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for ActionScript 2.0.              *
  *                                                        *
- * LastModified: Nov 19, 2013                             *
+ * LastModified: Dec 26, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -54,7 +54,7 @@ class hprose.io.HproseReader extends HproseSimpleReader {
         return readMapEnd(ref[ref.length] = readMapBegin());
     }
 
-    public function readObjectWithoutTag() {
+    public function readObjectWithoutTag():Object {
         var result = readObjectBegin();
         ref[ref.length] = result.obj;
         return readObjectEnd(result.obj, result.cls);
@@ -64,7 +64,7 @@ class hprose.io.HproseReader extends HproseSimpleReader {
         return ref[readInt(HproseTags.TagSemicolon)];
     }
 
-    public function reset() {
+    public function reset():Void {
         super.reset();
         ref.length = 0;
     }

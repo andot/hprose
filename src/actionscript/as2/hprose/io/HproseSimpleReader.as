@@ -13,7 +13,7 @@
  *                                                        *
  * hprose simple reader class for ActionScript 2.0.       *
  *                                                        *
- * LastModified: Nov 19, 2013                             *
+ * LastModified: Dec 26, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -396,13 +396,13 @@ class hprose.io.HproseSimpleReader extends HproseRawReader {
         }
     }
 
-    private function readObjectBegin() {
+    private function readObjectBegin():Object {
         var cls = classref[readInt(HproseTags.TagOpenbrace)];
         var obj = new cls.classname();
         return {obj: obj, cls: cls};
     }
 
-    private function readObjectEnd(obj, cls) {
+    private function readObjectEnd(obj, cls):Object {
         for (var i = 0; i < cls.count; i++) {
             obj[cls.fields[i]] = unserialize();
         }
@@ -410,12 +410,12 @@ class hprose.io.HproseSimpleReader extends HproseRawReader {
         return obj;
     }
 
-    public function readObjectWithoutTag() {
+    public function readObjectWithoutTag():Object {
         var result = readObjectBegin();
         return readObjectEnd(result.obj, result.cls);
     }
 
-    public function readObject():Array {
+    public function readObject():Object {
         var tag = stream.getc();
         switch(tag) {
             case HproseTags.TagClass: readClass(); return readObject();
@@ -444,7 +444,7 @@ class hprose.io.HproseSimpleReader extends HproseRawReader {
         unexpectedTag(HproseTags.TagRef);
     }
 
-    public function reset() {
+    public function reset():Void {
         classref.length = 0;
     }
 }

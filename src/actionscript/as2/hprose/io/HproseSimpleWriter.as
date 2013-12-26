@@ -13,7 +13,7 @@
  *                                                        *
  * hprose simple writer class for ActionScript 2.0.       *
  *                                                        *
- * LastModified: Nov 20, 2013                             *
+ * LastModified: Dec 26, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -23,7 +23,7 @@ import hprose.io.HproseStringOutputStream;
 import hprose.io.HproseTags;
 
 class hprose.io.HproseSimpleWriter {
-    private static function isDigit(value) {
+    private static function isDigit(value):Boolean {
         switch (value.toString()) {
             case '0':
             case '1':
@@ -39,7 +39,7 @@ class hprose.io.HproseSimpleWriter {
         return false;
     }
 
-    private static function isInteger(s) {
+    private static function isInteger(s):Boolean {
         var l = s.length;
         for (var i = (s.charAt(0) == '-') ? 1 : 0; i < l; i++) {
             if (!isDigit(s.charAt(i))) return false;
@@ -47,7 +47,7 @@ class hprose.io.HproseSimpleWriter {
         return (s != '-');
     }
 
-    private static function isInt32(value) {
+    private static function isInt32(value):Boolean {
         var s = value.toString();
         return ((s.length < 12) &&
                 isInteger(s) &&
@@ -69,7 +69,7 @@ class hprose.io.HproseSimpleWriter {
         return stream;
     }
 
-    public function serialize(o) {
+    public function serialize(o):Void {
         if (o == null) {
             writeNull();
             return;
@@ -90,30 +90,30 @@ class hprose.io.HproseSimpleWriter {
             writeEmpty() :
             o.length == 1 ?
             writeUTF8Char(o) :
-            writeString(o, true);
+            writeStringWithRef(o);
             break;
         case Date:
-            writeDate(o, true);
+            writeDateWithRef(o);
             break;
         case Array:
-            writeList(o, true);
+            writeListWithRef(o);
             break;
         default:
             var alias:String = HproseClassManager.getClassAlias(o);
-            (alias == "Object") ? writeMap(o, true) : writeObject(o, true);
+            (alias == "Object") ? writeMapWithRef(o) : writeObjectWithRef(o);
             break;
         }
     }
 
-    public function writeInteger(i) {
+    public function writeInteger(i):Void {
         stream.write(HproseTags.TagInteger + i + HproseTags.TagSemicolon);
     }
 
-    public function writeLong(l) {
+    public function writeLong(l):Void {
         stream.write(HproseTags.TagLong + l + HproseTags.TagSemicolon);
     }
 
-    public function writeDouble(d) {
+    public function writeDouble(d):Void {
         if (isNaN(d)) {
             writeNaN();
         }
@@ -125,29 +125,29 @@ class hprose.io.HproseSimpleWriter {
         }
     }
 
-    public function writeNaN() {
+    public function writeNaN():Void {
         stream.write(HproseTags.TagNaN);
     }
 
-    public function writeInfinity(positive) {
+    public function writeInfinity(positive):Void {
         stream.write(HproseTags.TagInfinity + (positive ?
                                                HproseTags.TagPos :
                                                HproseTags.TagNeg));
     }
 
-    public function writeNull() {
+    public function writeNull():Void {
         stream.write(HproseTags.TagNull);
     }
 
-    public function writeEmpty() {
+    public function writeEmpty():Void {
         stream.write(HproseTags.TagEmpty);
     }
 
-    public function writeBoolean(bool) {
+    public function writeBoolean(bool):Void {
         stream.write(bool ? HproseTags.TagTrue : HproseTags.TagFalse);
     }
 
-    public function writeUTCDate(date, checkRef) {
+    public function writeUTCDate(date):Void {
         var year = ('0000' + date.getUTCFullYear()).slice(-4);
         var month = ('00' + (date.getUTCMonth() + 1)).slice(-2);
         var day = ('00' + date.getUTCDate()).slice(-2);
@@ -175,7 +175,11 @@ class hprose.io.HproseSimpleWriter {
         }
     }
 
-    public function writeDate(date, checkRef) {
+    public function writeUTCDateWithRef(date):Void {
+        if (!writeRef(date)) writeUTCDate(date);
+    }
+
+    public function writeDate(date):Void {
         var year = ('0000' + date.getFullYear()).slice(-4);
         var month = ('00' + (date.getMonth() + 1)).slice(-2);
         var day = ('00' + date.getDate()).slice(-2);
@@ -203,7 +207,11 @@ class hprose.io.HproseSimpleWriter {
         }
     }
 
-    public function writeTime(time, checkRef) {
+    public function writeDateWithRef(date):Void {
+        if (!writeRef(date)) writeDate(date);
+    }
+    
+    public function writeTime(time):Void {
         var hour = ('00' + time.getHours()).slice(-2);
         var minute = ('00' + time.getMinutes()).slice(-2);
         var second = ('00' + time.getSeconds()).slice(-2);
@@ -215,17 +223,25 @@ class hprose.io.HproseSimpleWriter {
         stream.write(HproseTags.TagSemicolon);
     }
 
-    public function writeUTF8Char(c) {
+    public function writeTimeWithRef(time):Void {
+        if (!writeRef(time)) writeTime(time);
+    }
+
+    public function writeUTF8Char(c):Void {
         stream.write(HproseTags.TagUTF8Char + c);
     }
 
-    public function writeString(str, checkRef) {
+    public function writeString(str):Void {
         stream.write(HproseTags.TagString +
                      (str.length > 0 ? str.length : '') +
                      HproseTags.TagQuote + str + HproseTags.TagQuote);
     }
 
-    public function writeList(list, checkRef) {
+    public function writeStringWithRef(str):Void {
+        if (!writeRef(str)) writeString(str);
+    }
+
+    public function writeList(list):Void {
         var count = list.length;
         stream.write(HproseTags.TagList + (count > 0 ? count : '') + HproseTags.TagOpenbrace);
         for (var i = 0; i < count; i++) {
@@ -234,7 +250,11 @@ class hprose.io.HproseSimpleWriter {
         stream.write(HproseTags.TagClosebrace);
     }
 
-    public function writeMap(map, checkRef) {
+    public function writeListWithRef(list):Void {
+        if (!writeRef(list)) writeList(list);
+    }
+
+    public function writeMap(map):Void {
         var fields = [];
         for (var key in map) {
             if (typeof(map[key]) != 'function') {
@@ -248,6 +268,10 @@ class hprose.io.HproseSimpleWriter {
             serialize(map[fields[i]]);
         }
         stream.write(HproseTags.TagClosebrace);
+    }
+
+    public function writeMapWithRef(map):Void {
+        if (!writeRef(map)) writeMap(map);
     }
 
     private function writeObjectBegin(obj) {
@@ -270,7 +294,7 @@ class hprose.io.HproseSimpleWriter {
         return fields;
     }
     
-    private function writeObjectEnd(obj, fields) {
+    private function writeObjectEnd(obj, fields):Void {
         var count = fields.length;
         for (var i = 0; i < count; i++) {
             serialize(obj[fields[i]]);
@@ -278,11 +302,15 @@ class hprose.io.HproseSimpleWriter {
         stream.write(HproseTags.TagClosebrace);        
     }
 
-    public function writeObject(obj, checkRef) {
+    public function writeObject(obj):Void {
         writeObjectEnd(obj, writeObjectBegin(obj));
     }
 
-    private function writeClass(alias, fields) {
+    public function writeObjectWithRef(obj):Void {
+        if (!writeRef(obj)) writeObject(obj);
+    }
+
+    private function writeClass(alias, fields):Number {
         var count = fields.length;
         stream.write(HproseTags.TagClass + alias.length +
                      HproseTags.TagQuote + alias + HproseTags.TagQuote +
@@ -297,7 +325,11 @@ class hprose.io.HproseSimpleWriter {
         return index;
     }
     
-    public function reset() {
+    public function writeRef(obj):Boolean {
+        return false;
+    }
+    
+    public function reset():Void {
         classref = {};
         fieldsref.length = 0;
     }
