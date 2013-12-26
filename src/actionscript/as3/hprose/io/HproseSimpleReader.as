@@ -13,7 +13,7 @@
  *                                                        *
  * hprose simple reader class for ActionScript 3.0.       *
  *                                                        *
- * LastModified: Dec 7, 2013                              *
+ * LastModified: Dec 27, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -135,7 +135,7 @@ package hprose.io {
                 case 55: return 7;
                 case 56: return 8;
                 case 57: return 9;
-                case HproseTags.TagInteger: return readLongWithoutTag();
+                case HproseTags.TagInteger:
                 case HproseTags.TagLong: return readLongWithoutTag();
                 default: throw unexpectedTag(tag);
             }
@@ -158,8 +158,8 @@ package hprose.io {
                 case 55: return 7;
                 case 56: return 8;
                 case 57: return 9;
-                case HproseTags.TagInteger: return readDoubleWithoutTag();
-                case HproseTags.TagLong: return readDoubleWithoutTag();
+                case HproseTags.TagInteger:
+                case HproseTags.TagLong:
                 case HproseTags.TagDouble: return readDoubleWithoutTag();
                 case HproseTags.TagNaN: return NaN;
                 case HproseTags.TagInfinity: return readInfinityWithoutTag();
@@ -168,11 +168,8 @@ package hprose.io {
         }
 
         public function readNaN():Number {
-            var tag:int = stream.readByte();
-            switch (tag) {
-                case HproseTags.TagNaN: return NaN;
-                default: throw unexpectedTag(tag);
-            }
+            checkTag(HproseTags.TagNaN);
+            return NaN;
         }
 
         public function readInfinityWithoutTag():Number {
@@ -180,27 +177,18 @@ package hprose.io {
         }
 
         public function readInfinity():Number {
-            var tag:int = stream.readByte();
-            switch (tag) {
-                case HproseTags.TagInfinity: return readInfinityWithoutTag();
-                default: throw unexpectedTag(tag);
-            }
+            checkTag(HproseTags.TagInfinity);
+            return readInfinityWithoutTag();
         }
 
         public function readNull():Object {
-            var tag:int = stream.readByte();
-            switch (tag) {
-                case HproseTags.TagNull: return null;
-                default: throw unexpectedTag(tag);
-            }
+            checkTag(HproseTags.TagNull);
+            return null;
         }
 
         public function readEmpty():String {
-            var tag:int = stream.readByte();
-            switch (tag) {
-                case HproseTags.TagEmpty: return "";
-                default: throw unexpectedTag(tag);
-            }
+            checkTag(HproseTags.TagEmpty);
+            return '';
         }
 
         public function readBoolean():Boolean {
@@ -363,11 +351,8 @@ package hprose.io {
         }
 
         public function readUTF8Char():String {
-            var tag:int = stream.readByte();
-            switch (tag) {
-                case HproseTags.TagUTF8Char: return readUTF8CharWithoutTag();
-                default: throw unexpectedTag(tag);
-            }
+            checkTag(HproseTags.TagUTF8Char);
+            return readUTF8CharWithoutTag();
         }
 
         private function _readString():String {
