@@ -13,7 +13,7 @@
  *                                                        *
  * hprose simple reader class for ActionScript 2.0.       *
  *                                                        *
- * LastModified: Dec 26, 2013                             *
+ * LastModified: Dec 27, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -69,18 +69,6 @@ class hprose.io.HproseSimpleReader extends HproseRawReader {
         }
     }
 
-    public function unexpectedTag(tag:String, expectTags:String):Void {
-        if (tag && expectTags) {
-            throw new HproseException("Tag '" + expectTags + "' expected, but '" + tag + "' found in stream");
-        }
-        else if (tag) {
-            throw new HproseException("Unexpected serialize tag '" + tag + "' in stream")
-        }
-        else {
-            throw new HproseException('No byte found in stream');
-        }
-    }
-
     private function _checkTag(tag:String, expectTag:String):Void {
         if (tag != expectTag) unexpectedTag(tag, expectTag);
     }
@@ -131,19 +119,19 @@ class hprose.io.HproseSimpleReader extends HproseRawReader {
     }
 
     public function readLong():String {
-        var tag = stream.getc();
+        var tag:String = stream.getc();
         switch (tag) {
-            case '0': return '0';
-            case '1': return '1';
-            case '2': return '2';
-            case '3': return '3';
-            case '4': return '4';
-            case '5': return '5';
-            case '6': return '6';
-            case '7': return '7';
-            case '8': return '8';
-            case '9': return '9';
-            case HproseTags.TagInteger: return readLongWithoutTag();
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9': return tag;
+            case HproseTags.TagInteger:
             case HproseTags.TagLong: return readLongWithoutTag();
             default: unexpectedTag(tag);
         }
@@ -166,8 +154,8 @@ class hprose.io.HproseSimpleReader extends HproseRawReader {
             case '7': return 7;
             case '8': return 8;
             case '9': return 9;
-            case HproseTags.TagInteger: return readDoubleWithoutTag();
-            case HproseTags.TagLong: return readDoubleWithoutTag();
+            case HproseTags.TagInteger:
+            case HproseTags.TagLong:
             case HproseTags.TagDouble: return readDoubleWithoutTag();
             case HproseTags.TagNaN: return NaN;
             case HproseTags.TagInfinity: return readInfinityWithoutTag();
@@ -176,9 +164,8 @@ class hprose.io.HproseSimpleReader extends HproseRawReader {
     }
 
     public function readNaN():Number {
-        var tag = stream.getc();
-        if (tag === HproseTags.TagNaN) return NaN;
-        unexpectedTag(tag);
+        checkTag(HproseTags.TagNaN);
+        return NaN;
     }
 
     public function readInfinityWithoutTag():Number {
@@ -186,21 +173,18 @@ class hprose.io.HproseSimpleReader extends HproseRawReader {
     }
 
     public function readInfinity():Number {
-        var tag = stream.getc();
-        if (tag === HproseTags.TagInfinity) return readInfinityWithoutTag();
-        unexpectedTag(tag);
+        checkTag(HproseTags.TagInfinity);
+        return readInfinityWithoutTag();
     }
 
     public function readNull():Object {
-        var tag = stream.getc();
-        if (tag === HproseTags.TagNull) return null;
-        unexpectedTag(tag);
+        checkTag(HproseTags.TagNull);
+        return null;
     }
 
-    public function readEmpty():Object {
-        var tag = stream.getc();
-        if (tag === HproseTags.TagEmpty) return '';
-        unexpectedTag(tag);
+    public function readEmpty():String {
+        checkTag(HproseTags.TagEmpty);
+        return '';
     }
 
     public function readBoolean():Boolean {
@@ -298,14 +282,13 @@ class hprose.io.HproseSimpleReader extends HproseRawReader {
         }
     }
 
-    public function readUTF8CharWithoutTag() {
+    public function readUTF8CharWithoutTag():String {
         return stream.getc();
     }
 
-    public function readUTF8Char() {
-        var tag = stream.getc();
-        if (tag === HproseTags.TagUTF8Char) return stream.getc();
-        unexpectedTag(tag);
+    public function readUTF8Char():String {
+        checkTag(HproseTags.TagUTF8Char);
+        return stream.getc();
     }
 
     private function _readString():String {

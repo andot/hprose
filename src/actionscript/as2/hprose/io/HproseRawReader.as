@@ -34,6 +34,18 @@ class hprose.io.HproseRawReader {
         return stream;
     }
 
+    public function unexpectedTag(tag:String, expectTags:String):Void {
+        if (tag && expectTags) {
+            throw new HproseException("Tag '" + expectTags + "' expected, but '" + tag + "' found in stream");
+        }
+        else if (tag) {
+            throw new HproseException("Unexpected serialize tag '" + tag + "' in stream")
+        }
+        else {
+            throw new HproseException('No byte found in stream');
+        }
+    }
+
     public function readRaw(ostream:HproseStringOutputStream, tag:String) {
         if (ostream === undefined) ostream = new HproseStringOutputStream();
         if (tag === undefined) tag = stream.getc();
@@ -89,11 +101,7 @@ class hprose.io.HproseRawReader {
                 ostream.write(tag);
                 readRaw(ostream);
                 break;
-            case '':
-                throw new HproseException('No byte found in stream');
-            default:
-                throw new HproseException("Unexpected serialize tag '" +
-                                                          tag + "' in stream");
+            default: unexpectedTag(tag);
         }
         return ostream;
     }
