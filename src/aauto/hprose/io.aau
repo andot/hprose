@@ -1047,7 +1047,7 @@ namespace hprose.io {
                 case type.string {
                     var len = ulen(variable);
                     if (len < 0) {
-                        this.writeBytes(variable, true);
+                        this.writeBytesWithRef(variable);
                     }
                     elseif (len == 0) {
                         this.writeEmpty();
@@ -1056,21 +1056,21 @@ namespace hprose.io {
                         this.writeUTF8Char(variable);
                     }
                     else {
-                        this.writeString(variable, true, len);
+                        this.writeStringWithRef(variable, len);
                     }
                 }
                 case type.table {
                     if (istime(variable)) {
-                        this.writeDateTime(variable, true);
+                        this.writeDateTimeWithRef(variable);
                     }
                     elseif (isarray(variable)) {
-                        this.writeList(variable, true);
+                        this.writeListWithRef(variable);
                     }
                     elseif (isobject(variable)) {
-                        this.writeObject(variable, true);
+                        this.writeObjectWithRef(variable);
                     }
                     else {
-                        this.writeMap(variable, true);
+                        this.writeMapWithRef(variable);
                     }
                 }
             }
@@ -1137,14 +1137,20 @@ namespace hprose.io {
                 stream.write(timezone);
             }
         }
-        writeDateTime = function(date, checkRef = false) {
+        writeDateTime = function(date) {
             this._writeDateTime(date);
+        };
+        writeDateTimeWithRef = function(date) {
+            if (!this.writeRef(date)) this.writeDateTime(date);
         };
         _writeBytes = function(bytes) {
             stream.write(tags.TagBytes, (#bytes : ''), tags.TagQuote, bytes, tags.TagQuote);
         };
-        writeBytes = function(bytes, checkRef = false) {
+        writeBytes = function(bytes) {
             this._writeBytes(bytes);
+        }
+        writeBytesWithRef = function(bytes) {
+            if (!this.writeRef(bytes)) this.writeBytes(bytes);
         }
         writeUTF8Char = function(c) {
             stream.write(tags.TagUTF8Char, c);
@@ -1154,8 +1160,11 @@ namespace hprose.io {
             if (len < 0) error("must be encoding in utf8.");
             stream.write(tags.TagString, (len : ''), tags.TagQuote, str, tags.TagQuote);
         };
-        writeString = function(str, checkRef = false, len) {
+        writeString = function(str, len) {
             this._writeString(str, len);
+        }
+        writeStringWithRef = function(str, len) {
+            if (!this.writeRef(str)) this.writeString(str, len);
         }
         _writeList = function(list) {
             var count = #list;
@@ -1165,8 +1174,11 @@ namespace hprose.io {
             }
             stream.write(tags.TagClosebrace);
         };
-        writeList = function(list, checkRef = false) {
+        writeList = function(list) {
             this._writeList(list);
+        }
+        writeListWithRef = function(list) {
+            if (!this.writeRef(list)) this.writeList(list);
         }
         _writeMap = function(map) {
             var fields = {};
@@ -1185,8 +1197,11 @@ namespace hprose.io {
             }
             stream.write(tags.TagClosebrace);
         };
-        writeMap = function(map, checkRef = false) {
+        writeMap = function(map) {
             this._writeMap(map);
+        }
+        writeMapWithRef = function(map) {
+            if (!this.writeRef(map)) this.writeMap(map);
         }
         _writeObjectBegin = function(obj) {
             var classname = getClassName(obj);
@@ -1216,8 +1231,11 @@ namespace hprose.io {
             }
             stream.write(tags.TagClosebrace);
         }
-        writeObject = function(obj, checkRef = false) {
+        writeObject = function(obj) {
             this._writeObjectEnd(obj, this._writeObjectBegin(obj));
+        };
+        writeObjectWithRef = function(obj) {
+            if (!this.writeRef(obj)) this.writeObject(obj);
         };
         writeClass = function(classname, fields) {
             var count = #fields;
@@ -1233,6 +1251,9 @@ namespace hprose.io {
             fieldsref[index] = fields;
             return index;
         };
+        writeRef = function(obj) {
+            return false;
+        }
         _reset = function() {
             classref = {};
             fieldsref = {};
@@ -1246,56 +1267,42 @@ namespace hprose.io {
     	    var refcount = 0;
             var tags = ..hprose.io.HproseTags;
     	};
-        writeDateTime = function(date, checkRef = false) {
-            if (!this.writeRef(date, checkRef)) {
-                ref[[date]] = refcount;
-            	refcount += 1;
-                this._writeDateTime(date);
-            }
+        writeDateTime = function(date) {
+            ref[[date]] = refcount;
+            refcount += 1;
+            this._writeDateTime(date);
         };
-        writeBytes = function(bytes, checkRef = false) {
-            if (!this.writeRef(bytes, checkRef)) {
-                ref[[bytes]] = refcount;
-            	refcount += 1;
-                this._writeBytes(bytes);
-            }
+        writeBytes = function(bytes) {
+            ref[[bytes]] = refcount;
+            refcount += 1;
+            this._writeBytes(bytes);
         }
-        writeString = function(str, checkRef = false, len) {
-            if (!this.writeRef(str, checkRef)) {
-                ref[[str]] = refcount;
-            	refcount += 1;
-            	this._writeString(str, len);
-            }
+        writeString = function(str, len) {
+            ref[[str]] = refcount;
+            refcount += 1;
+            this._writeString(str, len);
         }
-        writeList = function(list, checkRef = false) {
-            if (!this.writeRef(list, checkRef)) {
-                ref[[list]] = refcount;
-            	refcount += 1;
-                this._writeList(list);
-            }
+        writeList = function(list) {
+            ref[[list]] = refcount;
+            refcount += 1;
+            this._writeList(list);
         }
-        writeMap = function(map, checkRef = false) {
-            if (!this.writeRef(map, checkRef)) {
-                ref[[map]] = refcount;
-            	refcount += 1;
-                this._writeMap(map);
-            }
+        writeMap = function(map) {
+            ref[[map]] = refcount;
+            refcount += 1;
+            this._writeMap(map);
         }
-        writeObject = function(obj, checkRef = false) {
-            if (!this.writeRef(obj, checkRef)) {
-                var fields = this._writeObjectBegin(obj);
-                ref[[obj]] = refcount;
-            	refcount += 1;
-                this._writeObjectEnd(obj, fields);
-            }
+        writeObject = function(obj) {
+            var fields = this._writeObjectBegin(obj);
+            ref[[obj]] = refcount;
+            refcount += 1;
+            this._writeObjectEnd(obj, fields);
         }
-        writeRef = function(obj, checkRef) {
-            if (checkRef) {
-                var index = ref[obj];
-                if (index !== null) {
-                    stream.write(tags.TagRef, index, tags.TagSemicolon);
-                    return true;
-                }
+        writeRef = function(obj) {
+            var index = ref[obj];
+            if (index !== null) {
+                stream.write(tags.TagRef, index, tags.TagSemicolon);
+                return true;
             }
             return false;
         };
