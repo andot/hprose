@@ -14,7 +14,7 @@
  *                                                        *
  * hprose http client for Javascript.                     *
  *                                                        *
- * LastModified: Dec 24, 2013                             *
+ * LastModified: Dec 27, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -146,10 +146,10 @@ var HproseHttpClient = (function () {
                                                      r_HproseTags.TagError);
                     switch (tag) {
                         case r_HproseTags.TagError:
-                            error = new r_HproseException(hproseReader.readString(true));
+                            error = new r_HproseException(hproseReader.readString());
                             break;
                         case r_HproseTags.TagFunctions:
-                            var functions = hproseReader.readList(true);
+                            var functions = hproseReader.readList();
                             hproseReader.checkTag(r_HproseTags.TagEnd);
                             setFunctions.call(serverProxy, functions);
                             break;
@@ -444,11 +444,11 @@ var HproseHttpClient = (function () {
                                     break;
                                 case r_HproseTags.TagArgument:
                                     hproseReader.reset();
-                                    args = hproseReader.readList(true);
+                                    args = hproseReader.readList();
                                     break;
                                 case r_HproseTags.TagError:
                                     hproseReader.reset();
-                                    error = new r_HproseException(hproseReader.readString(true));
+                                    error = new r_HproseException(hproseReader.readString());
                                     break;
                             }
                         }
