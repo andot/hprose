@@ -14,7 +14,7 @@
  *                                                        *
  * hprose http client for ASP.                            *
  *                                                        *
- * LastModified: Dec 24, 2013                             *
+ * LastModified: Dec 29, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -387,12 +387,12 @@ var HproseHttpClient = (function () {
                                              r_HproseTags.TagError);
             switch (tag) {
                 case r_HproseTags.TagFunctions:
-                    var functions = hproseReader.readList(true);
+                    var functions = hproseReader.readList();
                     hproseReader.checkTag(r_HproseTags.TagEnd);
                     setFunctions.call(this, functions);
                     break;
                 case r_HproseTags.TagError:
-                    throw new r_HproseException(hproseReader.readString(true));
+                    throw new r_HproseException(hproseReader.readString());
                     break;
             }
         }
@@ -470,14 +470,14 @@ var HproseHttpClient = (function () {
                             break;
                         case r_HproseTags.TagArgument:
                             hproseReader.reset();
-                            var a = hproseReader.readList(true);
+                            var a = hproseReader.readList();
                             for (var i = 0; i < a.length; i++) {
                                 args[i] = a[i];
                             }
                             break;
                         case r_HproseTags.TagError:
                             hproseReader.reset();
-                            error = new r_HproseException(hproseReader.readString(true));
+                            error = new r_HproseException(hproseReader.readString());
                             break;
                     }
                 }

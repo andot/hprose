@@ -14,7 +14,7 @@
  *                                                        *
  * hprose http server library for ASP.                    *
  *                                                        *
- * LastModified: Nov 18, 2013                             *
+ * LastModified: Dec 29, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -172,7 +172,7 @@ var HproseHttpServer = (function() {
             function doInvoke() {
                 var simpleReader = new r_HproseSimpleReader(m_input, vbs);
                 do {
-                    var name = simpleReader.readString(true);
+                    var name = simpleReader.readString();
                     var alias = name.toLowerCase();
                     var func, resultMode, simple;
                     if (alias in m_functions) {
@@ -197,7 +197,7 @@ var HproseHttpServer = (function() {
                                                      r_HproseTags.TagCall);
                     if (tag == r_HproseTags.TagList) {
                         var reader = new r_HproseReader(m_input, vbs);
-                        args = reader.readList();
+                        args = reader.readListWithoutTag();
                         if (vbs) args = r_HproseUtil.toJSArray(args);
                         tag = reader.checkTags(r_HproseTags.TagTrue +
                                                r_HproseTags.TagEnd +
