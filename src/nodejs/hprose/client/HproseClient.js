@@ -14,7 +14,7 @@
  *                                                        *
  * HproseClient for Node.js.                              *
  *                                                        *
- * LastModified: Dec 24, 2013                             *
+ * LastModified: Dec 28, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -314,14 +314,14 @@ function HproseClient() {
                         break;
                     case HproseTags.TagArgument:
                         reader.reset();
-                        var a = reader.readList(true);
+                        var a = reader.readList();
                         for (var i = 0; i < a.length; i++) {
                             args[i] = a[i];
                         }
                         break;
                     case HproseTags.TagError:
                         reader.reset();
-                        error = new HproseException(reader.readString(true));
+                        error = new HproseException(reader.readString());
                         break;
                 }
             }

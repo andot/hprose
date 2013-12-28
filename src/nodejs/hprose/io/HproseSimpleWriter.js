@@ -14,7 +14,7 @@
  *                                                        *
  * HproseSimpleWriter for Node.js.                        *
  *                                                        *
- * LastModified: Nov 18, 2013                             *
+ * LastModified: Dec 28, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -97,29 +97,29 @@ function HproseSimpleWriter(stream) {
                            writeDouble(variable); break;
             case "string": variable.length == 1 ?
                            writeUTF8Char(variable) :
-                           this.writeString(variable, true); break;
+                           this.writeStringWithRef(variable); break;
             default: {
                 if (util.isDate(variable)) {
-                    this.writeDate(variable, true);
+                    this.writeDateWithRef(variable);
                 }
                 else if (util.isArray(variable)) {
-                    this.writeList(variable, true);
+                    this.writeListWithRef(variable);
                 }
                 else if (Buffer.isBuffer(variable)) {
                     if (variable.length == 0) {
                         writeEmpty();
                     }
                     else {
-                        this.writeBytes(variable, true);
+                        this.writeBytesWithRef(variable);
                     }
                 }
                 else {
                     var classname = getClassName(variable);
                     if (classname == "Object") {
-                        this.writeMap(variable, true);
+                        this.writeMapWithRef(variable);
                     }
                     else {
-                        this.writeObject(variable, true);
+                        this.writeObjectWithRef(variable);
                     }
                 }
             }
@@ -182,6 +182,9 @@ function HproseSimpleWriter(stream) {
         }
         stream.write(HproseTags.TagUTC);
     }
+    function writeUTCDateWithRef(date) {
+        if (!this.writeRef(date)) this.writeUTCDate(date);
+    }
     function writeDate(date) {
         var year = ('0000' + date.getFullYear()).slice(-4);
         var month = ('00' + (date.getMonth() + 1)).slice(-2);
@@ -215,6 +218,9 @@ function HproseSimpleWriter(stream) {
         }
         stream.write(HproseTags.TagSemicolon);
     }
+    function writeDateWithRef(date) {
+        if (!this.writeRef(date)) this.writeDate(date);
+    }
     function writeTime(time) {
         var hour = ('00' + time.getHours()).slice(-2);
         var minute = ('00' + time.getMinutes()).slice(-2);
@@ -228,6 +234,9 @@ function HproseSimpleWriter(stream) {
         }                        
         stream.write(HproseTags.TagSemicolon);
     }
+    function writeTimeWithRef(time) {
+        if (!this.writeRef(time)) this.writeTime(time);
+    }
     function writeBytes(bytes) {
         stream.write(HproseTags.TagBytes);
         if (bytes.length > 0) stream.write(bytes.length.toString());
@@ -235,16 +244,23 @@ function HproseSimpleWriter(stream) {
         if (bytes.length > 0) stream.write(bytes);
         stream.write(HproseTags.TagQuote);
     }
+    function writeBytesWithRef(bytes) {
+        if (!this.writeRef(bytes)) this.writeBytes(bytes);
+    }
     function writeUTF8Char(c) {
         stream.write(HproseTags.TagUTF8Char);
         stream.write(c);
     }
-    function writeString(s) {
+    function writeString(str) {
+        var length = str.length;
         stream.write(HproseTags.TagString);
-        if (s.length > 0) stream.write(s.length.toString());
+        if (length > 0) stream.write(length.toString());
         stream.write(HproseTags.TagQuote);
-        if (s.length > 0) stream.write(s);
+        if (length > 0) stream.write(str);
         stream.write(HproseTags.TagQuote);
+    }
+    function writeStringWithRef(str) {
+        if (!this.writeRef(str)) this.writeString(str);
     }
     function writeList(list) {
         var count = list.length;
@@ -255,6 +271,9 @@ function HproseSimpleWriter(stream) {
             this.serialize(list[i]);
         }
         stream.write(HproseTags.TagClosebrace);
+    }
+    function writeListWithRef(list) {
+        if (!this.writeRef(list)) this.writeList(list);
     }
     function writeMap(map) {
         var fields = [];
@@ -272,6 +291,9 @@ function HproseSimpleWriter(stream) {
             this.serialize(map[fields[i]]);
         }
         stream.write(HproseTags.TagClosebrace);
+    }
+    function writeMapWithRef(map) {
+        if (!this.writeRef(map)) this.writeMap(map);
     }
     function writeObjectBegin(obj) {
         var classname = getClassName(obj);
@@ -304,6 +326,9 @@ function HproseSimpleWriter(stream) {
     function writeObject(obj) {
         this.writeObjectEnd(obj, this.writeObjectBegin(obj));
     }
+    function writeObjectWithRef(obj) {
+        if (!this.writeRef(obj)) this.writeObject(obj);
+    }
     function writeClass(classname, fields) {
         var count = fields.length;
         stream.write(HproseTags.TagClass);
@@ -322,6 +347,9 @@ function HproseSimpleWriter(stream) {
         fieldsref[index] = fields;
         return index;
     }
+    function writeRef(obj) {
+        return false;
+    }
     function reset() {
         classref = Object.create(null);
         fieldsref.length = 0;
@@ -337,16 +365,25 @@ function HproseSimpleWriter(stream) {
     this.writeEmpty = writeEmpty;
     this.writeBoolean = writeBoolean;
     this.writeUTCDate = writeUTCDate;
+    this.writeUTCDateWithRef = writeUTCDateWithRef;
     this.writeDate = writeDate;
+    this.writeDateWithRef = writeDateWithRef;
     this.writeTime = writeTime;
+    this.writeTimeWithRef = writeTimeWithRef;
     this.writeBytes = writeBytes;
+    this.writeBytesWithRef = writeBytesWithRef;
     this.writeUTF8Char = writeUTF8Char;
     this.writeString = writeString;
+    this.writeStringWithRef = writeStringWithRef;
     this.writeList = writeList;
+    this.writeListWithRef = writeListWithRef;
     this.writeMap = writeMap;
+    this.writeMapWithRef = writeMapWithRef;
     this.writeObjectBegin = writeObjectBegin;
     this.writeObjectEnd = writeObjectEnd;
     this.writeObject = writeObject;
+    this.writeObjectWithRef = writeObjectWithRef;
+    this.writeRef = writeRef;
     this.reset = reset;
 }
 

@@ -14,7 +14,7 @@
  *                                                        *
  * HproseReader for Node.js.                              *
  *                                                        *
- * LastModified: Nov 7, 2013                              *
+ * LastModified: Dec 28, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -30,108 +30,39 @@ function HproseReader(stream) {
         if (s.length == 0) return 0;
         return parseInt(s);
     }
-    function readRef() {
-        return ref[readInt(HproseTags.TagSemicolon)];
+    var readDateWithoutTag = this.readDateWithoutTag;
+    this.readDateWithoutTag = function() {
+        return ref[ref.length] = readDateWithoutTag();
     }
-    var unserialize = this.unserialize;
-    this.unserialize = function(tag) {
-        if (tag === undefined) {
-            tag = stream.getc();
-        }
-        if (tag == HproseTags.TagRef) {
-            return readRef();
-        }
-        return unserialize.call(this, tag);
+    var readTimeWithoutTag = this.readTimeWithoutTag;
+    this.readTimeWithoutTag = function() {
+        return ref[ref.length] = readTimeWithoutTag();
     }
-    var readDate = this.readDate;
-    this.readDate = function(includeTag) {
-        if (includeTag) {
-            var tag = this.checkTags([HproseTags.TagDate,
-                                      HproseTags.TagRef]);
-            if (tag == HproseTags.TagRef) return readRef();
-        }
-        var date = readDate();
-        ref[ref.length] = date;
-        return date;
+    var readBytesWithoutTag = this.readBytesWithoutTag;
+    this.readBytesWithoutTag = function() {
+        return ref[ref.length] = readBytesWithoutTag();
     }
-    var readTime = this.readTime;
-    this.readTime = function(includeTag) {
-        if (includeTag) {
-            var tag = this.checkTags([HproseTags.TagTime,
-                                      HproseTags.TagRef]);
-            if (tag == HproseTags.TagRef) return readRef();
-        }
-        var time = readTime();
-        ref[ref.length] = time;
-        return time;
+    var readStringWithoutTag = this.readStringWithoutTag;
+    this.readStringWithoutTag = function() {
+        return ref[ref.length] = readStringWithoutTag();
     }
-    var readBytes = this.readBytes;
-    this.readBytes = function(includeTag) {
-        if (includeTag) {
-            var tag = this.checkTags([HproseTags.TagBytes,
-                                      HproseTags.TagRef]);
-            if (tag == HproseTags.TagRef) return readRef();
-        }
-        var bytes = readBytes();
-        ref[ref.length] = bytes;
-        return bytes;
+    var readGuidWithoutTag = this.readGuidWithoutTag;
+    this.readGuidWithoutTag = function() {
+        return ref[ref.length] = readGuidWithoutTag();
     }
-    var readString = this.readString;
-    this.readString = function(includeTag) {
-        if (includeTag) {
-            var tag = this.checkTags([HproseTags.TagString,
-                                      HproseTags.TagRef]);
-            if (tag == HproseTags.TagRef) return readRef();
-        }
-        var s = readString();
-        ref[ref.length] = s;
-        return s;
+    this.readListWithoutTag = function() {
+        return this.readListEnd(ref[ref.length] = this.readListBegin());
     }
-    var readGuid = this.readGuid;
-    this.readGuid = function(includeTag) {
-        if (includeTag) {
-            var tag = this.checkTags([HproseTags.TagGuid,
-                                      HproseTags.TagRef]);
-            if (tag == HproseTags.TagRef) return readRef();
-        }
-        var s = readGuid();
-        ref[ref.length] = s;
-        return s;
+    this.readMapWithoutTag = function() {
+        return this.readMapEnd(ref[ref.length] = this.readMapBegin());
     }
-    this.readList = function(includeTag) {
-        if (includeTag) {
-            var tag = this.checkTags([HproseTags.TagList,
-                                      HproseTags.TagRef]);
-            if (tag == HproseTags.TagRef) return readRef();
-        }
-        var list = this.readListBegin();
-        ref[ref.length] = list;
-        return this.readListEnd(list);
-    }
-    this.readMap = function(includeTag) {
-        if (includeTag) {
-            var tag = this.checkTags([HproseTags.TagMap,
-                                      HproseTags.TagRef]);
-            if (tag == HproseTags.TagRef) return readRef();
-        }
-        var map = this.readMapBegin();
-        ref[ref.length] = map;
-        return this.readMapEnd(map);
-    }
-    this.readObject = function(includeTag) {
-        if (includeTag) {
-            var tag = this.checkTags([HproseTags.TagClass,
-                                      HproseTags.TagObject,
-                                      HproseTags.TagRef]);
-            if (tag == HproseTags.TagRef) return readRef();
-            if (tag == HproseTags.TagClass) {
-                this.readClass();
-                return this.readObject(true);
-            }
-        }
+    this.readObjectWithoutTag = function() {
         var result = this.readObjectBegin();
         ref[ref.length] = result.obj;
         return this.readObjectEnd(result.obj, result.cls);
+    }
+    this.readRef = function() {
+        return ref[readInt(HproseTags.TagSemicolon)];
     }
     var reset = this.reset;
     this.reset = function() {

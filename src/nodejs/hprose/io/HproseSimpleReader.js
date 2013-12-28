@@ -14,7 +14,7 @@
  *                                                        *
  * HproseSimpleReader for Node.js.                        *
  *                                                        *
- * LastModified: Nov 18, 2013                             *
+ * LastModified: Dec 28, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -35,19 +35,15 @@ function getClass(classname) {
 function HproseSimpleReader(stream) {
     HproseRawReader.call(this, stream);
     var classref = [];
+    var unexpectedTag = this.unexpectedTag;
     function checkTag(expectTag, tag) {
         if (tag === undefined) tag = stream.getc();
-        if (tag != expectTag) {
-            throw new HproseException("Tag '" + expectTag +
-                                      "' expected, but '" +
-                                      tag + "' found in stream");
-        }
+        if (tag != expectTag) unexpectedTag(tag, expectTag);
     }
     function checkTags(expectTags, tag) {
         if (tag === undefined) tag = stream.getc();
         if (expectTags.indexOf(tag) >= 0) return tag;
-        throw new HproseException("'" + tag +
-                                  "' is not the expected tag");
+        unexpectedTag(tag, expectTags);
     }
     function readInt(tag) {
         var s = stream.readuntil(tag);
@@ -69,62 +65,105 @@ function HproseSimpleReader(stream) {
             case 55:
             case 56:
             case 57: return tag - 48;
-            case HproseTags.TagInteger: return readInteger();
-            case HproseTags.TagLong: return readLong();
-            case HproseTags.TagDouble: return readDouble();
+            case HproseTags.TagInteger: return readIntegerWithoutTag();
+            case HproseTags.TagLong: return readLongWithoutTag();
+            case HproseTags.TagDouble: return readDoubleWithoutTag();
             case HproseTags.TagNull: return null;
             case HproseTags.TagEmpty: return '';
             case HproseTags.TagTrue: return true;
             case HproseTags.TagFalse: return false;
             case HproseTags.TagNaN: return NaN;
-            case HproseTags.TagInfinity: return readInfinity();
-            case HproseTags.TagDate: return this.readDate();
-            case HproseTags.TagTime: return this.readTime();
-            case HproseTags.TagBytes: return this.readBytes();
-            case HproseTags.TagUTF8Char: return readUTF8Char();
-            case HproseTags.TagString: return this.readString();
-            case HproseTags.TagGuid: return this.readGuid();
-            case HproseTags.TagList: return this.readList();
-            case HproseTags.TagMap: return this.readMap();
-            case HproseTags.TagClass: this.readClass(); return this.unserialize();
-            case HproseTags.TagObject: return this.readObject();
-            case HproseTags.TagError: throw new HproseException(this.readString(true));
-            case undefined: throw new HproseException('No byte found in stream');
-            default: throw new HproseException("Unexpected serialize tag '" +
-                                               tag + "' in stream");
+            case HproseTags.TagInfinity: return readInfinityWithoutTag();
+            case HproseTags.TagDate: return this.readDateWithoutTag();
+            case HproseTags.TagTime: return this.readTimeWithoutTag();
+            case HproseTags.TagBytes: return this.readBytesWithoutTag();
+            case HproseTags.TagUTF8Char: return readUTF8CharWithoutTag();
+            case HproseTags.TagString: return this.readStringWithoutTag();
+            case HproseTags.TagGuid: return this.readGuidWithoutTag();
+            case HproseTags.TagList: return this.readListWithoutTag();
+            case HproseTags.TagMap: return this.readMapWithoutTag();
+            case HproseTags.TagClass: this.readClass(); return this.readObject();
+            case HproseTags.TagObject: return this.readObjectWithoutTag();
+            case HproseTags.TagRef: return this.readRef();
+            case HproseTags.TagError: throw new HproseException(this.readString());
+            default: unexpectedTag(tag);
         }
     }
-    function readInteger(includeTag) {
-        if (includeTag) {
-            var tag = stream.getc();
-            if ((tag >= 48) && (tag <= 57)) return tag - 48;
-            checkTag(HproseTags.TagInteger, tag);
-        }
+    function readIntegerWithoutTag() {
         return readInt(HproseTags.TagSemicolon);
     }
-    function readLong(includeTag) {
-        if (includeTag) {
-            var tag = stream.getc();
-            if ((tag >= 48) && (tag <= 57)) return tag - 48;
-            checkTag(HproseTags.TagLong, tag);
+    function readInteger() {
+        var tag = stream.getc();
+        switch (tag) {
+            case 48:
+            case 49:
+            case 50:
+            case 51:
+            case 52:
+            case 53:
+            case 54:
+            case 55:
+            case 56:
+            case 57: return tag - 48;
+            case HproseTags.TagInteger: return readIntegerWithoutTag();
+            default: unexpectedTag(tag);
         }
+    }
+    function readLongWithoutTag() {
         return stream.readuntil(HproseTags.TagSemicolon);
     }
-    function readDouble(includeTag) {
-        if (includeTag) {
-            var tag = stream.getc();
-            if ((tag >= 48) && (tag <= 57)) return tag - 48;
-            checkTag(HproseTags.TagDouble, tag);
+    function readLong() {
+        var tag = stream.getc();
+        switch (tag) {
+            case 48:
+            case 49:
+            case 50:
+            case 51:
+            case 52:
+            case 53:
+            case 54:
+            case 55:
+            case 56:
+            case 57: return tag - 48;
+            case HproseTags.TagInteger:
+            case HproseTags.TagLong: return readLongWithoutTag();
+            default: unexpectedTag(tag);
         }
+    }
+    function readDoubleWithoutTag() {
         return parseFloat(stream.readuntil(HproseTags.TagSemicolon));
+    }
+    function readDouble() {
+        var tag = stream.getc();
+        switch (tag) {
+            case 48:
+            case 49:
+            case 50:
+            case 51:
+            case 52:
+            case 53:
+            case 54:
+            case 55:
+            case 56:
+            case 57: return tag - 48;
+            case HproseTags.TagInteger:
+            case HproseTags.TagLong:
+            case HproseTags.TagDouble: return readDoubleWithoutTag();
+            case HproseTags.TagNaN: return NaN;
+            case HproseTags.TagInfinity: return readInfinityWithoutTag();
+            default: unexpectedTag(tag);
+        }
     }
     function readNaN() {
         checkTag(HproseTags.TagNaN);
         return NaN;
     }
-    function readInfinity(includeTag) {
-        if (includeTag) checkTag(HproseTags.TagInfinity);
+    function readInfinityWithoutTag() {
         return ((stream.getc() == HproseTags.TagNeg) ? -Infinity : Infinity);
+    }
+    function readInfinity() {
+        checkTag(HproseTags.TagInfinity);
+        return readInfinityWithoutTag();
     }
     function readNull() {
         checkTag(HproseTags.TagNull);
@@ -135,12 +174,14 @@ function HproseSimpleReader(stream) {
         return '';
     }
     function readBoolean() {
-        var tag = checkTags([HproseTags.TagTrue,
-                             HproseTags.TagFalse]);
-        return (tag == HproseTags.TagTrue);
+        var tag = stream.getc();
+        switch (tag) {
+            case HproseTags.TagTrue: return true;
+            case HproseTags.TagFalse: return false;
+            default: unexpectedTag(tag);
+        }
     }
-    function readDate(includeTag) {
-        if (includeTag) checkTag(HproseTags.TagDate);
+    function readDateWithoutTag() {
         var year = parseInt(stream.readAsciiString(4));
         var month = parseInt(stream.readAsciiString(2)) - 1;
         var day = parseInt(stream.readAsciiString(2));
@@ -179,8 +220,15 @@ function HproseSimpleReader(stream) {
         }
         return date;
     }
-    function readTime(includeTag) {
-        if (includeTag) checkTag(HproseTags.TagTime);
+    function readDate() {
+        var tag = stream.getc();
+        switch (tag) {
+            case HproseTags.TagDate: return this.readDateWithoutTag();
+            case HproseTags.TagRef: return this.readRef();
+            default: unexpectedTag(tag);
+        }
+    }
+    function readTimeWithoutTag() {
         var time;
         var hour = parseInt(stream.readAsciiString(2));
         var minute = parseInt(stream.readAsciiString(2));
@@ -207,29 +255,61 @@ function HproseSimpleReader(stream) {
         }
         return time;
     }
-    function readBytes(includeTag) {
-        if (includeTag) checkTag(HproseTags.TagBytes);
+    function readTime() {
+        var tag = stream.getc();
+        switch (tag) {
+            case HproseTags.TagTime: return this.readTimeWithoutTag();
+            case HproseTags.TagRef: return this.readRef();
+            default: unexpectedTag(tag);
+        }
+    }
+    function readBytesWithoutTag() {
         var count = readInt(HproseTags.TagQuote);
         var bytes = stream.read(count);
         stream.skip(1);
         return bytes;
     }
-    function readUTF8Char(includeTag) {
-        if (includeTag) checkTag(HproseTags.TagUTF8Char);
+    function readBytes() {
+        var tag = stream.getc();
+        switch (tag) {
+            case HproseTags.TagBytes: return this.readBytesWithoutTag();
+            case HproseTags.TagRef: return this.readRef();
+            default: unexpectedTag(tag);
+        }
+    }
+    function readUTF8CharWithoutTag() {
         return stream.readUTF8String(1);
     }
-    function readString(includeTag) {
-        if (includeTag) checkTag(HproseTags.TagString);
+    function readUTF8Char() {
+        checkTag(HproseTags.TagUTF8Char);
+        return readUTF8CharWithoutTag();
+    }
+    function readStringWithoutTag() {
         var s = stream.readUTF8String(readInt(HproseTags.TagQuote));
         stream.skip(1);
         return s;
     }
-    function readGuid(includeTag) {
-        if (includeTag) checkTag(HproseTags.TagGuid);
+    function readString() {
+        var tag = stream.getc();
+        switch (tag) {
+            case HproseTags.TagString: return this.readStringWithoutTag();
+            case HproseTags.TagRef: return this.readRef();
+            default: unexpectedTag(tag);
+        }
+    }
+    function readGuidWithoutTag() {
         stream.skip(1);
         var s = stream.readAsciiString(36);
         stream.skip(1);
         return s;
+    }
+    function readGuid() {
+        var tag = stream.getc();
+        switch (tag) {
+            case HproseTags.TagGuid: return this.readGuidWithoutTag();
+            case HproseTags.TagRef: return this.readRef();
+            default: unexpectedTag(tag);
+        }
     }
     function readListBegin() {
         return [];
@@ -242,9 +322,16 @@ function HproseSimpleReader(stream) {
         stream.skip(1);
         return list;
     }
-    function readList(includeTag) {
-        if (includeTag) checkTag(HproseTags.TagList);
+    function readListWithoutTag() {
         return this.readListEnd(this.readListBegin());
+    }
+    function readList() {
+        var tag = stream.getc();
+        switch (tag) {
+            case HproseTags.TagList: return this.readListWithoutTag();
+            case HproseTags.TagRef: return this.readRef();
+            default: unexpectedTag(tag);
+        }
     }
     function readMapBegin() {
         return {};
@@ -259,9 +346,16 @@ function HproseSimpleReader(stream) {
         stream.skip(1);
         return map;
     }
-    function readMap(includeTag) {
-        if (includeTag) checkTag(HproseTags.TagMap);
+    function readMapWithoutTag() {
         return this.readMapEnd(this.readMapBegin());
+    }
+    function readMap() {
+        var tag = stream.getc();
+        switch (tag) {
+            case HproseTags.TagMap: return this.readMapWithoutTag();
+            case HproseTags.TagRef: return this.readRef();
+            default: unexpectedTag(tag);
+        }
     }
     function readObjectBegin() {
         var cls = classref[readInt(HproseTags.TagOpenbrace)];
@@ -275,24 +369,25 @@ function HproseSimpleReader(stream) {
         stream.skip(1);
         return obj;
     }
-    function readObject(includeTag) {
-        if (includeTag) {
-            var tag = checkTags([HproseTags.TagClass,
-                                 HproseTags.TagObject]);
-            if (tag == HproseTags.TagClass) {
-                this.readClass();
-                return this.readObject(true);
-            }
-        }
+    function readObjectWithoutTag() {
         var result = this.readObjectBegin();
         return this.readObjectEnd(result.obj, result.cls);
     }
+    function readObject(includeTag) {
+        var tag = stream.getc();
+        switch(tag) {
+            case HproseTags.TagClass: this.readClass(); return this.readObject();
+            case HproseTags.TagObject: return this.readObjectWithoutTag();
+            case HproseTags.TagRef: return this.readRef();
+            default: unexpectedTag(tag);
+        }
+    }
     function readClass() {
-        var classname = readString();
+        var classname = readStringWithoutTag();
         var count = readInt(HproseTags.TagOpenbrace);
         var fields = [];
         for (var i = 0; i < count; i++) {
-            fields[i] = this.readString(true);
+            fields[i] = this.readString();
         }
         stream.skip(1);
         classname = getClass(classname);
@@ -301,6 +396,9 @@ function HproseSimpleReader(stream) {
             count: count,
             fields: fields
         };
+    }
+    function readRef() {
+        unexpectedTag(HproseTags.TagRef);
     }
     function reset() {
         classref.length = 0;
@@ -317,21 +415,31 @@ function HproseSimpleReader(stream) {
     this.readNull = readNull;
     this.readEmpty = readEmpty;
     this.readBoolean = readBoolean;
+    this.readDateWithoutTag = readDateWithoutTag;
     this.readDate = readDate;
+    this.readTimeWithoutTag = readTimeWithoutTag;
     this.readTime = readTime;
+    this.readBytesWithoutTag = readBytesWithoutTag;
     this.readBytes = readBytes;
     this.readUTF8Char = readUTF8Char;
+    this.readStringWithoutTag = readStringWithoutTag;
     this.readString = readString;
+    this.readGuidWithoutTag = readGuidWithoutTag;
+    this.readGuid = readGuid;
     this.readListBegin = readListBegin;
     this.readListEnd = readListEnd;
+    this.readListWithoutTag = readListWithoutTag;
     this.readList = readList;
     this.readMapBegin = readMapBegin;
     this.readMapEnd = readMapEnd;
+    this.readMapWithoutTag = readMapWithoutTag;
     this.readMap = readMap;
     this.readObjectBegin = readObjectBegin;
     this.readObjectEnd = readObjectEnd;
+    this.readObjectWithoutTag = readObjectWithoutTag;
     this.readObject = readObject;
     this.readClass = readClass;
+    this.readRef = readRef;
     this.reset = reset;
 }
 

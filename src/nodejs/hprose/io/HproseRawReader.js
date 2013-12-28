@@ -14,7 +14,7 @@
  *                                                        *
  * HproseRawReader for Node.js.                           *
  *                                                        *
- * LastModified: Nov 6, 2013                              *
+ * LastModified: Dec 28, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -24,6 +24,26 @@ var HproseException = require('../common/HproseException.js');
 var HproseBufferOutputStream = require('./HproseBufferOutputStream.js');
 
 function HproseRawReader(stream) {
+    function unexpectedTag(tag, expectTags) {
+        if (tag && expectTags) {
+            var expectTagStr = '';
+            if (typeof(expectTags) === "number") {
+                expectTagStr = String.fromCharCode(expectTags);
+            }
+            else {
+                for (var i = 0, n = expectTags.length; i < n; i++) {
+                    expectTagStr += String.fromCharCode(expectTags[i]);
+                }
+            }
+            throw new HproseException("Tag '" + expectTagStr + "' expected, but '" + String.fromCharCode(tag) + "' found in stream");
+        }
+        else if (tag) {
+            throw new HproseException("Unexpected serialize tag '" + String.fromCharCode(tag) + "' in stream")
+        }
+        else {
+            throw new HproseException('No byte found in stream');
+        }
+    }
     function readRaw(ostream, tag) {
         if (ostream === undefined) ostream = new HproseBufferOutputStream();
         if (tag === undefined) tag = stream.getc();
@@ -84,9 +104,7 @@ function HproseRawReader(stream) {
                 ostream.write(tag);
                 readRaw(ostream);
                 break;
-            case '': throw new HproseException('No byte found in stream');
-            default: throw new HproseException("Unexpected serialize tag '" +
-                                               tag + "' in stream");
+            default: unexpectedTag(tag);
         }
         return ostream;
     }
@@ -149,6 +167,7 @@ function HproseRawReader(stream) {
         ostream.write(tag);
     }
     this.readRaw = readRaw;
+    this.unexpectedTag = unexpectedTag;
 }
 
 module.exports = HproseRawReader;
