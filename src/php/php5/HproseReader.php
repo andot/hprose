@@ -15,7 +15,7 @@
  *                                                        *
  * hprose reader library for php5.                        *
  *                                                        *
- * LastModified: Nov 12, 2013                             *
+ * LastModified: Dec 30, 2013                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -28,6 +28,17 @@ class HproseRawReader {
     public $stream;
     function __construct(&$stream) {
         $this->stream = &$stream;
+    }
+    public function unexpectedTag($tag, $expectTags) {
+        if ($tag && $expectTags) {
+            throw new HproseException("Tag '" . $expectTags . "' expected, but '" . $tag . "' found in stream");
+        }
+        else if ($tag) {
+            throw new HproseException("Unexpected serialize tag '" . $tag . "' in stream");
+        }
+        else {
+            throw new HproseException('No byte found in stream');
+        }
     }
     public function readRaw($ostream = NULL, $tag = NULL) {
         if (is_null($ostream)) {
@@ -93,10 +104,7 @@ class HproseRawReader {
                 $ostream->write($tag);
                 $this->readRaw($ostream);
                 break;
-            case false:
-                throw new HproseException("No byte found in stream");
-            default:
-                throw new HproseException("Unexpected serialize tag '" + $tag + "' in stream");
+            default: $this->unexpectedTag($tag);
         }
     	return $ostream;
     }
@@ -223,93 +231,127 @@ class HproseSimpleReader extends HproseRawReader {
         }
         $result = NULL;
         switch ($tag) {
-            case '0':
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9':
-                $result = (int)$tag; break;
-            case HproseTags::TagInteger: $result = $this->readInteger(); break;
-            case HproseTags::TagLong: $result = $this->readLong(); break;
-            case HproseTags::TagDouble: $result = $this->readDouble(); break;
+            case '0': $result = 0; break;
+            case '1': $result = 1; break;
+            case '2': $result = 2; break;
+            case '3': $result = 3; break;
+            case '4': $result = 4; break;
+            case '5': $result = 5; break;
+            case '6': $result = 6; break;
+            case '7': $result = 7; break;
+            case '8': $result = 8; break;
+            case '9': $result = 9; break;
+            case HproseTags::TagInteger: $result = $this->readIntegerWithoutTag(); break;
+            case HproseTags::TagLong: $result = $this->readLongWithoutTag(); break;
+            case HproseTags::TagDouble: $result = $this->readDoubleWithoutTag(); break;
             case HproseTags::TagNull: break;
             case HproseTags::TagEmpty: $result = ''; break;
             case HproseTags::TagTrue: $result = true; break;
             case HproseTags::TagFalse: $result = false; break;
             case HproseTags::TagNaN: $result = log(-1); break;
-            case HproseTags::TagInfinity: $result = $this->readInfinity(); break;
-            case HproseTags::TagDate: $result = $this->readDate(); break;
-            case HproseTags::TagTime: $result = $this->readTime(); break;
-            case HproseTags::TagBytes: $result = $this->readBytes(); break;
-            case HproseTags::TagUTF8Char: $result = $this->readUTF8Char(); break;            
-            case HproseTags::TagString: $result = $this->readString(); break;
-            case HproseTags::TagGuid: $result = $this->readGuid(); break;
-            case HproseTags::TagList: $result = &$this->readList(); break;
-            case HproseTags::TagMap: $result = &$this->readMap(); break;
-            case HproseTags::TagClass: $this->readClass(); $result = &$this->unserialize(); break;
-            case HproseTags::TagObject: $result = $this->readObject(); break;
-            case HproseTags::TagError: throw new HproseException($this->readString(true));
-            case false: throw new HproseException('No byte found in stream');
-            default: throw new HproseException("Unexpected serialize tag '$tag' in stream");
+            case HproseTags::TagInfinity: $result = $this->readInfinityWithoutTag(); break;
+            case HproseTags::TagDate: $result = $this->readDateWithoutTag(); break;
+            case HproseTags::TagTime: $result = $this->readTimeWithoutTag(); break;
+            case HproseTags::TagBytes: $result = $this->readBytesWithoutTag(); break;
+            case HproseTags::TagUTF8Char: $result = $this->readUTF8CharWithoutTag(); break;            
+            case HproseTags::TagString: $result = $this->readStringWithoutTag(); break;
+            case HproseTags::TagGuid: $result = $this->readGuidWithoutTag(); break;
+            case HproseTags::TagList: $result = &$this->readListWithoutTag(); break;
+            case HproseTags::TagMap: $result = &$this->readMapWithoutTag(); break;
+            case HproseTags::TagClass: $this->readClass(); $result = $this->readObject(); break;
+            case HproseTags::TagObject: $result = $this->readObjectWithoutTag(); break;
+            case HproseTags::TagRef:  $result = &$this->readRef(); break;
+            case HproseTags::TagError: throw new HproseException($this->readString());
+            default: $this->unexpectedTag($tag);
         }
         return $result;
     }
     public function checkTag($expectTag, $tag = NULL) {
         if (is_null($tag)) $tag = $this->stream->getc();
-        if ($tag != $expectTag) {
-            throw new HproseException("Tag '$expectTag' expected, but '$tag' found in stream");
-        }
+        if ($tag != $expectTag) $this->unexpectedTag($tag, $expectTag);
     }
     public function checkTags($expectTags, $tag = NULL) {
         if (is_null($tag)) $tag = $this->stream->getc();
         if (!in_array($tag, $expectTags)) {
-            $expectTags = implode('', $expectTags);
-            throw new HproseException("Tag '$expectTags' expected, but '$tag' found in stream");
+            $this->unexpectedTag($tag, implode('', $expectTags));
         }
         return $tag;
     }
-    public function readInteger($includeTag = false) {
-        if ($includeTag) {
-            $tag = $this->stream->getc();
-            if (($tag >= '0') && ($tag <= '9')) {
-                return (int)$tag;
-            }
-            $this->checkTag(HproseTags::TagInteger, $tag);
-        }
+    public function readIntegerWithoutTag() {
         return (int)($this->stream->readuntil(HproseTags::TagSemicolon));
     }
-    public function readLong($includeTag = false) {
-        if ($includeTag) {
-            $tag = $this->stream->getc();
-            if (($tag >= '0') && ($tag <= '9')) {
-                return $tag;
-            }
-            $this->checkTag(HproseTags::TagLong, $tag);
+    public function readInteger() {
+        $tag = $this->stream->getc();
+        switch ($tag) {
+            case '0': return 0;
+            case '1': return 1;
+            case '2': return 2;
+            case '3': return 3;
+            case '4': return 4;
+            case '5': return 5;
+            case '6': return 6;
+            case '7': return 7;
+            case '8': return 8;
+            case '9': return 9;
+            case HproseTags::TagInteger: return $this->readIntegerWithoutTag();
+            default: $this->unexpectedTag($tag);
         }
+    }
+    public function readLongWithoutTag() {
         return $this->stream->readuntil(HproseTags::TagSemicolon);
     }
-    public function readDouble($includeTag = false) {
-        if ($includeTag) {
-            $tag = $this->stream->getc();
-            if (($tag >= '0') && ($tag <= '9')) {
-                return (double)$tag;
-            }
-            $this->checkTag(HproseTags::TagDouble, $tag);
+    public function readLong() {
+        $tag = $this->stream->getc();
+        switch ($tag) {
+            case '0': return 0;
+            case '1': return 1;
+            case '2': return 2;
+            case '3': return 3;
+            case '4': return 4;
+            case '5': return 5;
+            case '6': return 6;
+            case '7': return 7;
+            case '8': return 8;
+            case '9': return 9;
+            case HproseTags::TagInteger:
+            case HproseTags::TagLong: return $this->readLongWithoutTag();
+            default: $this->unexpectedTag($tag);
         }
+    }
+    public function readDoubleWithoutTag() {
         return (double)($this->stream->readuntil(HproseTags::TagSemicolon));
+    }
+    public function readDouble($includeTag = false) {
+        $tag = $this->stream->getc();
+        switch ($tag) {
+            case '0': return 0;
+            case '1': return 1;
+            case '2': return 2;
+            case '3': return 3;
+            case '4': return 4;
+            case '5': return 5;
+            case '6': return 6;
+            case '7': return 7;
+            case '8': return 8;
+            case '9': return 9;
+            case HproseTags::TagInteger:
+            case HproseTags::TagLong:
+            case HproseTags::TagDouble: return $this->readDoubleWithoutTag();
+            case HproseTags::TagNaN: return log(-1);
+            case hproseTags::TagInfinity: return $this->readInfinityWithoutTag();
+            default: $this->unexpectedTag($tag);
+        }
     }
     public function readNaN() {
         $this->checkTag(HproseTags::TagNaN);
         return log(-1);
     }
-    public function readInfinity($includeTag = false) {
-        if ($includeTag) $this->checkTag(HproseTags::TagInfinity);
+    public function readInfinityWithoutTag() {
         return (($this->stream->getc() == HproseTags::TagNeg) ? log(0) : -log(0));
+    }
+    public function readInfinity($includeTag = false) {
+        $this->checkTag(HproseTags::TagInfinity);
+        return $this->readInfinityWithoutTag();
     }
     public function readNull() {
         $this->checkTag(HproseTags::TagNull);
@@ -320,11 +362,14 @@ class HproseSimpleReader extends HproseRawReader {
         return '';
     }
     public function readBoolean() {
-        $tag = $this->checkTags(array(HproseTags::TagTrue, HproseTags::TagFalse));
-        return ($tag == HproseTags::TagTrue);
+        $tag = $this->stream->getc();
+        switch ($tag) {
+            case HproseTags::TagTrue: return true;
+            case HproseTags::TagFalse: return false;
+            default: $this->unexpectedTag($tag);
+        }
     }
-    public function readDate($includeTag = false) {
-        if ($includeTag) $this->checkTag(HproseTags::TagDate);
+    public function readDateWithoutTag() {
         $year = (int)($this->stream->read(4));
         $month = (int)($this->stream->read(2));
         $day = (int)($this->stream->read(2));
@@ -366,8 +411,15 @@ class HproseSimpleReader extends HproseRawReader {
         }
         return $date;
     }
-    public function readTime($includeTag = false) {
-        if ($includeTag) $this->checkTag(HproseTags::TagTime);
+    public function readDate() {
+        $tag = $this->stream->getc();
+        switch ($tag) {
+            case HproseTags::TagDate: return $this->readDateWithoutTag();
+            case HproseTags::TagRef: return $this->readRef();
+            default: $this->unexpectedTag($tag);
+        }
+    }
+    public function readTimeWithoutTag() {
         $hour = (int)($this->stream->read(2));
         $minute = (int)($this->stream->read(2));
         $second = (int)($this->stream->read(2));
@@ -393,15 +445,29 @@ class HproseSimpleReader extends HproseRawReader {
         }
         return $time;
     }
-    public function readBytes($includeTag = false) {
-        if ($includeTag) $this->checkTag(HproseTags::TagBytes);
+    public function readTime() {
+        $tag = $this->stream->getc();
+        switch ($tag) {
+            case HproseTags::TagTime: return $this->readTimeWithoutTag();
+            case HproseTags::TagRef: return $this->readRef();
+            default: $this->unexpectedTag($tag);
+        }
+    }
+    public function readBytesWithoutTag() {
         $count = (int)($this->stream->readuntil(HproseTags::TagQuote));
         $bytes = $this->stream->read($count);
         $this->stream->skip(1);
         return $bytes;
     }
-    public function readUTF8Char($includeTag = false) {
-        if ($includeTag) $this->checkTag(HproseTags::TagUTF8Char);
+    public function readBytes() {
+        $tag = $this->stream->getc();
+        switch ($tag) {
+            case HproseTags::TagBytes: return $this->readBytesWithoutTag();
+            case HproseTags::TagRef: return $this->readRef();
+            default: $this->unexpectedTag($tag);
+        }
+    }
+    public function readUTF8CharWithoutTag() {
         $c = $this->stream->getc();
         $s = $c;
         $a = ord($c);
@@ -416,8 +482,11 @@ class HproseSimpleReader extends HproseRawReader {
         }
         return $s;
     }
-    public function readString($includeTag = false) {
-        if ($includeTag) $this->checkTag(HproseTags::TagString);
+    public function readUTF8Char() {
+        $this->checkTag(HproseTags::TagUTF8Char);
+        return $this->readUTF8CharWithoutTag();
+    }
+    public function readStringWithoutTag() {
         $len = (int)$this->stream->readuntil(HproseTags::TagQuote);
         $this->stream->mark();
         $utf8len = 0;
@@ -466,12 +535,27 @@ class HproseSimpleReader extends HproseRawReader {
         $this->stream->skip(1);
         return $s;
     }
-    public function readGuid($includeTag = false) {
-        if ($includeTag) $this->checkTag(HproseTags::TagGuid);
+    public function readString() {
+        $tag = $this->stream->getc();
+        switch ($tag) {
+            case HproseTags::TagString: return $this->readStringWithoutTag();
+            case HproseTags::TagRef: return $this->readRef();
+            default: $this->unexpectedTag($tag);
+        }
+    }
+    public function readGuidWithoutTag() {
         $this->stream->skip(1);
         $s = $this->stream->read(36);
         $this->stream->skip(1);
         return $s;
+    }
+    public function readGuid() {
+        $tag = $this->stream->getc();
+        switch ($tag) {
+            case HproseTags::TagGuid: return $this->readGuidWithoutTag();
+            case HproseTags::TagRef: return $this->readRef();
+            default: $this->unexpectedTag($tag);
+        }
     }
     protected function &readListBegin() {
         $list = array();
@@ -485,10 +569,17 @@ class HproseSimpleReader extends HproseRawReader {
         $this->stream->skip(1);
         return $list;
     }
-    public function &readList($includeTag = false) {
-        if ($includeTag) $this->checkTag(HproseTags::TagList);
+    public function &readListWithoutTag() {
         $list = &$this->readListBegin();
         return $this->readListEnd($list);
+    }
+    public function &readList() {
+        $tag = $this->stream->getc();
+        switch ($tag) {
+            case HproseTags::TagList: return $this->readListWithoutTag();
+            case HproseTags::TagRef: return $this->readRef();
+            default: $this->unexpectedTag($tag);
+        }
     }
     protected function &readMapBegin() {
         $map = array();
@@ -503,10 +594,17 @@ class HproseSimpleReader extends HproseRawReader {
         $this->stream->skip(1);
         return $map;
     }
-    public function &readMap($includeTag = false) {
-        if ($includeTag) $this->checkTag(HproseTags::TagMap);
+    public function &readMapWithoutTag() {
         $map = &$this->readMapBegin();
         return $this->readMapEnd($map);
+    }
+    public function &readMap() {
+        $tag = $this->stream->getc();
+        switch ($tag) {
+            case HproseTags::TagMap: return $this->readMapWithoutTag();
+            case HproseTags::TagRef: return $this->readRef();
+            default: $this->unexpectedTag($tag);
+        }
     }
     protected function readObjectBegin() {
         list($classname, $fields) = $this->classref[(int)$this->stream->readuntil(HproseTags::TagOpenbrace)];
@@ -537,26 +635,31 @@ class HproseSimpleReader extends HproseRawReader {
         $this->stream->skip(1);
         return $object;
     }
-    public function readObject($includeTag = false) {
-        if ($includeTag) {
-            $tag = $this->checkTags(array(HproseTags::TagClass, HproseTags::TagObject));
-            if ($tag == HproseTags::TagClass) {
-                $this->readClass();
-                return $this->readObject(true);
-            }
-        }
+    public function readObjectWithoutTag() {
         list($object, $fields) = $this->readObjectBegin();
         return $this->readObjectEnd($object, $fields);
     }
+    public function readObject() {
+        $tag = $this->stream->getc();
+        switch ($tag) {
+            case HproseTags::TagClass: $this->readclass(); return $this->readObject();
+            case HproseTags::TagObject: return $this->readObjectWithoutTag();
+            case HproseTags::TagRef: return $this->readRef();
+            default: $this->unexpectedTag($tag);
+        }
+    }
     protected function readClass() {
-        $classname = HproseClassManager::getClass(self::readString());
+        $classname = HproseClassManager::getClass(self::readStringWithoutTag());
         $count = (int)$this->stream->readuntil(HproseTags::TagOpenbrace);
         $fields = array();
         for ($i = 0; $i < $count; ++$i) {
-            $fields[] = $this->readString(true);
+            $fields[] = $this->readString();
         }
         $this->stream->skip(1);
         $this->classref[] = array($classname, $fields);
+    }
+    protected function &readRef() {
+        $this->unexpectedTag(HproseTags::TagRef);
     }
     public function reset() {
         $this->classref = array();
@@ -569,92 +672,47 @@ class HproseReader extends HproseSimpleReader {
         parent::__construct($stream);
         $this->ref = array();
     }
-    public function &unserialize($tag = NULL) {
-        if (is_null($tag)) {
-            $tag = $this->stream->getc();
-        }
-        if ($tag == HproseTags::TagRef) {
-            return $this->readRef();
-        }
-        return parent::unserialize($tag);
-    }
-    public function readDate($includeTag = false) {
-        if ($includeTag) {
-            $tag = $this->checkTags(array(HproseTags::TagDate, HproseTags::TagRef));
-            if ($tag == HproseTags::TagRef) return $this->readRef();
-        }
-        $date = parent::readDate();
+    public function readDateWithoutTag() {
+        $date = parent::readDateWithoutTag();
         $this->ref[] = $date;
         return $date;
     }
-    public function readTime($includeTag = false) {
-        if ($includeTag) {
-            $tag = $this->checkTags(array(HproseTags::TagTime, HproseTags::TagRef));
-            if ($tag == HproseTags::TagRef) return $this->readRef();
-        }
-        $time = parent::readTime();
+    public function readTimeWithoutTag() {
+        $time = parent::readTimeWithoutTag();
         $this->ref[] = $time;
         return $time;
     }
-    public function readBytes($includeTag = false) {
-        if ($includeTag) {
-            $tag = $this->checkTags(array(HproseTags::TagBytes, HproseTags::TagRef));
-            if ($tag == HproseTags::TagRef) return $this->readRef();
-        }
-        $bytes = parent::readBytes();
+    public function readBytesWithoutTag() {
+        $bytes = parent::readBytesWithoutTag();
         $this->ref[] = $bytes;
         return $bytes;
     }
-    public function readString($includeTag = false) {
-        if ($includeTag) {
-            $tag = $this->checkTags(array(HproseTags::TagString, HproseTags::TagRef));
-            if ($tag == HproseTags::TagRef) return $this->readRef();
-        }
-        $str = parent::readString();
+    public function readStringWithoutTag() {
+        $str = parent::readStringWithoutTag();
         $this->ref[] = $str;
         return $str;
     }
-    public function readGuid($includeTag = false) {
-        if ($includeTag) {
-            $tag = $this->checkTags(array(HproseTags::TagGuid, HproseTags::TagRef));
-            if ($tag == HproseTags::TagRef) return $this->readRef();
-        }
-        $guid = parent::readGuid();
+    public function readGuidWithoutTag() {
+        $guid = parent::readGuidWithoutTag();
         $this->ref[] = $guid;
         return $guid;
     }
-    public function &readList($includeTag = false) {
-        if ($includeTag) {
-            $tag = $this->checkTags(array(HproseTags::TagList, HproseTags::TagRef));
-            if ($tag == HproseTags::TagRef) return $this->readRef();
-        }
+    public function &readListWithoutTag() {
         $list = &$this->readListBegin();
         $this->ref[] = &$list;
         return $this->readListEnd($list);
     }
-    public function &readMap($includeTag = false) {
-        if ($includeTag) {
-            $tag = $this->checkTags(array(HproseTags::TagMap, HproseTags::TagRef));
-            if ($tag == HproseTags::TagRef) return $this->readRef();
-        }
+    public function &readMapWithoutTag() {
         $map = &$this->readMapBegin();
         $this->ref[] = &$map;
         return $this->readMapEnd($map);
     }
-    public function readObject($includeTag = false) {
-        if ($includeTag) {
-            $tag = $this->checkTags(array(HproseTags::TagClass, HproseTags::TagObject, HproseTags::TagRef));
-            if ($tag == HproseTags::TagRef) return $this->readRef();
-            if ($tag == HproseTags::TagClass) {
-                $this->readClass();
-                return $this->readObject(true);
-            }
-        }
+    public function readObjectWithoutTag() {
         list($object, $fields) = $this->readObjectBegin();
         $this->ref[] = $object;
         return $this->readObjectEnd($object, $fields);
     }
-    private function &readRef() {
+    protected function &readRef() {
         $ref = &$this->ref[(int)$this->stream->readuntil(HproseTags::TagSemicolon)];
         if (gettype($ref) == 'array') {
             $result = &$ref;
