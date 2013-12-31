@@ -11,7 +11,7 @@ def main():
 	from setuptools import setup
 	args = dict(
 		name = 'hprose',
-		version = '1.2',
+		version = '1.4',
 		description = 'Hprose is a High Performance Remote Object Service Engine that works over the Internet.',
 		author = 'Ma Bingyao',
 		url = 'http://www.hprose.com',

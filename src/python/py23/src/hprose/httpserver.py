@@ -14,7 +14,7 @@
 #                                                          #
 # hprose httpserver for python 2.3+                        #
 #                                                          #
-# LastModified: Dec 1, 2012                                #
+# LastModified: Jan 1, 2014                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -110,18 +110,17 @@ class HproseHttpService(HproseService):
         else:
             session = {}
         header = self._header(environ)
-        writer = HproseWriter(self._filter.outputFilter(StringIO()))
+        ostream = StringIO()
         try:
             if ((environ['REQUEST_METHOD'] == 'GET') and self._get):
-                self._doFunctionList(writer)
+                self._doFunctionList(ostream)
             elif (environ['REQUEST_METHOD'] == 'POST'):
-                reader = HproseReader(self._filter.inputFilter(environ['wsgi.input']))
-                self._handle(reader, writer, session, environ)
+                istream = environ['wsgi.input']
+                self._handle(istream, ostream, session, environ)
         finally:
             if hasattr(session, 'save'): session.save()
-            stream = writer.stream
-            body = stream.getvalue()
-            stream.close()
+            body = ostream.getvalue()
+            ostream.close()
             return ['200 OK', header, [body]]
 
     def isCrossDomainEnabled(self):
@@ -223,29 +222,29 @@ class HproseHttpServer(object):
     def add(self, *args):
         self.app.add(*args)
 
-    def addMissingFunction(self, function, resultMode = HproseResultMode.Normal):
-        self.app.addMissingFunction(function, resultMode)
+    def addMissingFunction(self, function, resultMode = HproseResultMode.Normal, simple = None):
+        self.app.addMissingFunction(function, resultMode, simple)
 
-    def addFunction(self, function, alias = None, resultMode = HproseResultMode.Normal):
-        self.app.addFunction(function, alias, resultMode)
+    def addFunction(self, function, alias = None, resultMode = HproseResultMode.Normal, simple = None):
+        self.app.addFunction(function, alias, resultMode, simple)
 
-    def addFunctions(self, functions, aliases = None, resultMode = HproseResultMode.Normal):
-        self.app.addFunctions(functions, aliases, resultMode)
+    def addFunctions(self, functions, aliases = None, resultMode = HproseResultMode.Normal, simple = None):
+        self.app.addFunctions(functions, aliases, resultMode, simple)
 
-    def addMethod(self, methodname, belongto, alias = None, resultMode = HproseResultMode.Normal):
-        self.app.addMethod(methodname, belongto, alias, resultMode)
+    def addMethod(self, methodname, belongto, alias = None, resultMode = HproseResultMode.Normal, simple = None):
+        self.app.addMethod(methodname, belongto, alias, resultMode, simple)
 
-    def addMethods(self, methods, belongto, aliases = None, resultMode = HproseResultMode.Normal):
-        self.app.addMethods(methods, belongto, aliases, resultMode)
+    def addMethods(self, methods, belongto, aliases = None, resultMode = HproseResultMode.Normal, simple = None):
+        self.app.addMethods(methods, belongto, aliases, resultMode, simple)
 
-    def addInstanceMethods(self, obj, cls = None, aliasPrefix = None, resultMode = HproseResultMode.Normal):
-        self.app.addInstanceMethods(obj, cls, aliasPrefix, resultMode)
+    def addInstanceMethods(self, obj, cls = None, aliasPrefix = None, resultMode = HproseResultMode.Normal, simple = None):
+        self.app.addInstanceMethods(obj, cls, aliasPrefix, resultMode, simple)
 
-    def addClassMethods(self, cls, execcls = None, aliasPrefix = None, resultMode = HproseResultMode.Normal):
-        self.app.addClassMethods(cls, execcls, aliasPrefix, resultMode)
+    def addClassMethods(self, cls, execcls = None, aliasPrefix = None, resultMode = HproseResultMode.Normal, simple = None):
+        self.app.addClassMethods(cls, execcls, aliasPrefix, resultMode, simple)
 
-    def addStaticMethods(self, cls, aliasPrefix = None, resultMode = HproseResultMode.Normal):
-        self.app.addStaticMethods(cls, aliasPrefix, resultMode)
+    def addStaticMethods(self, cls, aliasPrefix = None, resultMode = HproseResultMode.Normal, simple = None):
+        self.app.addStaticMethods(cls, aliasPrefix, resultMode, simple)
 
     def isDebugEnabled(self):
         return self.app.isDebugEnabled()

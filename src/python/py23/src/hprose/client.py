@@ -35,7 +35,8 @@ class _Method(object):
         onerror = kargs.get('onerror', None)
         byRef = kargs.get('byRef', False)
         resultMode = kargs.get('resultMode', HproseResultMode.Normal)
-        return self.__invoke(self.__name, list(args), callback, onerror, byRef, resultMode)
+        simple = kargs.get('simple', None)
+        return self.__invoke(self.__name, list(args), callback, onerror, byRef, resultMode, simple)
 
 class _Proxy(object):
     def __init__(self, invoke):
@@ -44,7 +45,7 @@ class _Proxy(object):
         return _Method(self.__invoke, name)
 
 class _AsyncInvoke(object):
-    def __init__(self, invoke, name, args, callback, onerror, byRef, resultMode):
+    def __init__(self, invoke, name, args, callback, onerror, byRef, resultMode, simple):
         self.__invoke = invoke
         self.__name = name
         self.__args = args
@@ -52,9 +53,10 @@ class _AsyncInvoke(object):
         self.__onerror = onerror
         self.__byRef = byRef
         self.__resultMode = resultMode
+        self.__simple = simple
     def __call__(self):
         try:
-            result = self.__invoke(self.__name, self.__args, self.__byRef, self.__resultMode)
+            result = self.__invoke(self.__name, self.__args, self.__byRef, self.__resultMode, self.__simple)
             argcount = self.__callback.func_code.co_argcount
             if argcount == 0:
                 self.__callback()
@@ -72,14 +74,16 @@ class HproseClient(object):
     def __init__(self, uri = None):
         self.onError = None
         self._filter = HproseFilter()
+        self.__simple = False
         self.useService(uri)
 
     def __getattr__(self, name):
         return _Method(self.invoke, name)
 
-    def invoke(self, name, args = (), callback = None, onerror = None, byRef = False, resultMode = HproseResultMode.Normal):
+    def invoke(self, name, args = (), callback = None, onerror = None, byRef = False, resultMode = HproseResultMode.Normal, simple = None):
+        if simple == None: simple = self.__simple
         if callback == None:
-            return self.__invoke(name, args, byRef, resultMode)
+            return self.__invoke(name, args, byRef, resultMode, simple)
         else:
             if isinstance(callback, (str, unicode)):
                 callback = getattr(modules['__main__'], callback, None)
@@ -94,7 +98,7 @@ class HproseClient(object):
                     raise HproseException, "onerror must be callable"            
             threading.Thread(target = _AsyncInvoke(self.__invoke, name, args,
                                                    callback, onerror,
-                                                   byRef, resultMode)).start()
+                                                   byRef, resultMode, simple)).start()
 
     def useService(self, uri = None):
         if uri != None:
@@ -112,6 +116,12 @@ class HproseClient(object):
     def setFilter(self, filter):
         self._filter = filter
 
+    def getSimpleMode(self):
+        return self.__simple
+    
+    def setSimpleMode(self, simple):
+        self.__simple = simple
+
     def _getInovkeContext(self):
         raise NotImplementedError
     
@@ -127,23 +137,26 @@ class HproseClient(object):
     def _endInvoke(self, context):
         raise NotImplementedError
 
-    def __invoke(self, name, args, byRef, resultMode):
+    def __invoke(self, name, args, byRef, resultMode, simple):
         context = self._getInovkeContext()
-        stream = self._getOutputStream(context)
+        stream = self._filter.outputFilter(self._getOutputStream(context))
         stream.write(HproseTags.TagCall)
-        hproseWriter = HproseWriter(stream)
-        hproseWriter.writeString(name, False)
+        if simple:
+            hproseWriter = HproseSimpleWriter(stream)
+        else:
+            hproseWriter = HproseWriter(stream)
+        hproseWriter.writeString(name)
         if (len(args) > 0) or byRef:
             hproseWriter.reset()
-            hproseWriter.writeList(args, False)
+            hproseWriter.writeList(args)
             if byRef:
                 hproseWriter.writeBoolean(True)
-        hproseWriter.stream.write(HproseTags.TagEnd)
+        stream.write(HproseTags.TagEnd)
         result = None
         error = None
         try:
             self._sendData(context)
-            stream = self._getInputStream(context)
+            stream = self._filter.inputFilter(self._getInputStream(context))
             if resultMode == HproseResultMode.RawWithEndTag:
                 result = stream.readall()
                 return result

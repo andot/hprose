@@ -314,7 +314,7 @@ class HproseHttpClient(HproseClient):
         return HproseHttpInvokeContext()
     
     def _getOutputStream(self, context):
-        context.outstream = self._filter.outputFilter(StringIO())
+        context.outstream = StringIO()
         return context.outstream
 
     def _sendData(self, context):
@@ -322,7 +322,7 @@ class HproseHttpClient(HproseClient):
         context.outstream.close()
         context.outstream = None
         data = self.__post(request)
-        context.instream = self._filter.inputFilter(StringIO(data))
+        context.instream = StringIO(data)
 
     def _getInputStream(self, context):
         return context.instream
