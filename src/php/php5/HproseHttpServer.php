@@ -143,7 +143,7 @@ class HproseHttpServer {
             elseif (array_key_exists('*', $this->functions)) {
                 $function = $this->functions['*'];
                 $resultMode = $this->resultModes['*'];
-                $simple = $this->resultModes['*'];
+                $simple = $this->simpleModes['*'];
             }
             else {
                 throw new HproseException("Can't find this function " . $functionName . "().");
