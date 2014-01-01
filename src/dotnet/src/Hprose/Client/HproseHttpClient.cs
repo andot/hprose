@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http client class for C#.                       *
  *                                                        *
- * LastModified: Nov 10, 2012                             *
+ * LastModified: Jan 1, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -206,6 +206,7 @@ namespace Hprose.Client {
 #if !(SILVERLIGHT || WINDOWS_PHONE)
             request.Credentials = credentials;
 #if !Core
+            request.ServicePoint.ConnectionLimit = Int32.MaxValue;
             request.Timeout = timeout;
             request.SendChunked = false;
 #if !(dotNET10 || dotNETCF10)

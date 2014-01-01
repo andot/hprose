@@ -22,6 +22,8 @@ if not exist bin\CF2.0 mkdir bin\CF2.0
 if not exist bin\CF3.5 mkdir bin\CF3.5
 if not exist bin\Mono mkdir bin\Mono
 if not exist bin\Mono2 mkdir bin\Mono2
+if not exist bin\Mono4 mkdir bin\Mono4
+if not exist bin\Mono4.5 mkdir bin\Mono4.5
 
 set SL2_PATH=C:\Program Files\Microsoft SDKs\Silverlight\v2.0\Reference Assemblies
 set SL3_PATH=C:\Program Files\Reference Assemblies\Microsoft\Framework\Silverlight\v3.0
@@ -372,9 +374,21 @@ set NUMERICS_REF= -reference:"bin\Mono2\System.Numerics.dll"
 set NUMERICS_INFO= src\AssemblyInfo\System.Numerics\Mono2\AssemblyInfo.cs
 set HPROSE_INFO= src\AssemblyInfo\Hprose\Mono2\AssemblyInfo.cs
 set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\Mono2\AssemblyInfo.cs
-call gmcs -out:bin\Mono2\System.Numerics.dll -define:dotNET2;MONO -noconfig -target:library -optimize+ -debug- %NUMERICS_SRC% %NUMERICS_INFO%
-call gmcs -out:bin\Mono2\Hprose.dll -define:dotNET2;MONO -noconfig -target:library -optimize+ -debug- -reference:System,System.Web %NUMERICS_REF% %HPROSE_SRC% %HPROSE_INFO%
-call gmcs -out:bin\Mono2\Hprose.Client.dll -define:dotNET2;MONO;ClientOnly -noconfig -target:library -optimize+ -debug- -reference:System %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
+call gmcs -out:bin\Mono2\System.Numerics.dll -sdk:2 -define:dotNET2;MONO -noconfig -target:library -optimize+ -debug- %NUMERICS_SRC% %NUMERICS_INFO%
+call gmcs -out:bin\Mono2\Hprose.dll -sdk:2 -define:dotNET2;MONO -noconfig -target:library -optimize+ -debug- -reference:System,System.Web %NUMERICS_REF% %HPROSE_SRC% %HPROSE_INFO%
+call gmcs -out:bin\Mono2\Hprose.Client.dll -sdk:2 -define:dotNET2;MONO;ClientOnly -noconfig -target:library -optimize+ -debug- -reference:System %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
+
+echo start compile hprose for mono 4.0
+set HPROSE_INFO= src\AssemblyInfo\Hprose\Mono4\AssemblyInfo.cs
+set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\Mono4\AssemblyInfo.cs
+call gmcs -out:bin\Mono4\Hprose.dll -sdk:4 -define:dotNET4;MONO -noconfig -target:library -optimize+ -debug- -reference:System,System.Core,System.Runtime.Serialization,System.Web,System.Numerics %HPROSE_SRC% %HPROSE_INFO%
+call gmcs -out:bin\Mono4\Hprose.Client.dll -sdk:4 -define:dotNET4;MONO;ClientOnly -noconfig -target:library -optimize+ -debug- -reference:System,System.Core,System.Runtime.Serialization,System.Numerics %HPROSE_SRC% %HPROSECLIENT_INFO%
+
+echo start compile hprose for mono 4.5
+set HPROSE_INFO= src\AssemblyInfo\Hprose\Mono4.5\AssemblyInfo.cs
+set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\Mono4.5\AssemblyInfo.cs
+call gmcs -out:bin\Mono4.5\Hprose.dll -sdk:4.5 -define:dotNET4;dotNET45;MONO -noconfig -target:library -optimize+ -debug- -reference:System,System.Core,System.Runtime.Serialization,System.Web,System.Numerics %HPROSE_SRC% %HPROSE_INFO%
+call gmcs -out:bin\Mono4.5\Hprose.Client.dll -sdk:4.5 -define:dotNET4;dotNET45;MONO;ClientOnly -noconfig -target:library -optimize+ -debug- -reference:System,System.Core,System.Runtime.Serialization,System.Numerics %HPROSE_SRC% %HPROSECLIENT_INFO%
 
 set DHPARAMS_RESOURCE=
 set NUMERICS_SRC=

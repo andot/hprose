@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http listener service class for C#.             *
  *                                                        *
- * LastModified: Nov 4, 2012                              *
+ * LastModified: Jan 1, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -201,8 +201,6 @@ namespace Hprose.Server {
                 else {
                     currentContext.Response.StatusCode = 405;
                 }
-                if (istream != null) istream.Close();
-                if (ostream != null) ostream.Close();
                 currentContext.Response.Close();
             }
             finally {
