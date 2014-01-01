@@ -14,7 +14,7 @@
 #                                                          #
 # hprose io for python 3.0+                                #
 #                                                          #
-# LastModified: Dec 1, 2012                                #
+# LastModified: Jan 1, 2014                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -24,7 +24,7 @@ from calendar import timegm
 import datetime
 from fpconst import NaN, PosInf, NegInf, isInf, isNaN, isPosInf
 from inspect import isclass
-from sys import modules, exc_info
+from sys import modules
 from threading import RLock
 from uuid import UUID
 from hprose.common import *
@@ -169,256 +169,20 @@ def _readint(stream, char):
     if s == b'': return 0
     return int(s)
 
-class HproseReader:
+class HproseRawReader(object):
     def __init__(self, stream):
         self.stream = stream
-        self.classref = []
-        self.ref = []
-    def unserialize(self, tag = None):
-        if tag == None:
-            tag = self.stream.read(1)
-        if b'0' <= tag <= b'9':
-            return int(tag);
-        if tag == HproseTags.TagInteger:
-            return self.readInteger(False)
-        if tag == HproseTags.TagLong:
-            return self.readLong(False)
-        if tag == HproseTags.TagDouble:
-            return self.readDouble(False)
-        if tag == HproseTags.TagNull:
-            return None
-        if tag == HproseTags.TagEmpty:
-            return ''
-        if tag == HproseTags.TagTrue:
-            return True
-        if tag == HproseTags.TagFalse:
-            return False
-        if tag == HproseTags.TagNaN:
-            return NaN
-        if tag == HproseTags.TagInfinity:
-            return self.readInfinity(False)
-        if tag == HproseTags.TagDate:
-            return self.readDate(False)
-        if tag == HproseTags.TagTime:
-            return self.readTime(False)
-        if tag == HproseTags.TagBytes:
-            return self.readBytes(False)
-        if tag == HproseTags.TagUTF8Char:
-            return self.readUTF8Char(False)
-        if tag == HproseTags.TagString:
-            return self.readString(False)
-        if tag == HproseTags.TagGuid:
-            return self.readGuid(False)
-        if tag == HproseTags.TagList:
-            return self.readList(False)
-        if tag == HproseTags.TagMap:
-            return self.readMap(False)
-        if tag == HproseTags.TagClass:
-            self.__readClass()
-            return self.unserialize()
-        if tag == HproseTags.TagObject:
-            return self.readObject(False)
-        if tag == HproseTags.TagRef:
-            return self.__readRef()
-        if tag == HproseTags.TagError:
-            raise HproseException(self.readstring())
+    def unexpectedTag(self, tag, expectTags = None):
         if tag == b'':
             raise HproseUnserializeException('No byte found in stream')
-        raise HproseUnserializeException(
-            "Unexpected serialize tag '%s' in stream" %
-            str(tag, 'utf-8'))
-    def checkTag(self, expectTag):
-        tag = self.stream.read(1)
-        if tag != expectTag:
+        elif expectTags == None:
+            raise HproseUnserializeException(
+                "Unexpected serialize tag '%s' in stream" %
+                str(tag, 'utf-8'))
+        else:
             raise HproseUnserializeException(
                 "Tag '%s' expected, but '%s' found in stream" %
-                (str(expectTag, 'utf-8'), str(tag, 'utf-8')))
-    def checkTags(self, expectTags):
-        tag = self.stream.read(1)
-        if tag not in expectTags:
-            raise HproseUnserializeException(
-                "Tags '%s' expected, but '%s' found in stream" %
-                (str(b''.join(expectTags), 'utf-8'), str(tag, 'utf-8')))
-        return tag
-    def readInteger(self, includeTag = True):
-        if includeTag:
-            self.checkTag(HproseTags.TagInteger)
-        return int(_readuntil(self.stream, HproseTags.TagSemicolon))
-    def readLong(self, includeTag = True):
-        if includeTag:
-            self.checkTag(HproseTags.TagLong)
-        return int(_readuntil(self.stream, HproseTags.TagSemicolon))
-    def readDouble(self, includeTag = True):
-        if includeTag:
-            self.checkTag(HproseTags.TagDouble)
-        return float(_readuntil(self.stream, HproseTags.TagSemicolon))
-    def readNaN(self):
-        self.checkTag(HproseTags.TagNaN)
-        return NaN
-    def readInfinity(self, includeTag = True):
-        if includeTag:
-            self.checkTag(HproseTags.TagInfinity)
-        if self.stream.read(1) == HproseTags.TagNeg:
-            return NegInf
-        else:
-            return PosInf
-    def readNull(self):
-        self.checkTag(HproseTags.TagNull)
-        return None
-    def readEmpty(self):
-        self.checkTag(HproseTags.TagEmpty)
-        return ''
-    def readBoolean(self):
-        tag = self.checkTags((HproseTags.TagTrue, HproseTags.TagFalse))
-        return tag == HproseTags.TagTrue
-    def readDate(self, includeTag = True):
-        if includeTag:
-            tag = self.checkTags((HproseTags.TagDate, HproseTags.TagRef))
-            if tag == HproseTags.TagRef: return self.__readRef()
-        year = int(self.stream.read(4))
-        month = int(self.stream.read(2))
-        day = int(self.stream.read(2))
-        if self.stream.read(1) == HproseTags.TagTime:
-            hour = int(self.stream.read(2))
-            minute = int(self.stream.read(2))
-            second = int(self.stream.read(2))
-            (tag, microsecond) = self.__readMicrosecond()
-            if tag == HproseTags.TagUTC:
-                d = datetime.datetime(year, month, day, hour, minute, second, microsecond, utc)
-            else:
-                d = datetime.datetime(year, month, day, hour, minute, second, microsecond)
-        elif tag == HproseTags.TagUTC:
-            d = datetime.datetime(year, month, day, 0, 0, 0, 0, utc)
-        else:
-            d = datetime.date(year, month, day)            
-        self.ref.append(d)
-        return d
-    def readTime(self, includeTag = True):
-        if includeTag:
-            tag = self.checkTags((HproseTags.TagTime, HproseTags.TagRef))
-            if tag == HproseTags.TagRef: return self.__readRef()
-        hour = int(self.stream.read(2))
-        minute = int(self.stream.read(2))
-        second = int(self.stream.read(2))
-        (tag, microsecond) = self.__readMicrosecond()
-        if tag == HproseTags.TagUTC:
-            t = datetime.time(hour, minute, second, microsecond, utc)
-        else:
-            t = datetime.time(hour, minute, second, microsecond)
-        self.ref.append(t)
-        return t
-    def readBytes(self, includeTag = True):
-        if includeTag:
-            tag = self.checkTags((HproseTags.TagBytes, HproseTags.TagRef))
-            if tag == HproseTags.TagRef: return self.__readRef()
-        s = self.stream.read(_readint(self.stream, HproseTags.TagQuote))
-        self.stream.read(1)
-        self.ref.append(s)
-        return s
-    def readUTF8Char(self, includeTag = True):
-        if includeTag:
-            tag = self.checkTag(HproseTags.TagUTF8Char)
-        s = []
-        c = self.stream.read(1)
-        s.append(c)
-        a = ord(c)
-        if (a & 0xE0) == 0xC0:
-            s.append(self.stream.read(1))
-        elif (a & 0xF0) == 0xE0:
-            s.append(self.stream.read(2))
-        elif a > 0x7F:
-            raise HproseUnserializeException('Bad utf-8 encoding')
-        return str(b''.join(s), 'utf-8')
-    def readString(self, includeTag = True, includeRef = True):
-        if includeTag:
-            tag = self.checkTags((HproseTags.TagString, HproseTags.TagRef))
-            if tag == HproseTags.TagRef: return self.__readRef()
-        l = _readint(self.stream, HproseTags.TagQuote)
-        s = []
-        i = 0
-        while i < l:
-            c = self.stream.read(1)
-            s.append(c)
-            a = ord(c)
-            if (a & 0xE0) == 0xC0:
-                s.append(self.stream.read(1))
-            elif (a & 0xF0) == 0xE0:
-                s.append(self.stream.read(2))
-            elif (a & 0xF8) == 0xF0:
-                s.append(self.stream.read(3))
-                i += 1
-            i += 1
-        self.stream.read(1)
-        s = str(b''.join(s), 'utf-8')
-        if includeRef: self.ref.append(s)
-        return s
-    def readGuid(self, includeTag = True):
-        if includeTag:
-            tag = self.checkTags((HproseTags.TagGuid, HproseTags.TagRef))
-            if tag == HproseTags.TagRef: return self.__readRef()
-        g = UUID(str(self.stream.read(38), 'utf-8'))
-        self.ref.append(s)
-        return s
-    def readList(self, includeTag = True):
-        if includeTag:
-            tag = self.checkTags((HproseTags.TagList, HproseTags.TagRef))
-            if tag == HproseTags.TagRef: return self.__readRef()
-        a = []
-        self.ref.append(a)
-        c = _readint(self.stream, HproseTags.TagOpenbrace)
-        for i in range(c): a.append(self.unserialize())
-        self.stream.read(1)
-        return a
-    def readMap(self, includeTag = True):
-        if includeTag:
-            tag = self.checkTags((HproseTags.TagMap, HproseTags.TagRef))
-            if tag == HproseTags.TagRef: return self.__readRef()
-        m = {}
-        self.ref.append(m)
-        c = _readint(self.stream, HproseTags.TagOpenbrace)
-        for i in range(c):
-            k = self.unserialize()
-            v = self.unserialize()
-            m[k] = v
-        self.stream.read(1)
-        return m
-    def readObject(self, includeTag = True):
-        if includeTag:
-            tag = self.checkTags((HproseTags.TagClass,
-                                  HproseTags.TagObject,
-                                  HproseTags.TagRef))
-            if tag == HproseTags.TagRef: return self.__readRef()
-            if tag == HproseTags.TagClass:
-                self.__readClass()
-                return self.readObject()
-        (cls, count, fields) = self.classref[_readint(self.stream, HproseTags.TagOpenbrace)]
-        o = cls()
-        self.ref.append(o)
-        for i in range(count): setattr(o, fields[i], self.unserialize())
-        self.stream.read(1)
-        return o
-    def __readClass(self):
-        classname = self.readString(False, False)
-        count = _readint(self.stream, HproseTags.TagOpenbrace)
-        fields = [self.readString() for i in range(count)]
-        self.stream.read(1)
-        cls = HproseClassManager.getClass(classname)
-        self.classref.append((cls, count, fields))
-    def __readRef(self):
-        return self.ref[_readint(self.stream, HproseTags.TagSemicolon)]
-    def __readMicrosecond(self):
-        microsecond = 0
-        tag = self.stream.read(1)
-        if tag == HproseTags.TagPoint:
-            microsecond = int(self.stream.read(3)) * 1000
-            tag = self.stream.read(1)
-            if b'0' <= tag <= b'9':
-                microsecond = microsecond + int(tag) * 100 + int(self.stream.read(2))
-                tag = self.stream.read(1)
-                if b'0' <= tag <= b'9':
-                    self.stream.read(2)
-                    tag = self.stream.read(1)
-        return (tag, microsecond)
+                (str(expectTags, 'utf-8'), str(tag, 'utf-8')))
     def readRaw(self, ostream = None, tag = None):
         if ostream == None:
             ostream = BytesIO()
@@ -460,12 +224,8 @@ class HproseReader:
         elif (tag == HproseTags.TagError):
             ostream.write(tag)
             self.readRaw(ostream)
-        elif tag == b'':
-            raise HproseUnserializeException('No byte found in stream')
         else:
-            raise HproseUnserializeException(
-                "Unexpected serialize tag '%s' in stream" %
-                str(tag, 'utf-8'))
+            self.unexpectedTag(tag)
         return ostream
     def __readNumberRaw(self, ostream, tag):
         ostream.write(tag)
@@ -489,7 +249,7 @@ class HproseReader:
         elif (a & 0xF0) == 0xE0:
             s.append(self.stream.read(2))
         elif a > 0x7F:
-            raise HproseException, 'Bad utf-8 encoding'
+            raise HproseException('Bad utf-8 encoding')
         ostream.write(b''.join(s))
 
     def __readBytesRaw(self, ostream, tag):
@@ -540,38 +300,363 @@ class HproseReader:
             self.readRaw(ostream, tag)
             tag = self.stream.read(1)
         ostream.write(tag)
+
+class HproseSimpleReader(HproseRawReader):
+    def __init__(self, stream):
+        super(HproseSimpleReader, self).__init__(stream)
+        self.classref = []
+    def unserialize(self, tag = None):
+        if tag == None:
+            tag = self.stream.read(1)
+        if b'0' <= tag <= b'9':
+            return int(tag);
+        if (tag == HproseTags.TagInteger or
+            tag == HproseTags.TagLong):
+            return self.readIntegerWithoutTag()
+        if tag == HproseTags.TagDouble:
+            return self.readDoubleWithoutTag()
+        if tag == HproseTags.TagNull:
+            return None
+        if tag == HproseTags.TagEmpty:
+            return ''
+        if tag == HproseTags.TagTrue:
+            return True
+        if tag == HproseTags.TagFalse:
+            return False
+        if tag == HproseTags.TagNaN:
+            return NaN
+        if tag == HproseTags.TagInfinity:
+            return self.readInfinityWithoutTag()
+        if tag == HproseTags.TagDate:
+            return self.readDateWithoutTag()
+        if tag == HproseTags.TagTime:
+            return self.readTimeWithoutTag()
+        if tag == HproseTags.TagBytes:
+            return self.readBytesWithoutTag()
+        if tag == HproseTags.TagUTF8Char:
+            return self.readUTF8CharWithoutTag()
+        if tag == HproseTags.TagString:
+            return self.readStringWithoutTag()
+        if tag == HproseTags.TagGuid:
+            return self.readGuidWithoutTag()
+        if tag == HproseTags.TagList:
+            return self.readListWithoutTag()
+        if tag == HproseTags.TagMap:
+            return self.readMapWithoutTag()
+        if tag == HproseTags.TagClass:
+            self.__readClass()
+            return self.readObject()
+        if tag == HproseTags.TagObject:
+            return self.readObjectWithoutTag()
+        if tag == HproseTags.TagRef:
+            return self._readRef()
+        if tag == HproseTags.TagError:
+            raise HproseException(self.readstring())
+        self.unexpectedTag(tag)
+    def checkTag(self, expectTag):
+        tag = self.stream.read(1)
+        if tag != expectTag:
+            self.unexpectedTag(tag, expectTag)
+    def checkTags(self, expectTags):
+        tag = self.stream.read(1)
+        if tag not in expectTags:
+            self.unexpectedTag(tag, b''.join(expectTags))
+        return tag
+    def readIntegerWithoutTag(self):
+        return int(_readuntil(self.stream, HproseTags.TagSemicolon))
+    def readInteger(self):
+        tag = self.stream.read(1)
+        if b'0' <= tag <= b'9':
+            return int(tag)
+        if (tag == HproseTags.TagInteger or
+            tag == HproseTags.TagLong):
+            return self.readIntegerWithoutTag()
+        self.unexpectedTag(tag)
+    def readLongWithoutTag(self):
+        return self.readIntegerWithoutTag()
+    def readLong(self):
+        return self.readInteger()
+    def readDoubleWithoutTag(self):
+        return float(_readuntil(self.stream, HproseTags.TagSemicolon))
+    def readDouble(self):
+        tag = self.stream.read(1)
+        if b'0' <= tag <= b'9':
+            return float(tag)
+        if (tag == HproseTags.TagInteger or
+            tag == HproseTags.TagLong or
+            tag == HproseTags.TagDouble):
+            return self.readDoubleWithoutTag()
+        if tag == HproseTags.TagNaN:
+            return NaN
+        if tag == HproseTags.TagInfinity:
+            return self.readInfinityWithoutTag()
+        self.unexpectedTag(tag)
+    def readNaN(self):
+        self.checkTag(HproseTags.TagNaN)
+        return NaN
+    def readInfinityWithoutTag(self):
+        if self.stream.read(1) == HproseTags.TagNeg:
+            return NegInf
+        else:
+            return PosInf
+    def readInfinity(self):
+        self.checkTag(HproseTags.TagInfinity)
+        return self.readInfinityWithoutTag()
+    def readNull(self):
+        self.checkTag(HproseTags.TagNull)
+        return None
+    def readEmpty(self):
+        self.checkTag(HproseTags.TagEmpty)
+        return ''
+    def readBoolean(self):
+        tag = self.checkTags((HproseTags.TagTrue, HproseTags.TagFalse))
+        return tag == HproseTags.TagTrue
+    def readDateWithoutTag(self):
+        year = int(self.stream.read(4))
+        month = int(self.stream.read(2))
+        day = int(self.stream.read(2))
+        tag = self.stream.read(1)
+        if tag == HproseTags.TagTime:
+            hour = int(self.stream.read(2))
+            minute = int(self.stream.read(2))
+            second = int(self.stream.read(2))
+            (tag, microsecond) = self.__readMicrosecond()
+            if tag == HproseTags.TagUTC:
+                d = datetime.datetime(year, month, day, hour, minute, second, microsecond, utc)
+            else:
+                d = datetime.datetime(year, month, day, hour, minute, second, microsecond)
+        elif tag == HproseTags.TagUTC:
+            d = datetime.datetime(year, month, day, 0, 0, 0, 0, utc)
+        else:
+            d = datetime.date(year, month, day)
+        return d
+    def readDate(self):
+        tag = self.stream.read(1)
+        if tag == HproseTags.TagRef: return self._readRef()
+        if tag == HproseTags.TagDate: return self.readDateWithoutTag()
+        self.unexpectedTag(tag)
+    def readTimeWithoutTag(self):
+        hour = int(self.stream.read(2))
+        minute = int(self.stream.read(2))
+        second = int(self.stream.read(2))
+        (tag, microsecond) = self.__readMicrosecond()
+        if tag == HproseTags.TagUTC:
+            t = datetime.time(hour, minute, second, microsecond, utc)
+        else:
+            t = datetime.time(hour, minute, second, microsecond)
+        return t
+    def readTime(self):
+        tag = self.stream.read(1)
+        if tag == HproseTags.TagRef: return self._readRef()
+        if tag == HproseTags.TagTime: return self.readTimeWithoutTag()
+        self.unexpectedTag(tag)
+    def readBytesWithoutTag(self):
+        b = self.stream.read(_readint(self.stream, HproseTags.TagQuote))
+        self.stream.read(1)
+        return b
+    def readBytes(self):
+        tag = self.stream.read(1)
+        if tag == HproseTags.TagRef: return self._readRef()
+        if tag == HproseTags.TagBytes: return self.readBytesWithoutTag()
+        self.unexpectedTag(tag)
+    def readUTF8CharWithoutTag(self):
+        s = []
+        c = self.stream.read(1)
+        s.append(c)
+        a = ord(c)
+        if (a & 0xE0) == 0xC0:
+            s.append(self.stream.read(1))
+        elif (a & 0xF0) == 0xE0:
+            s.append(self.stream.read(2))
+        elif a > 0x7F:
+            raise HproseUnserializeException('Bad utf-8 encoding')
+        return str(b''.join(s), 'utf-8')
+    def readUTF8Char(self):
+        self.checkTag(HproseTags.TagUTF8Char)
+        self.readUTF8CharWithoutTag()
+    def __readString(self):
+        l = _readint(self.stream, HproseTags.TagQuote)
+        s = []
+        i = 0
+        while i < l:
+            c = self.stream.read(1)
+            s.append(c)
+            a = ord(c)
+            if (a & 0xE0) == 0xC0:
+                s.append(self.stream.read(1))
+            elif (a & 0xF0) == 0xE0:
+                s.append(self.stream.read(2))
+            elif (a & 0xF8) == 0xF0:
+                s.append(self.stream.read(3))
+                i += 1
+            i += 1
+        self.stream.read(1)
+        s = str(b''.join(s), 'utf-8')
+        return s
+    def readStringWithoutTag(self):
+        return self.__readString()
+    def readString(self):
+        tag = self.stream.read(1)
+        if tag == HproseTags.TagRef: return self._readRef()
+        if tag == HproseTags.TagString: return self.readStringWithoutTag()
+        self.unexpectedTag(tag)
+    def readGuidWithoutTag(self):
+        return UUID(str(self.stream.read(38), 'utf-8'))
+    def readGuid(self):
+        tag = self.stream.read(1)
+        if tag == HproseTags.TagRef: return self._readRef()
+        if tag == HproseTags.TagGuid: return self.readGuidWithoutTag()
+        self.unexpectedTag(tag)
+    def _readListBegin(self):
+        return []
+    def _readListEnd(self, list):
+        c = _readint(self.stream, HproseTags.TagOpenbrace)
+        for i in range(c): list.append(self.unserialize())
+        self.stream.read(1)
+        return list
+    def readListWithoutTag(self):
+        return self._readListEnd(self._readListBegin())
+    def readList(self):
+        tag = self.stream.read(1)
+        if tag == HproseTags.TagRef: return self._readRef()
+        if tag == HproseTags.TagList: return self.readListWithoutTag()
+        self.unexpectedTag(tag)
+    def _readMapBegin(self):
+        return {}
+    def _readMapEnd(self, map):
+        c = _readint(self.stream, HproseTags.TagOpenbrace)
+        for i in range(c):
+            k = self.unserialize()
+            v = self.unserialize()
+            map[k] = v
+        self.stream.read(1)
+        return map
+    def readMapWithoutTag(self):
+        return self._readMapEnd(self._readMapBegin())
+    def readMap(self):
+        tag = self.stream.read(1)
+        if tag == HproseTags.TagRef: return self._readRef()
+        if tag == HproseTags.TagMap: return self.readMapWithoutTag()
+        self.unexpectedTag(tag)
+    def _readObjectBegin(self):
+        (cls, count, fields) = self.classref[_readint(self.stream, HproseTags.TagOpenbrace)]
+        obj = cls()
+        return (obj, count, fields)
+    def _readObjectEnd(self, obj, count, fields):
+        for i in range(count): setattr(obj, fields[i], self.unserialize())
+        self.stream.read(1)
+        return obj
+    def readObjectWithoutTag(self):
+        (obj, count, fields) = self._readObjectBegin()
+        return self._readObjectEnd(obj, count, fields)
+    def readObject(self):
+        tag = self.stream.read(1)
+        if tag == HproseTags.TagRef: return self._readRef()
+        if tag == HproseTags.TagObject: return self.readObjectWithoutTag()
+        if tag == HproseTags.TagClass:
+            self.__readClass()
+            return self.readObject()
+        self.unexpectedTag(tag)
+    def __readClass(self):
+        classname = self.__readString()
+        count = _readint(self.stream, HproseTags.TagOpenbrace)
+        fields = [self.readString() for i in range(count)]
+        self.stream.read(1)
+        cls = HproseClassManager.getClass(classname)
+        self.classref.append((cls, count, fields))
+    def __readRef(self):
+        self.unexpectedTag(HproseTags.TagRef)
+    def __readMicrosecond(self):
+        microsecond = 0
+        tag = self.stream.read(1)
+        if tag == HproseTags.TagPoint:
+            microsecond = int(self.stream.read(3)) * 1000
+            tag = self.stream.read(1)
+            if b'0' <= tag <= b'9':
+                microsecond = microsecond + int(tag) * 100 + int(self.stream.read(2))
+                tag = self.stream.read(1)
+                if b'0' <= tag <= b'9':
+                    self.stream.read(2)
+                    tag = self.stream.read(1)
+        return (tag, microsecond)
     def reset(self):
         del self.classref[:]
+
+class HproseReader(HproseSimpleReader):
+    def __init__(self, stream):
+        super(HproseReader, self).__init__(stream)
+        self.ref = []
+    def readDateWithoutTag(self):
+        d = super(HproseReader, self).readDateWithoutTag()
+        self.ref.append(d)
+        return d
+    def readTimeWithoutTag(self):
+        t = super(HproseReader, self).readTimeWithoutTag()
+        self.ref.append(t)
+        return t
+    def readBytesWithoutTag(self):
+        b = super(HproseReader, self).readBytesWithoutTag()
+        self.ref.append(b)
+        return b
+    def readStringWithoutTag(self):
+        s = super(HproseReader, self).readStringWithoutTag()
+        self.ref.append(s)
+        return s
+    def readGuidWithoutTag(self):
+        g = super(HproseReader, self).readGuidWithoutTag()
+        self.ref.append(g)
+        return g
+    def readListWithoutTag(self):
+        list = self._readListBegin()
+        self.ref.append(list)
+        return self._readListEnd(list)
+    def readMapWithoutTag(self):
+        map = self._readMapBegin()
+        self.ref.append(map)
+        return self._readMapEnd(map)
+    def readObjectWithoutTag(self):
+        (obj, count, fields) = self._readObjectBegin()
+        self.ref.append(obj)
+        return self._readObjectEnd(obj, count, fields)
+    def _readRef(self):
+        return self.ref[_readint(self.stream, HproseTags.TagSemicolon)]
+    def reset(self):
+        super(HproseReader, self).reset()
         del self.ref[:]
 
-class HproseWriter:
+dict_items = type({}.items())
+dict_keys = type({}.keys())
+dict_values = type({}.values())
+
+class HproseSimpleWriter(object):
     def __init__(self, stream):
         self.stream = stream
         self.classref = {}
-        self.ref = {}
+        self.fieldsref = []
     def serialize(self, v):
         if v == None: self.writeNull()
         elif isinstance(v, bool): self.writeBoolean(v)
         elif isinstance(v, int): self.writeInteger(v)
         elif isinstance(v, float): self.writeDouble(v)
-        elif isinstance(v, (bytes, bytearray)):
+        elif isinstance(v, (bytes, bytearray, memoryview)):
             if v == b'':
                 self.writeEmpty()
             else:
-                self.writeBytes(v)
+                self.writeBytesWithRef(v)
         elif isinstance(v, str):
             if v == '':
                 self.writeEmpty()
             elif len(v) == 1:
                 self.writeUTF8Char(v)
             else:
-                self.writeString(v)
-        elif isinstance(v, UUID): self.writeGuid(v)
-        elif isinstance(v, (list, tuple)): self.writeList(v)
-        elif isinstance(v, dict): self.writeMap(v)
-        elif isinstance(v, (datetime, date)): self.writeDate(v)
-        elif isinstance(v, time): self.writeTime(v)
-        elif isinstance(v, object): self.writeObject(v)
+                self.writeStringWithRef(v)
+        elif isinstance(v, UUID): self.writeGuidWithRef(v)
+        elif isinstance(v, (list, tuple)): self.writeListWithRef(v)
+        elif isinstance(v, (dict_items, dict_keys, dict_values)): self.writeViewWithRef(v)
+        elif isinstance(v, dict): self.writeMapWithRef(v)
+        elif isinstance(v, (datetime.datetime, datetime.date)): self.writeDateWithRef(v)
+        elif isinstance(v, datetime.time): self.writeTimeWithRef(v)
+        elif isinstance(v, object): self.writeObjectWithRef(v)
         else: raise HproseSerializeException('Not support to serialize this data')
     def writeInteger(self, i):
         if 0 <= i <= 9:
@@ -610,135 +695,130 @@ class HproseWriter:
             self.stream.write(HproseTags.TagTrue)
         else:
             self.stream.write(HproseTags.TagFalse)
-    def writeDate(self, d, checkRef = True):
-        if isinstance(d, datetime):
-            if (d.utcoffset() != ZERO) and (d.utcoffset() != None):
-                d = d.astimezone(utc)
-            if (d.hour == 0) and (d.minute == 0) and (d.second == 0) and (d.microsecond == 0):
+    def writeDate(self, date):
+        if isinstance(date, datetime.datetime):
+            if (date.utcoffset() != ZERO) and (date.utcoffset() != None):
+                date = date.astimezone(utc)
+            if date.hour == 0 and date.minute == 0 and date.second == 0 and date.microsecond == 0:
                 format = '%c%s' % (str(HproseTags.TagDate, 'utf-8'), '%Y%m%d')
-            elif (d.year == 1970) and (d.month == 1) and (d.day == 1):
+            elif date.year == 1970 and date.month == 1 and date.day == 1:
                 format = '%c%s' % (str(HproseTags.TagTime, 'utf-8'), '%H%M%S')
             else:
                 format = '%c%s%c%s' % (str(HproseTags.TagDate, 'utf-8'), '%Y%m%d',
                                        str(HproseTags.TagTime, 'utf-8'), '%H%M%S')
-            if d.microsecond > 0:                
+            if date.microsecond > 0:                
                 format = '%s%c%s' % (format, str(HproseTags.TagPoint, 'utf-8'), '%f')
-            if d.utcoffset() == ZERO:
+            if date.utcoffset() == ZERO:
                 format = '%s%c' % (format, str(HproseTags.TagUTC, 'utf-8'))
             else:
                 format = '%s%c' % (format, str(HproseTags.TagSemicolon, 'utf-8'))
         else:
-            format = '%c%s%c' % (HproseTags.TagDate, '%Y%m%d', str(HproseTags.TagSemicolon, 'utf-8'))            
-        s = d.strftime(format)            
-        if checkRef and (s in self.ref):
-            self.__writeRef(self.ref[s])
-        else:
-            self.ref[s] = len(self.ref)
-            self.stream.write(s.encode('utf-8'))
-    def writeTime(self, t, checkRef = True):
+            format = '%c%s%c' % (str(HproseTags.TagDate, 'utf-8'),
+                                 '%Y%m%d',
+                                 str(HproseTags.TagSemicolon, 'utf-8'))            
+        self.stream.write(date.strftime(format).encode('utf-8'))
+    def writeDateWithRef(self, date):
+        if not self._writeRef(date): self.writeDate(date)
+    def writeTime(self, time):
         format = '%c%s' % (str(HproseTags.TagTime, 'utf-8'), '%H%M%S')
-        if d.microsecond > 0:                
+        if time.microsecond > 0:                
             format = '%s%c%s' % (format, str(HproseTags.TagPoint, 'utf-8'), '%f')        
-        if t.utcoffset() == ZERO:
+        if time.utcoffset() == ZERO:
             format = '%s%c' % (format, str(HproseTags.TagUTC, 'utf-8'))
         else:
             format = '%s%c' % (format, str(HproseTags.TagSemicolon, 'utf-8'))        
-        s = t.strftime(format)
-        if checkRef and (s in self.ref):
-            self.__writeRef(self.ref[s])
-        else:
-            self.ref[s] = len(self.ref)
-            self.stream.write(s.encode('utf-8'))
-    def writeBytes(self, s, checkRef = True):
-        if checkRef and (s in self.ref):
-            self.__writeRef(self.ref[s])
-        else:
-            self.ref[s] = len(self.ref)
-            l = len(s)
-            self.stream.write(HproseTags.TagBytes)
-            if l > 0: self.stream.write(str(len(s)).encode('utf-8'))
-            self.stream.write(HproseTags.TagQuote)
-            if l > 0: self.stream.write(s)
-            self.stream.write(HproseTags.TagQuote)
+        self.stream.write(time.strftime(format).encode('utf-8'))
+    def writeTimeWithRef(self, time):
+        if not self._writeRef(time): self.writeTime(time)
+    def writeBytes(self, bytes):
+        length = len(bytes)
+        self.stream.write(HproseTags.TagBytes)
+        if length > 0: self.stream.write(str(length).encode('utf-8'))
+        self.stream.write(HproseTags.TagQuote)
+        if length > 0: self.stream.write(bytes)
+        self.stream.write(HproseTags.TagQuote)
+    def writeBytesWithRef(self, bytes):
+        if not self._writeRef(bytes): self.writeBytes(bytes)
     def writeUTF8Char(self, u):
         self.stream.write(HproseTags.TagUTF8Char)
         self.stream.write(u.encode('utf-8'))
-    def writeString(self, u, checkRef = True):
-        l = len(u)
-        if l == 0:
-            u = '%s%s%s' % (str(HproseTags.TagString, 'utf-8'),
-                            str(HproseTags.TagQuote, 'utf-8'),
-                            str(HproseTags.TagQuote, 'utf-8'))
+    def writeString(self, s):
+        length = len(s)
+        if length == 0:
+            self.stream.write(('%s%s%s' % (str(HproseTags.TagString, 'utf-8'),
+                                           str(HproseTags.TagQuote, 'utf-8'),
+                                           str(HproseTags.TagQuote, 'utf-8'))).encode('utf-8'))
         else:
-            u = '%s%d%s%s%s' % (str(HproseTags.TagString, 'utf-8'),
-                                len(u),
-                                str(HproseTags.TagQuote, 'utf-8'),
-                                u,
-                                str(HproseTags.TagQuote, 'utf-8'))
-        if checkRef and (u in self.ref):
-            self.__writeRef(self.ref[u])
+            self.stream.write(('%s%d%s%s%s' % (str(HproseTags.TagString, 'utf-8'),
+                                               length,
+                                               str(HproseTags.TagQuote, 'utf-8'),
+                                               s,
+                                               str(HproseTags.TagQuote, 'utf-8'))).encode('utf-8'))
+    def writeStringWithRef(self, s):
+        if not self._writeRef(s): self.writeString(s)
+    def writeGuid(self, guid):
+        self.stream.write(HproseTags.TagGuid)
+        self.stream.write(HproseTags.TagOpenbrace)
+        self.stream.write(str(guid).encode('utf-8'))
+        self.stream.write(HproseTags.TagClosebrace)
+    def writeGuidWithRef(self, guid):
+        if not self._writeRef(guid): self.writeGuid(guid)
+    def writeList(self, list):
+        count = len(list)
+        self.stream.write(HproseTags.TagList)
+        if count > 0: self.stream.write(str(count).encode('utf-8'))
+        self.stream.write(HproseTags.TagOpenbrace)
+        for i in range(count): self.serialize(list[i])
+        self.stream.write(HproseTags.TagClosebrace)
+    def writeListWithRef(self, list):
+        if not self._writeRef(list): self.writeList(list)
+    def writeView(self, view):
+        count = len(view)
+        self.stream.write(HproseTags.TagList)
+        if count > 0: self.stream.write(str(count).encode('utf-8'))
+        self.stream.write(HproseTags.TagOpenbrace)
+        for v in view: self.serialize(v)
+        self.stream.write(HproseTags.TagClosebrace)
+    def writeViewWithRef(self, view):
+        if not self._writeRef(view): self.writeView(view)
+    def writeMap(self, map):
+        count = len(map)
+        self.stream.write(HproseTags.TagMap)
+        if count > 0: self.stream.write(str(count).encode('utf-8'))
+        self.stream.write(HproseTags.TagOpenbrace)
+        for key in map:
+            self.serialize(key)
+            self.serialize(map[key])
+        self.stream.write(HproseTags.TagClosebrace)
+    def writeMapWithRef(self, map):
+        if not self._writeRef(map): self.writeMap(map)
+    def _writeObjectBegin(self, obj):
+        classname = HproseClassManager.getClassAlias(obj.__class__)
+        if classname in self.classref:
+            index = self.classref[classname]
+            fields = self.fieldsref[index]
         else:
-            self.ref[u] = len(self.ref)
-            self.stream.write(u.encode('utf-8'))
-    def writeGuid(self, g, checkRef = True):
-        gid = id(g)
-        if checkRef and (gid in self.ref):
-            self.__writeRef(self.ref[gid])
-        else:
-            self.ref[gid] = len(self.ref)
-            self.stream.write(HproseTags.TagGuid)
-            self.stream.write(HproseTags.TagOpenbrace)
-            self.stream.write(str(g).encode('utf-8'))
-            self.stream.write(HproseTags.TagClosebrace)
-    def writeList(self, l, checkRef = True):
-        listid = id(l)
-        if checkRef and (listid in self.ref):
-            self.__writeRef(self.ref[listid])
-        else:
-            self.ref[listid] = len(self.ref)
-            count = len(l)
-            self.stream.write(HproseTags.TagList)
-            if count > 0: self.stream.write(str(count).encode('utf-8'))
-            self.stream.write(HproseTags.TagOpenbrace)
-            for i in range(count): self.serialize(l[i])
-            self.stream.write(HproseTags.TagClosebrace)
-    def writeMap(self, m, checkRef = True):
-        mapid = id(m)
-        if checkRef and (mapid in self.ref):
-            self.__writeRef(self.ref[mapid])
-        else:
-            self.ref[mapid] = len(self.ref)
-            count = len(m)
-            self.stream.write(HproseTags.TagMap)
-            if count > 0: self.stream.write(str(count).encode('utf-8'))
-            self.stream.write(HproseTags.TagOpenbrace)
-            for k in m:
-                self.serialize(k)
-                self.serialize(m[k])
-            self.stream.write(HproseTags.TagClosebrace)
-    def writeObject(self, o, checkRef = True):
-        objid = id(o)
-        if checkRef and (objid in self.ref):
-            self.__writeRef(self.ref[objid])
-        else:
-            classname = HproseClassManager.getClassAlias(o.__class__)
-            data = vars(o)
+            data = vars(obj)
             fields = tuple(data.keys())
-            count = len(fields)
-            cls = (classname, count, fields)
-            classref = self.classref[cls] if cls in self.classref else self.__writeClass(cls)
-            self.ref[objid] = len(self.ref)
-            self.stream.write(HproseTags.TagObject)
-            self.stream.write(str(classref).encode('utf-8'))
-            self.stream.write(HproseTags.TagOpenbrace)
-            for i in range(count):
-                self.serialize(data[fields[i]])
-            self.stream.write(HproseTags.TagClosebrace)
-    def __writeClass(self, c):
-        (classname, count, fields) = c
-        l = len(classname)
+            index = self.__writeClass(classname, fields)
+        self.stream.write(HproseTags.TagObject)
+        self.stream.write(str(index).encode('utf-8'))
+        self.stream.write(HproseTags.TagOpenbrace)
+        return fields
+    def _writeObjectEnd(self, obj, fields):
+        data = vars(obj)
+        count = len(fields)
+        for i in range(count):
+            self.serialize(data[fields[i]])
+        self.stream.write(HproseTags.TagClosebrace)
+    def writeObject(self, obj):
+        self._writeObjectEnd(obj, self._writeObjectBegin(obj))
+    def writeObjectWithRef(self, obj):
+        if not self._writeRef(obj): self.writeObject(obj)
+    def __writeClass(self, classname, fields):
+        count = len(fields)
         self.stream.write(HproseTags.TagClass)
-        self.stream.write(str(l).encode('utf-8'))
+        self.stream.write(str(len(classname)).encode('utf-8'))
         self.stream.write(HproseTags.TagQuote)
         self.stream.write(classname.encode('utf-8'))
         self.stream.write(HproseTags.TagQuote)
@@ -748,28 +828,85 @@ class HproseWriter:
             field = fields[i]
             self.writeString(field)
         self.stream.write(HproseTags.TagClosebrace)
-        classref = len(self.classref)
-        self.classref[c] = classref
-        return classref
-    def __writeRef(self, ref):
-        self.stream.write(HproseTags.TagRef)
-        self.stream.write(str(ref).encode('utf-8'))
-        self.stream.write(HproseTags.TagSemicolon)
+        index = len(self.fieldsref)
+        self.fieldsref.append(fields)
+        self.classref[classname] = index
+        return index
+    def _writeRef(self, obj):
+        return False
     def reset(self):
         self.classref.clear()
+        del self.fieldsref[:]
+
+class HproseWriter(HproseSimpleWriter):
+    def __init__(self, stream):
+        super(HproseWriter, self).__init__(stream)
+        self.ref = {}
+        self.refcount = 0
+    def writeDate(self, date):
+        self.ref[id(date)] = self.refcount
+        self.refcount += 1
+        super(HproseWriter, self).writeDate(date)
+    def writeTime(self, time):
+        self.ref[id(time)] = self.refcount
+        self.refcount += 1
+        super(HproseWriter, self).writeTime(time)
+    def writeBytes(self, bytes):
+        self.ref[bytes] = self.refcount
+        self.refcount += 1
+        super(HproseWriter, self).writeBytes(bytes)
+    def writeString(self, s):
+        self.ref[s] = self.refcount
+        self.refcount += 1
+        super(HproseWriter, self).writeString(s)
+    def writeGuid(self, guid):
+        self.ref[id(guid)] = self.refcount
+        self.refcount += 1
+        super(HproseWriter, self).writeGuid(guid)
+    def writeList(self, list):
+        self.ref[id(list)] = self.refcount
+        self.refcount += 1
+        super(HproseWriter, self).writeList(list)
+    def writeView(self, view):
+        self.ref[id(view)] = self.refcount
+        self.refcount += 1
+        super(HproseWriter, self).writeView(view)
+    def writeMap(self, map):
+        self.ref[id(map)] = self.refcount
+        self.refcount += 1
+        super(HproseWriter, self).writeMap(map)
+    def writeObject(self, obj):
+        fields = self._writeObjectBegin(obj)
+        self.ref[id(obj)] = self.refcount
+        self.refcount += 1
+        self._writeObjectEnd(obj, fields)
+    def _writeRef(self, obj):
+        if isinstance(obj, (bytes, bytearray, str)):
+            objid = obj
+        else:
+            objid = id(obj)
+        if (objid in self.ref):
+            self.stream.write(HproseTags.TagRef)
+            self.stream.write(str(self.ref[objid]).encode('utf-8'))
+            self.stream.write(HproseTags.TagSemicolon)
+            return True
+        return False
+    def reset(self):
+        super(HproseWriter, self).reset()
         self.ref.clear()
+        self.refcount = 0
 
 class HproseFormatter:
-    def serialize(v):
+    def serialize(v, simple):
         stream = BytesIO()
-        hproseWriter = HproseWriter(stream)
-        hproseWriter.serialize(v)
+        writer = HproseSimpleWriter(stream) if simple else HproseWriter(stream)
+        writer.serialize(v)
         return stream.getvalue()
     serialize = staticmethod(serialize)
 
-    def unserialize(s):
+    def unserialize(s, simple):
         stream = BytesIO(s)
-        hproseReader = HproseReader(stream)
-        return hproseReader.unserialize()
+        reader = HproseSimpleReader(stream) if simple else HproseReader(stream)
+        return reader.unserialize()
     unserialize = staticmethod(unserialize)
 

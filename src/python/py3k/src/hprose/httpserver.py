@@ -14,7 +14,7 @@
 #                                                          #
 # hprose httpserver for python 3.0+                        #
 #                                                          #
-# LastModified: Dec 1, 2012                                #
+# LastModified: Jan 1, 2014                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -56,12 +56,12 @@ class HproseHttpService(HproseService):
         if (path == '/crossdomain.xml'):
             if ((environ.get('HTTP_IF_MODIFIED_SINCE', '') == self._lastModified) and
                 (environ.get('HTTP_IF_NONE_MATCH', '') == self._etag)):
-                return [b'304 Not Modified', [], [b'']]
+                return ['304 Not Modified', [], [b'']]
             else:
-                header = [(b'Content-Type', b'text/xml'),
-                          (b'Last-Modified', self._lastModified.encode("utf-8")),
-                          (b'Etag', self._etag.encode("utf-8"))]
-                return [b'200 OK', header, [self._crossDomainXmlContent.encode("utf-8")]]
+                header = [('Content-Type', 'text/xml'),
+                          ('Last-Modified', self._lastModified),
+                          ('Etag', self._etag)]
+                return ['200 OK', header, [self._crossDomainXmlContent]]
         return False;
 
     def _clientAccessPolicyXmlHandler(self, environ):
@@ -69,28 +69,28 @@ class HproseHttpService(HproseService):
         if (path == '/clientaccesspolicy.xml'):
             if ((environ.get('HTTP_IF_MODIFIED_SINCE', '') == self._lastModified) and
                 (environ.get('HTTP_IF_NONE_MATCH', '') == self._etag)):
-                return [b'304 Not Modified', [], [b'']]
+                return ['304 Not Modified', [], [b'']]
             else:
-                header = [(b'Content-Type', b'text/xml'),
-                          (b'Last-Modified', self._lastModified.encode("utf-8")),
-                          (b'Etag', self._etag.encode("utf-8"))]
-                return [b'200 OK', header, [self.m_clientAccessPolicyXmlContent.encode("utf-8")]]
+                header = [('Content-Type', 'text/xml'),
+                          ('Last-Modified', self._lastModified),
+                          ('Etag', self._etag)]
+                return ['200 OK', header, [self.m_clientAccessPolicyXmlContent]]
         return False;
 
     def _header(self, environ):
-        header = [(b'Content-Type', b'text/plain')]
+        header = [('Content-Type', 'text/plain')]
         if self._P3P:
-            header.append((b'P3P', b'CP="CAO DSP COR CUR ADM DEV TAI PSA PSD ' +
+            header.append(('P3P', 'CP="CAO DSP COR CUR ADM DEV TAI PSA PSD ' +
                          'IVAi IVDi CONi TELo OTPi OUR DELi SAMi OTRi UNRi ' +
                          'PUBi IND PHY ONL UNI PUR FIN COM NAV INT DEM CNT ' +
                          'STA POL HEA PRE GOV"'))
         if self._crossDomain:
             origin = environ.get("HTTP_ORIGIN", "null")
             if origin != "null":
-                header.append((b"Access-Control-Allow-Origin", origin.encode("utf-8")))
-                header.append((b"Access-Control-Allow-Credentials", b"true"))
+                header.append(("Access-Control-Allow-Origin", origin))
+                header.append(("Access-Control-Allow-Credentials", "true"))
             else:
-                header.append((b"Access-Control-Allow-Origin", b"*"))
+                header.append(("Access-Control-Allow-Origin", "*"))
         if self.onSendHeader != None:
             self.onSendHeader(environ, header)
         return header
@@ -110,19 +110,18 @@ class HproseHttpService(HproseService):
         else:
             session = {}
         header = self._header(environ)
-        writer = HproseWriter(self._filter.outputFilter(BytesIO()))
+        ostream = BytesIO()
         try:
-            if (environ['REQUEST_METHOD'] == 'GET') and self._get):
-                self._doFunctionList(writer)
-            elif (environ['REQUEST_METHOD'] == 'POST'):
-                reader = HproseReader(self._filter.inputFilter(environ['wsgi.input']))
-                self._handle(reader, writer, session, environ)
+            if environ['REQUEST_METHOD'] == 'GET' and self._get:
+                self._doFunctionList(ostream)
+            elif environ['REQUEST_METHOD'] == 'POST':
+                istream = environ['wsgi.input']
+                self._handle(istream, ostream, session, environ)
         finally:
             if hasattr(session, 'save'): session.save()
-            stream = writer.stream
-            body = stream.getvalue()
-            stream.close()
-            return [b'200 OK', header, [body]]
+            body = ostream.getvalue()
+            ostream.close()
+            return ['200 OK', header, [body]]
 
     def isCrossDomainEnabled(self):
         return self._crossDomain
@@ -203,9 +202,9 @@ class UrlMapMiddleware:
         for regexp, app in self.__url_mapping:
             if regexp.match(path): return app(environ, start_response)
         if start_response:
-            start_response(b'404 Not Found', [(b'Content-Type', b'text/plain')])
+            start_response('404 Not Found', [('Content-Type', 'text/plain')])
             return [b'404 Not Found']
-        return (b'404 Not Found', [(b'Content-Type', b'text/plain')], [b'404 Not Found'])
+        return ('404 Not Found', [('Content-Type', 'text/plain')], [b'404 Not Found'])
 
 ################################################################################
 # HproseHttpServer                                                             #
@@ -223,29 +222,29 @@ class HproseHttpServer(object):
     def add(self, *args):
         self.app.add(*args)
 
-    def addMissingFunction(self, function, resultMode = HproseResultMode.Normal):
-        self.app.addMissingFunction(function, resultMode)
+    def addMissingFunction(self, function, resultMode = HproseResultMode.Normal, simple = None):
+        self.app.addMissingFunction(function, resultMode, simple)
 
-    def addFunction(self, function, alias = None, resultMode = HproseResultMode.Normal):
-        self.app.addFunction(function, alias, resultMode)
+    def addFunction(self, function, alias = None, resultMode = HproseResultMode.Normal, simple = None):
+        self.app.addFunction(function, alias, resultMode, simple)
 
-    def addFunctions(self, functions, aliases = None, resultMode = HproseResultMode.Normal):
-        self.app.addFunctions(functions, aliases, resultMode)
+    def addFunctions(self, functions, aliases = None, resultMode = HproseResultMode.Normal, simple = None):
+        self.app.addFunctions(functions, aliases, resultMode, simple)
 
-    def addMethod(self, methodname, belongto, alias = None, resultMode = HproseResultMode.Normal):
-        self.app.addMethod(methodname, belongto, alias, resultMode)
+    def addMethod(self, methodname, belongto, alias = None, resultMode = HproseResultMode.Normal, simple = None):
+        self.app.addMethod(methodname, belongto, alias, resultMode, simple)
 
-    def addMethods(self, methods, belongto, aliases = None, resultMode = HproseResultMode.Normal):
-        self.app.addMethods(methods, belongto, aliases, resultMode)
+    def addMethods(self, methods, belongto, aliases = None, resultMode = HproseResultMode.Normal, simple = None):
+        self.app.addMethods(methods, belongto, aliases, resultMode, simple)
 
-    def addInstanceMethods(self, obj, cls = None, aliasPrefix = None, resultMode = HproseResultMode.Normal):
-        self.app.addInstanceMethods(obj, cls, aliasPrefix, resultMode)
+    def addInstanceMethods(self, obj, cls = None, aliasPrefix = None, resultMode = HproseResultMode.Normal, simple = None):
+        self.app.addInstanceMethods(obj, cls, aliasPrefix, resultMode, simple)
 
-    def addClassMethods(self, cls, execcls = None, aliasPrefix = None, resultMode = HproseResultMode.Normal):
-        self.app.addClassMethods(cls, execcls, aliasPrefix, resultMode)
+    def addClassMethods(self, cls, execcls = None, aliasPrefix = None, resultMode = HproseResultMode.Normal, simple = None):
+        self.app.addClassMethods(cls, execcls, aliasPrefix, resultMode, simple)
 
-    def addStaticMethods(self, cls, aliasPrefix = None, resultMode = HproseResultMode.Normal):
-        self.app.addStaticMethods(cls, aliasPrefix, resultMode)
+    def addStaticMethods(self, cls, aliasPrefix = None, resultMode = HproseResultMode.Normal, simple = None):
+        self.app.addStaticMethods(cls, aliasPrefix, resultMode, simple)
 
     def isDebugEnabled(self):
         return self.app.isDebugEnabled()

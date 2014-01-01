@@ -14,13 +14,13 @@
 #                                                          #
 # hprose server for python 3.0+                            #
 #                                                          #
-# LastModified: Dec 1, 2012                                #
+# LastModified: Jan 1, 2014                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
 
 import types, traceback
-from sys import modules
+from sys import modules, exc_info
 from hprose.io import *
 from hprose.common import *
 
@@ -41,29 +41,31 @@ class HproseService(object):
         self.__functions = {}
         self.__funcNames = {}
         self.__resultMode = {}
+        self.__simpleMode = {}
         self._debug = False
         self._filter = HproseFilter()
+        self._simple = False
         self.onBeforeInvoke = None
         self.onAfterInvoke = None
         self.onSendHeader = None
         self.onSendError = None
 
-    def _doInvoke(self, reader, writer, session, environ):
+    def _doInvoke(self, istream, ostream, session, environ):
+        simpleReader = HproseSimpleReader(istream)
         tag = HproseTags.TagCall;
         while tag == HproseTags.TagCall:
-            reader.reset()
-            functionName = reader.readString()
+            functionName = simpleReader.readString()
             aliasName = functionName.lower()
             functionArgs = []
             byref = False
             has_session_args = False
             result = None
-            tag = reader.checkTags((HproseTags.TagList,
-                                    HproseTags.TagEnd,
-                                    HproseTags.TagCall))
+            tag = simpleReader.checkTags((HproseTags.TagList,
+                                          HproseTags.TagEnd,
+                                          HproseTags.TagCall))
             if tag == HproseTags.TagList:
-                reader.reset()
-                functionArgs = reader.readList(False)
+                reader = HproseReader(istream)
+                functionArgs = reader.readListWithoutTag()
                 tag = reader.checkTags((HproseTags.TagTrue,
                                         HproseTags.TagEnd,
                                         HproseTags.TagCall))
@@ -91,6 +93,7 @@ class HproseService(object):
             if aliasName in self.__functions:
                 function = self.__functions[aliasName]
                 resultMode = self.__resultMode[aliasName]
+                simple = self.__simpleMode[aliasName]
                 if hasattr(function, '__code__'):
                     fc = function.__code__
                     has_session_args = ((fc.co_argcount > 0) and
@@ -103,8 +106,9 @@ class HproseService(object):
             elif '*' in self.__functions:
                 function = self.__functions['*']
                 resultMode = self.__resultMode['*']
-                if hasattr(function, 'func_code'):
-                    argcount = function.func_code.co_argcount
+                simple = self.__simpleMode[u'*']
+                if hasattr(function, '__code__'):
+                    argcount = function.__code__.co_argcount
                     if argcount == 4:
                         result = function(session, environ, functionName, functionArgs)
                     elif argcount == 3:
@@ -120,8 +124,8 @@ class HproseService(object):
             else:
                 raise HproseException("Can't find this function %s()." % functionName)
             if self.onAfterInvoke != None:
-                if hasattr(self.onAfterInvoke, 'func_code'):
-                    argcount = self.onAfterInvoke.func_code.co_argcount
+                if hasattr(self.onAfterInvoke, '__code__'):
+                    argcount = self.onAfterInvoke.__code__.co_argcount
                     if argcount == 6:
                         self.onAfterInvoke(session, environ, functionName, functionArgs, byref, result)
                     elif argcount == 5:
@@ -137,56 +141,61 @@ class HproseService(object):
                     elif argcount == 0:
                         self.onAfterInvoke()
                 else:
-                    self.onAfterInvoke(environ, functionName, functionArgs, byref, result)       
+                    self.onAfterInvoke(environ, functionName, functionArgs, byref, result)
             if resultMode == HproseResultMode.RawWithEndTag:
-                writer.stream.write(result)
+                ostream.write(result)
                 return
             if resultMode == HproseResultMode.Raw:
-                writer.stream.write(result)            
+                ostream.write(result)            
             else:
-                writer.stream.write(HproseTags.TagResult)
+                ostream.write(HproseTags.TagResult)
+                if simple == None: simple = self._simple
+                writer = HproseSimpleWriter(ostream) if simple else HproseWriter(ostream)
                 if resultMode == HproseResultMode.Serialized:
-                    writer.stream.write(result)
+                    ostream.write(result)
                 else:
-                    writer.reset()
                     writer.serialize(result)
                 if byref:
                     if has_session_args:
                         del functionArgs[fc.co_argcount - 1]
-                    writer.stream.write(HproseTags.TagArgument)
+                    ostream.write(HproseTags.TagArgument)
                     writer.reset()
-                    writer.writeList(functionArgs, False)
-        writer.stream.write(HproseTags.TagEnd)
+                    writer.writeList(functionArgs)
+        ostream.write(HproseTags.TagEnd)
 
-    def _doFunctionList(self, writer):
-        writer.stream.write(HproseTags.TagFunctions)
-        writer.writeList(list(self.__funcNames.values()), False)
-        writer.stream.write(HproseTags.TagEnd)
-        
-    def _handle(self, reader, writer, session, environ):
+    def _doFunctionList(self, ostream):
+        writer = HproseSimpleWriter(ostream)
+        ostream.write(HproseTags.TagFunctions)
+        writer.writeView(self.__funcNames.values())
+        ostream.write(HproseTags.TagEnd)
+
+    def _handle(self, istream, ostream, session, environ):
         try:
+            istream = self._filter.inputFilter(istream)
+            ostream = self._filter.outputFilter(ostream)
             exceptTags = (HproseTags.TagCall, HproseTags.TagEnd)
-            tag = reader.checkTags(exceptTags)
+            tag = istream.read(1)
             if tag == HproseTags.TagCall:
-                self._doInvoke(reader, writer, session, environ)
-            if tag == HproseTags.TagEnd:
-                self._doFunctionList(writer)
+                self._doInvoke(istream, ostream, session, environ)
+            elif tag == HproseTags.TagEnd:
+                self._doFunctionList(ostream)
+            else:
+                raise HproseException("Wrong Request: \r\n%c%s" % (tag, istream.read(int(environ.get("CONTENT_LENGTH", 1)) - 1)))
         except Exception as error:
             if self._debug:
                 error = ''.join(traceback.format_exception(*exc_info()))
             if self.onSendError != None:
                 self.onSendError(environ, error)
-            writer.stream.seek(0);
-            writer.stream.truncate(0);
-            writer.reset()
-            writer.stream.write(HproseTags.TagError)
-            writer.writeString(str(error), False)
-            writer.stream.write(HproseTags.TagEnd)
+            ostream.seek(0);
+            ostream.truncate(0);
+            ostream.write(HproseTags.TagError)
+            ostream.write(HproseFormatter.serialize(str(error), True))
+            ostream.write(HproseTags.TagEnd)
 
-    def addMissingFunction(self, function, resultMode = HproseResultMode.Normal):
-        self.addFunction(function, '*', resultMode)
+    def addMissingFunction(self, function, resultMode = HproseResultMode.Normal, simple = None):
+        self.addFunction(function, '*', resultMode, simple)
 
-    def addFunction(self, function, alias = None, resultMode = HproseResultMode.Normal):
+    def addFunction(self, function, alias = None, resultMode = HproseResultMode.Normal, simple = None):
         if isinstance(function, str):
             function = getattr(modules['__main__'], function, None)
         if not hasattr(function, '__call__'):
@@ -198,10 +207,11 @@ class HproseService(object):
             self.__functions[aliasName] = function
             self.__funcNames[aliasName] = alias
             self.__resultMode[aliasName] = resultMode
+            self.__simpleMode[aliasName] = simple
         else:
             raise HproseException('Argument alias is not a string')
 
-    def addFunctions(self, functions, aliases = None, resultMode = HproseResultMode.Normal):
+    def addFunctions(self, functions, aliases = None, resultMode = HproseResultMode.Normal, simple = None):
         aliases_is_null = (aliases == None)
         if not isinstance(functions, (list, tuple)):
             raise HproseException('Argument functions is not a list or tuple')
@@ -211,18 +221,18 @@ class HproseService(object):
         for i in range(count):
             function = functions[i]
             if aliases_is_null:
-                self.addFunction(function, None, resultMode)
+                self.addFunction(function, None, resultMode, simple)
             else:
-                self.addFunction(function, aliases[i], resultMode)
+                self.addFunction(function, aliases[i], resultMode, simple)
 
-    def addMethod(self, methodname, belongto, alias = None, resultMode = HproseResultMode.Normal):
+    def addMethod(self, methodname, belongto, alias = None, resultMode = HproseResultMode.Normal, simple = None):
         function = getattr(belongto, methodname, None)
         if alias == None:
-            self.addFunction(function, methodname, resultMode)
+            self.addFunction(function, methodname, resultMode, simple)
         else:
-            self.addFunction(function, alias, resultMode)
+            self.addFunction(function, alias, resultMode, simple)
 
-    def addMethods(self, methods, belongto, aliases = None, resultMode = HproseResultMode.Normal):
+    def addMethods(self, methods, belongto, aliases = None, resultMode = HproseResultMode.Normal, simple = None):
         aliases_is_null = (aliases == None)
         if not isinstance(methods, (list, tuple)):
             raise HproseException('Argument methods is not a list or tuple')
@@ -236,21 +246,21 @@ class HproseService(object):
             method = methods[i]
             function = getattr(belongto, method, None)
             if aliases_is_null:
-                self.addFunction(function, method, resultMode)
+                self.addFunction(function, method, resultMode, simple)
             else:
-                self.addFunction(function, aliases[i], resultMode)
+                self.addFunction(function, aliases[i], resultMode, simple)
 
-    def addInstanceMethods(self, obj, cls = None, aliasPrefix = None, resultMode = HproseResultMode.Normal):
+    def addInstanceMethods(self, obj, cls = None, aliasPrefix = None, resultMode = HproseResultMode.Normal, simple = None):
         if cls == None: cls = obj.__class__
-        self.addMethods(_getInstanceMethods(cls), obj, aliasPrefix, resultMode)
+        self.addMethods(_getInstanceMethods(cls), obj, aliasPrefix, resultMode, simple)
 
 
-    def addClassMethods(self, cls, execcls = None, aliasPrefix = None, resultMode = HproseResultMode.Normal):
+    def addClassMethods(self, cls, execcls = None, aliasPrefix = None, resultMode = HproseResultMode.Normal, simple = None):
         if execcls == None: execcls = cls
-        self.addMethods(_getClassMethods(cls), execcls, aliasPrefix, resultMode)
+        self.addMethods(_getClassMethods(cls), execcls, aliasPrefix, resultMode, simple)
 
-    def addStaticMethods(self, cls, aliasPrefix = None, resultMode = HproseResultMode.Normal):
-        self.addMethods(_getStaticMethods(cls), cls, aliasPrefix, resultMode)
+    def addStaticMethods(self, cls, aliasPrefix = None, resultMode = HproseResultMode.Normal, simple = None):
+        self.addMethods(_getStaticMethods(cls), cls, aliasPrefix, resultMode, simple)
 
     def add(self, *args):
         args_num = len(args)
@@ -315,6 +325,12 @@ class HproseService(object):
         
     def setDebugEnabled(self, enable = True):
         self._debug = enable
+
+    def getSimpleMode(self):
+        return self._simple
+
+    def setSimpleMode(self, simple = True):
+        self._simple = simple
 
     def getFilter(self):
         return self._filter
