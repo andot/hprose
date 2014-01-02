@@ -20,7 +20,7 @@
  *                                                        *
 \**********************************************************/
 
-if (class_exists('SaeFetchurl')) {
+if (class_exists('SaeFetchurl', false)) {
     require_once('HproseSaeHttpClient.php');
 }
 elseif (function_exists('curl_init')) {
