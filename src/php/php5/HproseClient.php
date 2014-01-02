@@ -15,13 +15,29 @@
  *                                                        *
  * hprose client library for php5.                        *
  *                                                        *
- * LastModified: Dec 30, 2013                             *
+ * LastModified: Jan 2, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 
 require_once('HproseCommon.php');
 require_once('HproseIO.php');
+
+class HproseProxy {
+    private $client;
+    private $namespace;
+    public function __construct($client, $namespace = '') {
+        $this->client = $client;
+        $this->namespace = $namespace;
+    }
+    public function __call($function, $arguments) {
+        $function = $this->namespace . $function;
+        return $this->client->invoke($function, $arguments);
+    }
+    public function __get($name) {
+        return new HproseProxy($this->client, $this->namespace . $name . '_');
+    }
+}
 
 abstract class HproseClient {
     protected $url;
@@ -116,19 +132,4 @@ abstract class HproseClient {
     }
 }
 
-class HproseProxy {
-    private $client;
-    private $namespace;
-    public function __construct($client, $namespace = '') {
-        $this->client = $client;
-        $this->namespace = $namespace;
-    }
-    public function __call($function, $arguments) {
-        $function = $this->namespace . $function;
-        return $this->client->invoke($function, $arguments);
-    }
-    public function __get($name) {
-        return new HproseProxy($this->client, $this->namespace . $name . '_');
-    }
-}
 ?>
