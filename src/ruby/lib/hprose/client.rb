@@ -14,7 +14,7 @@
 #                                                          #
 # hprose client for ruby                                   #
 #                                                          #
-# LastModified: Dec 2, 2012                                #
+# LastModified: Jan 4, 2014                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -96,10 +96,10 @@ module Hprose
       stream = self.get_output_stream(context)
       writer = Writer.new(stream)
       stream.putc(TagCall)
-      writer.write_string(methodname.to_s, false)
+      writer.write_string(methodname.to_s)
       if (args.size > 0 or byref) then
         writer.reset
-        writer.write_list(args, false)
+        writer.write_list(args)
         writer.write_boolean(true) if byref
       end
       stream.putc(TagEnd)

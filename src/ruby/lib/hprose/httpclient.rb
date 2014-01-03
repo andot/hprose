@@ -31,13 +31,13 @@ module Hprose
     @@cookie_manager_mutex = Mutex.new
     public
     def initialize(uri = nil)
+      super
       Net::HTTP.version_1_2
       @http = Net::HTTP
       @header = {}
       @timeout = 30
       @keepalive = false
       @keepalive_timeout = 300
-      super(uri)
     end
     attr_reader :header
     attr_accessor :timeout, :keepalive, :keepalive_timeout

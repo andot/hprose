@@ -14,7 +14,7 @@
 #                                                          #
 # hprose service for ruby                                  #
 #                                                          #
-# LastModified: Dec 2, 2012                                #
+# LastModified: Jan 4, 2014                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -247,7 +247,7 @@ module Hprose
         tag = reader.check_tags([TagList, TagCall, TagEnd])
         if tag == TagList then
           reader.reset
-          args = reader.read_list(false)
+          args = reader.read_list_without_tag
           tag = reader.check_tags([TagTrue, TagCall, TagEnd])
           if tag == TagTrue then
             byref = true
@@ -284,7 +284,7 @@ module Hprose
             if byref then
               writer.stream.putc(TagArgument)
               writer.reset
-              writer.write_list(args, false)
+              writer.write_list(args)
             end
           end
         end
@@ -293,7 +293,7 @@ module Hprose
     end
     def do_function_list(writer)
       writer.stream.putc(TagFunctions)
-      writer.write_list(@funcNames.values, false)
+      writer.write_list(@funcNames.values)
       writer.stream.putc(TagEnd)
     end
     def handle(reader, writer, session, env)
@@ -311,7 +311,7 @@ module Hprose
         writer.stream.truncate(0)
         writer.reset
         writer.stream.putc(TagError)
-        writer.write_string(error, false)
+        writer.write_string(error)
         writer.stream.putc(TagEnd)
       end
     end
