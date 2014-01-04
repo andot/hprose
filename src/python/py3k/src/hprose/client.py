@@ -14,7 +14,7 @@
 #                                                          #
 # hprose client for python 3.0+                            #
 #                                                          #
-# LastModified: Jan 1, 2014                                #
+# LastModified: Jan 4, 2014                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -136,7 +136,7 @@ class HproseClient(object):
 
     def __invoke(self, name, args, byRef, resultMode, simple):
         context = self._getInovkeContext()
-        stream = self._filter.outputFilter(self._getOutputStream(context))
+        stream = self._getOutputStream(context)
         stream.write(HproseTags.TagCall)
         hproseWriter = HproseSimpleWriter(stream) if simple else HproseWriter(stream)
         hproseWriter.writeString(name)
@@ -150,7 +150,7 @@ class HproseClient(object):
         error = None
         try:
             self._sendData(context)
-            stream = self._filter.inputFilter(self._getInputStream(context))
+            stream = self._getInputStream(context)
             if resultMode == HproseResultMode.RawWithEndTag:
                 result = stream.readall()
                 return result

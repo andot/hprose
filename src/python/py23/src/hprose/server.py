@@ -14,7 +14,7 @@
 #                                                          #
 # hprose server for python 2.3+                            #
 #                                                          #
-# LastModified: Jan 1, 2014                                #
+# LastModified: Jan 4, 2014                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -151,21 +151,21 @@ class HproseService(object):
                 ostream.write(result)            
             else:
                 ostream.write(HproseTags.TagResult)
-                if simple == None: simple = self._simple
-                if simple:
-                    writer = HproseSimpleWriter(ostream)
-                else:
-                    writer = HproseWriter(ostream)
                 if resultMode == HproseResultMode.Serialized:
                     ostream.write(result)
                 else:
+                    if simple == None: simple = self._simple
+                    if simple:
+                        writer = HproseSimpleWriter(ostream)
+                    else:
+                        writer = HproseWriter(ostream)
                     writer.serialize(result)
-                if byref:
-                    if has_session_args:
-                        del functionArgs[fc.co_argcount - 1]
-                    ostream.write(HproseTags.TagArgument)
-                    writer.reset()
-                    writer.writeList(functionArgs)
+                    if byref:
+                        if has_session_args:
+                            del functionArgs[fc.co_argcount - 1]
+                        ostream.write(HproseTags.TagArgument)
+                        writer.reset()
+                        writer.writeList(functionArgs)
         ostream.write(HproseTags.TagEnd)
 
     def _doFunctionList(self, ostream):
@@ -176,8 +176,6 @@ class HproseService(object):
         
     def _handle(self, istream, ostream, session, environ):
         try:
-            istream = self._filter.inputFilter(istream)
-            ostream = self._filter.outputFilter(ostream)
             exceptTags = (HproseTags.TagCall, HproseTags.TagEnd)
             tag = istream.read(1)
             if tag == HproseTags.TagCall:
@@ -185,7 +183,7 @@ class HproseService(object):
             elif tag == HproseTags.TagEnd:
                 self._doFunctionList(ostream)
             else:
-                raise HproseException, "Wrong Request: \r\n%c%s" % (tag, istream.read(int(environ.get("CONTENT_LENGTH", 1)) - 1))
+                raise HproseException, "Wrong Request: \r\n%c%s" % (tag, istream.readall())
         except (KeyboardInterrupt, SystemExit):
             raise
         except Exception, error:

@@ -14,7 +14,7 @@
 #                                                          #
 # hprose common for python 2.3+                            #
 #                                                          #
-# LastModified: Dec 1, 2012                                #
+# LastModified: Jan 4, 2013                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -29,7 +29,7 @@ class HproseException(Exception):
     pass
 
 class HproseFilter(object):
-    def inputFilter(self, instream):
-        return instream;
-    def outputFilter(self, outstream):
-        return outstream;
+    def inputFilter(self, data):
+        return data;
+    def outputFilter(self, data):
+        return data;
