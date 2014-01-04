@@ -30,9 +30,10 @@ module Hprose
     def initialize(uri = nil)
       @onerror = nil
       @filter = Filter.new
+      @simple = false
       self.uri = uri
     end
-    attr_accessor :filter
+    attr_accessor :filter, :simple
     def onerror(&block)
       @onerror = block if block_given?
       @onerror
@@ -51,11 +52,12 @@ module Hprose
     def [](namespace)
       Proxy.new(self, namespace)
     end
-    def invoke(methodname, args = [], byref = false, resultMode = Normal, &block)
+    def invoke(methodname, args = [], byref = false, resultMode = Normal, simple = nil, &block)
+      simple = @simple if simple.nil?
       if block_given? then
         Thread.start do
           begin
-            result = _invoke(methodname, args, byref, resultMode)
+            result = _invoke(methodname, args, byref, resultMode, simple)
             case block.arity
             when 0 then yield
             when 1 then yield result
@@ -68,7 +70,7 @@ module Hprose
           end
         end
       else
-        return _invoke(methodname, args, byref, resultMode)
+        return _invoke(methodname, args, byref, resultMode, simple)
       end
     end
     def uri=(uri)
@@ -91,10 +93,10 @@ module Hprose
       raise NotImplementedError.new("#{self.class.name}#end_invoke is an abstract method")      
     end
     private
-    def _invoke(methodname, args, byref = false, resultMode = Normal)
+    def _invoke(methodname, args, byref, resultMode, simple)
       context = self.get_invoke_context
       stream = self.get_output_stream(context)
-      writer = Writer.new(stream)
+      writer = simple ? SimpleWriter.new(stream) : Writer.new(stream)
       stream.putc(TagCall)
       writer.write_string(methodname.to_s)
       if (args.size > 0 or byref) then

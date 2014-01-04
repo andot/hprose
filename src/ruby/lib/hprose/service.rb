@@ -29,15 +29,17 @@ module Hprose
     include Tags
     include ResultMode
     public
-    attr_accessor :debug, :filter
+    attr_accessor :debug, :filter, :simple
     attr_accessor :on_before_invoke, :on_after_invoke
     attr_accessor :on_send_header, :on_send_error
     def initialize
       @functions = {}
       @funcNames = {}
       @resultMode = {}
+      @simpleMode = {}
       @debug = $DEBUG
       @filter = Filter.new
+      @simple = false
       @on_before_invoke = nil
       @on_after_invoke = nil
       @on_send_header = nil
@@ -128,21 +130,22 @@ module Hprose
       else raise Exception, 'wrong arguments'
       end
     end
-    def add_missing_function(function, resultMode = Normal)
-      add_function(function, '*', resultMode)
+    def add_missing_function(function, resultMode = Normal, simple = nil)
+      add_function(function, '*', resultMode, simple)
     end
-    def add_block(methodname, resultMode = Normal, &block)
+    def add_block(methodname, resultMode = Normal, simple = nil, &block)
       if block_given? then
         methodname = methodname.to_s if methodname.is_a?(Symbol)
         aliasname = methodname.downcase
         @functions[aliasname] = block
         @funcNames[aliasname] = methodname
         @resultMode[aliasname] = resultMode
+        @simpleMode[aliasname] = simple
       else
         raise Exception, 'block must be given'
       end
     end
-    def add_function(function, aliasname = nil, resultMode = Normal)
+    def add_function(function, aliasname = nil, resultMode = Normal, simple = nil)
       function = function.to_s if function.is_a?(Symbol)
       aliasname = aliasname.to_s if aliasname.is_a?(Symbol)
       if function.is_a?(String) then
@@ -166,8 +169,9 @@ module Hprose
       @functions[name] = function
       @funcNames[name] = aliasname
       @resultMode[name] = resultMode
+      @simpleMode[name] = simple
     end
-    def add_functions(functions, aliases = nil, resultMode = Normal)
+    def add_functions(functions, aliases = nil, resultMode = Normal, simple = nil)
       unless functions.is_a?(Array) then
         raise Exception, 'argument functions is not an array'
       end
@@ -178,17 +182,17 @@ module Hprose
       count.times do |i|
         function = functions[i]
         if aliases.nil? then
-          add_function(function, nil, resultMode)
+          add_function(function, nil, resultMode, simple)
         else
-          add_function(function, aliases[i], resultMode)
+          add_function(function, aliases[i], resultMode, simple)
         end
       end
     end
-    def add_method(methodname, belongto, aliasname = nil, resultMode = Normal)
+    def add_method(methodname, belongto, aliasname = nil, resultMode = Normal, simple = nil)
       function = belongto.method(methodname)
-      add_function(function, (aliasname.nil? ? methodname : aliasname), resultMode)
+      add_function(function, (aliasname.nil? ? methodname : aliasname), resultMode, simple)
     end
-    def add_methods(methods, belongto, aliases = nil, resultMode = Normal)
+    def add_methods(methods, belongto, aliases = nil, resultMode = Normal, simple = nil)
       unless methods.is_a?(Array) then
         raise Exception, 'argument methods is not an array'
       end
@@ -204,10 +208,10 @@ module Hprose
       count.times do |i|
         method = methods[i]
         function = belongto.method(method)
-        add_function(function, (aliases.nil? ? method : aliases[i]), resultMode)
+        add_function(function, (aliases.nil? ? method : aliases[i]), resultMode, simple)
       end
     end
-    def add_instance_methods(obj, cls = nil, alias_prefix = nil, resultMode = Normal)
+    def add_instance_methods(obj, cls = nil, alias_prefix = nil, resultMode = Normal, simple = nil)
       alias_prefix = alias_prefix.to_s if alias_prefix.is_a?(Symbol)
       cls = obj.class if cls.nil?
       methods = cls.public_instance_methods(false)
@@ -219,9 +223,9 @@ module Hprose
         end
       end
       methods.map! { |method| cls.instance_method(method).bind(obj) }
-      add_functions(methods, aliases, resultMode)
+      add_functions(methods, aliases, resultMode, simple)
     end
-    def add_class_methods(cls, execcls = nil, alias_prefix = nil, resultMode = Normal)
+    def add_class_methods(cls, execcls = nil, alias_prefix = nil, resultMode = Normal, simple = nil)
       alias_prefix = alias_prefix.to_s if alias_prefix.is_a?(Symbol)
       execcls = cls if execcls.nil?
       methods = cls.singleton_methods(false)
@@ -233,20 +237,20 @@ module Hprose
         end
       end
       methods.map! { |method| execcls.method(method) }
-      add_functions(methods, aliases, resultMode)
+      add_functions(methods, aliases, resultMode, simple)
     end
     protected
-    def do_invoke(reader, writer, session, env)
+    def do_invoke(istream, ostream, session, env)
+      simpleReader = SimpleReader.new(istream)
       begin
-        reader.reset
-        name = reader.read_string
+        name = simpleReader.read_string
         aliasname = name.downcase
         args = []
         byref = false
         result = nil
-        tag = reader.check_tags([TagList, TagCall, TagEnd])
+        tag = simpleReader.check_tags([TagList, TagCall, TagEnd])
         if tag == TagList then
-          reader.reset
+          reader = Reader.new(istream)
           args = reader.read_list_without_tag
           tag = reader.check_tags([TagTrue, TagCall, TagEnd])
           if tag == TagTrue then
@@ -259,27 +263,30 @@ module Hprose
         if @functions.has_key?(aliasname) then
           function = @functions[aliasname]
           resultMode = @resultMode[aliasname]
+          simple = @simpleMode[aliasname]
           result = function.call(*(((function.arity > 0) and
                   (args.length + 1 == function.arity))? args + [session] : args))
         elsif @functions.has_key?('*') then
           function = @functions['*']
           resultMode = @resultMode['*']
+          simple = @simpleMode[aliasname]
           result = function.call(name, args)
         else
           raise Exception, "Can't find this function " << name
         end
         @on_after_invoke.call(env, name, args, byref, result) until @on_after_invoke.nil?
         if resultMode == RawWithEndTag then
-          writer.stream.write(result)
+          ostream.write(result)
           return
         elsif resultMode == Raw then
-          writer.stream.write(result)            
+          ostream.write(result)            
         else
-          writer.stream.putc(TagResult)
+          ostream.putc(TagResult)
           if resultMode == Serialized then
-            writer.stream.write(result)
+            ostream.write(result)
           else
-            writer.reset
+            simple = @simple if simple.nil?
+            writer = simple ? SimpleWriter.new(ostream) : Writer.new(ostream)
             writer.serialize(result)
             if byref then
               writer.stream.putc(TagArgument)
@@ -291,28 +298,29 @@ module Hprose
       end while tag == TagCall
       writer.stream.putc(TagEnd)
     end
-    def do_function_list(writer)
-      writer.stream.putc(TagFunctions)
+    def do_function_list(ostream)
+      writer = SimpleWriter.new(ostream)
+      ostream.putc(TagFunctions)
       writer.write_list(@funcNames.values)
-      writer.stream.putc(TagEnd)
+      ostream.putc(TagEnd)
     end
-    def handle(reader, writer, session, env)
+    def handle(istream, ostream, session, env)
       begin
         except_tags = [TagCall, TagEnd]
-        tag = reader.check_tags(except_tags)
+        tag = istream.getbyte
         case tag
-        when TagCall then do_invoke(reader, writer, session, env)
-        when TagEnd then do_function_list(writer)
+        when TagCall then do_invoke(istream, ostream, session, env)
+        when TagEnd then do_function_list(ostream)
+        else raise Exception, "Wrong Request: \r\n#{istream.string}"
         end
       rescue ::Exception => e
         error = @debug ? e.backtrace.unshift(e.message).join("\r\n") : e.message
         @on_send_error.call(env, error) until @on_send_error.nil?
-        writer.stream.seek(0)
-        writer.stream.truncate(0)
-        writer.reset
-        writer.stream.putc(TagError)
-        writer.write_string(error)
-        writer.stream.putc(TagEnd)
+        ostream.seek(0)
+        ostream.truncate(0)
+        ostream.putc(TagError)
+        ostream.write(Formatter.serialize(error, true))
+        ostream.putc(TagEnd)
       end
     end
   end # class Service
