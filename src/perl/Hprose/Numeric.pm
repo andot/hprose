@@ -14,7 +14,7 @@
 #                                                          #
 # Hprose Numeric module for perl                           #
 #                                                          #
-# LastModified: Dec 11, 2012                                #
+# LastModified: Jan 8, 2014                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -28,9 +28,9 @@ our @EXPORT = qw(isnumeric isint isnan isinf isninf);
 use constant {
     MinInt32 => -2147483648,
     MaxInt32 => 2147483647,
-    Inf => 'inf' + 0,
+    NaN => 0 + 'nan',
+    Inf => 0 + 'inf',
     NInf => 0 - 'inf',
-    NaN => 'nan' + 0,
 };
 
 sub isnumeric {
