@@ -373,7 +373,7 @@ function HproseSimpleReader(stream) {
         var result = this.readObjectBegin();
         return this.readObjectEnd(result.obj, result.cls);
     }
-    function readObject(includeTag) {
+    function readObject() {
         var tag = stream.getc();
         switch(tag) {
             case HproseTags.TagClass: this.readClass(); return this.readObject();
