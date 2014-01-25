@@ -103,7 +103,7 @@ namespace Hprose.Server {
                 getEnabled = value;
             }
         }
-        
+
         public bool IsCompressionEnabled {
             get {
                 return compressionEnabled;
@@ -156,7 +156,7 @@ namespace Hprose.Server {
                 string origin = currentContext.Request.Headers["Origin"];
                 if (origin != null && origin != "" && origin != "null") {
                     currentContext.Response.AddHeader("Access-Control-Allow-Origin", origin);
-                    currentContext.Response.AddHeader("Access-Control-Allow-Credentials", "true");  
+                    currentContext.Response.AddHeader("Access-Control-Allow-Credentials", "true");
                 }
                 else {
                     currentContext.Response.AddHeader("Access-Control-Allow-Origin", "*");

@@ -10,6 +10,7 @@ if not exist bin\4.0 mkdir bin\4.0
 if not exist bin\4.0\ClientProfile mkdir bin\4.0\ClientProfile
 if not exist bin\4.5 mkdir bin\4.5
 if not exist bin\4.5\Core mkdir bin\4.5\Core
+if not exist bin\4.5.1 mkdir bin\4.5.1
 if not exist bin\WindowsPhone mkdir bin\WindowsPhone
 if not exist bin\WindowsPhone71 mkdir bin\WindowsPhone71
 if not exist bin\WindowsPhone8 mkdir bin\WindowsPhone8
@@ -213,6 +214,7 @@ echo start compile hprose for .NET 4.5 Windows Store App
 set DOTNET_PATH=C:\Program Files\Reference Assemblies\Microsoft\Framework\.NETCore\v4.5
 if DEFINED ProgramFiles(x86) set DOTNET_PATH=C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETCore\v4.5
 set DOTNET_REFERENCE=
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\mscorlib.dll"
 set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Collections.dll"
 set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.IO.dll"
 set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Linq.dll"
@@ -227,6 +229,21 @@ set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Runtime
 set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Threading.dll"
 set NUMERICS_REF= -reference:"%DOTNET_PATH%\System.Runtime.Numerics.dll"
 C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\4.5\Core\Hprose.Client.dll -define:dotNET4;dotNET45;Core;ClientOnly -filealign:512 -target:library -noconfig -nostdlib+ -optimize+ -debug- %DOTNET_REFERENCE% %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
+
+echo start compile hprose for .NET 4.5.1
+set HPROSE_INFO= src\AssemblyInfo\Hprose\4.5.1\AssemblyInfo.cs
+set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\4.5.1\AssemblyInfo.cs
+set DOTNET_PATH=C:\Program Files\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5.1
+if DEFINED ProgramFiles(x86) set DOTNET_PATH=C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5.1
+set DOTNET_REFERENCE=
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\mscorlib.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Core.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.dll"
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Runtime.Serialization.dll"
+set NUMERICS_REF= -reference:"%DOTNET_PATH%\System.Numerics.dll"
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\4.5.1\Hprose.Client.dll -define:dotNET4;dotNET45;ClientOnly -filealign:512 -target:library -noconfig -nostdlib+ -optimize+ -debug- %DOTNET_REFERENCE% %NUMERICS_REF% %HPROSE_SRC% %HPROSECLIENT_INFO%
+set DOTNET_REFERENCE=%DOTNET_REFERENCE% -reference:"%DOTNET_PATH%\System.Web.dll"
+C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\Csc.exe -out:bin\4.5.1\Hprose.dll -define:dotNET4;dotNET45 -filealign:512 -target:library -noconfig -nostdlib+ -optimize+ -debug- %DOTNET_REFERENCE% %NUMERICS_REF% %HPROSE_SRC% %HPROSE_INFO%
 
 echo start compile hprose for Silverlight 2.0
 set SL_REFERENCE=

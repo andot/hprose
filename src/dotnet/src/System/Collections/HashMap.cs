@@ -11,7 +11,7 @@ namespace System.Collections {
         }
         public HashMap(int capacity): base(capacity) {
         }
-        public HashMap(int capacity, float loadFactor) : base(capacity, loadFactor) {        
+        public HashMap(int capacity, float loadFactor) : base(capacity, loadFactor) {
         }
         public HashMap(IDictionary value) : base(value) {
         }
@@ -55,7 +55,7 @@ namespace System.Collections {
                 array.SetValue(new DictionaryEntry(null, valueOfNullKey), arrayIndex);
             }
             else {
-                base.CopyTo(array, arrayIndex);            
+                base.CopyTo(array, arrayIndex);
             }
         }
         public override bool ContainsKey(object key) {
@@ -184,7 +184,7 @@ namespace System.Collections {
                 }
             }
         }
-        
+
         private class KeysCollection : ICollection, IEnumerable {
             private HashMap m;
             private ICollection keys;
@@ -199,7 +199,7 @@ namespace System.Collections {
                     array.SetValue(null, arrayIndex);
                 }
                 else {
-                    keys.CopyTo(array, arrayIndex);            
+                    keys.CopyTo(array, arrayIndex);
                 }
             }
             public virtual IEnumerator GetEnumerator() {
@@ -241,7 +241,7 @@ namespace System.Collections {
                     array.SetValue(m.valueOfNullKey, arrayIndex);
                 }
                 else {
-                    values.CopyTo(array, arrayIndex);            
+                    values.CopyTo(array, arrayIndex);
                 }
             }
             public virtual IEnumerator GetEnumerator() {

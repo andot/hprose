@@ -66,7 +66,7 @@ namespace Hprose.Server {
                 return service.GlobalMethods;
             }
         }
-        
+
         public uint ThreadCount {
             get {
                 return threadCount;
@@ -138,7 +138,7 @@ namespace Hprose.Server {
                 service.Filter = value;
             }
         }
-        
+
         public bool IsStarted {
             get {
                 return Listener.IsListening;
@@ -164,7 +164,7 @@ namespace Hprose.Server {
                 crossDomainXmlFile = null;
             }
         }
-        
+
         public string ClientAccessPolicyXmlFile {
             get {
                 return clientAccessPolicyXmlFile;

@@ -79,7 +79,7 @@ namespace Hprose.Server {
                 filter = value;
             }
         }
-        
+
         public void Add(MethodInfo method, object obj, string aliasName) {
             GlobalMethods.AddMethod(method, obj, aliasName);
         }
@@ -412,7 +412,7 @@ namespace Hprose.Server {
             List<string> names = new List<string>(GlobalMethods.AllNames);
 #else
             ArrayList names = new ArrayList(GlobalMethods.AllNames);
-#endif            
+#endif
             if (methods != null) {
                 names.AddRange(methods.AllNames);
             }

@@ -1,5 +1,8 @@
-
+#if ClientProfile
+[assembly: System.Reflection.AssemblyProduct("Hprose 1.3 for .NET Framework 3.5 Client Profile")]
+#else
 [assembly: System.Reflection.AssemblyProduct("Hprose 1.3 for .NET Framework 3.5")]
+#endif
 [assembly: System.Reflection.AssemblyTitle("Hprose.dll")]
 [assembly: System.Reflection.AssemblyDescription("Hprose.dll")]
 [assembly: System.Reflection.AssemblyDefaultAlias("Hprose.dll")]

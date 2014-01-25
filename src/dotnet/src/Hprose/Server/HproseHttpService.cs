@@ -28,7 +28,7 @@ using Hprose.Common;
 namespace Hprose.Server {
 
     public class HproseHttpService : HproseService {
-        
+
         private bool crossDomainEnabled = false;
         private bool p3pEnabled = false;
         private bool getEnabled = true;
@@ -162,7 +162,7 @@ namespace Hprose.Server {
                 string origin = currentContext.Request.Headers["Origin"];
                 if (origin != null && origin != "" && origin != "null") {
                     currentContext.Response.AddHeader("Access-Control-Allow-Origin", origin);
-                    currentContext.Response.AddHeader("Access-Control-Allow-Credentials", "true");  
+                    currentContext.Response.AddHeader("Access-Control-Allow-Credentials", "true");
                 }
                 else {
                     currentContext.Response.AddHeader("Access-Control-Allow-Origin", "*");

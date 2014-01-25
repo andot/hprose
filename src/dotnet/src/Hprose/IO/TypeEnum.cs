@@ -96,7 +96,7 @@ namespace Hprose.IO {
         GenericICollection,
         GenericIDictionary,
         GenericIList,
-        
+
         ObjectList,
         BooleanList,
         CharList,
@@ -142,7 +142,7 @@ namespace Hprose.IO {
         TimeSpanIList,
         CharsIList,
         BytesIList,
-        
+
         StringObjectHashMap,
         ObjectObjectHashMap,
         IntObjectHashMap,

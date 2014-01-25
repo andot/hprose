@@ -1144,7 +1144,7 @@ namespace System.Numerics {
         public static explicit operator string(BigInteger value) {
             return value.ToString();
         }
-        
+
         public static BigInteger operator &(BigInteger left, BigInteger right) {
             if (left.IsZero || right.IsZero) {
                 return Zero;

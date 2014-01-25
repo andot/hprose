@@ -15,28 +15,28 @@ namespace System.IO.Compression {
         private HuffmanTree codeLengthTree;
         private byte[] codeLengthTreeCodeLength;
         private byte[] codeList;
-        private static readonly byte[] codeOrder = new byte[] { 
-            0x10, 0x11, 0x12, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 
+        private static readonly byte[] codeOrder = new byte[] {
+            0x10, 0x11, 0x12, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2,
             14, 1, 15
          };
         private uint crc32;
-        private static readonly int[] distanceBasePosition = new int[] { 
-            1, 2, 3, 4, 5, 7, 9, 13, 0x11, 0x19, 0x21, 0x31, 0x41, 0x61, 0x81, 0xc1, 
+        private static readonly int[] distanceBasePosition = new int[] {
+            1, 2, 3, 4, 5, 7, 9, 13, 0x11, 0x19, 0x21, 0x31, 0x41, 0x61, 0x81, 0xc1,
             0x101, 0x181, 0x201, 0x301, 0x401, 0x601, 0x801, 0xc01, 0x1001, 0x1801, 0x2001, 0x3001, 0x4001, 0x6001, 0, 0
          };
         private int distanceCode;
         private int distanceCodeCount;
         private HuffmanTree distanceTree;
         private int extraBits;
-        private static readonly byte[] extraLengthBits = new byte[] { 
-            0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 
+        private static readonly byte[] extraLengthBits = new byte[] {
+            0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2,
             3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0
          };
         private GZipDecoder gZipDecoder;
         private InputBuffer input;
         private int length;
-        private static readonly int[] lengthBase = new int[] { 
-            3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 0x11, 0x13, 0x17, 0x1b, 0x1f, 
+        private static readonly int[] lengthBase = new int[] {
+            3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 0x11, 0x13, 0x17, 0x1b, 0x1f,
             0x23, 0x2b, 0x33, 0x3b, 0x43, 0x53, 0x63, 0x73, 0x83, 0xa3, 0xc3, 0xe3, 0x102
          };
         private int lengthCode;
@@ -45,8 +45,8 @@ namespace System.IO.Compression {
         private int loopCounter;
         private OutputWindow output;
         private InflaterState state;
-        private static readonly byte[] staticDistanceTreeTable = new byte[] { 
-            0, 0x10, 8, 0x18, 4, 20, 12, 0x1c, 2, 0x12, 10, 0x1a, 6, 0x16, 14, 30, 
+        private static readonly byte[] staticDistanceTreeTable = new byte[] {
+            0, 0x10, 8, 0x18, 4, 20, 12, 0x1c, 2, 0x12, 10, 0x1a, 6, 0x16, 14, 30,
             1, 0x11, 9, 0x19, 5, 0x15, 13, 0x1d, 3, 0x13, 11, 0x1b, 7, 0x17, 15, 0x1f
          };
         private uint streamSize;

@@ -37,7 +37,7 @@ namespace Hprose.IO {
         public const int TagBytes = 'b';
         public const int TagUTF8Char = 'u';
         public const int TagString = 's';
-        public const int TagGuid = 'g';        
+        public const int TagGuid = 'g';
         public const int TagList = 'a';
         public const int TagMap = 'm';
         public const int TagClass = 'c';

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for C#.                            *
  *                                                        *
- * LastModified: Jan 4, 2013                              *
+ * LastModified: Jan 25, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -56,7 +56,7 @@ namespace Hprose.IO {
         public HproseException UnexpectedTag(int tag) {
             return UnexpectedTag(tag, null);
         }
-        
+
         public HproseException UnexpectedTag(int tag, string expectTags) {
             if (tag == -1) {
                 return new HproseException("No byte found in stream");
@@ -215,13 +215,13 @@ namespace Hprose.IO {
         private float ParseFloat(StringBuilder value) {
             return ParseFloat(value.ToString());
         }
-        
+
         private float ParseFloat(String value) {
             try {
                 return float.Parse(value);
             }
             catch (OverflowException) {
-                return (value[0] == HproseTags.TagNeg) ? 
+                return (value[0] == HproseTags.TagNeg) ?
                         float.NegativeInfinity :
                         float.PositiveInfinity;
             }
@@ -236,7 +236,7 @@ namespace Hprose.IO {
                 return double.Parse(value);
             }
             catch (OverflowException) {
-                return (value[0] == HproseTags.TagNeg) ? 
+                return (value[0] == HproseTags.TagNeg) ?
                         double.NegativeInfinity :
                         double.PositiveInfinity;
             }
@@ -678,7 +678,7 @@ namespace Hprose.IO {
 #endif
             throw CastError(obj, type);
         }
-    
+
         public int ReadIntWithoutTag() {
             return ReadInt(HproseTags.TagSemicolon);
         }
@@ -894,7 +894,7 @@ namespace Hprose.IO {
             ObjectFieldModeUnserializer.Get(type, memberNames).Unserialize(obj, values);
 #endif
         }
-        
+
         private void ReadObjectProperties(object obj, Type type, int count, string[] memberNames) {
 #if !(PocketPC || Smartphone || WindowsCE || dotNET10 || dotNET11 || SILVERLIGHT || WINDOWS_PHONE || Core)
             object[] values = new object[count];
@@ -1150,7 +1150,7 @@ namespace Hprose.IO {
                 case HproseTags.TagTrue: return true;
                 case HproseTags.TagFalse: return false;
                 case HproseTags.TagNaN: return true;
-                case HproseTags.TagInfinity: return true;
+                case HproseTags.TagInfinity: stream.ReadByte(); return true;
                 case HproseTags.TagUTF8Char: return "\00".IndexOf(ReadUTF8CharAsChar()) > -1;
                 case HproseTags.TagString: return bool.Parse(ReadStringWithoutTag());
                 case HproseTags.TagRef: return Convert.ToBoolean(ReadRef());
@@ -3286,12 +3286,12 @@ namespace Hprose.IO {
                 case TypeEnum.ObjectObjectDictionary: return ReadObjectObjectDictionary();
                 case TypeEnum.IntObjectDictionary: return ReadIntObjectDictionary();
                 case TypeEnum.GenericList: return HproseHelper.GetIGListReader(type).ReadList(this);
-                case TypeEnum.GenericDictionary: return HproseHelper.GetIGDictionaryReader(type).ReadDictionary(this); 
+                case TypeEnum.GenericDictionary: return HproseHelper.GetIGDictionaryReader(type).ReadDictionary(this);
                 case TypeEnum.GenericQueue: return HproseHelper.GetIGQueueReader(type).ReadQueue(this);
                 case TypeEnum.GenericStack: return HproseHelper.GetIGStackReader(type).ReadStack(this);
                 case TypeEnum.GenericIList: return HproseHelper.GetIGIListReader(type).ReadIList(this, type);
                 case TypeEnum.GenericICollection: return HproseHelper.GetIGICollectionReader(type).ReadICollection(this, type);
-                case TypeEnum.GenericIDictionary: return HproseHelper.GetIGIDictionaryReader(type).ReadIDictionary(this, type); 
+                case TypeEnum.GenericIDictionary: return HproseHelper.GetIGIDictionaryReader(type).ReadIDictionary(this, type);
                 case TypeEnum.ICollection:
                 case TypeEnum.IList: return ReadObjectList();
                 case TypeEnum.IDictionary: return ReadObjectObjectHashMap();
@@ -3384,9 +3384,9 @@ namespace Hprose.IO {
             do {
                 tag = stream.ReadByte();
                 ostream.WriteByte((byte)tag);
-            } while (tag != HproseTags.TagSemicolon);        
+            } while (tag != HproseTags.TagSemicolon);
         }
-        
+
         private void ReadDateTimeRaw(Stream ostream, int tag) {
             ostream.WriteByte((byte)tag);
             do {
@@ -3538,7 +3538,7 @@ namespace Hprose.IO {
             }
             ostream.WriteByte((byte)tag);
         }
-        
+
         public void Reset() {
             references.Clear();
             classref.Clear();

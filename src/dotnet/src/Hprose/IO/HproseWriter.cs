@@ -59,7 +59,7 @@ namespace Hprose.IO {
         private static byte[] minLongBuf = new byte[] {(byte)'-',(byte)'9',(byte)'2',(byte)'2',(byte)'3',
                                                          (byte)'3',(byte)'7',(byte)'2',(byte)'0',(byte)'3',
                                                          (byte)'6',(byte)'8',(byte)'5',(byte)'4',(byte)'7',
-                                                         (byte)'7',(byte)'5',(byte)'8',(byte)'0',(byte)'8'};        
+                                                         (byte)'7',(byte)'5',(byte)'8',(byte)'0',(byte)'8'};
         private int lastref = 0;
         private int lastclassref = 0;
 
@@ -113,14 +113,14 @@ namespace Hprose.IO {
             else {
                 references = new Dictionary<object, int>();
             }
-#elif MONO 
+#elif MONO
             if (mode == HproseMode.FieldMode) {
                 references = new Hashtable(new IdentityEqualityComparer());
             }
             else {
                 references = new Hashtable();
             }
-#elif !dotNETCF10 
+#elif !dotNETCF10
             if (mode == HproseMode.FieldMode) {
                 references = new Hashtable(new IdentityHashcodeProvider(), new IdentityComparer());
             }
@@ -269,7 +269,7 @@ namespace Hprose.IO {
         public void WriteInteger(int i) {
             if (i >= 0 && i <= 9) {
                 stream.WriteByte((byte)('0' + i));
-            }            
+            }
             else {
                 stream.WriteByte(HproseTags.TagInteger);
                 if (i == Int32.MinValue) {
@@ -685,7 +685,7 @@ namespace Hprose.IO {
             if (references.ContainsKey(g)) WriteRef(g);
             else WriteGuid(g);
         }
- 
+
         public void WriteArray(sbyte[] array) {
             references[array] = lastref++;
             int length = array.Length;
@@ -1540,7 +1540,7 @@ namespace Hprose.IO {
             }
             stream.Write(buf, off, len);
         }
-        
+
         private void WriteIntFast(uint i, Stream stream) {
             int off = 20;
             int len = 0;
@@ -1571,7 +1571,7 @@ namespace Hprose.IO {
             }
             stream.Write(buf, off, len);
         }
-        
+
         private void WriteIntFast(ulong i, Stream stream) {
             int off = 20;
             int len = 0;
@@ -1598,7 +1598,7 @@ namespace Hprose.IO {
             lastref = 0;
             lastclassref = 0;
         }
-        
+
         private class SerializeCache {
             public byte[] data;
             public int refcount;

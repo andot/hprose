@@ -191,7 +191,7 @@ namespace Hprose.IO {
             serializeMembersDelegate = (SerializeDelegate)dynamicMethod.CreateDelegate(typeofSerializeDelegate);
         }
 
-        private ObjectSerializer(Type type) { 
+        private ObjectSerializer(Type type) {
             InitSerializeFieldsDelegate(type);
             InitSerializePropertiesDelegate(type);
             InitSerializeMembersDelegate(type);

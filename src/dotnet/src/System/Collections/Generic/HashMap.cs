@@ -232,7 +232,7 @@ namespace System.Collections.Generic {
         IEnumerator IEnumerable.GetEnumerator() {
             return new Enumerator(this, dict.GetEnumerator());
         }
-        
+
         public struct Enumerator: IEnumerator<KeyValuePair<TKey, TValue>>,
             IDisposable, IDictionaryEnumerator, IEnumerator {
             private Dictionary<TKey, TValue>.Enumerator e;
@@ -364,7 +364,7 @@ namespace System.Collections.Generic {
                     array[index] = default(TKey);
                 }
                 else {
-                    keys.CopyTo(array, index);            
+                    keys.CopyTo(array, index);
                 }
             }
             public Enumerator GetEnumerator() {
@@ -392,7 +392,7 @@ namespace System.Collections.Generic {
                     array.SetValue(null, index);
                 }
                 else {
-                    ((ICollection)keys).CopyTo(array, index);            
+                    ((ICollection)keys).CopyTo(array, index);
                 }
             }
             IEnumerator IEnumerable.GetEnumerator() {
@@ -501,7 +501,7 @@ namespace System.Collections.Generic {
                     array.SetValue(m.valueOfNullKey, index);
                 }
                 else {
-                    ((ICollection)values).CopyTo(array, index);            
+                    ((ICollection)values).CopyTo(array, index);
                 }
             }
             IEnumerator IEnumerable.GetEnumerator() {

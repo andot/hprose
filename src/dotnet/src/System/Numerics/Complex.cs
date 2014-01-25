@@ -5,9 +5,9 @@ using System.Runtime.InteropServices;
 namespace System.Numerics {
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct Complex : 
+    public struct Complex :
 #if !(dotNET10 || dotNET11 || dotNETCF10)
-    IEquatable<Complex>, 
+    IEquatable<Complex>,
 #endif
     IFormattable {
         private const double LOG_10_INV = 0.43429448190325;

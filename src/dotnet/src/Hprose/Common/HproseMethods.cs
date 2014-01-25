@@ -157,7 +157,7 @@ namespace Hprose.Common {
                     AddMethod(aliasName, new HproseMethod(method, obj, mode));
                 }
             }
-#else        
+#else
             BindingFlags flags = (obj == null) ? BindingFlags.Static : BindingFlags.Instance;
             MethodInfo[] methods = type.GetMethods(flags | BindingFlags.Public);
             for (int i = 0; i < methods.Length; i++) {
@@ -216,7 +216,7 @@ namespace Hprose.Common {
                     }
                 }
             }
-#else        
+#else
             BindingFlags flags = (obj == null) ? BindingFlags.Static : BindingFlags.Instance;
             MethodInfo[] methods = type.GetMethods(flags | BindingFlags.Public);
             for (int i = 0; i < methodNames.Length; i++) {

@@ -28,7 +28,7 @@ namespace System.Windows.Forms {
             contextControl.Invoke(new EventHandler(new EventHandleCreate(d, state).EventHandler));
 #endif
         }
-#if dotNETCF10        
+#if dotNETCF10
         class EventHandleCreate {
             private SendOrPostCallback callback;
             private object obj;

@@ -365,7 +365,7 @@ namespace Hprose.IO {
             typeMap[typeofTimeSpanIList] = TypeEnum.TimeSpanIList;
             typeMap[typeofBytesIList] = TypeEnum.BytesIList;
             typeMap[typeofCharsIList] = TypeEnum.CharsIList;
-            
+
             typeMap[typeofStringObjectHashMap] = TypeEnum.StringObjectHashMap;
             typeMap[typeofObjectObjectHashMap] = TypeEnum.ObjectObjectHashMap;
             typeMap[typeofIntObjectHashMap] = TypeEnum.IntObjectHashMap;
@@ -389,7 +389,7 @@ namespace Hprose.IO {
         private static bool IsGenericList(Type type) {
             return (type.GetGenericTypeDefinition() == typeofList);
         }
-        
+
         private static bool IsGenericDictionary(Type type) {
             return (type.GetGenericTypeDefinition() == typeofDictionary);
         }
@@ -414,7 +414,7 @@ namespace Hprose.IO {
                     typeofGIList.MakeGenericType(args).GetTypeInfo().IsAssignableFrom(typeInfo));
 #else
             Type[] args = type.GetGenericArguments();
-            return (args.Length == 1 && 
+            return (args.Length == 1 &&
                     typeofGIList.MakeGenericType(args).IsAssignableFrom(type));
 #endif
         }
@@ -427,7 +427,7 @@ namespace Hprose.IO {
                     typeofGIDictionary.MakeGenericType(args).GetTypeInfo().IsAssignableFrom(typeInfo));
 #else
             Type[] args = type.GetGenericArguments();
-            return (args.Length == 2 && 
+            return (args.Length == 2 &&
                     typeofGIDictionary.MakeGenericType(args).IsAssignableFrom(type));
 #endif
         }
@@ -440,7 +440,7 @@ namespace Hprose.IO {
                     typeofGICollection.MakeGenericType(args).GetTypeInfo().IsAssignableFrom(typeInfo));
 #else
             Type[] args = type.GetGenericArguments();
-            return (args.Length == 1 && 
+            return (args.Length == 1 &&
                     typeofGICollection.MakeGenericType(args).IsAssignableFrom(type));
 #endif
         }
@@ -489,7 +489,7 @@ namespace Hprose.IO {
                 if (IsGenericHashMap(type)) return TypeEnum.GenericHashMap;
                 if (IsGenericIDictionary(type)) return TypeEnum.GenericIDictionary;
                 if (IsGenericIList(type)) return TypeEnum.GenericIList;
-                if (IsGenericICollection(type)) return TypeEnum.GenericICollection;            
+                if (IsGenericICollection(type)) return TypeEnum.GenericICollection;
             }
 #endif
             if (IsInstantiableClass(type)) {
@@ -1138,7 +1138,7 @@ namespace Hprose.IO {
             }
             return listReader;
         }
-        
+
         internal static IGICollectionReader GetIGICollectionReader(Type type) {
             ICollection cache = gICollectionReaderCache;
             IGICollectionReader collectionReader = null;
@@ -1158,7 +1158,7 @@ namespace Hprose.IO {
             }
             return collectionReader;
         }
-        
+
         internal static IGIDictionaryReader GetIGIDictionaryReader(Type type) {
             ICollection cache = gIDictionaryReaderCache;
             IGIDictionaryReader dictionaryReader = null;
@@ -1178,7 +1178,7 @@ namespace Hprose.IO {
             }
             return dictionaryReader;
         }
-        
+
         internal static IGListReader GetIGListReader(Type type) {
             ICollection cache = gListReaderCache;
             IGListReader listReader = null;
@@ -1198,7 +1198,7 @@ namespace Hprose.IO {
             }
             return listReader;
         }
-        
+
         internal static IGDictionaryReader GetIGDictionaryReader(Type type) {
             ICollection cache = gDictionaryReaderCache;
             IGDictionaryReader dictionaryReader = null;

@@ -112,10 +112,10 @@ namespace System.Numerics {
                 }
             }
             bits = this._rgu;
-#if !(dotNET10 || dotNET11 || dotNETCF10 || dotNETCF20)            
+#if !(dotNET10 || dotNET11 || dotNETCF10 || dotNETCF20)
             Array.Resize<uint>(ref bits, this._iuLast + 1);
 #else
-            Resize(ref bits, this._iuLast + 1);            
+            Resize(ref bits, this._iuLast + 1);
 #endif
             if (!this._fWritable) {
                 this._rgu = bits;
@@ -625,7 +625,7 @@ namespace System.Numerics {
         public void ModDiv(ref BigIntegerBuilder regDen, ref BigIntegerBuilder regQuo) {
             if (regDen._iuLast == 0) {
                 regQuo.Set(this.DivMod(regDen._uSmall));
-#if !(dotNET10 || dotNET11 || dotNETCF10)                
+#if !(dotNET10 || dotNET11 || dotNETCF10)
                 NumericsHelpers.Swap<BigIntegerBuilder>(ref this, ref regQuo);
 #else
                 NumericsHelpers.Swap(ref this, ref regQuo);
@@ -927,7 +927,7 @@ namespace System.Numerics {
             num2 = reg1._iuLast + 1;
             int b = reg2._iuLast + 1;
             if (num2 < b) {
-#if !(dotNET10 || dotNET11 || dotNETCF10)            
+#if !(dotNET10 || dotNET11 || dotNETCF10)
                 NumericsHelpers.Swap<BigIntegerBuilder>(ref reg1, ref reg2);
                 NumericsHelpers.Swap<int>(ref num2, ref b);
 #else
