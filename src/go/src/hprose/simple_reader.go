@@ -1305,10 +1305,10 @@ func (r *SimpleReader) readSliceWithoutTag(v reflect.Value) error {
 		case reflect.Interface:
 			t = reflect.TypeOf([]interface{}(nil))
 		default:
-			return errors.New("argument is a slice pointer or pointer to slice pointer type")
+			return errors.New("cannot convert slice to type " + t.String())
 		}
 	default:
-		return errors.New("argument is a slice pointer or pointer to slice pointer type")
+		return errors.New("cannot convert slice to type " + t.String())
 	}
 	slicePointer := reflect.New(t)
 	slice := slicePointer.Elem()
@@ -1376,10 +1376,10 @@ func (r *SimpleReader) readMapWithoutTag(v reflect.Value) error {
 		case reflect.Interface:
 			t = reflect.TypeOf(map[interface{}]interface{}(nil))
 		default:
-			return errors.New("argument is a map pointer or pointer to map pointer type")
+			return errors.New("cannot convert map to type " + t.String())
 		}
 	default:
-		return errors.New("argument is a map pointer or pointer to map pointer type")
+		return errors.New("cannot convert map to type " + t.String())
 	}
 	mPointer := reflect.New(t)
 	m := mPointer.Elem()
