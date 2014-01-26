@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Reader for Go.                                  *
  *                                                        *
- * LastModified: Jan 26, 2014                             *
+ * LastModified: Jan 27, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -25,6 +25,7 @@ import (
 	"container/list"
 	"io"
 	"math/big"
+	"reflect"
 	"time"
 	"uuid"
 )
@@ -34,8 +35,10 @@ type Reader interface {
 	CheckTag(byte) error
 	CheckTags([]byte) (byte, error)
 	Unserialize(interface{}) error
-	ReadInt() (int64, error)
-	ReadUint() (uint64, error)
+	ReadInt(byte) (int, error)
+	ReadUint(byte) (uint, error)
+	ReadInt64() (int64, error)
+	ReadUint64() (uint64, error)
 	ReadBigInt() (*big.Int, error)
 	ReadFloat32() (float32, error)
 	ReadFloat64() (float64, error)
@@ -51,6 +54,7 @@ type Reader interface {
 	ReadUUIDWithoutTag() (*uuid.UUID, error)
 	ReadList() (*list.List, error)
 	ReadListWithoutTag() (*list.List, error)
+	ReadArray([]reflect.Value) error
 	ReadSlice(interface{}) error
 	ReadSliceWithoutTag(interface{}) error
 	ReadMap(interface{}) error
@@ -71,7 +75,7 @@ func NewReader(stream io.Reader) Reader {
 		r.ref = append(r.ref, p)
 	}
 	r.readRef = func() (interface{}, error) {
-		i, err := r.ReadIntWithoutTag()
+		i, err := r.ReadInt(TagSemicolon)
 		if err == nil {
 			return r.ref[i], nil
 		}

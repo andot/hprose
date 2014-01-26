@@ -23,6 +23,7 @@ package hprose
 import (
 	"bytes"
 	"container/list"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -40,11 +41,22 @@ func TestReaderTime(t *testing.T) {
 		t.Error(b.String())
 	}
 	reader := NewReader(b)
-	var ti time.Time
-	reader.Unserialize(&ti)
-	reader.Unserialize(&ti)
-	reader.Unserialize(&ti)
-	reader.Unserialize(&ti)
+	var t1, t2, t3, t4 time.Time
+	if err := reader.Unserialize(&t1); err != nil {
+		t.Error(err.Error())
+	}
+	if err := reader.Unserialize(&t2); err != nil {
+		t.Error(err.Error())
+	}
+	if err := reader.Unserialize(&t3); err != nil {
+		t.Error(err.Error())
+	}
+	if err := reader.Unserialize(&t4); err != nil {
+		t.Error(err.Error())
+	}
+	if t1 != t2 {
+		t.Error("t1 != t2")
+	}
 }
 
 func TestReaderString(t *testing.T) {
@@ -58,10 +70,22 @@ func TestReaderString(t *testing.T) {
 		t.Error(b.String())
 	}
 	reader := NewReader(b)
-	var s string
-	reader.Unserialize(&s)
-	reader.Unserialize(&s)
-	reader.Unserialize(&s)
+	var s1, s2, s3 string
+	if err := reader.Unserialize(&s1); err != nil {
+		t.Error(err.Error())
+	}
+	if err := reader.Unserialize(&s2); err != nil {
+		t.Error(err.Error())
+	}
+	if err := reader.Unserialize(&s3); err != nil {
+		t.Error(err.Error())
+	}
+	if s2 != "我爱你" {
+		t.Error(s2)
+	}
+	if s2 != s3 {
+		t.Error("s2 != s3")
+	}
 }
 
 func TestReaderBytes(t *testing.T) {
@@ -75,9 +99,19 @@ func TestReaderBytes(t *testing.T) {
 		t.Error(b.String())
 	}
 	reader := NewReader(b)
-	reader.Unserialize(&bb)
-	reader.Unserialize(&bb)
-	reader.Unserialize(&bb)
+	var x1, x2, x3 *[]byte
+	if err := reader.Unserialize(&x1); err != nil {
+		t.Error(err.Error())
+	}
+	if err := reader.Unserialize(&x2); err != nil {
+		t.Error(err.Error())
+	}
+	if err := reader.Unserialize(&x3); err != nil {
+		t.Error(err.Error())
+	}
+	if x2 != x3 {
+		t.Error("x2 != x3")
+	}
 }
 
 func TestReaderUUID(t *testing.T) {
@@ -92,9 +126,15 @@ func TestReaderUUID(t *testing.T) {
 	}
 	var u2, u3 *uuid.UUID
 	reader := NewReader(b)
-	reader.Unserialize(&u)
-	reader.Unserialize(&u2)
-	reader.Unserialize(&u3)
+	if err := reader.Unserialize(&u); err != nil {
+		t.Error(err.Error())
+	}
+	if err := reader.Unserialize(&u2); err != nil {
+		t.Error(err.Error())
+	}
+	if err := reader.Unserialize(&u3); err != nil {
+		t.Error(err.Error())
+	}
 	if u2 != u3 {
 		t.Error(u, u2, u3)
 	}
@@ -104,37 +144,66 @@ func TestReaderList(t *testing.T) {
 	b := new(bytes.Buffer)
 	writer := NewWriter(b)
 	a := list.New()
-	a.PushBack(1)
-	a.PushBack(2)
-	a.PushBack(3)
-	writer.Serialize(*a)
+	a.PushBack("hello")
+	a.PushBack("hprose")
+	a.PushBack("world")
 	writer.Serialize(a)
+	writer.Serialize(*a)
 	var aa interface{} = a
 	writer.Serialize(aa)
-	if b.String() != "a3{123}a3{123}r1;" {
+	if b.String() != `a3{s5"hello"s6"hprose"s5"world"}a3{r1;r2;r3;}r0;` {
 		t.Error(b.String())
 	}
 	reader := NewReader(b)
-	reader.Unserialize(&a)
-	reader.Unserialize(&a)
-	reader.Unserialize(&aa)
+	var x1, x2, x3 *list.List
+	if err := reader.Unserialize(&x1); err != nil {
+		t.Error(err.Error())
+	}
+	if err := reader.Unserialize(&x2); err != nil {
+		t.Error(err.Error())
+	}
+	if err := reader.Unserialize(&x3); err != nil {
+		t.Error(err.Error())
+	}
+	if x1 == x2 {
+		t.Error("x1 == x2")
+	}
+	if x1 != x3 {
+		t.Error("x1 != x3")
+	}
 }
 
 func TestReaderSlice(t *testing.T) {
 	b := new(bytes.Buffer)
 	writer := NewWriter(b)
-	a := []int{0, 1, 2}
-	writer.Serialize(a)
+	a := []string{"hello", "hprose", "world"}
 	writer.Serialize(&a)
+	writer.Serialize(a)
 	var aa interface{} = &a
 	writer.Serialize(aa)
-	if b.String() != "a3{012}a3{012}r1;" {
+	if b.String() != `a3{s5"hello"s6"hprose"s5"world"}a3{r1;r2;r3;}r0;` {
 		t.Error(b.String())
 	}
+	var x []string
 	reader := NewReader(b)
-	reader.Unserialize(&a)
-	reader.Unserialize(&a)
-	reader.Unserialize(&aa)
+	if err := reader.Unserialize(&x); err != nil {
+		t.Error(err.Error())
+	}
+	if !reflect.DeepEqual(x, a) {
+		t.Error(x, a)
+	}
+	if err := reader.Unserialize(&x); err != nil {
+		t.Error(err.Error())
+	}
+	if !reflect.DeepEqual(x, a) {
+		t.Error(x, a)
+	}
+	if err := reader.Unserialize(&x); err != nil {
+		t.Error(err.Error())
+	}
+	if !reflect.DeepEqual(x, a) {
+		t.Error(x, a)
+	}
 }
 
 func TestReaderMap(t *testing.T) {
@@ -153,9 +222,25 @@ func TestReaderMap(t *testing.T) {
 		t.Error(b.String())
 	}
 	reader := NewReader(b)
-	reader.Unserialize(&m)
-	reader.Unserialize(&m)
-	reader.Unserialize(&mm)
+	var x map[string]interface{}
+	if err := reader.Unserialize(&x); err != nil {
+		t.Error(err.Error())
+	}
+	if !reflect.DeepEqual(x, m) {
+		t.Error(x, m)
+	}
+	if err := reader.Unserialize(&x); err != nil {
+		t.Error(err.Error())
+	}
+	if !reflect.DeepEqual(x, m) {
+		t.Error(x, m)
+	}
+	if err := reader.Unserialize(&x); err != nil {
+		t.Error(err.Error())
+	}
+	if !reflect.DeepEqual(x, m) {
+		t.Error(x, m)
+	}
 }
 
 func TestReaderObject(t *testing.T) {
@@ -172,10 +257,31 @@ func TestReaderObject(t *testing.T) {
 		t.Error(b.String())
 	}
 	reader := NewReader(b)
-	reader.Unserialize(&p)
-	reader.Unserialize(&pp)
-	reader.Unserialize(&pp)
-	reader.Unserialize(&p)
+	var x testPerson
+	if err := reader.Unserialize(&x); err != nil {
+		t.Error(err.Error())
+	}
+	if !reflect.DeepEqual(x, p) {
+		t.Error(x, p)
+	}
+	if err := reader.Unserialize(&x); err != nil {
+		t.Error(err.Error())
+	}
+	if !reflect.DeepEqual(x, p) {
+		t.Error(x, p)
+	}
+	if err := reader.Unserialize(&x); err != nil {
+		t.Error(err.Error())
+	}
+	if !reflect.DeepEqual(x, p) {
+		t.Error(x, p)
+	}
+	if err := reader.Unserialize(&x); err != nil {
+		t.Error(err.Error())
+	}
+	if !reflect.DeepEqual(x, p) {
+		t.Error(x, p)
+	}
 }
 
 func TestReaderReset(t *testing.T) {
@@ -202,4 +308,42 @@ func TestReaderReset(t *testing.T) {
 	reader.Unserialize(&pp)
 	reader.Reset()
 	reader.Unserialize(&p)
+}
+
+func TestReaderArray(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b)
+	p := testPerson{"马秉尧", 33, true}
+	a := []interface{}{123, "hello world!", p}
+	writer.Serialize(a)
+	reader := NewReader(b)
+	err := reader.CheckTag(TagList)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	count, err := reader.ReadInt(TagOpenbrace)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if count != 3 {
+		t.Error("count != 3")
+	}
+	result := [3]reflect.Value{
+		reflect.New(reflect.TypeOf(0)).Elem(),
+		reflect.New(reflect.TypeOf("")).Elem(),
+		reflect.New(reflect.TypeOf(testPerson{})).Elem(),
+	}
+	err = reader.ReadArray(result[:])
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if result[0].Int() != 123 {
+		t.Error(result)
+	}
+	if result[1].String() != "hello world!" {
+		t.Error(result)
+	}
+	if result[2].Interface().(testPerson) != p {
+		t.Error(result)
+	}
 }
