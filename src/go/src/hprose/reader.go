@@ -57,6 +57,7 @@ type Reader interface {
 	ReadMapWithoutTag(interface{}) error
 	ReadObject(interface{}) error
 	ReadObjectWithoutTag(interface{}) error
+	Reset()
 }
 
 type reader struct {
@@ -77,4 +78,9 @@ func NewReader(stream io.Reader) Reader {
 		return nil, err
 	}
 	return r
+}
+
+func (r *reader) Reset() {
+	r.simpleReader.Reset()
+	r.ref = r.ref[:0]
 }

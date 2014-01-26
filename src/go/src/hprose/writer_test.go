@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Writer Test for Go.                             *
  *                                                        *
- * LastModified: Jan 21, 2014                             *
+ * LastModified: Jan 27, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -25,6 +25,7 @@ import (
 	"container/list"
 	"math"
 	"math/big"
+	"strings"
 	"testing"
 	"time"
 	"uuid"
@@ -376,6 +377,31 @@ func TestWriterObject(t *testing.T) {
 		t.Error(err.Error())
 	}
 	s := `c10"testPerson"3{s4"name"s3"age"s4"male"}o0{s3"马秉尧"i33;t}o0{r4;i33;t}r5;`
+	if b.String() != s {
+		t.Error(b.String())
+	}
+}
+
+func TestWriterReset(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b)
+	p := testPerson{"马秉尧", 33, true}
+	err := writer.Serialize(p)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	writer.Reset()
+	err = writer.Serialize(&p)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	writer.Reset()
+	var pp interface{} = &p
+	err = writer.Serialize(pp)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	s := strings.Repeat(`c10"testPerson"3{s4"name"s3"age"s4"male"}o0{s3"马秉尧"i33;t}`, 3)
 	if b.String() != s {
 		t.Error(b.String())
 	}

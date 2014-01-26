@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Writer Test for Go.                             *
  *                                                        *
- * LastModified: Jan 21, 2014                             *
+ * LastModified: Jan 27, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -23,8 +23,7 @@ package hprose
 import (
 	"bytes"
 	"container/list"
-	//"math"
-	//"math/big"
+	"strings"
 	"testing"
 	"time"
 	"uuid"
@@ -176,5 +175,31 @@ func TestReaderObject(t *testing.T) {
 	reader.Unserialize(&p)
 	reader.Unserialize(&pp)
 	reader.Unserialize(&pp)
+	reader.Unserialize(&p)
+}
+
+func TestReaderReset(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b)
+	p := testPerson{"马秉尧", 33, true}
+	writer.Serialize(p)
+	writer.Reset()
+	writer.Serialize(&p)
+	writer.Reset()
+	writer.Serialize(&p)
+	writer.Reset()
+	var pp interface{} = &p
+	writer.Serialize(pp)
+	s := strings.Repeat(`c10"testPerson"3{s4"name"s3"age"s4"male"}o0{s3"马秉尧"i33;t}`, 4)
+	if b.String() != s {
+		t.Error(b.String())
+	}
+	reader := NewReader(b)
+	reader.Unserialize(&p)
+	reader.Reset()
+	reader.Unserialize(&pp)
+	reader.Reset()
+	reader.Unserialize(&pp)
+	reader.Reset()
 	reader.Unserialize(&p)
 }

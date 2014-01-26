@@ -68,6 +68,7 @@ type Writer interface {
 	WriteMapWithRef(interface{}) error
 	WriteObject(interface{}) error
 	WriteObjectWithRef(interface{}) error
+	Reset()
 }
 
 type writer struct {
@@ -94,4 +95,9 @@ func NewWriter(stream io.Writer) Writer {
 		return false, nil
 	}
 	return w
+}
+
+func (w *writer) Reset() {
+	w.simpleWriter.Reset()
+	w.ref = make(map[interface{}]int)
 }

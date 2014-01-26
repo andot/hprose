@@ -813,6 +813,11 @@ func (r *simpleReader) ReadObjectWithoutTag(p interface{}) error {
 	return err
 }
 
+func (r *simpleReader) Reset() {
+	r.classref = r.classref[:0]
+	r.fieldsref = r.fieldsref[:0]
+}
+
 // private methods
 
 func (r *simpleReader) checkPointer(p interface{}) (v reflect.Value, err error) {
@@ -1420,9 +1425,25 @@ func (r *simpleReader) readMapWithoutTag(v reflect.Value) error {
 	return err
 }
 
+func (r *simpleReader) checkRegister(t reflect.Type) {
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	if t.Kind() == reflect.Struct {
+		alias := ClassManager.GetClassAlias(t)
+		if alias == "" {
+			class := ClassManager.GetClass(t.Name())
+			if class == nil {
+				ClassManager.Register(t, t.Name())
+			}
+		}
+	}
+}
+
 func (r *simpleReader) readObject(v reflect.Value) error {
 	s := r.Stream()
 	t := v.Type()
+	r.checkRegister(t)
 	tag, err := s.ReadByte()
 	if err == nil {
 		switch tag {

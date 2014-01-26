@@ -77,7 +77,7 @@ type simpleWriter struct {
 func NewSimpleWriter(stream io.Writer) Writer {
 	w := &simpleWriter{}
 	w.stream = bufio.NewWriter(stream)
-	w.classref = make(map[string]int)
+	w.classref = make(map[string]int, 16)
 	w.fieldsref = make([][]reflect.StructField, 0, 16)
 	w.setRef = func(interface{}) {}
 	w.writeRef = func(interface{}) (bool, error) {
@@ -584,6 +584,11 @@ func (w *simpleWriter) WriteObjectWithRef(v interface{}) error {
 	} else {
 		return err
 	}
+}
+
+func (w *simpleWriter) Reset() {
+	w.classref = make(map[string]int, cap(w.fieldsref))
+	w.fieldsref = w.fieldsref[:0]
 }
 
 // private methods
