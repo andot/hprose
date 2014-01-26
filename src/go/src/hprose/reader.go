@@ -21,18 +21,51 @@
 package hprose
 
 import (
+	"bufio"
+	"container/list"
 	"io"
+	"math/big"
+	"time"
+	"uuid"
 )
 
-type Reader struct {
-	*SimpleReader
+type Reader interface {
+	Stream() *bufio.Reader
+	CheckTag(byte) error
+	CheckTags([]byte) (byte, error)
+	Unserialize(interface{}) error
+	ReadInt() (int64, error)
+	ReadUint() (uint64, error)
+	ReadBigInt() (*big.Int, error)
+	ReadFloat32() (float32, error)
+	ReadFloat64() (float64, error)
+	ReadBool() (bool, error)
+	ReadDateTime() (time.Time, error)
+	ReadDateWithoutTag() (time.Time, error)
+	ReadTimeWithoutTag() (time.Time, error)
+	ReadString() (string, error)
+	ReadStringWithoutTag() (string, error)
+	ReadBytes() (*[]byte, error)
+	ReadBytesWithoutTag() (*[]byte, error)
+	ReadUUID() (*uuid.UUID, error)
+	ReadUUIDWithoutTag() (*uuid.UUID, error)
+	ReadList() (*list.List, error)
+	ReadListWithoutTag() (*list.List, error)
+	ReadSlice(interface{}) error
+	ReadSliceWithoutTag(interface{}) error
+	ReadMap(interface{}) error
+	ReadMapWithoutTag(interface{}) error
+	ReadObject(interface{}) error
+	ReadObjectWithoutTag(interface{}) error
+}
+
+type reader struct {
+	*simpleReader
 	ref []interface{}
 }
 
-func NewReader(stream io.Reader) *Reader {
-	r := &Reader{}
-	r.SimpleReader = NewSimpleReader(stream)
-	r.ref = make([]interface{}, 0, 32)
+func NewReader(stream io.Reader) Reader {
+	r := &reader{NewSimpleReader(stream).(*simpleReader), make([]interface{}, 0, 32)}
 	r.setRef = func(p interface{}) {
 		r.ref = append(r.ref, p)
 	}

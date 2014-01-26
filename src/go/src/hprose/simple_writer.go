@@ -66,7 +66,7 @@ var serializeType = [...]bool{
 	false, // UnsafePointer
 }
 
-type SimpleWriter struct {
+type simpleWriter struct {
 	stream    *bufio.Writer
 	classref  map[string]int
 	fieldsref [][]reflect.StructField
@@ -74,8 +74,8 @@ type SimpleWriter struct {
 	writeRef  func(interface{}) (bool, error)
 }
 
-func NewSimpleWriter(stream io.Writer) *SimpleWriter {
-	w := &SimpleWriter{}
+func NewSimpleWriter(stream io.Writer) Writer {
+	w := &simpleWriter{}
 	w.stream = bufio.NewWriter(stream)
 	w.classref = make(map[string]int)
 	w.fieldsref = make([][]reflect.StructField, 0, 16)
@@ -86,11 +86,11 @@ func NewSimpleWriter(stream io.Writer) *SimpleWriter {
 	return w
 }
 
-func (w *SimpleWriter) Stream() *bufio.Writer {
+func (w *simpleWriter) Stream() *bufio.Writer {
 	return w.stream
 }
 
-func (w *SimpleWriter) Serialize(v interface{}) (err error) {
+func (w *simpleWriter) Serialize(v interface{}) (err error) {
 	switch v := v.(type) {
 	case nil:
 		err = w.WriteNull()
@@ -234,66 +234,66 @@ func (w *SimpleWriter) Serialize(v interface{}) (err error) {
 	return err
 }
 
-func (w *SimpleWriter) WriteNull() error {
+func (w *simpleWriter) WriteNull() error {
 	return w.stream.WriteByte(TagNull)
 }
 
-func (w *SimpleWriter) WriteInt8(v int8) error {
+func (w *simpleWriter) WriteInt8(v int8) error {
 	return w.writeInt32(int32(v))
 }
 
-func (w *SimpleWriter) WriteInt16(v int16) error {
+func (w *simpleWriter) WriteInt16(v int16) error {
 	return w.writeInt32(int32(v))
 }
 
-func (w *SimpleWriter) WriteInt32(v int32) error {
+func (w *simpleWriter) WriteInt32(v int32) error {
 	return w.writeInt32(v)
 }
 
-func (w *SimpleWriter) WriteInt64(v int64) error {
+func (w *simpleWriter) WriteInt64(v int64) error {
 	if v >= math.MinInt32 && v <= math.MaxInt32 {
 		return w.writeInt32(int32(v))
 	}
 	return w.writeInt64(v)
 }
 
-func (w *SimpleWriter) WriteUint8(v uint8) error {
+func (w *simpleWriter) WriteUint8(v uint8) error {
 	return w.writeInt32(int32(v))
 }
 
-func (w *SimpleWriter) WriteUint16(v uint16) error {
+func (w *simpleWriter) WriteUint16(v uint16) error {
 	return w.writeInt32(int32(v))
 }
 
-func (w *SimpleWriter) WriteUint32(v uint32) error {
+func (w *simpleWriter) WriteUint32(v uint32) error {
 	if v <= math.MaxInt32 {
 		return w.writeInt32(int32(v))
 	}
 	return w.writeUint64(uint64(v))
 }
 
-func (w *SimpleWriter) WriteUint64(v uint64) error {
+func (w *simpleWriter) WriteUint64(v uint64) error {
 	if v <= math.MaxInt32 {
 		return w.writeInt32(int32(v))
 	}
 	return w.writeUint64(v)
 }
 
-func (w *SimpleWriter) WriteInt(v int) error {
+func (w *simpleWriter) WriteInt(v int) error {
 	if v >= math.MinInt32 && v <= math.MaxInt32 {
 		return w.writeInt32(int32(v))
 	}
 	return w.writeInt64(int64(v))
 }
 
-func (w *SimpleWriter) WriteUint(v uint) error {
+func (w *simpleWriter) WriteUint(v uint) error {
 	if v <= math.MaxInt32 {
 		return w.writeInt32(int32(v))
 	}
 	return w.writeUint64(uint64(v))
 }
 
-func (w *SimpleWriter) WriteBigInt(v *big.Int) (err error) {
+func (w *simpleWriter) WriteBigInt(v *big.Int) (err error) {
 	s := w.stream
 	if err = s.WriteByte(TagLong); err == nil {
 		if _, err = s.WriteString(v.String()); err == nil {
@@ -303,11 +303,11 @@ func (w *SimpleWriter) WriteBigInt(v *big.Int) (err error) {
 	return err
 }
 
-func (w *SimpleWriter) WriteFloat32(v float32) error {
+func (w *simpleWriter) WriteFloat32(v float32) error {
 	return w.WriteFloat64(float64(v))
 }
 
-func (w *SimpleWriter) WriteFloat64(v float64) (err error) {
+func (w *simpleWriter) WriteFloat64(v float64) (err error) {
 	s := w.stream
 	if math.IsNaN(v) {
 		return w.WriteNaN()
@@ -321,11 +321,11 @@ func (w *SimpleWriter) WriteFloat64(v float64) (err error) {
 	return err
 }
 
-func (w *SimpleWriter) WriteNaN() error {
+func (w *simpleWriter) WriteNaN() error {
 	return w.stream.WriteByte(TagNaN)
 }
 
-func (w *SimpleWriter) WriteInfinity(pos bool) (err error) {
+func (w *simpleWriter) WriteInfinity(pos bool) (err error) {
 	s := w.Stream()
 	if err = s.WriteByte(TagInfinity); err == nil {
 		if pos {
@@ -337,7 +337,7 @@ func (w *SimpleWriter) WriteInfinity(pos bool) (err error) {
 	return err
 }
 
-func (w *SimpleWriter) WriteBool(v bool) error {
+func (w *simpleWriter) WriteBool(v bool) error {
 	s := w.stream
 	if v {
 		return s.WriteByte(TagTrue)
@@ -345,7 +345,7 @@ func (w *SimpleWriter) WriteBool(v bool) error {
 	return s.WriteByte(TagFalse)
 }
 
-func (w *SimpleWriter) WriteTime(v time.Time) (err error) {
+func (w *simpleWriter) WriteTime(v time.Time) (err error) {
 	w.setRef(v)
 	s := w.stream
 	year, month, day := v.Date()
@@ -371,7 +371,7 @@ func (w *SimpleWriter) WriteTime(v time.Time) (err error) {
 	return err
 }
 
-func (w *SimpleWriter) WriteTimeWithRef(v time.Time) error {
+func (w *simpleWriter) WriteTimeWithRef(v time.Time) error {
 	if success, err := w.writeRef(v); err == nil && !success {
 		return w.WriteTime(v)
 	} else {
@@ -379,11 +379,11 @@ func (w *SimpleWriter) WriteTimeWithRef(v time.Time) error {
 	}
 }
 
-func (w *SimpleWriter) WriteEmpty() error {
+func (w *simpleWriter) WriteEmpty() error {
 	return w.stream.WriteByte(TagEmpty)
 }
 
-func (w *SimpleWriter) WriteUTF8Char(v string) (err error) {
+func (w *simpleWriter) WriteUTF8Char(v string) (err error) {
 	s := w.stream
 	if err = s.WriteByte(TagUTF8Char); err == nil {
 		_, err = s.WriteString(v)
@@ -391,7 +391,7 @@ func (w *SimpleWriter) WriteUTF8Char(v string) (err error) {
 	return err
 }
 
-func (w *SimpleWriter) WriteString(v string) (err error) {
+func (w *simpleWriter) WriteString(v string) (err error) {
 	w.setRef(v)
 	s := w.stream
 	if err = s.WriteByte(TagString); err == nil {
@@ -410,7 +410,7 @@ func (w *SimpleWriter) WriteString(v string) (err error) {
 	return err
 }
 
-func (w *SimpleWriter) WriteStringWithRef(v string) error {
+func (w *simpleWriter) WriteStringWithRef(v string) error {
 	if success, err := w.writeRef(v); err == nil && !success {
 		return w.WriteString(v)
 	} else {
@@ -418,7 +418,7 @@ func (w *SimpleWriter) WriteStringWithRef(v string) error {
 	}
 }
 
-func (w *SimpleWriter) WriteBytes(v *[]byte) (err error) {
+func (w *simpleWriter) WriteBytes(v *[]byte) (err error) {
 	w.setRef(v)
 	s := w.stream
 	if err = s.WriteByte(TagBytes); err == nil {
@@ -437,7 +437,7 @@ func (w *SimpleWriter) WriteBytes(v *[]byte) (err error) {
 	return err
 }
 
-func (w *SimpleWriter) WriteBytesWithRef(v *[]byte) error {
+func (w *simpleWriter) WriteBytesWithRef(v *[]byte) error {
 	if success, err := w.writeRef(v); err == nil && !success {
 		return w.WriteBytes(v)
 	} else {
@@ -445,7 +445,7 @@ func (w *SimpleWriter) WriteBytesWithRef(v *[]byte) error {
 	}
 }
 
-func (w *SimpleWriter) WriteUUID(v *uuid.UUID) (err error) {
+func (w *simpleWriter) WriteUUID(v *uuid.UUID) (err error) {
 	w.setRef(v)
 	s := w.stream
 	if err = s.WriteByte(TagGuid); err == nil {
@@ -458,7 +458,7 @@ func (w *SimpleWriter) WriteUUID(v *uuid.UUID) (err error) {
 	return err
 }
 
-func (w *SimpleWriter) WriteUUIDWithRef(v *uuid.UUID) error {
+func (w *simpleWriter) WriteUUIDWithRef(v *uuid.UUID) error {
 	if success, err := w.writeRef(v); err == nil && !success {
 		return w.WriteUUID(v)
 	} else {
@@ -466,7 +466,7 @@ func (w *SimpleWriter) WriteUUIDWithRef(v *uuid.UUID) error {
 	}
 }
 
-func (w *SimpleWriter) WriteList(v *list.List) (err error) {
+func (w *simpleWriter) WriteList(v *list.List) (err error) {
 	w.setRef(v)
 	s := w.stream
 	count := v.Len()
@@ -489,7 +489,7 @@ func (w *SimpleWriter) WriteList(v *list.List) (err error) {
 	return err
 }
 
-func (w *SimpleWriter) WriteListWithRef(v *list.List) error {
+func (w *simpleWriter) WriteListWithRef(v *list.List) error {
 	if success, err := w.writeRef(v); err == nil && !success {
 		return w.WriteList(v)
 	} else {
@@ -497,7 +497,7 @@ func (w *SimpleWriter) WriteListWithRef(v *list.List) error {
 	}
 }
 
-func (w *SimpleWriter) WriteSlice(v interface{}) error {
+func (w *simpleWriter) WriteSlice(v interface{}) error {
 	w.setRef(v)
 	if v := reflect.ValueOf(v); v.IsValid() {
 		if kind := v.Kind(); kind == reflect.Array || kind == reflect.Slice {
@@ -519,7 +519,7 @@ func (w *SimpleWriter) WriteSlice(v interface{}) error {
 	return errors.New("The data is not an array/slice or an array/slice pointer.")
 }
 
-func (w *SimpleWriter) WriteSliceWithRef(v interface{}) error {
+func (w *simpleWriter) WriteSliceWithRef(v interface{}) error {
 	if success, err := w.writeRef(v); err == nil && !success {
 		return w.WriteSlice(v)
 	} else {
@@ -527,7 +527,7 @@ func (w *SimpleWriter) WriteSliceWithRef(v interface{}) error {
 	}
 }
 
-func (w *SimpleWriter) WriteMap(v interface{}) error {
+func (w *simpleWriter) WriteMap(v interface{}) error {
 	w.setRef(v)
 	if v := reflect.ValueOf(v); v.IsValid() {
 		if kind := v.Kind(); kind == reflect.Map {
@@ -549,7 +549,7 @@ func (w *SimpleWriter) WriteMap(v interface{}) error {
 	return errors.New("The data is not a map or a map pointer.")
 }
 
-func (w *SimpleWriter) WriteMapWithRef(v interface{}) error {
+func (w *simpleWriter) WriteMapWithRef(v interface{}) error {
 	if success, err := w.writeRef(v); err == nil && !success {
 		return w.WriteMap(v)
 	} else {
@@ -557,7 +557,7 @@ func (w *SimpleWriter) WriteMapWithRef(v interface{}) error {
 	}
 }
 
-func (w *SimpleWriter) WriteObject(v interface{}) error {
+func (w *simpleWriter) WriteObject(v interface{}) error {
 	if rv := reflect.ValueOf(v); rv.IsValid() {
 		if kind := rv.Kind(); kind == reflect.Struct {
 			return w.writeObjectValue(v, rv)
@@ -578,7 +578,7 @@ func (w *SimpleWriter) WriteObject(v interface{}) error {
 	return errors.New("The data is not a struct or a struct pointer.")
 }
 
-func (w *SimpleWriter) WriteObjectWithRef(v interface{}) error {
+func (w *simpleWriter) WriteObjectWithRef(v interface{}) error {
 	if success, err := w.writeRef(v); err == nil && !success {
 		return w.WriteObject(v)
 	} else {
@@ -588,7 +588,7 @@ func (w *SimpleWriter) WriteObjectWithRef(v interface{}) error {
 
 // private methods
 
-func (w *SimpleWriter) writeInt32(v int32) (err error) {
+func (w *simpleWriter) writeInt32(v int32) (err error) {
 	s := w.Stream()
 	if v >= 0 && v <= 9 {
 		err = s.WriteByte(byte(v + '0'))
@@ -600,7 +600,7 @@ func (w *SimpleWriter) writeInt32(v int32) (err error) {
 	return err
 }
 
-func (w *SimpleWriter) writeInt64(v int64) (err error) {
+func (w *simpleWriter) writeInt64(v int64) (err error) {
 	s := w.Stream()
 	if v >= 0 && v <= 9 {
 		err = s.WriteByte(byte(v + '0'))
@@ -612,7 +612,7 @@ func (w *SimpleWriter) writeInt64(v int64) (err error) {
 	return err
 }
 
-func (w *SimpleWriter) writeUint64(v uint64) (err error) {
+func (w *simpleWriter) writeUint64(v uint64) (err error) {
 	s := w.Stream()
 	if v >= 0 && v <= 9 {
 		err = s.WriteByte(byte(v + '0'))
@@ -624,7 +624,7 @@ func (w *SimpleWriter) writeUint64(v uint64) (err error) {
 	return err
 }
 
-func (w *SimpleWriter) writeComplexData(v interface{}) (err error) {
+func (w *simpleWriter) writeComplexData(v interface{}) (err error) {
 	rv := reflect.ValueOf(v)
 	switch rv.Kind() {
 	case reflect.Array, reflect.Slice:
@@ -655,7 +655,7 @@ func (w *SimpleWriter) writeComplexData(v interface{}) (err error) {
 	return err
 }
 
-func (w *SimpleWriter) writeSliceValue(v reflect.Value) (err error) {
+func (w *simpleWriter) writeSliceValue(v reflect.Value) (err error) {
 	s := w.Stream()
 	count := v.Len()
 	if err = s.WriteByte(TagList); err == nil {
@@ -677,7 +677,7 @@ func (w *SimpleWriter) writeSliceValue(v reflect.Value) (err error) {
 	return err
 }
 
-func (w *SimpleWriter) writeMapValue(v reflect.Value) (err error) {
+func (w *simpleWriter) writeMapValue(v reflect.Value) (err error) {
 	s := w.Stream()
 	count := v.Len()
 	if err = s.WriteByte(TagMap); err == nil {
@@ -703,7 +703,7 @@ func (w *SimpleWriter) writeMapValue(v reflect.Value) (err error) {
 	return err
 }
 
-func (w *SimpleWriter) writeObjectValue(v interface{}, rv reflect.Value) (err error) {
+func (w *simpleWriter) writeObjectValue(v interface{}, rv reflect.Value) (err error) {
 	s := w.stream
 	t := rv.Type()
 	classname := ClassManager.GetClassAlias(t)
@@ -743,7 +743,7 @@ func (w *SimpleWriter) writeObjectValue(v interface{}, rv reflect.Value) (err er
 	return err
 }
 
-func (w *SimpleWriter) writeClass(classname string, fields []reflect.StructField) (index int, err error) {
+func (w *simpleWriter) writeClass(classname string, fields []reflect.StructField) (index int, err error) {
 	s := w.stream
 	count := len(fields)
 	if err = s.WriteByte(TagClass); err != nil {
