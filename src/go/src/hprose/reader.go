@@ -61,6 +61,7 @@ type Reader interface {
 	ReadMapWithoutTag(interface{}) error
 	ReadObject(interface{}) error
 	ReadObjectWithoutTag(interface{}) error
+	ReadRaw() ([]byte, error)
 	Reset()
 }
 

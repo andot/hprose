@@ -498,17 +498,20 @@ func (w *simpleWriter) WriteListWithRef(v *list.List) error {
 }
 
 func (w *simpleWriter) WriteSlice(v interface{}) error {
-	w.setRef(v)
+	x := v
 	if v := reflect.ValueOf(v); v.IsValid() {
 		if kind := v.Kind(); kind == reflect.Array || kind == reflect.Slice {
+			w.setRef(&x)
 			return w.writeSliceValue(v)
 		} else if kind == reflect.Ptr {
 			if v := v.Elem(); v.IsValid() {
 				if kind := v.Kind(); kind == reflect.Array || kind == reflect.Slice {
+					w.setRef(x)
 					return w.writeSliceValue(v)
 				} else if kind == reflect.Interface {
 					if v := v.Elem(); v.IsValid() {
 						if kind = v.Kind(); kind == reflect.Array || kind == reflect.Slice {
+							w.setRef(x)
 							return w.writeSliceValue(v)
 						}
 					}
@@ -528,17 +531,20 @@ func (w *simpleWriter) WriteSliceWithRef(v interface{}) error {
 }
 
 func (w *simpleWriter) WriteMap(v interface{}) error {
-	w.setRef(v)
+	x := v
 	if v := reflect.ValueOf(v); v.IsValid() {
 		if kind := v.Kind(); kind == reflect.Map {
+			w.setRef(&x)
 			return w.writeMapValue(v)
 		} else if kind == reflect.Ptr {
 			if v := v.Elem(); v.IsValid() {
 				if kind := v.Kind(); kind == reflect.Map {
+					w.setRef(x)
 					return w.writeMapValue(v)
 				} else if kind == reflect.Interface {
 					if v := v.Elem(); v.IsValid() {
 						if kind = v.Kind(); kind == reflect.Map {
+							w.setRef(x)
 							return w.writeMapValue(v)
 						}
 					}
@@ -560,7 +566,7 @@ func (w *simpleWriter) WriteMapWithRef(v interface{}) error {
 func (w *simpleWriter) WriteObject(v interface{}) error {
 	if rv := reflect.ValueOf(v); rv.IsValid() {
 		if kind := rv.Kind(); kind == reflect.Struct {
-			return w.writeObjectValue(v, rv)
+			return w.writeObjectValue(&v, rv)
 		} else if kind == reflect.Ptr {
 			if rv := rv.Elem(); rv.IsValid() {
 				if kind := rv.Kind(); kind == reflect.Struct {

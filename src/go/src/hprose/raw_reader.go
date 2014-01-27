@@ -13,7 +13,7 @@
  *                                                        *
  * hprose RawReader for Go.                               *
  *                                                        *
- * LastModified: Jan 24, 2014                             *
+ * LastModified: Jan 27, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -38,19 +38,19 @@ func NewRawReader(stream io.Reader) *RawReader {
 
 func (r *RawReader) ReadRaw() (raw []byte, err error) {
 	ostream := new(bytes.Buffer)
-	err = r.readRaw(ostream)
+	err = r.readRawTo(ostream)
 	return ostream.Bytes(), err
 }
 
-func (r *RawReader) readRaw(ostream *bytes.Buffer) (err error) {
+func (r *RawReader) readRawTo(ostream *bytes.Buffer) (err error) {
 	var tag byte
 	if tag, err = r.stream.ReadByte(); err == nil {
-		err = r.readraw(ostream, tag)
+		err = r.readRaw(ostream, tag)
 	}
 	return err
 }
 
-func (r *RawReader) readraw(ostream *bytes.Buffer, tag byte) (err error) {
+func (r *RawReader) readRaw(ostream *bytes.Buffer, tag byte) (err error) {
 	switch tag {
 	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 		TagNull, TagEmpty, TagTrue, TagFalse, TagNaN:
@@ -77,11 +77,11 @@ func (r *RawReader) readraw(ostream *bytes.Buffer, tag byte) (err error) {
 		err = r.readComplexRaw(ostream, tag)
 	case TagClass:
 		if err = r.readComplexRaw(ostream, tag); err == nil {
-			err = r.readRaw(ostream)
+			err = r.readRawTo(ostream)
 		}
 	case TagError:
 		if err = ostream.WriteByte(tag); err == nil {
-			err = r.readRaw(ostream)
+			err = r.readRawTo(ostream)
 		}
 	default:
 		err = unexpectedTag(tag, nil)
@@ -187,7 +187,7 @@ func (r *RawReader) readComplexRaw(ostream *bytes.Buffer, tag byte) (err error) 
 		tag, err = r.stream.ReadByte()
 	}
 	for err == nil && tag != TagClosebrace {
-		if err = r.readraw(ostream, tag); err == nil {
+		if err = r.readRaw(ostream, tag); err == nil {
 			tag, err = r.stream.ReadByte()
 		}
 	}
