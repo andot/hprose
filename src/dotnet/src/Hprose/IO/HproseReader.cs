@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for C#.                            *
  *                                                        *
- * LastModified: Jan 25, 2014                             *
+ * LastModified: Jan 28, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -2882,6 +2882,18 @@ namespace Hprose.IO {
             int tag = stream.ReadByte();
             switch (tag) {
                 case HproseTags.TagNull: return null;
+                case HproseTags.TagList: {
+                    int count = ReadInt(HproseTags.TagOpenbrace);
+                    HashMap map = new HashMap(count);
+                    references.Add(map);
+                    for (int i = 0; i < count; i++) {
+                        object key = i;
+                        object value = Unserialize();
+                        map[key] = value;
+                    }
+                    stream.ReadByte();
+                    return map;
+                }
                 case HproseTags.TagMap: {
                     int count = ReadInt(HproseTags.TagOpenbrace);
                     HashMap map = new HashMap(count);
@@ -2909,6 +2921,18 @@ namespace Hprose.IO {
             int tag = stream.ReadByte();
             switch (tag) {
                 case HproseTags.TagNull: return null;
+                case HproseTags.TagList: {
+                    int count = ReadInt(HproseTags.TagOpenbrace);
+                    IDictionary map = (IDictionary)HproseHelper.NewInstance(type);
+                    references.Add(map);
+                    for (int i = 0; i < count; i++) {
+                        object key = i;
+                        object value = Unserialize();
+                        map[key] = value;
+                    }
+                    stream.ReadByte();
+                    return map;
+                }
                 case HproseTags.TagMap: {
                     int count = ReadInt(HproseTags.TagOpenbrace);
                     IDictionary map = (IDictionary)HproseHelper.NewInstance(type);
@@ -2935,10 +2959,27 @@ namespace Hprose.IO {
         }
 
 #if !(dotNET10 || dotNET11 || dotNETCF10)
+        private HashMap<TKey, TValue> ReadListAsHashMap<TKey, TValue>() {
+            int count = ReadInt(HproseTags.TagOpenbrace);
+            HashMap<TKey, TValue> map = new HashMap<TKey, TValue>(count);
+            references.Add(map);
+            Type keyType = typeof(TKey);
+            Type valueType = typeof(TValue);
+            TypeEnum valueTypeEnum = HproseHelper.GetTypeEnum(valueType);
+            for (int i = 0; i < count; i++) {
+                TKey key = (TKey)Convert.ChangeType(i, keyType, null);
+                TValue value = (TValue)Unserialize(valueType, valueTypeEnum);
+                map[key] = value;
+            }
+            stream.ReadByte();
+            return map;
+        }
+
         public HashMap<TKey, TValue> ReadHashMap<TKey, TValue>() {
             int tag = stream.ReadByte();
             switch (tag) {
                 case HproseTags.TagNull: return null;
+                case HproseTags.TagList: return ReadListAsHashMap<TKey, TValue>();
                 case HproseTags.TagMap: {
                     int count = ReadInt(HproseTags.TagOpenbrace);
                     HashMap<TKey, TValue> map = new HashMap<TKey, TValue>(count);
@@ -2964,6 +3005,7 @@ namespace Hprose.IO {
             int tag = stream.ReadByte();
             switch (tag) {
                 case HproseTags.TagNull: return null;
+                case HproseTags.TagList: return ReadListAsHashMap<string, object>();
                 case HproseTags.TagMap: {
                     int count = ReadInt(HproseTags.TagOpenbrace);
                     HashMap<string, object> map = new HashMap<string, object>(count);
@@ -2990,6 +3032,7 @@ namespace Hprose.IO {
             int tag = stream.ReadByte();
             switch (tag) {
                 case HproseTags.TagNull: return null;
+                case HproseTags.TagList: return ReadListAsHashMap<object, object>();
                 case HproseTags.TagMap: {
                     int count = ReadInt(HproseTags.TagOpenbrace);
                     HashMap<object, object> map = new HashMap<object, object>(count);
@@ -3016,6 +3059,7 @@ namespace Hprose.IO {
             int tag = stream.ReadByte();
             switch (tag) {
                 case HproseTags.TagNull: return null;
+                case HproseTags.TagList: return ReadListAsHashMap<int, object>();
                 case HproseTags.TagMap: {
                     int count = ReadInt(HproseTags.TagOpenbrace);
                     HashMap<int, object> map = new HashMap<int, object>(count);
@@ -3033,10 +3077,27 @@ namespace Hprose.IO {
             }
         }
 
+        private Dictionary<TKey, TValue> ReadListAsDictionary<TKey, TValue>() {
+            int count = ReadInt(HproseTags.TagOpenbrace);
+            Dictionary<TKey, TValue> map = new Dictionary<TKey, TValue>(count);
+            references.Add(map);
+            Type keyType = typeof(TKey);
+            Type valueType = typeof(TValue);
+            TypeEnum valueTypeEnum = HproseHelper.GetTypeEnum(valueType);
+            for (int i = 0; i < count; i++) {
+                TKey key = (TKey)Convert.ChangeType(i, keyType, null);
+                TValue value = (TValue)Unserialize(valueType, valueTypeEnum);
+                map[key] = value;
+            }
+            stream.ReadByte();
+            return map;
+        }
+
         public Dictionary<TKey, TValue> ReadDictionary<TKey, TValue>() {
             int tag = stream.ReadByte();
             switch (tag) {
                 case HproseTags.TagNull: return null;
+                case HproseTags.TagList: return ReadListAsDictionary<TKey, TValue>();
                 case HproseTags.TagMap: {
                     int count = ReadInt(HproseTags.TagOpenbrace);
                     Dictionary<TKey, TValue> map = new Dictionary<TKey, TValue>(count);
@@ -3062,6 +3123,7 @@ namespace Hprose.IO {
             int tag = stream.ReadByte();
             switch (tag) {
                 case HproseTags.TagNull: return null;
+                case HproseTags.TagList: return ReadListAsDictionary<string, object>();
                 case HproseTags.TagMap: {
                     int count = ReadInt(HproseTags.TagOpenbrace);
                     Dictionary<string, object> map = new Dictionary<string, object>(count);
@@ -3088,6 +3150,7 @@ namespace Hprose.IO {
             int tag = stream.ReadByte();
             switch (tag) {
                 case HproseTags.TagNull: return null;
+                case HproseTags.TagList: return ReadListAsDictionary<object, object>();
                 case HproseTags.TagMap: {
                     int count = ReadInt(HproseTags.TagOpenbrace);
                     Dictionary<object, object> map = new Dictionary<object, object>(count);
@@ -3114,6 +3177,7 @@ namespace Hprose.IO {
             int tag = stream.ReadByte();
             switch (tag) {
                 case HproseTags.TagNull: return null;
+                case HproseTags.TagList: return ReadListAsDictionary<int, object>();
                 case HproseTags.TagMap: {
                     int count = ReadInt(HproseTags.TagOpenbrace);
                     Dictionary<int, object> map = new Dictionary<int, object>(count);
@@ -3131,10 +3195,28 @@ namespace Hprose.IO {
             }
         }
 
+        private IDictionary<TKey, TValue> ReadListAsIDictionary<TKey, TValue>(Type type) {
+            int count = ReadInt(HproseTags.TagOpenbrace);
+            if (type == typeof(IDictionary<TKey, TValue>)) type = typeof(Dictionary<TKey, TValue>);
+            IDictionary<TKey, TValue> map = (IDictionary<TKey, TValue>)HproseHelper.NewInstance(type);
+            references.Add(map);
+            Type keyType = typeof(TKey);
+            Type valueType = typeof(TValue);
+            TypeEnum valueTypeEnum = HproseHelper.GetTypeEnum(valueType);
+            for (int i = 0; i < count; i++) {
+                TKey key = (TKey)Convert.ChangeType(i, keyType, null);
+                TValue value = (TValue)Unserialize(valueType, valueTypeEnum);
+                map[key] = value;
+            }
+            stream.ReadByte();
+            return map;
+        }
+
         public IDictionary<TKey, TValue> ReadIDictionary<TKey, TValue>(Type type) {
             int tag = stream.ReadByte();
             switch (tag) {
                 case HproseTags.TagNull: return null;
+                case HproseTags.TagList: return ReadListAsIDictionary<TKey, TValue>(type);
                 case HproseTags.TagMap: {
                     int count = ReadInt(HproseTags.TagOpenbrace);
                     if (type == typeof(IDictionary<TKey, TValue>)) type = typeof(Dictionary<TKey, TValue>);
@@ -3156,6 +3238,7 @@ namespace Hprose.IO {
                 default: throw CastError(TagToString(tag), type);
             }
         }
+
 #endif
 
         public object ReadObject(Type type) {
