@@ -15,7 +15,7 @@
  *                                                        *
  * hprose io unit for delphi.                             *
  *                                                        *
- * LastModified: Nov 4, 2013                              *
+ * LastModified: Jan 28, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -102,6 +102,8 @@ type
     function ReadDynArrayWithoutTag(varType: Integer): Variant;
     function ReadIList(AClass: TClass): IList;
     function ReadList(AClass: TClass): TAbstractList;
+    function ReadListAsIMap(AClass: TClass): IMap;
+    function ReadListAsMap(AClass: TClass): TAbstractMap;
     function ReadIMap(AClass: TClass): IMap;
     function ReadMap(AClass: TClass): TAbstractMap;
     function ReadMapAsInterface(AClass: TClass; const IID: TGUID): IInterface;
@@ -1497,6 +1499,28 @@ begin
   Result := ReadIList(TArrayList);
 end;
 
+function THproseReader.ReadListAsIMap(AClass: TClass): IMap;
+var
+  Count, I: Integer;
+begin
+  Count := ReadInt(HproseTagOpenbrace);
+  Result := TMapClass(AClass).Create(Count) as IMap;
+  FRefList.Add(Result);
+  for I := 0 to Count - 1 do Result[I] := Unserialize;
+  CheckTag(HproseTagClosebrace);
+end;
+
+function THproseReader.ReadListAsMap(AClass: TClass): TAbstractMap;
+var
+  Count, I: Integer;
+begin
+  Count := ReadInt(HproseTagOpenbrace);
+  Result := TMapClass(AClass).Create(Count);
+  FRefList.Add(ObjToVar(Result));
+  for I := 0 to Count - 1 do Result[I] := Unserialize;
+  CheckTag(HproseTagClosebrace);
+end;
+
 function THproseReader.ReadIMap(AClass: TClass): IMap;
 var
   Count, I: Integer;
@@ -2067,6 +2091,8 @@ begin
     htList:
       if AClass.InheritsFrom(TAbstractList) then
         Result := ReadIList(AClass)
+      else if AClass.InheritsFrom(TAbstractMap) then
+        Result := ReadListAsIMap(AClass)
       else
         Result := nil;
     htMap:
@@ -2109,6 +2135,8 @@ begin
     htList:
       if AClass.InheritsFrom(TAbstractList) then
         Result := ReadList(AClass)
+      else if AClass.InheritsFrom(TAbstractMap) then
+        Result := ReadListAsMap(AClass)
 {$IFDEF Supports_Rtti}
       else if AnsiStartsText('TList<', ClassName) or
         AnsiStartsText('TObjectList<', ClassName) then
