@@ -76,7 +76,7 @@ type InvokeOptions struct {
 
 type Client interface {
 	UseService(...interface{})
-	Invoke(string, []interface{}, *InvokeOptions, interface{}) error
+	Invoke(string, []interface{}, *InvokeOptions, interface{}) <-chan error
 	Uri() string
 	SetUri(string)
 	ByRef() bool
@@ -203,7 +203,7 @@ func (client *BaseClient) UseService(args ...interface{}) {
 	panic("Wrong arguments.")
 }
 
-func (client *BaseClient) Invoke(name string, args []interface{}, options *InvokeOptions, result interface{}) (err error) {
+func (client *BaseClient) Invoke(name string, args []interface{}, options *InvokeOptions, result interface{}) <-chan error {
 	if result == nil {
 		panic("The argument result can't be nil")
 	}
@@ -216,10 +216,10 @@ func (client *BaseClient) Invoke(name string, args []interface{}, options *Invok
 		options = new(InvokeOptions)
 	}
 	if t.Elem().Kind() == reflect.Chan {
-		client.asyncInvoke(name, args, options, v.Elem())
-	} else {
-		err = client.invoke(name, args, options, result)
+		return client.asyncInvoke(name, args, options, v.Elem())
 	}
+	err := make(chan error, 1)
+	err <- client.invoke(name, args, options, result)
 	return err
 }
 
@@ -333,8 +333,7 @@ func (client *BaseClient) doIntput(context interface{}, args []interface{}, opti
 	if resultMode == RawWithEndTag ||
 		resultMode == Raw {
 		var buf []byte
-		buf, err = ioutil.ReadAll(istream)
-		if err != nil {
+		if buf, err = ioutil.ReadAll(istream); err != nil {
 			return err
 		}
 		if resultMode == Raw {
@@ -344,9 +343,7 @@ func (client *BaseClient) doIntput(context interface{}, args []interface{}, opti
 				return errors.New("wrong reply format")
 			}
 		}
-		if err = setResult(result, buf); err != nil {
-			return err
-		}
+		return setResult(result, buf)
 	}
 	reader := NewReader(istream)
 	expectTags := []byte{TagResult, TagArgument, TagError, TagEnd}
