@@ -58,19 +58,19 @@ func NewHttpClient(uri string) Client {
 }
 
 func (client *HttpClient) KeepAlive() bool {
-	return client.transporter.(*httpTransporter).keepAlive
+	return client.Transporter.(*httpTransporter).keepAlive
 }
 
 func (client *HttpClient) SetKeepAlive(enable bool) {
-	client.transporter.(*httpTransporter).keepAlive = enable
+	client.Transporter.(*httpTransporter).keepAlive = enable
 }
 
 func (client *HttpClient) KeepAliveTimeout() int {
-	return client.transporter.(*httpTransporter).keepAliveTimeout
+	return client.Transporter.(*httpTransporter).keepAliveTimeout
 }
 
 func (client *HttpClient) SetKeepAliveTimeout(timeout int) {
-	client.transporter.(*httpTransporter).keepAliveTimeout = timeout
+	client.Transporter.(*httpTransporter).keepAliveTimeout = timeout
 }
 
 func newHttpTransporter() *httpTransporter {

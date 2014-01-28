@@ -13,7 +13,7 @@
  *                                                        *
  * hprose SimpleReader for Go.                            *
  *                                                        *
- * LastModified: Jan 27, 2014                             *
+ * LastModified: Jan 28, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -1401,6 +1401,8 @@ func (r *simpleReader) readMap(v reflect.Value) error {
 		case TagNull:
 			v.Set(reflect.Zero(t))
 			return nil
+		case TagList:
+			return r.readSliceAsMap(v)
 		case TagMap:
 			return r.readMapWithoutTag(v)
 		case TagRef:
@@ -1440,6 +1442,70 @@ func (r *simpleReader) readMapWithoutTag(v reflect.Value) error {
 			val := reflect.New(t.Elem()).Elem()
 			if err := r.unserialize(key); err != nil {
 				return err
+			}
+			if err := r.unserialize(val); err != nil {
+				return err
+			}
+			m.SetMapIndex(key, val)
+		}
+		if err = r.CheckTag(TagClosebrace); err == nil {
+			switch t := v.Type(); t.Kind() {
+			case reflect.Map:
+				v.Set(m)
+			case reflect.Interface:
+				v.Set(mPointer)
+			case reflect.Ptr:
+				switch t.Elem().Kind() {
+				case reflect.Map:
+					v.Set(mPointer)
+				case reflect.Interface:
+					v.Set(reflect.New(t.Elem()))
+					v.Elem().Set(mPointer)
+				}
+			}
+			return nil
+		}
+	}
+	return err
+}
+
+func (r *simpleReader) readSliceAsMap(v reflect.Value) error {
+	t := v.Type()
+	switch t.Kind() {
+	case reflect.Map:
+	case reflect.Interface:
+		t = reflect.TypeOf(map[interface{}]interface{}(nil))
+	case reflect.Ptr:
+		switch t = t.Elem(); t.Kind() {
+		case reflect.Map:
+		case reflect.Interface:
+			t = reflect.TypeOf(map[interface{}]interface{}(nil))
+		default:
+			return errors.New("cannot convert slice to type " + t.String())
+		}
+	default:
+		return errors.New("cannot convert slice to type " + t.String())
+	}
+	mPointer := reflect.New(t)
+	r.setRef(mPointer.Interface())
+	m := mPointer.Elem()
+	length, err := r.ReadInt(TagOpenbrace)
+	if err == nil {
+		m.Set(reflect.MakeMap(t))
+		for i := 0; i < length; i++ {
+			key := reflect.New(t.Key()).Elem()
+			val := reflect.New(t.Elem()).Elem()
+			switch t.Key().Kind() {
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				key.SetInt(int64(i))
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				key.SetUint(uint64(i))
+			case reflect.Float32, reflect.Float64:
+				key.SetFloat(float64(i))
+			case reflect.String:
+				key.SetString(strconv.Itoa(i))
+			default:
+				return errors.New("cannot convert int to type " + t.Key().String())
 			}
 			if err := r.unserialize(val); err != nil {
 				return err

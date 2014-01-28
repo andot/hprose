@@ -49,25 +49,46 @@ func TestClient(t *testing.T) {
 	}
 	fmt.Println(<-r2)
 
-	ClassManager.Register(reflect.TypeOf(testUser{}), "User")
-	var r3 chan []testUser
-	if err := client.Invoke("getUserList", []interface{}{}, nil, &r3); err != nil {
+	var r3 chan map[string]string
+	m := make(map[string]string)
+	m["Jan"] = "January"
+	m["Feb"] = "February"
+	m["Mar"] = "March"
+	m["Apr"] = "April"
+	m["May"] = "May"
+	m["Jun"] = "June"
+	m["Jul"] = "July"
+	m["Aug"] = "August"
+	m["Sep"] = "September"
+	m["Oct"] = "October"
+	m["Nov"] = "November"
+	m["Dec"] = "December"
+	if err := client.Invoke("swapKeyAndValue", []interface{}{&m}, &InvokeOptions{ByRef: true}, &r3); err != nil {
 		t.Error(err.Error())
 	}
+	fmt.Println(m)
 	fmt.Println(<-r3)
+	fmt.Println(m)
 
-	var r4 chan []byte
-	if err := client.Invoke("hello", []interface{}{"马秉尧"}, &InvokeOptions{ResultMode: Serialized}, &r4); err != nil {
+	ClassManager.Register(reflect.TypeOf(testUser{}), "User")
+	var r4 chan []testUser
+	if err := client.Invoke("getUserList", []interface{}{}, nil, &r4); err != nil {
 		t.Error(err.Error())
 	}
-	fmt.Println(string(<-r4))
-	if err := client.Invoke("hello", []interface{}{"马秉尧"}, &InvokeOptions{ResultMode: Raw}, &r4); err != nil {
+	fmt.Println(<-r4)
+
+	var r5 chan []byte
+	if err := client.Invoke("hello", []interface{}{"马秉尧"}, &InvokeOptions{ResultMode: Serialized}, &r5); err != nil {
 		t.Error(err.Error())
 	}
-	fmt.Println(string(<-r4))
-	if err := client.Invoke("hello", []interface{}{"马秉尧"}, &InvokeOptions{ResultMode: RawWithEndTag}, &r4); err != nil {
+	fmt.Println(string(<-r5))
+	if err := client.Invoke("hello", []interface{}{"马秉尧"}, &InvokeOptions{ResultMode: Raw}, &r5); err != nil {
 		t.Error(err.Error())
 	}
-	fmt.Println(string(<-r4))
+	fmt.Println(string(<-r5))
+	if err := client.Invoke("hello", []interface{}{"马秉尧"}, &InvokeOptions{ResultMode: RawWithEndTag}, &r5); err != nil {
+		t.Error(err.Error())
+	}
+	fmt.Println(string(<-r5))
 
 }

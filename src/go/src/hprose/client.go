@@ -13,7 +13,7 @@
  *                                                        *
  * hprose client for Go.                                  *
  *                                                        *
- * LastModified: Jan 27, 2014                             *
+ * LastModified: Jan 28, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -69,7 +69,7 @@ import (
 )
 
 type InvokeOptions struct {
-	Byref      interface{} // true, false, nil
+	ByRef      interface{} // true, false, nil
 	SimpleMode interface{} // true, false, nil
 	ResultMode ResultMode
 }
@@ -96,17 +96,17 @@ type Transporter interface {
 }
 
 type BaseClient struct {
-	byref       bool
-	simple      bool
-	filter      Filter
-	uri         *url.URL
-	transporter Transporter
+	Transporter
+	byref  bool
+	simple bool
+	filter Filter
+	uri    *url.URL
 }
 
 var clientImplementations = make(map[string]func(string) Client)
 
-func NewBaseClient(uri string, transporter Transporter) *BaseClient {
-	client := &BaseClient{transporter: transporter}
+func NewBaseClient(uri string, trans Transporter) *BaseClient {
+	client := &BaseClient{Transporter: trans}
 	client.SetUri(uri)
 	return client
 }
@@ -232,7 +232,7 @@ func (client *BaseClient) invoke(name string, args []interface{}, options *Invok
 		}
 	}()
 	var context interface{}
-	context, err = client.transporter.GetInvokeContext(client.Uri())
+	context, err = client.GetInvokeContext(client.Uri())
 	if err == nil {
 		if err = client.doOutput(context, name, args, options); err == nil {
 			err = client.doIntput(context, args, options, result)
@@ -255,12 +255,11 @@ func (client *BaseClient) asyncInvoke(name string, args []interface{}, options *
 }
 
 func (client *BaseClient) doOutput(context interface{}, name string, args []interface{}, options *InvokeOptions) (err error) {
-	trans := client.transporter
 	var ostream *bytes.Buffer
-	ostream, err = trans.GetOutputStream(context)
+	ostream, err = client.GetOutputStream(context)
 	success := false
 	defer func() {
-		e := trans.SendData(ostream, context, success)
+		e := client.SendData(ostream, context, success)
 		if err == nil {
 			err = e
 		}
@@ -276,8 +275,11 @@ func (client *BaseClient) doOutput(context interface{}, name string, args []inte
 		simple = s
 	}
 	byref := client.byref
-	if br, ok := options.Byref.(bool); ok {
+	if br, ok := options.ByRef.(bool); ok {
 		byref = br
+	}
+	if byref && !checkRefArgs(args) {
+		return errors.New("The elements in args must be pointer when options.ByRef is true.")
 	}
 	var writer Writer
 	if simple {
@@ -312,12 +314,11 @@ func (client *BaseClient) doOutput(context interface{}, name string, args []inte
 }
 
 func (client *BaseClient) doIntput(context interface{}, args []interface{}, options *InvokeOptions, result interface{}) (err error) {
-	trans := client.transporter
 	var istream *bytes.Buffer
-	istream, err = trans.GetInputStream(context)
+	istream, err = client.GetInputStream(context)
 	success := false
 	defer func() {
-		e := trans.EndInvoke(istream, context, success)
+		e := client.EndInvoke(istream, context, success)
 		if err == nil {
 			err = e
 		}
@@ -370,10 +371,18 @@ func (client *BaseClient) doIntput(context interface{}, args []interface{}, opti
 			}
 		case TagArgument:
 			reader.Reset()
-			var a []interface{}
-			if err = reader.ReadSlice(&a); err == nil {
-				copy(args, a)
-			} else {
+			if err = reader.CheckTag(TagList); err == nil {
+				var count int
+				if count, err = reader.ReadInt(TagOpenbrace); err == nil {
+					a := make([]reflect.Value, count)
+					v := reflect.ValueOf(args)
+					for i := 0; i < count; i++ {
+						a[i] = v.Index(i).Elem().Elem()
+					}
+					err = reader.ReadArray(a)
+				}
+			}
+			if err != nil {
 				return err
 			}
 		case TagError:
@@ -406,6 +415,21 @@ func isStructPointer(v interface{}) bool {
 	return t.Kind() == reflect.Ptr && t.Elem().Kind() == reflect.Struct
 }
 
+func checkRefArgs(args []interface{}) bool {
+	v := reflect.ValueOf(args)
+	count := len(args)
+	for i := 0; i < count; i++ {
+		x := v.Index(i)
+		if !x.IsValid() ||
+			!x.Elem().IsValid() ||
+			x.Elem().Kind() != reflect.Ptr ||
+			!x.Elem().Elem().IsValid() {
+			return false
+		}
+	}
+	return true
+}
+
 func setResult(result interface{}, buf []byte) error {
 	switch result := result.(type) {
 	case **bytes.Buffer:
@@ -420,7 +444,7 @@ func setResult(result interface{}, buf []byte) error {
 
 func init() {
 	RegisterClientFactory("http", NewHttpClient)
-	//RegisterClientFactory("https", NewHttpsClient)
+	RegisterClientFactory("https", NewHttpClient)
 	//RegisterClientFactory("ws", NewWebSocketClient)
 	//RegisterClientFactory("tcp", NewTcpClient)
 }

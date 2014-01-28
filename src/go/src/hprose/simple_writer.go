@@ -13,7 +13,7 @@
  *                                                        *
  * hprose SimpleWriter for Go.                            *
  *                                                        *
- * LastModified: Jan 26, 2014                             *
+ * LastModified: Jan 28, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -707,9 +707,9 @@ func (w *simpleWriter) writeMapValue(v reflect.Value) (err error) {
 					err = s.WriteByte(TagClosebrace)
 				}
 			}
+		} else if err = s.WriteByte(TagOpenbrace); err == nil {
+			err = s.WriteByte(TagClosebrace)
 		}
-	} else if err = s.WriteByte(TagOpenbrace); err == nil {
-		err = s.WriteByte(TagClosebrace)
 	}
 	return err
 }
