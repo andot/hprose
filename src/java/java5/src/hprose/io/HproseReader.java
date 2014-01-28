@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for Java.                          *
  *                                                        *
- * LastModified: Nov 3, 2013                              *
+ * LastModified: Jan 28, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -67,7 +67,7 @@ public final class HproseReader {
     public HproseException unexpectedTag(int tag) {
         return unexpectedTag(tag, null);
     }
-    
+
     public HproseException unexpectedTag(int tag, String expectTags) {
         if (tag == -1) {
             return new HproseException("No byte found in stream");
@@ -82,7 +82,7 @@ public final class HproseReader {
                                        "' found in stream");
         }
     }
-    
+
     private HproseException castError(String srctype, Type desttype) {
         return new HproseException(srctype + " can't change to " +
                                    desttype.toString());
@@ -412,7 +412,7 @@ public final class HproseReader {
         return u;
     }
 
-    @SuppressWarnings({"fallthrough"}) 
+    @SuppressWarnings({"fallthrough"})
     private char[] readChars() throws IOException {
         int count = readInt(HproseTags.TagQuote);
         char[] buf = new char[count];
@@ -793,7 +793,7 @@ public final class HproseReader {
             default: throw castError(tagToString(tag), boolean.class);
         }
     }
-    
+
     public boolean readBoolean() throws IOException {
         int tag = stream.read();
         switch (tag) {
@@ -921,7 +921,7 @@ public final class HproseReader {
             default: return readShortWithTag(tag);
         }
     }
-    
+
     public Short readShortObject() throws IOException {
         int tag = stream.read();
         switch (tag) {
@@ -929,7 +929,7 @@ public final class HproseReader {
             default: return readShortWithTag(tag);
         }
     }
-    
+
     private int readIntWithTag(int tag) throws IOException {
         switch (tag) {
             case '0': return 0;
@@ -962,7 +962,7 @@ public final class HproseReader {
             default: return readIntWithTag(tag);
         }
     }
-    
+
     public Integer readIntObject() throws IOException {
         int tag = stream.read();
         switch (tag) {
@@ -1837,7 +1837,7 @@ public final class HproseReader {
             default: throw castError(tagToString(tag), Calendar[].class);
         }
     }
-    
+
     public BigDecimal[] readBigDecimalArray() throws IOException {
         int tag = stream.read();
         switch (tag) {
@@ -2005,39 +2005,80 @@ public final class HproseReader {
     }
 
     @SuppressWarnings({"unchecked"})
+    private Map readListAsMap(Class<?> cls, Type type) throws IOException {
+        int count = readInt(HproseTags.TagOpenbrace);
+        Map m = (Map)HproseHelper.newInstance(cls);
+        ref.add(m);
+        if (count > 0) {
+            Type keyType, valueType;
+            Class<?> keyClass, valueClass;
+            if (type instanceof ParameterizedType) {
+                Type[] argsType = ((ParameterizedType)type).getActualTypeArguments();
+                keyType = argsType[0];
+                valueType = argsType[1];
+                keyClass = HproseHelper.toClass(keyType);
+                valueClass = HproseHelper.toClass(valueType);
+            }
+            else {
+                valueType = Object.class;
+                keyClass = Object.class;
+                valueClass = Object.class;
+            }
+            int valueTypecode = TypeCode.get(valueClass);
+            if (keyClass.equals(int.class) &&
+                keyClass.equals(Integer.class) &&
+                keyClass.equals(String.class) &&
+                keyClass.equals(Object.class)) {
+                throw castError(tagToString(HproseTags.TagList), cls);
+            }
+            for (int i = 0; i < count; i++) {
+                Object key = (keyClass.equals(String.class) ? String.valueOf(i) : i);
+                Object value = unserialize(valueClass, valueType, valueTypecode);
+                m.put(key, value);
+            }
+        }
+        stream.read();
+        return m;
+    }
+
+    @SuppressWarnings({"unchecked"})
+    private Map readMapWithoutTag(Class<?> cls, Type type) throws IOException {
+        int count = readInt(HproseTags.TagOpenbrace);
+        Map m = (Map)HproseHelper.newInstance(cls);
+        ref.add(m);
+        Type keyType, valueType;
+        Class<?> keyClass, valueClass;
+        if (type instanceof ParameterizedType) {
+            Type[] argsType = ((ParameterizedType)type).getActualTypeArguments();
+            keyType = argsType[0];
+            valueType = argsType[1];
+            keyClass = HproseHelper.toClass(keyType);
+            valueClass = HproseHelper.toClass(valueType);
+        }
+        else {
+            keyType = Object.class;
+            valueType = Object.class;
+            keyClass = Object.class;
+            valueClass = Object.class;
+        }
+        int keyTypecode = TypeCode.get(keyClass);
+        int valueTypecode = TypeCode.get(valueClass);
+        for (int i = 0; i < count; i++) {
+            Object key = unserialize(keyClass, keyType, keyTypecode);
+            Object value = unserialize(valueClass, valueType, valueTypecode);
+            m.put(key, value);
+        }
+        stream.read();
+        return m;
+    }
+
+    @SuppressWarnings({"unchecked"})
     public Map readMap(Class<?> cls, Type type) throws IOException {
         int tag = stream.read();
         switch (tag) {
             case HproseTags.TagNull: return null;
-            case HproseTags.TagMap: {
-                int count = readInt(HproseTags.TagOpenbrace);
-                Map m = (Map)HproseHelper.newInstance(cls);
-                ref.add(m);
-                Type keyType, valueType;
-                Class<?> keyClass, valueClass;
-                if (type instanceof ParameterizedType) {
-                    Type[] argsType = ((ParameterizedType)type).getActualTypeArguments();
-                    keyType = argsType[0];
-                    valueType = argsType[1];
-                    keyClass = HproseHelper.toClass(keyType);
-                    valueClass = HproseHelper.toClass(valueType);
-                }
-                else {
-                    keyType = Object.class;
-                    valueType = Object.class;
-                    keyClass = Object.class;
-                    valueClass = Object.class;
-                }
-                int keyTypecode = TypeCode.get(keyClass);
-                int valueTypecode = TypeCode.get(valueClass);
-                for (int i = 0; i < count; i++) {
-                    Object key = unserialize(keyClass, keyType, keyTypecode);
-                    Object value = unserialize(valueClass, valueType, valueTypecode);
-                    m.put(key, value);
-                }
-                stream.read();
-                return m;
-            }
+            case HproseTags.TagList: return readListAsMap(cls, type);
+            case HproseTags.TagMap: return readMapWithoutTag(cls, type);
             case HproseTags.TagClass: readClass(); return readMap(cls, type);
             case HproseTags.TagObject: return readObjectAsMap((Map)HproseHelper.newInstance(cls));
             case HproseTags.TagRef: return (Map)readRef();
@@ -2253,9 +2294,9 @@ public final class HproseReader {
         do {
             tag = stream.read();
             ostream.write(tag);
-        } while (tag != HproseTags.TagSemicolon);        
+        } while (tag != HproseTags.TagSemicolon);
     }
-    
+
     private void readDateTimeRaw(OutputStream ostream, int tag) throws IOException {
         ostream.write(tag);
         do {
@@ -2320,7 +2361,7 @@ public final class HproseReader {
             len -= size;
         }
         ostream.write(b);
-        ostream.write(stream.read());        
+        ostream.write(stream.read());
     }
 
     @SuppressWarnings({"fallthrough"})

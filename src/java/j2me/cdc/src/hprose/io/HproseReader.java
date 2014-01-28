@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for Java.                          *
  *                                                        *
- * LastModified: Jan 4, 2013                              *
+ * LastModified: Jan 28, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -1578,6 +1578,17 @@ public final class HproseReader {
         return collection;
     }
 
+    private Map readListAsMap(int count, Class type) throws IOException {
+        Map map = (Map) HproseHelper.newInstance(type);
+        ref.add(map);
+        for (int i = 0; i < count; i++) {
+            Object key = HproseHelper.valueOf(i);
+            Object value = unserialize(Object.class);
+            map.put(key, value);
+        }
+        return map;
+    }
+
     public Object readList() throws IOException {
         return readList(true, null);
     }
@@ -1678,6 +1689,9 @@ public final class HproseReader {
         }
         else if (Collection.class.isAssignableFrom(type) && isInstantiableClass(type)) {
             list = readCollection(count, type);
+        }
+        else if (Map.class.isAssignableFrom(type) && isInstantiableClass(type)) {
+            list = readListAsMap(count, type);
         }
         else {
             castError("List", type);
