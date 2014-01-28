@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Client Test for Go.                             *
  *                                                        *
- * LastModified: Jan 28, 2014                             *
+ * LastModified: Jan 29, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -22,7 +22,6 @@ package hprose
 
 import (
 	"fmt"
-	//"reflect"
 	"testing"
 	"time"
 )
@@ -33,6 +32,66 @@ type testUser struct {
 	Birthday time.Time
 	Age      int
 	Married  bool
+}
+
+type RemoteObject struct {
+	Hello               func(string) string
+	HelloWithError      func(string) (string, error)               `name:"hello"`
+	AsyncHello          func(string) <-chan string                 `name:"hello"`
+	AsyncHelloWithError func(string) (<-chan string, <-chan error) `name:"hello"`
+	Sum                 func(...int) int
+	Swap                func(*map[string]string) map[string]string `name:"swapKeyAndValue" byref:"true"`
+	GetUserList         func() []testUser
+}
+
+func TestRemoteObject(t *testing.T) {
+	client := NewClient("http://www.hprose.com/example/")
+	var ro RemoteObject
+	client.UseService(&ro)
+
+	// If an error occurs, it will panic
+	fmt.Println(ro.Hello("World"))
+
+	// If an error occurs, an error value will be returned
+	if result, err := ro.HelloWithError("World"); err == nil {
+		fmt.Println(result)
+	} else {
+		fmt.Println(err.Error())
+	}
+
+	// If an error occurs, it will be ignored
+	result := ro.AsyncHello("World")
+	fmt.Println(<-result)
+
+	// If an error occurs, an error chan will be returned
+	result, err := ro.AsyncHelloWithError("World")
+	if e := <-err; e == nil {
+		fmt.Println(<-result)
+	} else {
+		fmt.Println(e.Error())
+	}
+	fmt.Println(ro.Sum(1, 2, 3, 4, 5))
+
+	m := make(map[string]string)
+	m["Jan"] = "January"
+	m["Feb"] = "February"
+	m["Mar"] = "March"
+	m["Apr"] = "April"
+	m["May"] = "May"
+	m["Jun"] = "June"
+	m["Jul"] = "July"
+	m["Aug"] = "August"
+	m["Sep"] = "September"
+	m["Oct"] = "October"
+	m["Nov"] = "November"
+	m["Dec"] = "December"
+
+	fmt.Println(m)
+	mm := ro.Swap(&m)
+	fmt.Println(m)
+	fmt.Println(mm)
+
+	fmt.Println(ro.GetUserList())
 }
 
 func TestClient(t *testing.T) {
@@ -91,5 +150,4 @@ func TestClient(t *testing.T) {
 		t.Error(err.Error())
 	}
 	fmt.Println(string(<-r5))
-
 }

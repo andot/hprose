@@ -13,49 +13,84 @@
  *                                                        *
  * hprose client for Go.                                  *
  *                                                        *
- * LastModified: Jan 28, 2014                             *
+ * LastModified: Jan 29, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 
 /*
 
-type Hello struct {
-	Hello function(string) string
-	HelloWithError function(string) (string, error) "Hello"
-	AsyncHello function(string) chan string "Hello"
-	AsyncHelloWithError function(string) (chan string, chan error) "Hello"
-}
+Here is a client example:
 
-client := hprose.NewClient("http://www.hprose.com/example/")
-var hello Hello
-client.UseService(&hello)
+	package main
 
-// If an error occurs, it will panic
-fmt.Println(hello.Hello("World"))
+	import (
+		"fmt"
+		"hprose"
+	)
 
-// If an error occurs, an error value will be returned
-if result, err := hello.HelloWithError("World"); err != nil {
-	fmt.Println(result)
-} else {
-	fmt.Println(err.Error())
-}
+	type RemoteObject struct {
+		Hello               func(string) string
+		HelloWithError      func(string) (string, error)               `name:"hello"`
+		AsyncHello          func(string) <-chan string                 `name:"hello"`
+		AsyncHelloWithError func(string) (<-chan string, <-chan error) `name:"hello"`
+		Sum                 func(...int) int
+		Swap                func(*map[string]string) map[string]string `name:"swapKeyAndValue" byref:"true"`
+		GetUserList         func() []testUser
+	}
 
-// If an error occurs, it will be ignored
-result := hello.AsyncHello("World")
-fmt.Println(<-result)
+	func main() {
+		client := hprose.NewClient("http://www.hprose.com/example/")
+		var ro RemoteObject
+		client.UseService(&ro)
 
+		// If an error occurs, it will panic
+		fmt.Println(ro.Hello("World"))
 
-// If an error occurs, an error chan will be returned
-result, err := hello.AsyncHelloWithError("World");
-if  e := <-err; e != nil {
-	fmt.Println(<-result)
-} else {
-	fmt.Println(e.Error())
-}
+		// If an error occurs, an error value will be returned
+		if result, err := ro.HelloWithError("World"); err == nil {
+			fmt.Println(result)
+		} else {
+			fmt.Println(err.Error())
+		}
 
+		// If an error occurs, it will be ignored
+		result := ro.AsyncHello("World")
+		fmt.Println(<-result)
+
+		// If an error occurs, an error chan will be returned
+		result, err := ro.AsyncHelloWithError("World")
+		if e := <-err; e == nil {
+			fmt.Println(<-result)
+		} else {
+			fmt.Println(e.Error())
+		}
+		fmt.Println(ro.Sum(1, 2, 3, 4, 5))
+
+		m := make(map[string]string)
+		m["Jan"] = "January"
+		m["Feb"] = "February"
+		m["Mar"] = "March"
+		m["Apr"] = "April"
+		m["May"] = "May"
+		m["Jun"] = "June"
+		m["Jul"] = "July"
+		m["Aug"] = "August"
+		m["Sep"] = "September"
+		m["Oct"] = "October"
+		m["Nov"] = "November"
+		m["Dec"] = "December"
+
+		fmt.Println(m)
+		mm := ro.Swap(&m)
+		fmt.Println(m)
+		fmt.Println(mm)
+
+		fmt.Println(ro.GetUserList())
+	}
 
 */
+
 package hprose
 
 import (
@@ -175,7 +210,7 @@ func (client *BaseClient) UseService(args ...interface{}) {
 			return
 		default:
 			if isStructPointer(arg0) {
-				client.getProxy(arg0)
+				client.createRemoteObject(arg0)
 				return
 			}
 		}
@@ -195,7 +230,7 @@ func (client *BaseClient) UseService(args ...interface{}) {
 			panic("The arguments can't be nil.")
 		}
 		if isStructPointer(args[1]) {
-			client.getProxy(args[1])
+			client.createRemoteObject(args[1])
 		} else {
 			panic("Wrong arguments.")
 		}
@@ -243,12 +278,14 @@ func (client *BaseClient) invoke(name string, args []interface{}, options *Invok
 
 func (client *BaseClient) asyncInvoke(name string, args []interface{}, options *InvokeOptions, result reflect.Value) <-chan error {
 	t := result.Type()
-	result.Set(reflect.MakeChan(t, 1))
+	t = reflect.ChanOf(reflect.BothDir, t.Elem())
+	sender := reflect.MakeChan(t, 1)
+	result.Set(sender)
 	errChan := make(chan error, 1)
 	go func() {
 		r := reflect.New(t.Elem())
 		err := client.invoke(name, args, options, r.Interface())
-		result.Send(r.Elem())
+		sender.Send(r.Elem())
 		errChan <- err
 	}()
 	return errChan
@@ -395,8 +432,139 @@ func (client *BaseClient) doIntput(context interface{}, args []interface{}, opti
 	return err
 }
 
-func (client *BaseClient) getProxy(proxy interface{}) {
+func (client *BaseClient) createRemoteObject(ro interface{}) {
+	v := reflect.ValueOf(ro).Elem()
+	t := v.Type()
+	et := t
+	if et.Kind() == reflect.Ptr {
+		et = et.Elem()
+	}
+	objPointer := reflect.New(et)
+	obj := objPointer.Elem()
+	count := obj.NumField()
+	for i := 0; i < count; i++ {
+		f := obj.Field(i)
+		if f.Kind() == reflect.Func {
+			f.Set(reflect.MakeFunc(f.Type(), client.remoteMethod(f.Type(), et.Field(i))))
+		}
+	}
+	if t.Kind() == reflect.Ptr {
+		v.Set(objPointer)
+	} else {
+		v.Set(obj)
+	}
+}
 
+func (client *BaseClient) remoteMethod(t reflect.Type, sf reflect.StructField) func(in []reflect.Value) []reflect.Value {
+	switch t.NumOut() {
+	case 0, 1:
+		break
+	case 2:
+		rt0 := t.Out(0)
+		rt1 := t.Out(1)
+		if rt0.Kind() == reflect.Chan &&
+			rt1.Kind() == reflect.Chan &&
+			rt1.Elem().Kind() == reflect.Interface &&
+			rt1.Elem().Name() == "error" {
+			break
+		}
+		if rt1.Kind() == reflect.Interface &&
+			rt1.Name() == "error" {
+			break
+		}
+		fallthrough
+	default:
+		panic("The results for a maximum of two parameters, and one for the error or <-chan error type.")
+	}
+	name := getFuncName(sf)
+	options := &InvokeOptions{ByRef: getByRef(sf), SimpleMode: getSimpleMode(sf), ResultMode: getResultMode(sf)}
+	return func(in []reflect.Value) []reflect.Value {
+		inlen := len(in)
+		varlen := 0
+		argc := inlen
+		if t.IsVariadic() {
+			argc--
+			varlen = in[argc].Len()
+			argc += varlen
+		}
+		args := make([]interface{}, argc)
+		if argc > 0 {
+			for i := 0; i < inlen-1; i++ {
+				args[i] = in[i].Interface()
+			}
+			if t.IsVariadic() {
+				v := in[inlen-1]
+				for i := 0; i < varlen; i++ {
+					args[inlen-1+i] = v.Index(i).Interface()
+				}
+			} else {
+				args[inlen-1] = in[inlen-1].Interface()
+			}
+		}
+		numout := t.NumOut()
+		out := make([]reflect.Value, numout)
+		switch numout {
+		case 0:
+			var result interface{}
+			if err := <-client.Invoke(name, args, options, &result); err == nil {
+				return out
+			} else {
+				panic(err.Error())
+			}
+		case 1:
+			rt0 := t.Out(0)
+			if rt0.Kind() == reflect.Chan {
+				if rt0.Elem().Kind() == reflect.Interface && rt0.Elem().Name() == "error" {
+					var result chan interface{}
+					err := client.Invoke(name, args, options, &result)
+					out[0] = reflect.ValueOf(&err).Elem()
+					return out
+				} else {
+					rv0p := reflect.New(rt0)
+					client.Invoke(name, args, options, rv0p.Interface())
+					out[0] = rv0p.Elem()
+					return out
+				}
+			} else {
+				if rt0.Kind() == reflect.Interface && rt0.Name() == "error" {
+					var result interface{}
+					err := <-client.Invoke(name, args, options, &result)
+					out[0] = reflect.ValueOf(&err).Elem()
+					return out
+				} else {
+					rv0p := reflect.New(rt0)
+					if err := <-client.Invoke(name, args, options, rv0p.Interface()); err == nil {
+						out[0] = rv0p.Elem()
+						return out
+					} else {
+						panic(err.Error())
+					}
+				}
+			}
+		case 2:
+			rt0 := t.Out(0)
+			rt1 := t.Out(1)
+			if rt0.Kind() == reflect.Chan &&
+				rt1.Kind() == reflect.Chan &&
+				rt1.Elem().Kind() == reflect.Interface &&
+				rt1.Elem().Name() == "error" {
+				rv0p := reflect.New(rt0)
+				err := client.Invoke(name, args, options, rv0p.Interface())
+				out[0] = rv0p.Elem()
+				out[1] = reflect.ValueOf(&err).Elem()
+				return out
+			}
+			if rt1.Kind() == reflect.Interface &&
+				rt1.Name() == "error" {
+				rv0p := reflect.New(rt0)
+				err := <-client.Invoke(name, args, options, rv0p.Interface())
+				out[0] = rv0p.Elem()
+				out[1] = reflect.ValueOf(&err).Elem()
+				return out
+			}
+		}
+		return out
+	}
 }
 
 // public functions
@@ -409,7 +577,8 @@ func RegisterClientFactory(scheme string, newClient func(string) Client) {
 
 func isStructPointer(v interface{}) bool {
 	t := reflect.TypeOf(v)
-	return t.Kind() == reflect.Ptr && t.Elem().Kind() == reflect.Struct
+	return t.Kind() == reflect.Ptr && (t.Elem().Kind() == reflect.Struct ||
+		(t.Elem().Kind() == reflect.Ptr && t.Elem().Elem().Kind() == reflect.Struct))
 }
 
 func checkRefArgs(args []interface{}) bool {
@@ -437,6 +606,59 @@ func setResult(result interface{}, buf []byte) error {
 		return errors.New("The argument result must be a *[]byte or **bytes.Buffer if the ResultMode is different from Normal.")
 	}
 	return nil
+}
+
+func getFuncName(sf reflect.StructField) string {
+	keys := []string{"name", "Name", "funcname", "funcName", "FuncName"}
+	for _, key := range keys {
+		if name := sf.Tag.Get(key); name != "" {
+			return name
+		}
+	}
+	return sf.Name
+}
+
+func getByRef(sf reflect.StructField) interface{} {
+	keys := []string{"byref", "byRef", "Byref", "ByRef"}
+	for _, key := range keys {
+		switch strings.ToLower(sf.Tag.Get(key)) {
+		case "true", "t", "1":
+			return true
+		case "false", "f", "0":
+			return false
+		}
+	}
+	return nil
+}
+
+func getSimpleMode(sf reflect.StructField) interface{} {
+	keys := []string{"simple", "Simple", "simpleMode", "SimpleMode"}
+	for _, key := range keys {
+		switch strings.ToLower(sf.Tag.Get(key)) {
+		case "true", "t", "1":
+			return true
+		case "false", "f", "0":
+			return false
+		}
+	}
+	return nil
+}
+
+func getResultMode(sf reflect.StructField) ResultMode {
+	keys := []string{"result", "Result", "resultMode", "ResultMode"}
+	for _, key := range keys {
+		switch strings.ToLower(sf.Tag.Get(key)) {
+		case "normal":
+			return Normal
+		case "serialized":
+			return Serialized
+		case "raw":
+			return Raw
+		case "rawwithendtag":
+			return RawWithEndTag
+		}
+	}
+	return Normal
 }
 
 func init() {
