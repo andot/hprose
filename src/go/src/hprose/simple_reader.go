@@ -57,9 +57,12 @@ const timeStringFormat = "2006-01-02 15:04:05.999999999 -0700 MST"
 
 var timeZero = time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)
 
+var soMapType = reflect.TypeOf(map[string]interface{}(nil))
+var ooMapType = reflect.TypeOf(map[interface{}]interface{}(nil))
+
 type simpleReader struct {
 	*RawReader
-	classref  []reflect.Type
+	classref  []interface{}
 	fieldsref [][]string
 	setRef    func(p interface{})
 	readRef   func() (interface{}, error)
@@ -68,7 +71,7 @@ type simpleReader struct {
 func NewSimpleReader(stream io.Reader) Reader {
 	r := &simpleReader{}
 	r.RawReader = NewRawReader(stream)
-	r.classref = make([]reflect.Type, 0, 16)
+	r.classref = make([]interface{}, 0, 16)
 	r.fieldsref = make([][]string, 0, 16)
 	r.setRef = func(p interface{}) {}
 	r.readRef = func() (interface{}, error) {
@@ -1301,12 +1304,12 @@ func (r *simpleReader) readList(v reflect.Value) error {
 	}
 }
 
-func (r *simpleReader) getRefWithType(v reflect.Value, kind reflect.Kind) error {
+func (r *simpleReader) getRef(v reflect.Value) error {
 	t := v.Type()
 	if ref, err := r.readRef(); err == nil {
 		refValue := reflect.ValueOf(ref)
 		refType := refValue.Type()
-		if refType.Kind() == reflect.Ptr && refType.Elem().Kind() == kind {
+		if refType.Kind() == reflect.Ptr {
 			if refType.AssignableTo(t) {
 				v.Set(refValue)
 				return nil
@@ -1334,7 +1337,7 @@ func (r *simpleReader) readSlice(v reflect.Value) error {
 		case TagList:
 			return r.readSliceWithoutTag(v)
 		case TagRef:
-			return r.getRefWithType(v, reflect.Slice)
+			return r.getRef(v)
 
 		}
 		return convertError(tag, v.Type().String())
@@ -1392,94 +1395,17 @@ func (r *simpleReader) readSliceWithoutTag(v reflect.Value) error {
 	return err
 }
 
-func (r *simpleReader) readMap(v reflect.Value) error {
-	s := r.Stream()
-	t := v.Type()
-	tag, err := s.ReadByte()
-	if err == nil {
-		switch tag {
-		case TagNull:
-			v.Set(reflect.Zero(t))
-			return nil
-		case TagList:
-			return r.readSliceAsMap(v)
-		case TagMap:
-			return r.readMapWithoutTag(v)
-		case TagRef:
-			return r.getRefWithType(v, reflect.Map)
-
-		}
-		return convertError(tag, v.Type().String())
-	}
-	return err
-}
-
-func (r *simpleReader) readMapWithoutTag(v reflect.Value) error {
-	t := v.Type()
-	switch t.Kind() {
-	case reflect.Map:
-	case reflect.Interface:
-		t = reflect.TypeOf(map[interface{}]interface{}(nil))
-	case reflect.Ptr:
-		switch t = t.Elem(); t.Kind() {
-		case reflect.Map:
-		case reflect.Interface:
-			t = reflect.TypeOf(map[interface{}]interface{}(nil))
-		default:
-			return errors.New("cannot convert map to type " + t.String())
-		}
-	default:
-		return errors.New("cannot convert map to type " + t.String())
-	}
-	mPointer := reflect.New(t)
-	r.setRef(mPointer.Interface())
-	m := mPointer.Elem()
-	length, err := r.ReadInt(TagOpenbrace)
-	if err == nil {
-		m.Set(reflect.MakeMap(t))
-		for i := 0; i < length; i++ {
-			key := reflect.New(t.Key()).Elem()
-			val := reflect.New(t.Elem()).Elem()
-			if err := r.unserialize(key); err != nil {
-				return err
-			}
-			if err := r.unserialize(val); err != nil {
-				return err
-			}
-			m.SetMapIndex(key, val)
-		}
-		if err = r.CheckTag(TagClosebrace); err == nil {
-			switch t := v.Type(); t.Kind() {
-			case reflect.Map:
-				v.Set(m)
-			case reflect.Interface:
-				v.Set(mPointer)
-			case reflect.Ptr:
-				switch t.Elem().Kind() {
-				case reflect.Map:
-					v.Set(mPointer)
-				case reflect.Interface:
-					v.Set(reflect.New(t.Elem()))
-					v.Elem().Set(mPointer)
-				}
-			}
-			return nil
-		}
-	}
-	return err
-}
-
 func (r *simpleReader) readSliceAsMap(v reflect.Value) error {
 	t := v.Type()
 	switch t.Kind() {
 	case reflect.Map:
 	case reflect.Interface:
-		t = reflect.TypeOf(map[interface{}]interface{}(nil))
+		t = ooMapType
 	case reflect.Ptr:
 		switch t = t.Elem(); t.Kind() {
 		case reflect.Map:
 		case reflect.Interface:
-			t = reflect.TypeOf(map[interface{}]interface{}(nil))
+			t = ooMapType
 		default:
 			return errors.New("cannot convert slice to type " + t.String())
 		}
@@ -1533,31 +1459,153 @@ func (r *simpleReader) readSliceAsMap(v reflect.Value) error {
 	return err
 }
 
-func (r *simpleReader) checkRegister(t reflect.Type) {
-	if t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
-	if t.Kind() == reflect.Struct {
-		alias := ClassManager.GetClassAlias(t)
-		if alias == "" {
-			class := ClassManager.GetClass(t.Name())
-			if class == nil {
-				ClassManager.Register(t, t.Name())
-			}
-		}
-	}
-}
-
-func (r *simpleReader) readObject(v reflect.Value) error {
+func (r *simpleReader) readMap(v reflect.Value) error {
 	s := r.Stream()
 	t := v.Type()
-	r.checkRegister(t)
 	tag, err := s.ReadByte()
 	if err == nil {
 		switch tag {
 		case TagNull:
 			v.Set(reflect.Zero(t))
 			return nil
+		case TagList:
+			return r.readSliceAsMap(v)
+		case TagMap:
+			return r.readMapWithoutTag(v)
+		case TagClass:
+			if err = r.readClass(); err == nil {
+				return r.readMap(v)
+			} else {
+				return err
+			}
+		case TagObject:
+			return r.readObjectWithoutTag(v)
+		case TagRef:
+			return r.getRef(v)
+		}
+		return convertError(tag, v.Type().String())
+	}
+	return err
+}
+
+func (r *simpleReader) readMapWithoutTag(v reflect.Value) error {
+	t := v.Type()
+	switch t.Kind() {
+	case reflect.Struct:
+		return r.readMapAsObject(v)
+	case reflect.Map:
+	case reflect.Interface:
+		t = ooMapType
+	case reflect.Ptr:
+		switch t = t.Elem(); t.Kind() {
+		case reflect.Struct:
+			return r.readMapAsObject(v)
+		case reflect.Map:
+		case reflect.Interface:
+			t = ooMapType
+		default:
+			return errors.New("cannot convert map to type " + t.String())
+		}
+	default:
+		return errors.New("cannot convert map to type " + t.String())
+	}
+	mPointer := reflect.New(t)
+	r.setRef(mPointer.Interface())
+	m := mPointer.Elem()
+	length, err := r.ReadInt(TagOpenbrace)
+	if err == nil {
+		m.Set(reflect.MakeMap(t))
+		for i := 0; i < length; i++ {
+			key := reflect.New(t.Key()).Elem()
+			val := reflect.New(t.Elem()).Elem()
+			if err := r.unserialize(key); err != nil {
+				return err
+			}
+			if err := r.unserialize(val); err != nil {
+				return err
+			}
+			m.SetMapIndex(key, val)
+		}
+		if err = r.CheckTag(TagClosebrace); err == nil {
+			switch t := v.Type(); t.Kind() {
+			case reflect.Map:
+				v.Set(m)
+			case reflect.Interface:
+				v.Set(mPointer)
+			case reflect.Ptr:
+				switch t.Elem().Kind() {
+				case reflect.Map:
+					v.Set(mPointer)
+				case reflect.Interface:
+					v.Set(reflect.New(t.Elem()))
+					v.Elem().Set(mPointer)
+				}
+			}
+			return nil
+		}
+	}
+	return err
+}
+
+func (r *simpleReader) readMapAsObject(v reflect.Value) error {
+	t := v.Type()
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	objPointer := reflect.New(t)
+	r.setRef(objPointer.Interface())
+	obj := objPointer.Elem()
+	count, err := r.ReadInt(TagOpenbrace)
+	if err == nil {
+		for i := 0; i < count; i++ {
+			key, err := r.ReadString()
+			if err != nil {
+				return err
+			}
+			field := obj.FieldByNameFunc(func(name string) bool {
+				return strings.EqualFold(key, name)
+			})
+			if field.IsValid() {
+				err = r.unserialize(field)
+			} else {
+				_, err = r.readInterface()
+			}
+			if err != nil {
+				return err
+			}
+		}
+		if err = r.CheckTag(TagClosebrace); err == nil {
+			switch t := v.Type(); t.Kind() {
+			case reflect.Struct:
+				v.Set(obj)
+			case reflect.Interface:
+				v.Set(objPointer)
+			case reflect.Ptr:
+				switch t.Elem().Kind() {
+				case reflect.Struct:
+					v.Set(objPointer)
+				case reflect.Interface:
+					v.Set(reflect.New(t.Elem()))
+					v.Elem().Set(objPointer)
+				}
+			}
+			return nil
+		}
+	}
+	return err
+}
+
+func (r *simpleReader) readObject(v reflect.Value) error {
+	s := r.Stream()
+	t := v.Type()
+	tag, err := s.ReadByte()
+	if err == nil {
+		switch tag {
+		case TagNull:
+			v.Set(reflect.Zero(t))
+			return nil
+		case TagMap:
+			return r.readMapWithoutTag(v)
 		case TagClass:
 			if err = r.readClass(); err == nil {
 				return r.readObject(v)
@@ -1567,23 +1615,80 @@ func (r *simpleReader) readObject(v reflect.Value) error {
 		case TagObject:
 			return r.readObjectWithoutTag(v)
 		case TagRef:
-			return r.getRefWithType(v, reflect.Struct)
+			return r.getRef(v)
 		}
 		return convertError(tag, v.Type().String())
 	}
 	return err
 }
 
+func (r *simpleReader) readObjectAsMap(v reflect.Value, index int) error {
+	t := soMapType
+	mPointer := reflect.New(t)
+	r.setRef(mPointer.Interface())
+	m := mPointer.Elem()
+	m.Set(reflect.MakeMap(t))
+	fileds := r.fieldsref[index]
+	length := len(fileds)
+	for i := 0; i < length; i++ {
+		key := reflect.New(t.Key()).Elem()
+		val := reflect.New(t.Elem()).Elem()
+		key.SetString(fileds[i])
+		if err := r.unserialize(val); err != nil {
+			return err
+		}
+		m.SetMapIndex(key, val)
+	}
+	err := r.CheckTag(TagClosebrace)
+	if err == nil {
+		switch t := v.Type(); t.Kind() {
+		case reflect.Map:
+			v.Set(m)
+		case reflect.Interface:
+			v.Set(mPointer)
+		case reflect.Ptr:
+			switch t.Elem().Kind() {
+			case reflect.Map:
+				v.Set(mPointer)
+			case reflect.Interface:
+				v.Set(reflect.New(t.Elem()))
+				v.Elem().Set(mPointer)
+			}
+		}
+	}
+	return err
+}
+
 func (r *simpleReader) readObjectWithoutTag(v reflect.Value) error {
-	index, err := r.ReadInt(TagOpenbrace)
-	class := r.classref[index]
 	t := v.Type()
+	index, err := r.ReadInt(TagOpenbrace)
+	if err != nil {
+		return err
+	}
+	key := r.classref[index]
+	class, ok := key.(reflect.Type)
+	if !ok {
+		if t.Kind() == reflect.Struct {
+			class = t
+		} else if t.Kind() == reflect.Ptr && t.Elem().Kind() == reflect.Struct {
+			class = t.Elem()
+		} else {
+			class = soMapType
+		}
+	} else {
+		if t == soMapType || (t.Kind() == reflect.Ptr && t.Elem() == soMapType) {
+			class = soMapType
+		}
+	}
 	assignable := class.AssignableTo(t)
 	if t.Kind() == reflect.Ptr {
 		assignable = class.AssignableTo(t.Elem())
 	}
 	if !assignable {
 		return errors.New("cannot convert type " + class.String() + " to type " + t.String())
+	}
+	if class.Kind() == reflect.Map {
+		return r.readObjectAsMap(v, index)
 	}
 	objPointer := reflect.New(class)
 	r.setRef(objPointer.Interface())
@@ -1628,10 +1733,6 @@ func (r *simpleReader) readClass() error {
 	if err != nil {
 		return err
 	}
-	class := ClassManager.GetClass(className)
-	if class == nil {
-		return errors.New("type " + className + " was not registered in ClassManager")
-	}
 	count, err := r.ReadInt(TagOpenbrace)
 	if err != nil {
 		return err
@@ -1645,7 +1746,12 @@ func (r *simpleReader) readClass() error {
 	if err = r.CheckTag(TagClosebrace); err != nil {
 		return err
 	}
-	r.classref = append(r.classref, class)
+	class := ClassManager.GetClass(className)
+	var key interface{} = class
+	if class == nil {
+		key = len(r.classref)
+	}
+	r.classref = append(r.classref, key)
 	r.fieldsref = append(r.fieldsref, fields)
 	return nil
 }

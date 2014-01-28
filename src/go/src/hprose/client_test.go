@@ -22,7 +22,7 @@ package hprose
 
 import (
 	"fmt"
-	"reflect"
+	//"reflect"
 	"testing"
 	"time"
 )
@@ -70,7 +70,8 @@ func TestClient(t *testing.T) {
 	fmt.Println(<-r3)
 	fmt.Println(m)
 
-	ClassManager.Register(reflect.TypeOf(testUser{}), "User")
+	//ClassManager.Register(reflect.TypeOf(testUser{}), "User")
+
 	var r4 chan []testUser
 	if err := <-client.Invoke("getUserList", []interface{}{}, nil, &r4); err != nil {
 		t.Error(err.Error())

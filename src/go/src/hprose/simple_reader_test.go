@@ -976,6 +976,8 @@ func TestSimpleReaderMap(t *testing.T) {
 	writer.Serialize(m)
 	writer.Serialize(m)
 	writer.Serialize(m)
+	writer.Serialize(m)
+	writer.Serialize(m)
 	writer.Serialize(nil)
 	writer.Serialize(nil)
 	writer.Serialize(nil)
@@ -986,6 +988,8 @@ func TestSimpleReaderMap(t *testing.T) {
 	var p *map[interface{}]interface{}
 	var i interface{}
 	var pi *interface{}
+	var tp testPerson
+	var ptp *testPerson
 	var err error
 	if err = reader.Unserialize(&x); err != nil {
 		t.Error(err.Error())
@@ -1015,6 +1019,20 @@ func TestSimpleReaderMap(t *testing.T) {
 		t.Error(*(*pi).(*map[interface{}]interface{}))
 		t.Error(m)
 	}
+	if err = reader.Unserialize(&tp); err != nil {
+		t.Error(err.Error())
+	}
+	if m["name"] != tp.Name || m["age"] != tp.Age || m["male"] != tp.Male {
+		t.Error(m)
+		t.Error(tp)
+	}
+	if err = reader.Unserialize(&ptp); err != nil {
+		t.Error(err.Error())
+	}
+	if m["name"] != ptp.Name || m["age"] != ptp.Age || m["male"] != ptp.Male {
+		t.Error(m)
+		t.Error(ptp)
+	}
 }
 
 func TestSimpleReaderObject(t *testing.T) {
@@ -1038,12 +1056,22 @@ func TestSimpleReaderObject(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
+	err = writer.Serialize(p)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	err = writer.Serialize(p)
+	if err != nil {
+		t.Error(err.Error())
+	}
 
 	reader := NewSimpleReader(b)
 	var x testPerson
 	var px *testPerson
 	var i interface{}
 	var pi *interface{}
+	var m map[string]interface{}
+	var pm *map[string]interface{}
 	if err = reader.Unserialize(&x); err != nil {
 		t.Error(err.Error())
 	}
@@ -1070,6 +1098,20 @@ func TestSimpleReaderObject(t *testing.T) {
 	}
 	if !reflect.DeepEqual(*(*pi).(*testPerson), p) {
 		t.Error(*(*pi).(*testPerson))
+		t.Error(p)
+	}
+	if err = reader.Unserialize(&m); err != nil {
+		t.Error(err.Error())
+	}
+	if m["name"] != p.Name || m["age"] != p.Age || m["male"] != p.Male {
+		t.Error(m)
+		t.Error(p)
+	}
+	if err = reader.Unserialize(&pm); err != nil {
+		t.Error(err.Error())
+	}
+	if (*pm)["name"] != p.Name || (*pm)["age"] != p.Age || (*pm)["male"] != p.Male {
+		t.Error(*pm)
 		t.Error(p)
 	}
 
