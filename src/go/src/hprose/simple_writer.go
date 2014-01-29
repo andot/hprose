@@ -13,7 +13,7 @@
  *                                                        *
  * hprose SimpleWriter for Go.                            *
  *                                                        *
- * LastModified: Jan 28, 2014                             *
+ * LastModified: Jan 30, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -646,21 +646,14 @@ func (w *simpleWriter) writeComplexData(v interface{}) (err error) {
 		err = w.WriteObjectWithRef(&v)
 	case reflect.Ptr:
 		switch rv = rv.Elem(); rv.Kind() {
+		case reflect.Interface:
+			err = w.writeComplexData(rv.Interface())
 		case reflect.Array, reflect.Slice:
 			err = w.WriteSliceWithRef(v)
 		case reflect.Map:
 			err = w.WriteMapWithRef(v)
 		case reflect.Struct:
 			err = w.WriteObjectWithRef(v)
-		case reflect.Interface:
-			switch rv = rv.Elem(); rv.Kind() {
-			case reflect.Array, reflect.Slice:
-				err = w.WriteSliceWithRef(v)
-			case reflect.Map:
-				err = w.WriteMapWithRef(v)
-			case reflect.Struct:
-				err = w.WriteObjectWithRef(v)
-			}
 		}
 	}
 	return err

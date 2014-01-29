@@ -1035,6 +1035,8 @@ func TestSimpleReaderMap(t *testing.T) {
 	}
 }
 
+type emptyInterface interface{}
+
 func TestSimpleReaderObject(t *testing.T) {
 	b := new(bytes.Buffer)
 	writer := NewSimpleWriter(b)
@@ -1069,7 +1071,7 @@ func TestSimpleReaderObject(t *testing.T) {
 	var x testPerson
 	var px *testPerson
 	var i interface{}
-	var pi *interface{}
+	var pi *emptyInterface
 	var m map[string]interface{}
 	var pm *map[string]interface{}
 	if err = reader.Unserialize(&x); err != nil {

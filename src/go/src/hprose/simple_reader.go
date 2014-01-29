@@ -13,7 +13,7 @@
  *                                                        *
  * hprose SimpleReader for Go.                            *
  *                                                        *
- * LastModified: Jan 28, 2014                             *
+ * LastModified: Jan 30, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -908,6 +908,19 @@ func (r *simpleReader) unserialize(v reflect.Value) error {
 			return r.readList(v)
 		}
 		return r.readObject(v)
+	case reflect.Interface:
+		p, err := r.readInterface()
+		if err == nil {
+			t := v.Type()
+			rv := reflect.ValueOf(&p).Elem()
+			rt := rv.Type()
+			if rt.AssignableTo(t) {
+				v.Set(rv)
+			} else if rt.ConvertibleTo(t) {
+				v.Set(rv.Convert(t))
+			}
+		}
+		return err
 	case reflect.Ptr:
 		switch t := t.Elem(); t.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -945,16 +958,20 @@ func (r *simpleReader) unserialize(v reflect.Value) error {
 		case reflect.Interface:
 			p, err := r.readInterface()
 			if err == nil {
-				v.Set(reflect.ValueOf(&p))
+				t := v.Type()
+				rp := reflect.ValueOf(&p)
+				rt := rp.Type()
+				if rt.AssignableTo(t) {
+					v.Set(rp)
+				} else if rt.ConvertibleTo(t) {
+					v.Set(rp.Convert(t))
+				} else if rt.Elem().ConvertibleTo(t.Elem()) {
+					v.Set(reflect.New(t.Elem()))
+					v.Elem().Set(rp.Elem().Convert(t.Elem()))
+				}
 			}
 			return err
 		}
-	case reflect.Interface:
-		p, err := r.readInterface()
-		if err == nil {
-			v.Set(reflect.ValueOf(&p).Elem())
-		}
-		return err
 	}
 	return errors.New("unsupported Type:" + t.String())
 }

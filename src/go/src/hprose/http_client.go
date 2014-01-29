@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http client for Go.                             *
  *                                                        *
- * LastModified: Jan 29, 2014                             *
+ * LastModified: Jan 30, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -22,6 +22,7 @@ package hprose
 
 import (
 	"bytes"
+	"crypto/tls"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
@@ -36,7 +37,7 @@ type HttpClient struct {
 }
 
 type httpTransporter struct {
-	client           *http.Client
+	*http.Client
 	keepAlive        bool
 	keepAliveTimeout int
 }
@@ -55,15 +56,38 @@ func NewHttpClient(uri string) Client {
 	} else {
 		panic("The uri can't be parsed.")
 	}
-	return NewBaseClient(uri, newHttpTransporter())
+	client := &HttpClient{NewBaseClient(uri, newHttpTransporter())}
+	client.SetKeepAlive(true)
+	return client
+}
+
+func (client *HttpClient) TLSClientConfig() *tls.Config {
+	if transport, ok := client.Http().Transport.(*http.Transport); ok {
+		return transport.TLSClientConfig
+	}
+	return nil
+}
+
+func (client *HttpClient) SetTLSClientConfig(config *tls.Config) bool {
+	transport, ok := client.Http().Transport.(*http.Transport)
+	if ok {
+		transport.TLSClientConfig = config
+	}
+	return ok
 }
 
 func (client *HttpClient) KeepAlive() bool {
+	if transport, ok := client.Http().Transport.(*http.Transport); ok {
+		return !transport.DisableKeepAlives
+	}
 	return client.Transporter.(*httpTransporter).keepAlive
 }
 
 func (client *HttpClient) SetKeepAlive(enable bool) {
-	client.Transporter.(*httpTransporter).keepAlive = enable
+	if transport, ok := client.Http().Transport.(*http.Transport); ok {
+		transport.DisableKeepAlives = !enable
+		client.Transporter.(*httpTransporter).keepAlive = enable
+	}
 }
 
 func (client *HttpClient) KeepAliveTimeout() int {
@@ -74,8 +98,40 @@ func (client *HttpClient) SetKeepAliveTimeout(timeout int) {
 	client.Transporter.(*httpTransporter).keepAliveTimeout = timeout
 }
 
+func (client *HttpClient) Compression() bool {
+	if transport, ok := client.Http().Transport.(*http.Transport); ok {
+		return !transport.DisableCompression
+	}
+	return false
+}
+
+func (client *HttpClient) SetCompression(enable bool) {
+	if transport, ok := client.Http().Transport.(*http.Transport); ok {
+		transport.DisableCompression = !enable
+	}
+}
+
+func (client *HttpClient) MaxIdleConnsPerHost() int {
+	if transport, ok := client.Http().Transport.(*http.Transport); ok {
+		return transport.MaxIdleConnsPerHost
+	}
+	return http.DefaultMaxIdleConnsPerHost
+}
+
+func (client *HttpClient) SetMaxIdleConnsPerHost(value int) bool {
+	transport, ok := client.Http().Transport.(*http.Transport)
+	if ok {
+		transport.MaxIdleConnsPerHost = value
+	}
+	return ok
+}
+
+func (client *HttpClient) Http() *http.Client {
+	return client.Transporter.(*httpTransporter).Client
+}
+
 func newHttpTransporter() *httpTransporter {
-	return &httpTransporter{&http.Client{Jar: cookieJar}, false, 300}
+	return &httpTransporter{&http.Client{Jar: cookieJar}, true, 300}
 }
 
 func (h *httpTransporter) GetInvokeContext(uri string) (interface{}, error) {
@@ -95,10 +151,9 @@ func (h *httpTransporter) SendData(context interface{}, success bool) error {
 		}
 		req.Header.Set("Content-Type", "application/hprose")
 		if h.keepAlive {
-			req.Header.Set("Connection", "keep-alive")
 			req.Header.Set("Keep-Alive", strconv.Itoa(h.keepAliveTimeout))
 		}
-		resp, err := h.client.Do(req)
+		resp, err := h.Do(req)
 		if err != nil {
 			return err
 		}
