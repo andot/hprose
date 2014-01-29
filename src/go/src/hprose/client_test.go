@@ -34,7 +34,7 @@ type testUser struct {
 	Married  bool
 }
 
-type RemoteObject struct {
+type testRemoteObject struct {
 	Hello               func(string) string
 	HelloWithError      func(string) (string, error)               `name:"hello"`
 	AsyncHello          func(string) <-chan string                 `name:"hello"`
@@ -46,7 +46,7 @@ type RemoteObject struct {
 
 func TestRemoteObject(t *testing.T) {
 	client := NewClient("http://www.hprose.com/example/")
-	var ro *RemoteObject
+	var ro *testRemoteObject
 	client.UseService(&ro)
 
 	// If an error occurs, it will panic
@@ -150,5 +150,8 @@ func TestClient(t *testing.T) {
 		t.Error(err.Error())
 	}
 	fmt.Println(string(<-r5))
-
+	if err := <-client.Invoke("swapKeyAndValue", []interface{}{&m}, &InvokeOptions{ByRef: true, ResultMode: RawWithEndTag}, &r5); err != nil {
+		t.Error(err.Error())
+	}
+	fmt.Println(string(<-r5))
 }

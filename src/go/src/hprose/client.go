@@ -97,7 +97,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/url"
 	"reflect"
 	"strings"
@@ -124,10 +124,10 @@ type Client interface {
 
 type Transporter interface {
 	GetInvokeContext(uri string) (interface{}, error)
-	GetOutputStream(context interface{}) (*bytes.Buffer, error)
-	SendData(ostream *bytes.Buffer, context interface{}, success bool) error
-	GetInputStream(context interface{}) (*bytes.Buffer, error)
-	EndInvoke(istream *bytes.Buffer, context interface{}, success bool) error
+	GetOutputStream(context interface{}) (io.Writer, error)
+	SendData(ostream io.Writer, context interface{}, success bool) error
+	GetInputStream(context interface{}) (io.Reader, error)
+	EndInvoke(istream io.Reader, context interface{}, success bool) error
 }
 
 type BaseClient struct {
@@ -289,7 +289,7 @@ func (client *BaseClient) asyncInvoke(name string, args []interface{}, options *
 }
 
 func (client *BaseClient) doOutput(context interface{}, name string, args []interface{}, options *InvokeOptions) (err error) {
-	var ostream *bytes.Buffer
+	var ostream io.Writer
 	ostream, err = client.GetOutputStream(context)
 	success := false
 	defer func() {
@@ -348,7 +348,7 @@ func (client *BaseClient) doOutput(context interface{}, name string, args []inte
 }
 
 func (client *BaseClient) doIntput(context interface{}, args []interface{}, options *InvokeOptions, result interface{}) (err error) {
-	var istream *bytes.Buffer
+	var istream io.Reader
 	istream, err = client.GetInputStream(context)
 	success := false
 	defer func() {
@@ -364,21 +364,7 @@ func (client *BaseClient) doIntput(context interface{}, args []interface{}, opti
 		istream = client.filter.InputFilter(istream)
 	}
 	resultMode := options.ResultMode
-	if resultMode == RawWithEndTag ||
-		resultMode == Raw {
-		var buf []byte
-		if buf, err = ioutil.ReadAll(istream); err != nil {
-			return err
-		}
-		if resultMode == Raw {
-			if buf[len(buf)-1] == TagEnd {
-				buf = buf[:len(buf)-1]
-			} else {
-				return errors.New("wrong reply format")
-			}
-		}
-		return setResult(result, buf)
-	}
+	buf := new(bytes.Buffer)
 	reader := NewReader(istream)
 	expectTags := []byte{TagResult, TagArgument, TagError, TagEnd}
 	var tag byte
@@ -392,36 +378,73 @@ func (client *BaseClient) doIntput(context interface{}, args []interface{}, opti
 					return err
 				}
 			case Serialized:
-				var buf []byte
-				if buf, err = reader.ReadRaw(); err != nil {
+				if err = reader.ReadRawTo(buf); err != nil {
 					return err
 				}
 				if err = setResult(result, buf); err != nil {
 					return err
 				}
-			}
-		case TagArgument:
-			reader.Reset()
-			if err = reader.CheckTag(TagList); err == nil {
-				var count int
-				if count, err = reader.ReadInt(TagOpenbrace); err == nil {
-					a := make([]reflect.Value, count)
-					v := reflect.ValueOf(args)
-					for i := 0; i < count; i++ {
-						a[i] = v.Index(i).Elem().Elem()
-					}
-					err = reader.ReadArray(a)
+			default:
+				if err = buf.WriteByte(TagResult); err != nil {
+					return err
+				}
+				if err = reader.ReadRawTo(buf); err != nil {
+					return err
 				}
 			}
-			if err != nil {
-				return err
+		case TagArgument:
+			switch resultMode {
+			case Normal, Serialized:
+				reader.Reset()
+				if err = reader.CheckTag(TagList); err == nil {
+					var count int
+					if count, err = reader.ReadInt(TagOpenbrace); err == nil {
+						a := make([]reflect.Value, count)
+						v := reflect.ValueOf(args)
+						for i := 0; i < count; i++ {
+							a[i] = v.Index(i).Elem().Elem()
+						}
+						err = reader.ReadArray(a)
+					}
+				}
+				if err != nil {
+					return err
+				}
+			default:
+				if err = buf.WriteByte(TagArgument); err != nil {
+					return err
+				}
+				if err = reader.ReadRawTo(buf); err != nil {
+					return err
+				}
 			}
 		case TagError:
-			reader.Reset()
-			var e string
-			if e, err = reader.ReadString(); err == nil {
-				err = errors.New(e)
+			switch resultMode {
+			case Normal, Serialized:
+				reader.Reset()
+				var e string
+				if e, err = reader.ReadString(); err == nil {
+					err = errors.New(e)
+				}
+				return err
+			default:
+				if err = buf.WriteByte(TagError); err != nil {
+					return err
+				}
+				if err = reader.ReadRawTo(buf); err != nil {
+					return err
+				}
 			}
+		}
+	}
+	switch resultMode {
+	case RawWithEndTag:
+		if err = buf.WriteByte(TagEnd); err != nil {
+			return err
+		}
+		fallthrough
+	case Raw:
+		if err = setResult(result, buf); err != nil {
 			return err
 		}
 	}
@@ -597,12 +620,12 @@ func checkRefArgs(args []interface{}) bool {
 	return true
 }
 
-func setResult(result interface{}, buf []byte) error {
+func setResult(result interface{}, buf *bytes.Buffer) error {
 	switch result := result.(type) {
 	case **bytes.Buffer:
-		*result = bytes.NewBuffer(buf)
-	case *[]byte:
 		*result = buf
+	case *[]byte:
+		*result = buf.Bytes()
 	default:
 		return errors.New("The argument result must be a *[]byte or **bytes.Buffer if the ResultMode is different from Normal.")
 	}

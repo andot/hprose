@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http client for Go.                             *
  *                                                        *
- * LastModified: Jan 28, 2014                             *
+ * LastModified: Jan 29, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -22,7 +22,7 @@ package hprose
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -42,8 +42,8 @@ type httpTransporter struct {
 }
 
 type httpContext struct {
-	uri     string
-	istream *bytes.Buffer
+	uri  string
+	body io.ReadCloser
 }
 
 func NewHttpClient(uri string) Client {
@@ -81,14 +81,14 @@ func (h *httpTransporter) GetInvokeContext(uri string) (interface{}, error) {
 	return &httpContext{uri: uri}, nil
 }
 
-func (h *httpTransporter) GetOutputStream(context interface{}) (*bytes.Buffer, error) {
+func (h *httpTransporter) GetOutputStream(context interface{}) (io.Writer, error) {
 	return new(bytes.Buffer), nil
 }
 
-func (h *httpTransporter) SendData(ostream *bytes.Buffer, context interface{}, success bool) error {
+func (h *httpTransporter) SendData(ostream io.Writer, context interface{}, success bool) error {
 	if success {
 		context := context.(*httpContext)
-		req, err := http.NewRequest("POST", context.uri, ostream)
+		req, err := http.NewRequest("POST", context.uri, ostream.(io.Reader))
 		if err != nil {
 			return err
 		}
@@ -101,22 +101,15 @@ func (h *httpTransporter) SendData(ostream *bytes.Buffer, context interface{}, s
 		if err != nil {
 			return err
 		}
-		buf, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		if err = resp.Body.Close(); err != nil {
-			return err
-		}
-		context.istream = bytes.NewBuffer(buf)
+		context.body = resp.Body
 	}
 	return nil
 }
 
-func (h *httpTransporter) GetInputStream(context interface{}) (*bytes.Buffer, error) {
-	return context.(*httpContext).istream, nil
+func (h *httpTransporter) GetInputStream(context interface{}) (io.Reader, error) {
+	return context.(*httpContext).body, nil
 }
 
-func (h *httpTransporter) EndInvoke(istream *bytes.Buffer, context interface{}, success bool) error {
-	return nil
+func (h *httpTransporter) EndInvoke(istream io.Reader, context interface{}, success bool) error {
+	return context.(*httpContext).body.Close()
 }

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Reader for Go.                                  *
  *                                                        *
- * LastModified: Jan 27, 2014                             *
+ * LastModified: Jan 29, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -22,6 +22,7 @@ package hprose
 
 import (
 	"bufio"
+	"bytes"
 	"container/list"
 	"io"
 	"math/big"
@@ -62,6 +63,7 @@ type Reader interface {
 	ReadObject(interface{}) error
 	ReadObjectWithoutTag(interface{}) error
 	ReadRaw() ([]byte, error)
+	ReadRawTo(*bytes.Buffer) error
 	Reset()
 }
 

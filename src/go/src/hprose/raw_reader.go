@@ -13,7 +13,7 @@
  *                                                        *
  * hprose RawReader for Go.                               *
  *                                                        *
- * LastModified: Jan 27, 2014                             *
+ * LastModified: Jan 29, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -38,11 +38,11 @@ func NewRawReader(stream io.Reader) *RawReader {
 
 func (r *RawReader) ReadRaw() (raw []byte, err error) {
 	ostream := new(bytes.Buffer)
-	err = r.readRawTo(ostream)
+	err = r.ReadRawTo(ostream)
 	return ostream.Bytes(), err
 }
 
-func (r *RawReader) readRawTo(ostream *bytes.Buffer) (err error) {
+func (r *RawReader) ReadRawTo(ostream *bytes.Buffer) (err error) {
 	var tag byte
 	if tag, err = r.stream.ReadByte(); err == nil {
 		err = r.readRaw(ostream, tag)
@@ -77,11 +77,11 @@ func (r *RawReader) readRaw(ostream *bytes.Buffer, tag byte) (err error) {
 		err = r.readComplexRaw(ostream, tag)
 	case TagClass:
 		if err = r.readComplexRaw(ostream, tag); err == nil {
-			err = r.readRawTo(ostream)
+			err = r.ReadRawTo(ostream)
 		}
 	case TagError:
 		if err = ostream.WriteByte(tag); err == nil {
-			err = r.readRawTo(ostream)
+			err = r.ReadRawTo(ostream)
 		}
 	default:
 		err = unexpectedTag(tag, nil)
