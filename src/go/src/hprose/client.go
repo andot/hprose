@@ -41,7 +41,7 @@ Here is a client example:
 
 	func main() {
 		client := hprose.NewClient("http://www.hprose.com/example/")
-		var ro RemoteObject
+		var ro *RemoteObject
 		client.UseService(&ro)
 
 		// If an error occurs, it will panic
@@ -194,8 +194,8 @@ func (client *BaseClient) SetFilter(filter Filter) {
 }
 
 // UseService(uri string)
-// UseService(proxy interface{})
-// UseService(uri string, proxy interface{})
+// UseService(remoteObject interface{})
+// UseService(uri string, remoteObject interface{})
 func (client *BaseClient) UseService(args ...interface{}) {
 	switch len(args) {
 	case 1:
@@ -214,7 +214,6 @@ func (client *BaseClient) UseService(args ...interface{}) {
 				return
 			}
 		}
-		panic("Wrong arguments.")
 	case 2:
 		switch arg0 := args[0].(type) {
 		case nil:
@@ -231,8 +230,6 @@ func (client *BaseClient) UseService(args ...interface{}) {
 		}
 		if isStructPointer(args[1]) {
 			client.createRemoteObject(args[1])
-		} else {
-			panic("Wrong arguments.")
 		}
 	}
 	panic("Wrong arguments.")
@@ -575,8 +572,12 @@ func RegisterClientFactory(scheme string, newClient func(string) Client) {
 
 // private functions
 
-func isStructPointer(v interface{}) bool {
-	t := reflect.TypeOf(v)
+func isStructPointer(p interface{}) bool {
+	v := reflect.ValueOf(p)
+	if !v.IsValid() || v.IsNil() {
+		return false
+	}
+	t := v.Type()
 	return t.Kind() == reflect.Ptr && (t.Elem().Kind() == reflect.Struct ||
 		(t.Elem().Kind() == reflect.Ptr && t.Elem().Elem().Kind() == reflect.Struct))
 }

@@ -46,7 +46,7 @@ type RemoteObject struct {
 
 func TestRemoteObject(t *testing.T) {
 	client := NewClient("http://www.hprose.com/example/")
-	var ro RemoteObject
+	var ro *RemoteObject
 	client.UseService(&ro)
 
 	// If an error occurs, it will panic
@@ -150,4 +150,5 @@ func TestClient(t *testing.T) {
 		t.Error(err.Error())
 	}
 	fmt.Println(string(<-r5))
+
 }
