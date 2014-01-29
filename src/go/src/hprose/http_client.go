@@ -151,6 +151,7 @@ func (h *httpTransporter) SendData(context interface{}, success bool) error {
 		}
 		req.Header.Set("Content-Type", "application/hprose")
 		if h.keepAlive {
+			req.Header.Set("Connection", "keep-alive")
 			req.Header.Set("Keep-Alive", strconv.Itoa(h.keepAliveTimeout))
 		}
 		resp, err := h.Do(req)
