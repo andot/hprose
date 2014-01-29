@@ -125,9 +125,9 @@ type Client interface {
 type Transporter interface {
 	GetInvokeContext(uri string) (interface{}, error)
 	GetOutputStream(context interface{}) (io.Writer, error)
-	SendData(ostream io.Writer, context interface{}, success bool) error
+	SendData(context interface{}, success bool) error
 	GetInputStream(context interface{}) (io.Reader, error)
-	EndInvoke(istream io.Reader, context interface{}, success bool) error
+	EndInvoke(context interface{}, success bool) error
 }
 
 type BaseClient struct {
@@ -289,15 +289,15 @@ func (client *BaseClient) asyncInvoke(name string, args []interface{}, options *
 }
 
 func (client *BaseClient) doOutput(context interface{}, name string, args []interface{}, options *InvokeOptions) (err error) {
-	var ostream io.Writer
-	ostream, err = client.GetOutputStream(context)
 	success := false
 	defer func() {
-		e := client.SendData(ostream, context, success)
+		e := client.SendData(context, success)
 		if err == nil {
 			err = e
 		}
 	}()
+	var ostream io.Writer
+	ostream, err = client.GetOutputStream(context)
 	if err != nil {
 		return err
 	}
@@ -348,15 +348,15 @@ func (client *BaseClient) doOutput(context interface{}, name string, args []inte
 }
 
 func (client *BaseClient) doIntput(context interface{}, args []interface{}, options *InvokeOptions, result interface{}) (err error) {
-	var istream io.Reader
-	istream, err = client.GetInputStream(context)
 	success := false
 	defer func() {
-		e := client.EndInvoke(istream, context, success)
+		e := client.EndInvoke(context, success)
 		if err == nil {
 			err = e
 		}
 	}()
+	var istream io.Reader
+	istream, err = client.GetInputStream(context)
 	if err != nil {
 		return err
 	}

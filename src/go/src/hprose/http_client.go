@@ -43,6 +43,7 @@ type httpTransporter struct {
 
 type httpContext struct {
 	uri  string
+	buf  io.ReadWriter
 	body io.ReadCloser
 }
 
@@ -78,17 +79,17 @@ func newHttpTransporter() *httpTransporter {
 }
 
 func (h *httpTransporter) GetInvokeContext(uri string) (interface{}, error) {
-	return &httpContext{uri: uri}, nil
+	return &httpContext{uri: uri, buf: new(bytes.Buffer)}, nil
 }
 
 func (h *httpTransporter) GetOutputStream(context interface{}) (io.Writer, error) {
-	return new(bytes.Buffer), nil
+	return context.(*httpContext).buf, nil
 }
 
-func (h *httpTransporter) SendData(ostream io.Writer, context interface{}, success bool) error {
+func (h *httpTransporter) SendData(context interface{}, success bool) error {
 	if success {
 		context := context.(*httpContext)
-		req, err := http.NewRequest("POST", context.uri, ostream.(io.Reader))
+		req, err := http.NewRequest("POST", context.uri, context.buf)
 		if err != nil {
 			return err
 		}
@@ -110,6 +111,6 @@ func (h *httpTransporter) GetInputStream(context interface{}) (io.Reader, error)
 	return context.(*httpContext).body, nil
 }
 
-func (h *httpTransporter) EndInvoke(istream io.Reader, context interface{}, success bool) error {
+func (h *httpTransporter) EndInvoke(context interface{}, success bool) error {
 	return context.(*httpContext).body.Close()
 }
