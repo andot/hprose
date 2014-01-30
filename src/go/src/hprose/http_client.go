@@ -36,13 +36,13 @@ type HttpClient struct {
 	*BaseClient
 }
 
-type httpTransporter struct {
+type HttpClientTransporter struct {
 	*http.Client
 	keepAlive        bool
 	keepAliveTimeout int
 }
 
-type httpContext struct {
+type HttpClientContext struct {
 	uri  string
 	buf  io.ReadWriter
 	body io.ReadCloser
@@ -56,7 +56,7 @@ func NewHttpClient(uri string) Client {
 	} else {
 		panic("The uri can't be parsed.")
 	}
-	client := &HttpClient{NewBaseClient(uri, newHttpTransporter())}
+	client := &HttpClient{NewBaseClient(uri, newHttpClientTransporter())}
 	client.SetKeepAlive(true)
 	return client
 }
@@ -80,22 +80,22 @@ func (client *HttpClient) KeepAlive() bool {
 	if transport, ok := client.Http().Transport.(*http.Transport); ok {
 		return !transport.DisableKeepAlives
 	}
-	return client.Transporter.(*httpTransporter).keepAlive
+	return client.ClientTransporter.(*HttpClientTransporter).keepAlive
 }
 
 func (client *HttpClient) SetKeepAlive(enable bool) {
 	if transport, ok := client.Http().Transport.(*http.Transport); ok {
 		transport.DisableKeepAlives = !enable
-		client.Transporter.(*httpTransporter).keepAlive = enable
+		client.ClientTransporter.(*HttpClientTransporter).keepAlive = enable
 	}
 }
 
 func (client *HttpClient) KeepAliveTimeout() int {
-	return client.Transporter.(*httpTransporter).keepAliveTimeout
+	return client.ClientTransporter.(*HttpClientTransporter).keepAliveTimeout
 }
 
 func (client *HttpClient) SetKeepAliveTimeout(timeout int) {
-	client.Transporter.(*httpTransporter).keepAliveTimeout = timeout
+	client.ClientTransporter.(*HttpClientTransporter).keepAliveTimeout = timeout
 }
 
 func (client *HttpClient) Compression() bool {
@@ -127,24 +127,24 @@ func (client *HttpClient) SetMaxIdleConnsPerHost(value int) bool {
 }
 
 func (client *HttpClient) Http() *http.Client {
-	return client.Transporter.(*httpTransporter).Client
+	return client.ClientTransporter.(*HttpClientTransporter).Client
 }
 
-func newHttpTransporter() *httpTransporter {
-	return &httpTransporter{&http.Client{Jar: cookieJar}, true, 300}
+func newHttpClientTransporter() *HttpClientTransporter {
+	return &HttpClientTransporter{&http.Client{Jar: cookieJar}, true, 300}
 }
 
-func (h *httpTransporter) GetInvokeContext(uri string) (interface{}, error) {
-	return &httpContext{uri: uri, buf: new(bytes.Buffer)}, nil
+func (h *HttpClientTransporter) GetInvokeContext(uri string) (interface{}, error) {
+	return &HttpClientContext{uri: uri, buf: new(bytes.Buffer)}, nil
 }
 
-func (h *httpTransporter) GetOutputStream(context interface{}) (io.Writer, error) {
-	return context.(*httpContext).buf, nil
+func (h *HttpClientTransporter) GetOutputStream(context interface{}) (io.Writer, error) {
+	return context.(*HttpClientContext).buf, nil
 }
 
-func (h *httpTransporter) SendData(context interface{}, success bool) error {
+func (h *HttpClientTransporter) SendData(context interface{}, success bool) error {
 	if success {
-		context := context.(*httpContext)
+		context := context.(*HttpClientContext)
 		req, err := http.NewRequest("POST", context.uri, context.buf)
 		if err != nil {
 			return err
@@ -163,10 +163,10 @@ func (h *httpTransporter) SendData(context interface{}, success bool) error {
 	return nil
 }
 
-func (h *httpTransporter) GetInputStream(context interface{}) (io.Reader, error) {
-	return context.(*httpContext).body, nil
+func (h *HttpClientTransporter) GetInputStream(context interface{}) (io.Reader, error) {
+	return context.(*HttpClientContext).body, nil
 }
 
-func (h *httpTransporter) EndInvoke(context interface{}, success bool) error {
-	return context.(*httpContext).body.Close()
+func (h *HttpClientTransporter) EndInvoke(context interface{}, success bool) error {
+	return context.(*HttpClientContext).body.Close()
 }

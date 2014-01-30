@@ -122,7 +122,7 @@ type Client interface {
 	SetFilter(Filter)
 }
 
-type Transporter interface {
+type ClientTransporter interface {
 	GetInvokeContext(uri string) (interface{}, error)
 	GetOutputStream(context interface{}) (io.Writer, error)
 	SendData(context interface{}, success bool) error
@@ -131,24 +131,24 @@ type Transporter interface {
 }
 
 type BaseClient struct {
-	Transporter
+	ClientTransporter
 	byref  bool
 	simple bool
 	filter Filter
 	uri    *url.URL
 }
 
-var clientImplementations = make(map[string]func(string) Client)
+var clientFactories = make(map[string]func(string) Client)
 
-func NewBaseClient(uri string, trans Transporter) *BaseClient {
-	client := &BaseClient{Transporter: trans}
+func NewBaseClient(uri string, trans ClientTransporter) *BaseClient {
+	client := &BaseClient{ClientTransporter: trans}
 	client.SetUri(uri)
 	return client
 }
 
 func NewClient(uri string) Client {
 	if u, err := url.Parse(uri); err == nil {
-		if newClient, ok := clientImplementations[u.Scheme]; ok {
+		if newClient, ok := clientFactories[u.Scheme]; ok {
 			return newClient(uri)
 		}
 		panic("The " + u.Scheme + "client isn't implemented.")
@@ -643,7 +643,7 @@ func (client *BaseClient) remoteMethod(t reflect.Type, sf reflect.StructField) f
 // public functions
 
 func RegisterClientFactory(scheme string, newClient func(string) Client) {
-	clientImplementations[strings.ToLower(scheme)] = newClient
+	clientFactories[strings.ToLower(scheme)] = newClient
 }
 
 // private functions
