@@ -105,7 +105,7 @@ func (r *simpleReader) CheckTags(expectTags []byte) (tag byte, err error) {
 func (r *simpleReader) Unserialize(p interface{}) error {
 	v, err := r.checkPointer(p)
 	if err == nil {
-		return r.unserialize(v.Elem())
+		return r.ReadValue(v.Elem())
 	}
 	return err
 }
@@ -803,7 +803,7 @@ func (r *simpleReader) ReadArray(a []reflect.Value) error {
 	length := len(a)
 	r.setRef(&a)
 	for i := 0; i < length; i++ {
-		if err := r.unserialize(a[i]); err != nil {
+		if err := r.ReadValue(a[i]); err != nil {
 			return err
 		}
 	}
@@ -873,7 +873,7 @@ func (r *simpleReader) checkPointer(p interface{}) (v reflect.Value, err error) 
 	return v, nil
 }
 
-func (r *simpleReader) unserialize(v reflect.Value) error {
+func (r *simpleReader) ReadValue(v reflect.Value) error {
 	t := v.Type()
 	switch t.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -1387,7 +1387,7 @@ func (r *simpleReader) readSliceWithoutTag(v reflect.Value) error {
 		slice.Set(reflect.MakeSlice(t, length, length))
 		for i := 0; i < length; i++ {
 			elem := slice.Index(i)
-			if err := r.unserialize(elem); err != nil {
+			if err := r.ReadValue(elem); err != nil {
 				return err
 			}
 		}
@@ -1450,7 +1450,7 @@ func (r *simpleReader) readSliceAsMap(v reflect.Value) error {
 			default:
 				return errors.New("cannot convert int to type " + t.Key().String())
 			}
-			if err := r.unserialize(val); err != nil {
+			if err := r.ReadValue(val); err != nil {
 				return err
 			}
 			m.SetMapIndex(key, val)
@@ -1535,10 +1535,10 @@ func (r *simpleReader) readMapWithoutTag(v reflect.Value) error {
 		for i := 0; i < length; i++ {
 			key := reflect.New(t.Key()).Elem()
 			val := reflect.New(t.Elem()).Elem()
-			if err := r.unserialize(key); err != nil {
+			if err := r.ReadValue(key); err != nil {
 				return err
 			}
-			if err := r.unserialize(val); err != nil {
+			if err := r.ReadValue(val); err != nil {
 				return err
 			}
 			m.SetMapIndex(key, val)
@@ -1583,7 +1583,7 @@ func (r *simpleReader) readMapAsObject(v reflect.Value) error {
 				return strings.EqualFold(key, name)
 			})
 			if field.IsValid() {
-				err = r.unserialize(field)
+				err = r.ReadValue(field)
 			} else {
 				_, err = r.readInterface()
 			}
@@ -1651,7 +1651,7 @@ func (r *simpleReader) readObjectAsMap(v reflect.Value, index int) error {
 		key := reflect.New(t.Key()).Elem()
 		val := reflect.New(t.Elem()).Elem()
 		key.SetString(fileds[i])
-		if err := r.unserialize(val); err != nil {
+		if err := r.ReadValue(val); err != nil {
 			return err
 		}
 		m.SetMapIndex(key, val)
@@ -1717,7 +1717,7 @@ func (r *simpleReader) readObjectWithoutTag(v reflect.Value) error {
 			return strings.EqualFold(fileds[i], name)
 		})
 		if field.IsValid() {
-			err = r.unserialize(field)
+			err = r.ReadValue(field)
 		} else {
 			_, err = r.readInterface()
 		}

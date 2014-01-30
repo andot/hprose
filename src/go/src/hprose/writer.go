@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Writer for Go.                                  *
  *                                                        *
- * LastModified: Jan 26, 2014                             *
+ * LastModified: Jan 30, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -25,6 +25,7 @@ import (
 	"container/list"
 	"io"
 	"math/big"
+	"reflect"
 	"strconv"
 	"time"
 	"uuid"
@@ -33,6 +34,7 @@ import (
 type Writer interface {
 	Stream() *bufio.Writer
 	Serialize(interface{}) error
+	WriteValue(reflect.Value) error
 	WriteNull() error
 	WriteInt(int) error
 	WriteUint(uint) error
@@ -62,6 +64,7 @@ type Writer interface {
 	WriteUUIDWithRef(*uuid.UUID) error
 	WriteList(*list.List) error
 	WriteListWithRef(*list.List) error
+	WriteArray([]reflect.Value) error
 	WriteSlice(interface{}) error
 	WriteSliceWithRef(interface{}) error
 	WriteMap(interface{}) error

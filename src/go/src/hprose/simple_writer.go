@@ -234,6 +234,10 @@ func (w *simpleWriter) Serialize(v interface{}) (err error) {
 	return err
 }
 
+func (w *simpleWriter) WriteValue(v reflect.Value) error {
+	return w.Serialize(v.Interface())
+}
+
 func (w *simpleWriter) WriteNull() error {
 	return w.stream.WriteByte(TagNull)
 }
@@ -495,6 +499,28 @@ func (w *simpleWriter) WriteListWithRef(v *list.List) error {
 	} else {
 		return err
 	}
+}
+
+func (w *simpleWriter) WriteArray(v []reflect.Value) (err error) {
+	s := w.Stream()
+	count := len(v)
+	if err = s.WriteByte(TagList); err == nil {
+		if count > 0 {
+			if _, err = s.WriteString(strconv.Itoa(count)); err == nil {
+				if err = s.WriteByte(TagOpenbrace); err == nil {
+					for i := 0; i < count; i++ {
+						if err = w.WriteValue(v[i]); err != nil {
+							return err
+						}
+					}
+					err = s.WriteByte(TagClosebrace)
+				}
+			}
+		} else if err = s.WriteByte(TagOpenbrace); err == nil {
+			err = s.WriteByte(TagClosebrace)
+		}
+	}
+	return err
 }
 
 func (w *simpleWriter) WriteSlice(v interface{}) error {

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose client for Go.                                  *
  *                                                        *
- * LastModified: Jan 29, 2014                             *
+ * LastModified: Jan 30, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -244,51 +244,85 @@ func (client *BaseClient) Invoke(name string, args []interface{}, options *Invok
 	if t.Kind() != reflect.Ptr {
 		panic("The argument result must be pointer type")
 	}
-	if options == nil {
-		options = new(InvokeOptions)
+	r := []reflect.Value{v.Elem()}
+	count := len(args)
+	a := make([]reflect.Value, count)
+	v = reflect.ValueOf(args)
+	for i := 0; i < count; i++ {
+		a[i] = v.Index(i).Elem()
 	}
-	if t.Elem().Kind() == reflect.Chan {
-		return client.asyncInvoke(name, args, options, v.Elem())
-	}
-	err := make(chan error, 1)
-	err <- client.invoke(name, args, options, result)
-	return err
+	return client.invoke(name, a, options, r)
 }
 
 // private methods
 
-func (client *BaseClient) invoke(name string, args []interface{}, options *InvokeOptions, result interface{}) (err error) {
+func (client *BaseClient) invoke(name string, args []reflect.Value, options *InvokeOptions, result []reflect.Value) <-chan error {
+	if options == nil {
+		options = new(InvokeOptions)
+	}
+	length := len(result)
+	async := false
+	for i := 0; i < length; i++ {
+		if result[i].Kind() == reflect.Chan {
+			async = true
+		} else if async {
+			panic("The out parameters must be all chan or all non-chan type.")
+		}
+	}
+	byref := client.byref
+	if br, ok := options.ByRef.(bool); ok {
+		byref = br
+	}
+	if byref && !checkRefArgs(args) {
+		panic("The elements in args must be pointer when options.ByRef is true.")
+	}
+	if async {
+		return client.asyncInvoke(name, args, options, result)
+	} else {
+		return client.syncInvoke(name, args, options, result)
+	}
+}
+
+func (client *BaseClient) syncInvoke(name string, args []reflect.Value, options *InvokeOptions, result []reflect.Value) <-chan error {
+	context, err := client.GetInvokeContext(client.Uri())
+	errChan := make(chan error, 1)
 	defer func() {
 		if e := recover(); e != nil && err == nil {
 			err = fmt.Errorf("%v", e)
 		}
+		errChan <- err
 	}()
-	var context interface{}
-	context, err = client.GetInvokeContext(client.Uri())
 	if err == nil {
 		if err = client.doOutput(context, name, args, options); err == nil {
 			err = client.doIntput(context, args, options, result)
 		}
 	}
-	return err
+	return errChan
 }
 
-func (client *BaseClient) asyncInvoke(name string, args []interface{}, options *InvokeOptions, result reflect.Value) <-chan error {
-	t := result.Type()
-	t = reflect.ChanOf(reflect.BothDir, t.Elem())
-	sender := reflect.MakeChan(t, 1)
-	result.Set(sender)
+func (client *BaseClient) asyncInvoke(name string, args []reflect.Value, options *InvokeOptions, result []reflect.Value) <-chan error {
+	length := len(result)
+	sender := make([]reflect.Value, length)
+	out := make([]reflect.Value, length)
+	for i := 0; i < length; i++ {
+		t := result[i].Type().Elem()
+		out[i] = reflect.New(t).Elem()
+		t = reflect.ChanOf(reflect.BothDir, t)
+		sender[i] = reflect.MakeChan(t, 1)
+		result[i].Set(sender[i])
+	}
 	errChan := make(chan error, 1)
 	go func() {
-		r := reflect.New(t.Elem())
-		err := client.invoke(name, args, options, r.Interface())
-		sender.Send(r.Elem())
+		err := <-client.syncInvoke(name, args, options, out)
+		for i := 0; i < length; i++ {
+			sender[i].Send(out[i])
+		}
 		errChan <- err
 	}()
 	return errChan
 }
 
-func (client *BaseClient) doOutput(context interface{}, name string, args []interface{}, options *InvokeOptions) (err error) {
+func (client *BaseClient) doOutput(context interface{}, name string, args []reflect.Value, options *InvokeOptions) (err error) {
 	success := false
 	defer func() {
 		e := client.SendData(context, success)
@@ -312,9 +346,6 @@ func (client *BaseClient) doOutput(context interface{}, name string, args []inte
 	if br, ok := options.ByRef.(bool); ok {
 		byref = br
 	}
-	if byref && !checkRefArgs(args) {
-		return errors.New("The elements in args must be pointer when options.ByRef is true.")
-	}
 	var writer Writer
 	if simple {
 		writer = NewSimpleWriter(ostream)
@@ -329,7 +360,7 @@ func (client *BaseClient) doOutput(context interface{}, name string, args []inte
 	}
 	if args != nil && (len(args) > 0 || byref) {
 		writer.Reset()
-		if err = writer.WriteSlice(args); err != nil {
+		if err = writer.WriteArray(args); err != nil {
 			return err
 		}
 		if byref {
@@ -347,7 +378,7 @@ func (client *BaseClient) doOutput(context interface{}, name string, args []inte
 	return err
 }
 
-func (client *BaseClient) doIntput(context interface{}, args []interface{}, options *InvokeOptions, result interface{}) (err error) {
+func (client *BaseClient) doIntput(context interface{}, args []reflect.Value, options *InvokeOptions, result []reflect.Value) (err error) {
 	success := false
 	defer func() {
 		e := client.EndInvoke(context, success)
@@ -374,14 +405,37 @@ func (client *BaseClient) doIntput(context interface{}, args []interface{}, opti
 			switch resultMode {
 			case Normal:
 				reader.Reset()
-				if err = reader.Unserialize(result); err != nil {
+				length := len(result)
+				if length == 1 {
+					err = reader.ReadValue(result[0])
+				} else if err = reader.CheckTag(TagList); err == nil {
+					var count int
+					if count, err = reader.ReadInt(TagOpenbrace); err == nil {
+						r := make([]reflect.Value, count)
+						if count <= length {
+							for i := 0; i < count; i++ {
+								r[i] = result[i]
+							}
+						} else {
+							for i := 0; i < length; i++ {
+								r[i] = result[i]
+							}
+							for i := length; i < count; i++ {
+								var e interface{}
+								r[i] = reflect.ValueOf(&e).Elem()
+							}
+						}
+						err = reader.ReadArray(r)
+					}
+				}
+				if err != nil {
 					return err
 				}
 			case Serialized:
 				if err = reader.ReadRawTo(buf); err != nil {
 					return err
 				}
-				if err = setResult(result, buf); err != nil {
+				if err = setResult(result[0], buf); err != nil {
 					return err
 				}
 			default:
@@ -397,12 +451,24 @@ func (client *BaseClient) doIntput(context interface{}, args []interface{}, opti
 			case Normal, Serialized:
 				reader.Reset()
 				if err = reader.CheckTag(TagList); err == nil {
+					length := len(args)
 					var count int
 					if count, err = reader.ReadInt(TagOpenbrace); err == nil {
 						a := make([]reflect.Value, count)
-						v := reflect.ValueOf(args)
-						for i := 0; i < count; i++ {
-							a[i] = v.Index(i).Elem().Elem()
+						if count <= length {
+							for i := 0; i < count; i++ {
+								a[i] = args[i].Elem()
+								//a[i] = args[i]
+							}
+						} else {
+							for i := 0; i < length; i++ {
+								a[i] = args[i].Elem()
+								//a[i] = args[i]
+							}
+							for i := length; i < count; i++ {
+								var e interface{}
+								a[i] = reflect.ValueOf(&e).Elem()
+							}
 						}
 						err = reader.ReadArray(a)
 					}
@@ -444,7 +510,7 @@ func (client *BaseClient) doIntput(context interface{}, args []interface{}, opti
 		}
 		fallthrough
 	case Raw:
-		if err = setResult(result, buf); err != nil {
+		if err = setResult(result[0], buf); err != nil {
 			return err
 		}
 	}
@@ -476,26 +542,6 @@ func (client *BaseClient) createRemoteObject(ro interface{}) {
 }
 
 func (client *BaseClient) remoteMethod(t reflect.Type, sf reflect.StructField) func(in []reflect.Value) []reflect.Value {
-	switch t.NumOut() {
-	case 0, 1:
-		break
-	case 2:
-		rt0 := t.Out(0)
-		rt1 := t.Out(1)
-		if rt0.Kind() == reflect.Chan &&
-			rt1.Kind() == reflect.Chan &&
-			rt1.Elem().Kind() == reflect.Interface &&
-			rt1.Elem().Name() == "error" {
-			break
-		}
-		if rt1.Kind() == reflect.Interface &&
-			rt1.Name() == "error" {
-			break
-		}
-		fallthrough
-	default:
-		panic("The results for a maximum of two parameters, and one for the error or <-chan error type.")
-	}
 	name := getFuncName(sf)
 	options := &InvokeOptions{ByRef: getByRef(sf), SimpleMode: getSimpleMode(sf), ResultMode: getResultMode(sf)}
 	return func(in []reflect.Value) []reflect.Value {
@@ -507,18 +553,18 @@ func (client *BaseClient) remoteMethod(t reflect.Type, sf reflect.StructField) f
 			varlen = in[argc].Len()
 			argc += varlen
 		}
-		args := make([]interface{}, argc)
+		args := make([]reflect.Value, argc)
 		if argc > 0 {
 			for i := 0; i < inlen-1; i++ {
-				args[i] = in[i].Interface()
+				args[i] = in[i]
 			}
 			if t.IsVariadic() {
 				v := in[inlen-1]
 				for i := 0; i < varlen; i++ {
-					args[inlen-1+i] = v.Index(i).Interface()
+					args[inlen-1+i] = v.Index(i)
 				}
 			} else {
-				args[inlen-1] = in[inlen-1].Interface()
+				args[inlen-1] = in[inlen-1]
 			}
 		}
 		numout := t.NumOut()
@@ -526,7 +572,7 @@ func (client *BaseClient) remoteMethod(t reflect.Type, sf reflect.StructField) f
 		switch numout {
 		case 0:
 			var result interface{}
-			if err := <-client.Invoke(name, args, options, &result); err == nil {
+			if err := <-client.invoke(name, args, options, []reflect.Value{reflect.ValueOf(&result)}); err == nil {
 				return out
 			} else {
 				panic(err.Error())
@@ -536,51 +582,58 @@ func (client *BaseClient) remoteMethod(t reflect.Type, sf reflect.StructField) f
 			if rt0.Kind() == reflect.Chan {
 				if rt0.Elem().Kind() == reflect.Interface && rt0.Elem().Name() == "error" {
 					var result chan interface{}
-					err := client.Invoke(name, args, options, &result)
+					err := client.invoke(name, args, options, []reflect.Value{reflect.ValueOf(&result)})
 					out[0] = reflect.ValueOf(&err).Elem()
 					return out
 				} else {
-					rv0p := reflect.New(rt0)
-					client.Invoke(name, args, options, rv0p.Interface())
-					out[0] = rv0p.Elem()
+					out[0] = reflect.New(rt0).Elem()
+					client.invoke(name, args, options, out)
 					return out
 				}
 			} else {
 				if rt0.Kind() == reflect.Interface && rt0.Name() == "error" {
 					var result interface{}
-					err := <-client.Invoke(name, args, options, &result)
+					err := <-client.invoke(name, args, options, []reflect.Value{reflect.ValueOf(&result)})
 					out[0] = reflect.ValueOf(&err).Elem()
 					return out
 				} else {
-					rv0p := reflect.New(rt0)
-					if err := <-client.Invoke(name, args, options, rv0p.Interface()); err == nil {
-						out[0] = rv0p.Elem()
+					out[0] = reflect.New(rt0).Elem()
+					if err := <-client.invoke(name, args, options, out); err == nil {
 						return out
 					} else {
 						panic(err.Error())
 					}
 				}
 			}
-		case 2:
-			rt0 := t.Out(0)
-			rt1 := t.Out(1)
-			if rt0.Kind() == reflect.Chan &&
-				rt1.Kind() == reflect.Chan &&
-				rt1.Elem().Kind() == reflect.Interface &&
-				rt1.Elem().Name() == "error" {
-				rv0p := reflect.New(rt0)
-				err := client.Invoke(name, args, options, rv0p.Interface())
-				out[0] = rv0p.Elem()
-				out[1] = reflect.ValueOf(&err).Elem()
+		default:
+			last := numout - 1
+			rtlast := t.Out(last)
+			for i := 0; i < last; i++ {
+				out[i] = reflect.New(t.Out(i)).Elem()
+			}
+			if rtlast.Kind() == reflect.Chan &&
+				rtlast.Elem().Kind() == reflect.Interface &&
+				rtlast.Elem().Name() == "error" {
+				err := client.invoke(name, args, options, out[:last])
+				out[last] = reflect.ValueOf(&err).Elem()
 				return out
 			}
-			if rt1.Kind() == reflect.Interface &&
-				rt1.Name() == "error" {
-				rv0p := reflect.New(rt0)
-				err := <-client.Invoke(name, args, options, rv0p.Interface())
-				out[0] = rv0p.Elem()
-				out[1] = reflect.ValueOf(&err).Elem()
+			if rtlast.Kind() == reflect.Interface &&
+				rtlast.Name() == "error" {
+				err := <-client.invoke(name, args, options, out[:last])
+				out[last] = reflect.ValueOf(&err).Elem()
 				return out
+			}
+			out[last] = reflect.New(t.Out(last)).Elem()
+			if t.Out(0).Kind() == reflect.Chan {
+				client.invoke(name, args, options, out)
+				return out
+			} else {
+				if err := <-client.invoke(name, args, options, out); err == nil {
+					return out
+				} else {
+					panic(err.Error())
+				}
 			}
 		}
 		return out
@@ -605,27 +658,22 @@ func isStructPointer(p interface{}) bool {
 		(t.Elem().Kind() == reflect.Ptr && t.Elem().Elem().Kind() == reflect.Struct))
 }
 
-func checkRefArgs(args []interface{}) bool {
-	v := reflect.ValueOf(args)
+func checkRefArgs(args []reflect.Value) bool {
 	count := len(args)
 	for i := 0; i < count; i++ {
-		x := v.Index(i)
-		if !x.IsValid() ||
-			!x.Elem().IsValid() ||
-			x.Elem().Kind() != reflect.Ptr ||
-			!x.Elem().Elem().IsValid() {
+		if args[i].Kind() != reflect.Ptr {
 			return false
 		}
 	}
 	return true
 }
 
-func setResult(result interface{}, buf *bytes.Buffer) error {
-	switch result := result.(type) {
-	case **bytes.Buffer:
-		*result = buf
-	case *[]byte:
-		*result = buf.Bytes()
+func setResult(result reflect.Value, buf *bytes.Buffer) error {
+	switch result.Interface().(type) {
+	case *bytes.Buffer:
+		result.Set(reflect.ValueOf(buf))
+	case []byte, interface{}:
+		result.Set(reflect.ValueOf(buf.Bytes()))
 	default:
 		return errors.New("The argument result must be a *[]byte or **bytes.Buffer if the ResultMode is different from Normal.")
 	}

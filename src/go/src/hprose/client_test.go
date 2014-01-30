@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Client Test for Go.                             *
  *                                                        *
- * LastModified: Jan 29, 2014                             *
+ * LastModified: Jan 30, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -40,11 +40,15 @@ type testRemoteObject struct {
 	AsyncHello          func(string) <-chan string                 `name:"hello"`
 	AsyncHelloWithError func(string) (<-chan string, <-chan error) `name:"hello"`
 	Sum                 func(...int) int
-	Swap                func(*map[string]string) map[string]string `name:"swapKeyAndValue" byref:"true"`
+	SwapKeyAndValue     func(*map[string]string) map[string]string `byref:"true"`
+	SwapInt             func(int, int) (int, int)                  `name:"swap"`
+	SwapFloat           func(float64, float64) (float64, float64)  `name:"swap"`
+	Swap                func(interface{}, interface{}) (interface{}, interface{})
 	GetUserList         func() []testUser
 }
 
 func TestRemoteObject(t *testing.T) {
+	//client := NewClient("http://127.0.0.1/")
 	client := NewClient("http://www.hprose.com/example/")
 	var ro *testRemoteObject
 	client.UseService(&ro)
@@ -87,14 +91,18 @@ func TestRemoteObject(t *testing.T) {
 	m["Dec"] = "December"
 
 	fmt.Println(m)
-	mm := ro.Swap(&m)
+	mm := ro.SwapKeyAndValue(&m)
 	fmt.Println(m)
 	fmt.Println(mm)
 
 	fmt.Println(ro.GetUserList())
+	fmt.Println(ro.SwapInt(1, 2))
+	fmt.Println(ro.SwapFloat(1.2, 3.4))
+	fmt.Println(ro.Swap("Hello", "World"))
 }
 
 func TestClient(t *testing.T) {
+	//client := NewClient("http://127.0.0.1/")
 	client := NewClient("http://www.hprose.com/example/")
 	var r1 chan string
 	if err := <-client.Invoke("hello", []interface{}{"world"}, nil, &r1); err != nil {

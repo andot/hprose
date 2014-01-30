@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Reader for Go.                                  *
  *                                                        *
- * LastModified: Jan 29, 2014                             *
+ * LastModified: Jan 30, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -36,6 +36,7 @@ type Reader interface {
 	CheckTag(byte) error
 	CheckTags([]byte) (byte, error)
 	Unserialize(interface{}) error
+	ReadValue(reflect.Value) error
 	ReadInt(byte) (int, error)
 	ReadUint(byte) (uint, error)
 	ReadInt64() (int64, error)
