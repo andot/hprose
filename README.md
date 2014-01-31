@@ -13,20 +13,21 @@ Language support
 
 *Hprose* supports many programming languages, for example:
 
-    * C++
-    * .NET(C#, Visual Basic...)
-    * Java
-    * Delphi/Free Pascal
-    * Objective-C
+    * AAuto Quicker
     * ActionScript
+    * ASP
+    * C++
+    * Delphi/Free Pascal
+    * dotNET(C#, Visual Basic...)
+    * Golang
+    * Java
     * JavaScript
     * Node.js
+    * Objective-C
+    * Perl
+    * PHP
     * Python
     * Ruby
-    * PHP
-    * ASP
-    * Perl
-    * AAuto Quicker
     * ...
 
 Through *Hprose*, You can conveniently and efficiently intercommunicate between those
@@ -40,7 +41,3 @@ License
 The MIT License is simple and easy to understand and it places almost no restrictions on what you can do with *hprose*.
 
 You are free to use *hprose* in commercial projects as long as the copyright header is left intact.
-
-
-
-
