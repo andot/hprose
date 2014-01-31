@@ -49,10 +49,15 @@ func (*testServe) Sum(args ...int) (int, error) {
 	return a, nil
 }
 
+func (*testServe) PanicTest() {
+	panic("I'm crazy")
+}
+
 type testRemoteObject2 struct {
-	Hello func(string) (string, error)
-	Swap  func(int, int) (int, int, error)
-	Sum   func(...int) (int, error)
+	Hello     func(string) (string, error)
+	Swap      func(int, int) (int, int, error)
+	Sum       func(...int) (int, error)
+	PanicTest func() error
 }
 
 func TestHttpService(t *testing.T) {
@@ -83,5 +88,10 @@ func TestHttpService(t *testing.T) {
 		t.Error(err.Error())
 	} else {
 		fmt.Println(sum)
+	}
+	if err := ro.PanicTest(); err != nil {
+		fmt.Println(err.Error())
+	} else {
+		t.Error("missing panic")
 	}
 }
