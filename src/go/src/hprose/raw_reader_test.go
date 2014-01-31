@@ -13,15 +13,16 @@
  *                                                        *
  * hprose RawReader Test for Go.                          *
  *                                                        *
- * LastModified: Jan 20, 2014                             *
+ * LastModified: Jan 31, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 
-package hprose
+package hprose_test
 
 import (
 	"bytes"
+	. "hprose"
 	"testing"
 )
 

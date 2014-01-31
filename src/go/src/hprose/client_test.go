@@ -13,15 +13,16 @@
  *                                                        *
  * hprose Client Test for Go.                             *
  *                                                        *
- * LastModified: Jan 30, 2014                             *
+ * LastModified: Jan 31, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 
-package hprose
+package hprose_test
 
 import (
 	"fmt"
+	. "hprose"
 	"testing"
 	"time"
 )

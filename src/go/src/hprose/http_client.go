@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http client for Go.                             *
  *                                                        *
- * LastModified: Jan 30, 2014                             *
+ * LastModified: Jan 31, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -36,13 +36,13 @@ type HttpClient struct {
 	*BaseClient
 }
 
-type HttpClientTransporter struct {
+type HttpTransporter struct {
 	*http.Client
 	keepAlive        bool
 	keepAliveTimeout int
 }
 
-type HttpClientContext struct {
+type HttpContext struct {
 	uri  string
 	buf  io.ReadWriter
 	body io.ReadCloser
@@ -56,7 +56,7 @@ func NewHttpClient(uri string) Client {
 	} else {
 		panic("The uri can't be parsed.")
 	}
-	client := &HttpClient{NewBaseClient(uri, newHttpClientTransporter())}
+	client := &HttpClient{NewBaseClient(uri, newHttpTransporter())}
 	client.SetKeepAlive(true)
 	return client
 }
@@ -80,22 +80,22 @@ func (client *HttpClient) KeepAlive() bool {
 	if transport, ok := client.Http().Transport.(*http.Transport); ok {
 		return !transport.DisableKeepAlives
 	}
-	return client.ClientTransporter.(*HttpClientTransporter).keepAlive
+	return client.Transporter.(*HttpTransporter).keepAlive
 }
 
 func (client *HttpClient) SetKeepAlive(enable bool) {
 	if transport, ok := client.Http().Transport.(*http.Transport); ok {
 		transport.DisableKeepAlives = !enable
-		client.ClientTransporter.(*HttpClientTransporter).keepAlive = enable
+		client.Transporter.(*HttpTransporter).keepAlive = enable
 	}
 }
 
 func (client *HttpClient) KeepAliveTimeout() int {
-	return client.ClientTransporter.(*HttpClientTransporter).keepAliveTimeout
+	return client.Transporter.(*HttpTransporter).keepAliveTimeout
 }
 
 func (client *HttpClient) SetKeepAliveTimeout(timeout int) {
-	client.ClientTransporter.(*HttpClientTransporter).keepAliveTimeout = timeout
+	client.Transporter.(*HttpTransporter).keepAliveTimeout = timeout
 }
 
 func (client *HttpClient) Compression() bool {
@@ -127,24 +127,24 @@ func (client *HttpClient) SetMaxIdleConnsPerHost(value int) bool {
 }
 
 func (client *HttpClient) Http() *http.Client {
-	return client.ClientTransporter.(*HttpClientTransporter).Client
+	return client.Transporter.(*HttpTransporter).Client
 }
 
-func newHttpClientTransporter() *HttpClientTransporter {
-	return &HttpClientTransporter{&http.Client{Jar: cookieJar}, true, 300}
+func newHttpTransporter() *HttpTransporter {
+	return &HttpTransporter{&http.Client{Jar: cookieJar}, true, 300}
 }
 
-func (h *HttpClientTransporter) GetInvokeContext(uri string) (interface{}, error) {
-	return &HttpClientContext{uri: uri, buf: new(bytes.Buffer)}, nil
+func (h *HttpTransporter) GetInvokeContext(uri string) (interface{}, error) {
+	return &HttpContext{uri: uri, buf: new(bytes.Buffer)}, nil
 }
 
-func (h *HttpClientTransporter) GetOutputStream(context interface{}) (io.Writer, error) {
-	return context.(*HttpClientContext).buf, nil
+func (h *HttpTransporter) GetOutputStream(context interface{}) (io.Writer, error) {
+	return context.(*HttpContext).buf, nil
 }
 
-func (h *HttpClientTransporter) SendData(context interface{}, success bool) error {
+func (h *HttpTransporter) SendData(context interface{}, success bool) error {
 	if success {
-		context := context.(*HttpClientContext)
+		context := context.(*HttpContext)
 		req, err := http.NewRequest("POST", context.uri, context.buf)
 		if err != nil {
 			return err
@@ -163,10 +163,10 @@ func (h *HttpClientTransporter) SendData(context interface{}, success bool) erro
 	return nil
 }
 
-func (h *HttpClientTransporter) GetInputStream(context interface{}) (io.Reader, error) {
-	return context.(*HttpClientContext).body, nil
+func (h *HttpTransporter) GetInputStream(context interface{}) (io.Reader, error) {
+	return context.(*HttpContext).body, nil
 }
 
-func (h *HttpClientTransporter) EndInvoke(context interface{}, success bool) error {
-	return context.(*HttpClientContext).body.Close()
+func (h *HttpTransporter) EndInvoke(context interface{}, success bool) error {
+	return context.(*HttpContext).body.Close()
 }

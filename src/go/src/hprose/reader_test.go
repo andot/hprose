@@ -13,16 +13,17 @@
  *                                                        *
  * hprose Writer Test for Go.                             *
  *                                                        *
- * LastModified: Jan 27, 2014                             *
+ * LastModified: Jan 31, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 
-package hprose
+package hprose_test
 
 import (
 	"bytes"
 	"container/list"
+	. "hprose"
 	"reflect"
 	"strings"
 	"testing"

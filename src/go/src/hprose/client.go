@@ -13,7 +13,7 @@
  *                                                        *
  * hprose client for Go.                                  *
  *                                                        *
- * LastModified: Jan 30, 2014                             *
+ * LastModified: Jan 31, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -29,13 +29,24 @@ Here is a client example:
 		"hprose"
 	)
 
-	type RemoteObject struct {
+	type testUser struct {
+		Name     string
+		Sex      int
+		Birthday time.Time
+		Age      int
+		Married  bool
+	}
+
+	type testRemoteObject struct {
 		Hello               func(string) string
 		HelloWithError      func(string) (string, error)               `name:"hello"`
 		AsyncHello          func(string) <-chan string                 `name:"hello"`
 		AsyncHelloWithError func(string) (<-chan string, <-chan error) `name:"hello"`
 		Sum                 func(...int) int
-		Swap                func(*map[string]string) map[string]string `name:"swapKeyAndValue" byref:"true"`
+		SwapKeyAndValue     func(*map[string]string) map[string]string `byref:"true"`
+		SwapInt             func(int, int) (int, int)                  `name:"swap"`
+		SwapFloat           func(float64, float64) (float64, float64)  `name:"swap"`
+		Swap                func(interface{}, interface{}) (interface{}, interface{})
 		GetUserList         func() []testUser
 	}
 
@@ -82,11 +93,14 @@ Here is a client example:
 		m["Dec"] = "December"
 
 		fmt.Println(m)
-		mm := ro.Swap(&m)
+		mm := ro.SwapKeyAndValue(&m)
 		fmt.Println(m)
 		fmt.Println(mm)
 
 		fmt.Println(ro.GetUserList())
+		fmt.Println(ro.SwapInt(1, 2))
+		fmt.Println(ro.SwapFloat(1.2, 3.4))
+		fmt.Println(ro.Swap("Hello", "World"))
 	}
 
 */
@@ -114,15 +128,9 @@ type Client interface {
 	Invoke(string, []interface{}, *InvokeOptions, interface{}) <-chan error
 	Uri() string
 	SetUri(string)
-	ByRef() bool
-	SetByRef(bool)
-	SimpleMode() bool
-	SetSimpleMode(bool)
-	Filter() Filter
-	SetFilter(Filter)
 }
 
-type ClientTransporter interface {
+type Transporter interface {
 	GetInvokeContext(uri string) (interface{}, error)
 	GetOutputStream(context interface{}) (io.Writer, error)
 	SendData(context interface{}, success bool) error
@@ -131,17 +139,17 @@ type ClientTransporter interface {
 }
 
 type BaseClient struct {
-	ClientTransporter
-	byref  bool
-	simple bool
-	filter Filter
-	uri    *url.URL
+	Transporter
+	Filter
+	ByRef      bool
+	SimpleMode bool
+	uri        *url.URL
 }
 
 var clientFactories = make(map[string]func(string) Client)
 
-func NewBaseClient(uri string, trans ClientTransporter) *BaseClient {
-	client := &BaseClient{ClientTransporter: trans}
+func NewBaseClient(uri string, trans Transporter) *BaseClient {
+	client := &BaseClient{Transporter: trans}
 	client.SetUri(uri)
 	return client
 }
@@ -167,30 +175,6 @@ func (client *BaseClient) SetUri(uri string) {
 	} else {
 		panic("The uri can't be parsed.")
 	}
-}
-
-func (client *BaseClient) ByRef() bool {
-	return client.byref
-}
-
-func (client *BaseClient) SetByRef(byref bool) {
-	client.byref = byref
-}
-
-func (client *BaseClient) SimpleMode() bool {
-	return client.simple
-}
-
-func (client *BaseClient) SetSimpleMode(simple bool) {
-	client.simple = simple
-}
-
-func (client *BaseClient) Filter() Filter {
-	return client.filter
-}
-
-func (client *BaseClient) SetFilter(filter Filter) {
-	client.filter = filter
 }
 
 // UseService(uri string)
@@ -269,7 +253,7 @@ func (client *BaseClient) invoke(name string, args []reflect.Value, options *Inv
 			panic("The out parameters must be all chan or all non-chan type.")
 		}
 	}
-	byref := client.byref
+	byref := client.ByRef
 	if br, ok := options.ByRef.(bool); ok {
 		byref = br
 	}
@@ -335,14 +319,14 @@ func (client *BaseClient) doOutput(context interface{}, name string, args []refl
 	if err != nil {
 		return err
 	}
-	if client.filter != nil {
-		ostream = client.filter.OutputFilter(ostream)
+	if client.Filter != nil {
+		ostream = client.OutputFilter(ostream)
 	}
-	simple := client.simple
+	simple := client.SimpleMode
 	if s, ok := options.SimpleMode.(bool); ok {
 		simple = s
 	}
-	byref := client.byref
+	byref := client.ByRef
 	if br, ok := options.ByRef.(bool); ok {
 		byref = br
 	}
@@ -391,8 +375,8 @@ func (client *BaseClient) doIntput(context interface{}, args []reflect.Value, op
 	if err != nil {
 		return err
 	}
-	if client.filter != nil {
-		istream = client.filter.InputFilter(istream)
+	if client.Filter != nil {
+		istream = client.InputFilter(istream)
 	}
 	resultMode := options.ResultMode
 	buf := new(bytes.Buffer)

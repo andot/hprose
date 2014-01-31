@@ -13,21 +13,20 @@
  *                                                        *
  * hprose SimpleReader Test for Go.                       *
  *                                                        *
- * LastModified: Jan 22, 2014                             *
+ * LastModified: Jan 31, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 
-package hprose
+package hprose_test
 
 import (
 	"bytes"
 	"container/list"
-	//"fmt"
+	. "hprose"
 	"math"
 	"math/big"
 	"reflect"
-	//"strings"
 	"testing"
 	"time"
 	"uuid"
