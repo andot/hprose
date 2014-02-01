@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Service Test for Go.                            *
  *                                                        *
- * LastModified: Jan 31, 2014                             *
+ * LastModified: Feb 1, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -65,6 +65,42 @@ func TestHttpService(t *testing.T) {
 	service.AddFunction("hello", hello)
 	service.AddMethods(new(testServe))
 	server := httptest.NewServer(service)
+	defer server.Close()
+	client := hprose.NewClient(server.URL)
+	var ro *testRemoteObject2
+	client.UseService(&ro)
+	if s, err := ro.Hello("World"); err != nil {
+		t.Error(err.Error())
+	} else {
+		fmt.Println(s)
+	}
+	if a, b, err := ro.Swap(1, 2); err != nil {
+		t.Error(err.Error())
+	} else {
+		fmt.Println(a, b)
+	}
+	if sum, err := ro.Sum(1); err != nil {
+		fmt.Println(err.Error())
+	} else {
+		t.Error(sum)
+	}
+	if sum, err := ro.Sum(1, 2, 3, 4, 5); err != nil {
+		t.Error(err.Error())
+	} else {
+		fmt.Println(sum)
+	}
+	if err := ro.PanicTest(); err != nil {
+		fmt.Println(err.Error())
+	} else {
+		t.Error("missing panic")
+	}
+}
+
+func TestTcpService(t *testing.T) {
+	server := hprose.NewTcpServer("")
+	server.AddFunction("hello", hello)
+	server.AddMethods(new(testServe))
+	go server.Start()
 	defer server.Close()
 	client := hprose.NewClient(server.URL)
 	var ro *testRemoteObject2

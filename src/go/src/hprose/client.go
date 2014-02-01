@@ -148,10 +148,8 @@ type BaseClient struct {
 
 var clientFactories = make(map[string]func(string) Client)
 
-func NewBaseClient(uri string, trans Transporter) *BaseClient {
-	client := &BaseClient{Transporter: trans}
-	client.SetUri(uri)
-	return client
+func NewBaseClient(trans Transporter) *BaseClient {
+	return &BaseClient{Transporter: trans}
 }
 
 func NewClient(uri string) Client {
@@ -364,7 +362,7 @@ func (client *BaseClient) doOutput(context interface{}, name string, args []refl
 }
 
 func (client *BaseClient) doIntput(context interface{}, args []reflect.Value, options *InvokeOptions, result []reflect.Value) (err error) {
-	success := false
+	success := true
 	defer func() {
 		e := client.EndInvoke(context, success)
 		if err == nil {
@@ -372,8 +370,8 @@ func (client *BaseClient) doIntput(context interface{}, args []reflect.Value, op
 		}
 	}()
 	var istream io.Reader
-	istream, err = client.GetInputStream(context)
-	if err != nil {
+	if istream, err = client.GetInputStream(context); err != nil {
+		success = false
 		return err
 	}
 	if client.Filter != nil {
@@ -414,10 +412,12 @@ func (client *BaseClient) doIntput(context interface{}, args []reflect.Value, op
 					}
 				}
 				if err != nil {
+					success = false
 					return err
 				}
 			case Serialized:
 				if err = reader.ReadRawTo(buf); err != nil {
+					success = false
 					return err
 				}
 				if err = setResult(result[0], buf); err != nil {
@@ -428,6 +428,7 @@ func (client *BaseClient) doIntput(context interface{}, args []reflect.Value, op
 					return err
 				}
 				if err = reader.ReadRawTo(buf); err != nil {
+					success = false
 					return err
 				}
 			}
@@ -443,12 +444,10 @@ func (client *BaseClient) doIntput(context interface{}, args []reflect.Value, op
 						if count <= length {
 							for i := 0; i < count; i++ {
 								a[i] = args[i].Elem()
-								//a[i] = args[i]
 							}
 						} else {
 							for i := 0; i < length; i++ {
 								a[i] = args[i].Elem()
-								//a[i] = args[i]
 							}
 							for i := length; i < count; i++ {
 								var e interface{}
@@ -459,6 +458,7 @@ func (client *BaseClient) doIntput(context interface{}, args []reflect.Value, op
 					}
 				}
 				if err != nil {
+					success = false
 					return err
 				}
 			default:
@@ -466,6 +466,7 @@ func (client *BaseClient) doIntput(context interface{}, args []reflect.Value, op
 					return err
 				}
 				if err = reader.ReadRawTo(buf); err != nil {
+					success = false
 					return err
 				}
 			}
@@ -476,6 +477,12 @@ func (client *BaseClient) doIntput(context interface{}, args []reflect.Value, op
 				var e string
 				if e, err = reader.ReadString(); err == nil {
 					err = errors.New(e)
+					if e := reader.CheckTag(TagEnd); e != nil {
+						success = false
+						err = e
+					}
+				} else {
+					success = false
 				}
 				return err
 			default:
@@ -483,10 +490,15 @@ func (client *BaseClient) doIntput(context interface{}, args []reflect.Value, op
 					return err
 				}
 				if err = reader.ReadRawTo(buf); err != nil {
+					success = false
 					return err
 				}
 			}
 		}
+	}
+	if err != nil {
+		success = false
+		return err
 	}
 	switch resultMode {
 	case RawWithEndTag:
@@ -499,7 +511,6 @@ func (client *BaseClient) doIntput(context interface{}, args []reflect.Value, op
 			return err
 		}
 	}
-	success = true
 	return err
 }
 
@@ -721,6 +732,8 @@ func getResultMode(sf reflect.StructField) ResultMode {
 func init() {
 	RegisterClientFactory("http", NewHttpClient)
 	RegisterClientFactory("https", NewHttpClient)
+	RegisterClientFactory("tcp", NewTcpClient)
+	RegisterClientFactory("tcp4", NewTcpClient)
+	RegisterClientFactory("tcp6", NewTcpClient)
 	//RegisterClientFactory("ws", NewWebSocketClient)
-	//RegisterClientFactory("tcp", NewTcpClient)
 }

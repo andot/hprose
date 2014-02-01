@@ -117,6 +117,7 @@ type BaseService struct {
 	*Methods
 	ServiceEvent
 	Filter
+	IOError error
 }
 
 func NewBaseService() *BaseService {
@@ -130,11 +131,13 @@ func (service *BaseService) responseEnd(ostream io.Writer, buf []byte, err error
 			buf = service.OutputFilter(buf)
 		}
 	}
-	if _, e := ostream.Write(buf); err == nil {
-		err = e
+	if err != nil {
+		if service.ServiceEvent != nil {
+			service.OnSendError(err)
+		}
 	}
-	if err != nil && service.ServiceEvent != nil {
-		service.OnSendError(err)
+	if _, err := ostream.Write(buf); err != nil {
+		service.IOError = err
 	}
 }
 
@@ -149,13 +152,15 @@ func (service *BaseService) sendError(ostream io.Writer, err error) {
 	service.responseEnd(ostream, buf.Bytes(), err)
 }
 
-func (service *BaseService) doInvoke(istream io.Reader, ostream io.Writer) error {
+func (service *BaseService) doInvoke(istream io.Reader, ostream io.Writer) (err error) {
 	reader := NewReader(istream)
 	buf := new(bytes.Buffer)
 	for {
 		reader.Reset()
-		name, err := reader.ReadString()
+		var name string
+		name, err = reader.ReadString()
 		if err != nil {
+			service.IOError = err
 			return err
 		}
 		alias := strings.ToLower(name)
@@ -163,13 +168,15 @@ func (service *BaseService) doInvoke(istream io.Reader, ostream io.Writer) error
 		count := 0
 		var args []reflect.Value
 		byref := false
-		tag, err := reader.CheckTags([]byte{TagList, TagEnd, TagCall})
-		if err != nil {
+		var tag byte
+		if tag, err = reader.CheckTags([]byte{TagList, TagEnd, TagCall}); err != nil {
+			service.IOError = err
 			return err
 		}
 		if tag == TagList {
 			reader.Reset()
 			if count, err = reader.ReadInt(TagOpenbrace); err != nil {
+				service.IOError = err
 				return err
 			}
 			args = make([]reflect.Value, count)
@@ -179,6 +186,7 @@ func (service *BaseService) doInvoke(istream io.Reader, ostream io.Writer) error
 					args[i] = reflect.ValueOf(&e).Elem()
 				}
 				if err = reader.ReadArray(args); err != nil {
+					service.IOError = err
 					return err
 				}
 			} else {
@@ -197,6 +205,7 @@ func (service *BaseService) doInvoke(istream io.Reader, ostream io.Writer) error
 							args[i] = reflect.New(t).Elem()
 						}
 						if err = reader.ReadArray(args); err != nil {
+							service.IOError = err
 							return err
 						}
 					} else {
@@ -205,6 +214,7 @@ func (service *BaseService) doInvoke(istream io.Reader, ostream io.Writer) error
 							args[i] = reflect.ValueOf(&e).Elem()
 						}
 						if err = reader.ReadArray(args); err != nil {
+							service.IOError = err
 							return err
 						}
 						args = args[:n]
@@ -214,16 +224,19 @@ func (service *BaseService) doInvoke(istream io.Reader, ostream io.Writer) error
 						args[i] = reflect.New(ft.In(i)).Elem()
 					}
 					if err = reader.ReadArray(args[0:count]); err != nil {
+						service.IOError = err
 						return err
 					}
 				}
 			}
 			if tag, err = reader.CheckTags([]byte{TagTrue, TagEnd, TagCall}); err != nil {
+				service.IOError = err
 				return err
 			}
 			if tag == TagTrue {
 				byref = true
 				if tag, err = reader.CheckTags([]byte{TagEnd, TagCall}); err != nil {
+					service.IOError = err
 					return err
 				}
 			}
@@ -362,7 +375,7 @@ func (service *BaseService) Handle(istream io.Reader, ostream io.Writer) {
 		if e := recover(); e != nil && err == nil {
 			err = fmt.Errorf("%v", e)
 		}
-		if err != nil && ostream != nil {
+		if err != nil {
 			service.sendError(ostream, err)
 		}
 	}()
@@ -380,5 +393,7 @@ func (service *BaseService) Handle(istream io.Reader, ostream io.Writer) {
 		default:
 			err = errors.New("Unknown Tag: " + string(buf))
 		}
+	} else {
+		service.IOError = err
 	}
 }

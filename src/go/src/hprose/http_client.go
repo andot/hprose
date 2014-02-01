@@ -49,16 +49,19 @@ type HttpContext struct {
 }
 
 func NewHttpClient(uri string) Client {
+	client := &HttpClient{NewBaseClient(newHttpTransporter())}
+	client.SetUri(uri)
+	client.SetKeepAlive(true)
+	return client
+}
+
+func (client *HttpClient) SetUri(uri string) {
 	if u, err := url.Parse(uri); err == nil {
 		if u.Scheme != "http" && u.Scheme != "https" {
 			panic("This client desn't support " + u.Scheme + " scheme.")
 		}
-	} else {
-		panic("The uri can't be parsed.")
 	}
-	client := &HttpClient{NewBaseClient(uri, newHttpTransporter())}
-	client.SetKeepAlive(true)
-	return client
+	client.BaseClient.SetUri(uri)
 }
 
 func (client *HttpClient) TLSClientConfig() *tls.Config {
