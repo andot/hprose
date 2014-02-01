@@ -126,10 +126,8 @@ func NewBaseService() *BaseService {
 
 func (service *BaseService) responseEnd(ostream io.Writer, buf []byte, err error) {
 	defer recover()
-	if err == nil {
-		if service.Filter != nil {
-			buf = service.OutputFilter(buf)
-		}
+	if service.Filter != nil {
+		buf = service.OutputFilter(buf)
 	}
 	if err != nil {
 		if service.ServiceEvent != nil {
