@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http service class for C#.                      *
  *                                                        *
- * LastModified: Nov 6, 2012                              *
+ * LastModified: Feb 2, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -33,12 +33,9 @@ namespace Hprose.Server {
         private bool p3pEnabled = false;
         private bool getEnabled = true;
         private bool compressionEnabled = false;
+        public event SendHeaderEvent OnSendHeader = null;
         [ThreadStatic]
         private static HttpContext currentContext;
-        [ThreadStatic]
-        private static Stream ostream;
-        [ThreadStatic]
-        private static Stream istream;
 
         protected override object[] FixArguments(Type[] argumentTypes, object[] arguments, int count) {
             if (argumentTypes.Length != count) {
@@ -119,38 +116,32 @@ namespace Hprose.Server {
             }
         }
 
-        protected override Stream OutputStream {
-            get {
-                if (ostream == null) {
-                    ostream = new BufferedStream(currentContext.Response.OutputStream);
-                    if (compressionEnabled) {
-                        string acceptEncoding = currentContext.Request.Headers["Accept-Encoding"];
-                        if (acceptEncoding != null) {
-                            acceptEncoding = acceptEncoding.ToLower();
-                            if (acceptEncoding.IndexOf("deflate") > -1) {
-                                ostream = new DeflateStream(ostream, CompressionMode.Compress);
-                            }
-                            else if (acceptEncoding.IndexOf("gzip") > -1) {
-                                ostream = new GZipStream(ostream, CompressionMode.Compress);
-                            }
-                        }
+        private Stream GetOutputStream() {
+            Stream ostream = new BufferedStream(currentContext.Response.OutputStream);
+            if (compressionEnabled) {
+                string acceptEncoding = currentContext.Request.Headers["Accept-Encoding"];
+                if (acceptEncoding != null) {
+                    acceptEncoding = acceptEncoding.ToLower();
+                    if (acceptEncoding.IndexOf("deflate") > -1) {
+                        ostream = new DeflateStream(ostream, CompressionMode.Compress);
+                    }
+                    else if (acceptEncoding.IndexOf("gzip") > -1) {
+                        ostream = new GZipStream(ostream, CompressionMode.Compress);
                     }
                 }
-                return ostream;
             }
+            return ostream;
         }
 
-        protected override Stream InputStream {
-            get {
-                if (istream == null) {
-                    istream = new BufferedStream(currentContext.Request.InputStream);
-                }
-                return istream;
-            }
+        private Stream GetInputStream() {
+            Stream istream = new BufferedStream(currentContext.Request.InputStream);
+            return istream;
         }
 
-        protected override void SendHeader() {
-            base.SendHeader();
+        private void SendHeader() {
+            if (OnSendHeader != null) {
+                OnSendHeader();
+            }
             currentContext.Response.ContentType = "text/plain";
             if (p3pEnabled) {
                 currentContext.Response.AddHeader("P3P", "CP=\"CAO DSP COR CUR ADM DEV TAI PSA PSD " +
@@ -182,11 +173,11 @@ namespace Hprose.Server {
             }
         }
 
-        public override void Handle() {
+        public void Handle() {
             Handle(HttpContext.Current, null);
         }
 
-        public override void Handle(HproseMethods methods) {
+        public void Handle(HproseMethods methods) {
             Handle(HttpContext.Current, (HproseHttpMethods) methods);
         }
 
@@ -197,23 +188,26 @@ namespace Hprose.Server {
         public void Handle(HttpContext context, HproseHttpMethods methods) {
             currentContext = context;
             try {
+                SendHeader();
                 string method = currentContext.Request.HttpMethod;
+                Stream istream = null, ostream = null;
                 if ((method == "GET") && getEnabled) {
-                    DoFunctionList(methods);
+                    ostream = GetOutputStream();
+                    DoFunctionList(ostream, methods);
                 }
                 else if (method == "POST") {
-                    base.Handle(methods);
+                    istream = GetInputStream();
+                    ostream = GetOutputStream();
+                    Handle(istream, ostream, methods);
                 }
                 else {
-                    currentContext.Response.StatusCode = 405;
+                    currentContext.Response.StatusCode = 403;
                 }
                 if (istream != null) istream.Close();
                 if (ostream != null) ostream.Close();
                 currentContext.Response.End();
             }
             finally {
-                istream = null;
-                ostream = null;
                 currentContext = null;
             }
         }

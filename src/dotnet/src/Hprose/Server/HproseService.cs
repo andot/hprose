@@ -13,7 +13,7 @@
  *                                                        *
  * hprose service class for C#.                           *
  *                                                        *
- * LastModified: Dec 16, 2012                             *
+ * LastModified: Feb 2, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -37,7 +37,6 @@ namespace Hprose.Server {
         protected HproseMethods globalMethods = null;
         public event BeforeInvokeEvent OnBeforeInvoke = null;
         public event AfterInvokeEvent OnAfterInvoke = null;
-        public event SendHeaderEvent OnSendHeader = null;
         public event SendErrorEvent OnSendError = null;
         private IHproseFilter filter = null;
 
@@ -264,44 +263,32 @@ namespace Hprose.Server {
             GlobalMethods.AddMissingMethod(methodName, type, mode);
         }
 
-        protected abstract Stream OutputStream {
-             get;
-        }
-
-        protected abstract Stream InputStream {
-            get;
-        }
-
-        protected virtual void SendHeader() {
-            if (OnSendHeader != null) {
-                OnSendHeader();
+        private void ResponseEnd(Stream ostream, MemoryStream data, string error) {
+            if (filter != null) ostream = filter.OutputFilter(ostream);
+            if (error != null && OnSendError != null) {
+                OnSendError(error);
             }
+            data.WriteTo(ostream);
+            ostream.Flush();
         }
 
         protected virtual object[] FixArguments(Type[] argumentTypes, object[] arguments, int count) {
             return arguments;
         }
 
-        protected void SendError(string error) {
-            if (OnSendError != null) {
-                OnSendError(error);
-            }
-            Stream ostream = OutputStream;
-            if (filter != null) ostream = filter.OutputFilter(ostream);
-            HproseWriter writer = new HproseWriter(ostream, mode);
-            ostream.WriteByte(HproseTags.TagError);
+        protected void SendError(Stream ostream, string error) {
+            MemoryStream data = new MemoryStream(4096);
+            HproseWriter writer = new HproseWriter(data, mode);
+            data.WriteByte(HproseTags.TagError);
             writer.WriteString(error);
-            ostream.WriteByte(HproseTags.TagEnd);
-            ostream.Flush();
+            data.WriteByte(HproseTags.TagEnd);
+            ResponseEnd(ostream, data, error);
         }
 
-        protected void DoInvoke(HproseMethods methods) {
-            Stream istream = InputStream;
-            if (filter != null) istream = filter.InputFilter(istream);
+        protected void DoInvoke(Stream istream, Stream ostream, HproseMethods methods) {
             HproseReader reader = new HproseReader(istream, mode);
-            Stream ostream = OutputStream;
-            if (filter != null) ostream = filter.OutputFilter(ostream);
-            HproseWriter writer = new HproseWriter(ostream, mode);
+            MemoryStream data = new MemoryStream(4096);
+            HproseWriter writer = new HproseWriter(data, mode);
             int tag;
             do {
                 reader.Reset();
@@ -380,34 +367,34 @@ namespace Hprose.Server {
                     OnAfterInvoke(name, arguments, byRef, result);
                 }
                 if (remoteMethod.mode == HproseResultMode.RawWithEndTag) {
-                    ostream.Write((byte[])result, 0, ((byte[])result).Length);
-                    ostream.Flush();
+                    data.Write((byte[])result, 0, ((byte[])result).Length);
+                    ResponseEnd(ostream, data, null);
                     return;
                 }
                 else if (remoteMethod.mode == HproseResultMode.Raw) {
-                    ostream.Write((byte[])result, 0, ((byte[])result).Length);
+                    data.Write((byte[])result, 0, ((byte[])result).Length);
                 }
                 else {
-                    ostream.WriteByte(HproseTags.TagResult);
+                    data.WriteByte(HproseTags.TagResult);
                     if (remoteMethod.mode == HproseResultMode.Serialized) {
-                        ostream.Write((byte[])result, 0, ((byte[])result).Length);
+                        data.Write((byte[])result, 0, ((byte[])result).Length);
                     }
                     else {
                         writer.Reset();
                         writer.Serialize(result);
                     }
                     if (byRef) {
-                        ostream.WriteByte(HproseTags.TagArgument);
+                        data.WriteByte(HproseTags.TagArgument);
                         writer.Reset();
                         writer.WriteArray(arguments);
                     }
                 }
             } while (tag == HproseTags.TagCall);
-            ostream.WriteByte(HproseTags.TagEnd);
-            ostream.Flush();
+            data.WriteByte(HproseTags.TagEnd);
+            ResponseEnd(ostream, data, null);
         }
 
-        protected void DoFunctionList(HproseMethods methods) {
+        protected void DoFunctionList(Stream ostream, HproseMethods methods) {
 #if !(dotNET10 || dotNET11 || dotNETCF10)
             List<string> names = new List<string>(GlobalMethods.AllNames);
 #else
@@ -416,45 +403,40 @@ namespace Hprose.Server {
             if (methods != null) {
                 names.AddRange(methods.AllNames);
             }
-            Stream ostream = OutputStream;
-            if (filter != null) ostream = filter.OutputFilter(ostream);
-            HproseWriter writer = new HproseWriter(ostream, mode);
-            ostream.WriteByte(HproseTags.TagFunctions);
+            MemoryStream data = new MemoryStream(4096);
+            HproseWriter writer = new HproseWriter(data, mode);
+            data.WriteByte(HproseTags.TagFunctions);
 #if !(dotNET10 || dotNET11 || dotNETCF10)
             writer.WriteList((IList<string>)names);
 #else
             writer.WriteList((IList)names);
 #endif
-            ostream.WriteByte(HproseTags.TagEnd);
-            ostream.Flush();
+            data.WriteByte(HproseTags.TagEnd);
+            ResponseEnd(ostream, data, null);
         }
 
-        public virtual void Handle() {
-            Handle(null);
-        }
-
-        public virtual void Handle(HproseMethods methods) {
-            SendHeader();
+        public void Handle(Stream istream, Stream ostream, HproseMethods methods) {
             try {
-                int tag = InputStream.ReadByte();
+                if (filter != null) istream = filter.InputFilter(istream);
+                int tag = istream.ReadByte();
                 switch (tag) {
                     case HproseTags.TagCall:
-                        DoInvoke(methods);
+                        DoInvoke(istream, ostream, methods);
                         break;
                     case HproseTags.TagEnd:
-                        DoFunctionList(methods);
+                        DoFunctionList(ostream, methods);
                         break;
                     default:
-                        SendError("Unknown Tag");
+                        SendError(ostream, "Unknown Tag");
                         break;
                 }
             }
             catch (Exception e) {
                 if (debugEnabled) {
-                    SendError(e.ToString());
+                    SendError(ostream, e.ToString());
                 }
                 else {
-                    SendError(e.Message);
+                    SendError(ostream, e.Message);
                 }
             }
         }
