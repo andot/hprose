@@ -24,10 +24,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class ClassManager {
     private static final ConcurrentHashMap<Class<?>, String> classCache1 = new ConcurrentHashMap<Class<?>, String>();
     private static final ConcurrentHashMap<String, Class<?>> classCache2 = new ConcurrentHashMap<String, Class<?>>();
-    
+
     private ClassManager() {
     }
-    
+
     public static void register(Class<?> type, String alias) {
         classCache1.put(type, alias);
         classCache2.put(alias, type);
@@ -40,8 +40,8 @@ public final class ClassManager {
     public static Class<?> getClass(String alias) {
         return classCache2.get(alias);
     }
-    
+
     public static boolean containsClass(String alias) {
         return classCache2.containsKey(alias);
-    }    
+    }
 }

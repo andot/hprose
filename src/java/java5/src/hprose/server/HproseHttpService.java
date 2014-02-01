@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http service class for Java.                    *
  *                                                        *
- * LastModified: May 12, 2011                             *
+ * LastModified: Feb 1, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -37,8 +37,6 @@ public class HproseHttpService extends HproseService {
     private boolean p3pEnabled = false;
     private boolean getEnabled = true;
     private static ThreadLocal<HttpContext> context = new ThreadLocal<HttpContext>();
-    private static ThreadLocal<OutputStream> output = new ThreadLocal<OutputStream>();
-    private static ThreadLocal<InputStream> input = new ThreadLocal<InputStream>();
 
     public static HttpContext getCurrentContext() {
         return context.get();
@@ -61,14 +59,14 @@ public class HproseHttpService extends HproseService {
             throw new ClassCastException("methods must be a HproseHttpMethods instance");
         }
     }
-    
+
     public boolean isCrossDomainEnabled() {
         return crossDomainEnabled;
     }
 
     public void setCrossDomainEnabled(boolean enabled) {
         crossDomainEnabled = enabled;
-    }    
+    }
 
     public boolean isP3pEnabled() {
         return p3pEnabled;
@@ -84,24 +82,6 @@ public class HproseHttpService extends HproseService {
 
     public void setGetEnabled(boolean enabled) {
         getEnabled = enabled;
-    }
-
-    protected OutputStream getOutputStream() throws IOException {
-        OutputStream ostream = output.get();
-        if (ostream == null) {
-            ostream = new BufferedOutputStream(getCurrentContext().getResponse().getOutputStream());
-            output.set(ostream);
-        }
-        return ostream;
-    }
-
-    protected InputStream getInputStream() throws IOException {
-        InputStream istream = input.get();
-        if (istream == null) {
-            istream = new BufferedInputStream(getCurrentContext().getRequest().getInputStream());
-            input.set(istream);
-        }
-        return istream;
     }
 
     @Override
@@ -134,10 +114,12 @@ public class HproseHttpService extends HproseService {
         return arguments;
     }
 
-    protected void sendHeader() throws IOException {
-        super.sendHeader();
-        HttpServletRequest request = getCurrentContext().getRequest();
-        HttpServletResponse response = getCurrentContext().getResponse();
+    protected void sendHeader(HttpContext httpContext) throws IOException {
+        if (event != null && HproseHttpServiceEvent.class.isInstance(event)) {
+            ((HproseHttpServiceEvent)event).onSendHeader(httpContext);
+        }
+        HttpServletRequest request = httpContext.getRequest();
+        HttpServletResponse response = httpContext.getResponse();
         response.setContentType("text/plain");
         if (p3pEnabled) {
             response.setHeader("P3P", "CP=\"CAO DSP COR CUR ADM DEV TAI PSA PSD " +
@@ -149,7 +131,7 @@ public class HproseHttpService extends HproseService {
             String origin = request.getHeader("Origin");
             if (origin != null && !origin.equals("null")) {
                 response.setHeader("Access-Control-Allow-Origin", origin);
-                response.setHeader("Access-Control-Allow-Credentials", "true");  
+                response.setHeader("Access-Control-Allow-Credentials", "true");
             }
             else {
                 response.setHeader("Access-Control-Allow-Origin", "*");
@@ -160,23 +142,26 @@ public class HproseHttpService extends HproseService {
     public void handle(HttpContext httpContext) throws IOException {
         handle(httpContext, null);
     }
+
     public void handle(HttpContext httpContext, HproseHttpMethods methods) throws IOException {
         try {
             context.set(httpContext);
+            sendHeader(httpContext);
             String method = httpContext.getRequest().getMethod();
             if (method.equals("GET") && getEnabled) {
-                doFunctionList(methods);
+                OutputStream ostream = new BufferedOutputStream(httpContext.getResponse().getOutputStream());
+                doFunctionList(ostream, methods);
             }
             else if (method.equals("POST")) {
-                super.handle(methods);
+                InputStream istream = new BufferedInputStream(httpContext.getRequest().getInputStream());
+                OutputStream ostream = new BufferedOutputStream(httpContext.getResponse().getOutputStream());
+                super.handle(istream, ostream, methods);
             }
             else {
-                httpContext.getResponse().sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                httpContext.getResponse().sendError(HttpServletResponse.SC_FORBIDDEN);
             }
         }
         finally {
-            output.remove();
-            input.remove();
             context.remove();
         }
     }

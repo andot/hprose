@@ -19,8 +19,6 @@
 \**********************************************************/
 package hprose.server;
 
-public interface HproseServiceEvent {
-    void onBeforeInvoke(String name, Object[] args, boolean byRef);
-    void onAfterInvoke(String name, Object[] args, boolean byRef, Object result);
-    void onSendError(String error);
+public interface HproseHttpServiceEvent extends HproseServiceEvent {
+    void onSendHeader(HttpContext httpContext);
 }

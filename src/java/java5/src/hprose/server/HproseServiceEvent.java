@@ -13,7 +13,7 @@
  *                                                        *
  * hprose service event interface for Java.               *
  *                                                        *
- * LastModified: May 16, 2010                             *
+ * LastModified: Feb 1, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -22,6 +22,5 @@ package hprose.server;
 public interface HproseServiceEvent {
     void onBeforeInvoke(String name, Object[] args, boolean byRef);
     void onAfterInvoke(String name, Object[] args, boolean byRef, Object result);
-    void onSendHeader();
     void onSendError(String error);
 }

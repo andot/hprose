@@ -13,7 +13,7 @@
  *                                                        *
  * hprose service class for Java.                         *
  *                                                        *
- * LastModified: Dec 26, 2012                             *
+ * LastModified: Feb 1, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -27,6 +27,7 @@ import hprose.io.HproseMode;
 import hprose.io.HproseTags;
 import hprose.io.HproseReader;
 import hprose.io.HproseWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -39,7 +40,7 @@ public abstract class HproseService {
 
     private HproseMode mode = HproseMode.FieldMode;
     private boolean debugEnabled = false;
-    private HproseServiceEvent event = null;
+    protected HproseServiceEvent event = null;
     protected HproseMethods globalMethods = null;
     private HproseFilter filter = null;
 
@@ -270,46 +271,34 @@ public abstract class HproseService {
         getGlobalMethods().addMissingMethod(methodName, type, mode);
     }
 
-    protected abstract OutputStream getOutputStream() throws IOException;
-
-    protected abstract InputStream getInputStream() throws IOException;
-
-    protected void sendHeader() throws IOException {
-        if (event != null) {
-            event.onSendHeader();
+    private void responseEnd(OutputStream ostream, ByteArrayOutputStream data, String error) throws IOException {
+        if (filter != null) {
+            ostream = filter.outputFilter(ostream);
         }
+        if (error != null && event != null) {
+            event.onSendError(error);
+        }
+        data.writeTo(ostream);
+        ostream.flush();
     }
 
     protected Object[] fixArguments(Type[] argumentTypes, Object[] arguments, int count) {
         return arguments;
     }
 
-    protected void sendError(String error) throws IOException {
-        if (event != null) {
-            event.onSendError(error);
-        }
-        OutputStream ostream = getOutputStream();
-        if (filter != null) {
-            ostream = filter.outputFilter(ostream);
-        }
-        HproseWriter writer = new HproseWriter(ostream, mode);
-        ostream.write(HproseTags.TagError);
+    protected void sendError(OutputStream ostream, String error) throws IOException {
+        ByteArrayOutputStream data = new ByteArrayOutputStream();
+        HproseWriter writer = new HproseWriter(data, mode);
+        data.write(HproseTags.TagError);
         writer.writeString(error);
-        ostream.write(HproseTags.TagEnd);
-        ostream.flush();
+        data.write(HproseTags.TagEnd);
+        responseEnd(ostream, data, error);
     }
 
-    protected void doInvoke(HproseMethods methods) throws Throwable {
-        InputStream istream = getInputStream();
-        if (filter != null) {
-            istream = filter.inputFilter(istream);
-        }
+    protected void doInvoke(InputStream istream, OutputStream ostream, HproseMethods methods) throws Throwable {
         HproseReader reader = new HproseReader(istream, mode);
-        OutputStream ostream = getOutputStream();
-        if (filter != null) {
-            ostream = filter.outputFilter(ostream);
-        }
-        HproseWriter writer = new HproseWriter(ostream, mode);
+        ByteArrayOutputStream data = new ByteArrayOutputStream();
+        HproseWriter writer = new HproseWriter(data, mode);
         int tag;
         do {
             reader.reset();
@@ -404,63 +393,62 @@ public abstract class HproseService {
                 event.onAfterInvoke(name, arguments, byRef, result);
             }
             if (remoteMethod.mode == HproseResultMode.RawWithEndTag) {
-                ostream.write((byte[])result);
-                ostream.flush();
+                data.write((byte[])result);
+                responseEnd(ostream, data, null);
                 return;
             }
             else if (remoteMethod.mode == HproseResultMode.Raw) {
-                ostream.write((byte[])result);
+                data.write((byte[])result);
             }
             else {
-                ostream.write(HproseTags.TagResult);
+                data.write(HproseTags.TagResult);
                 if (remoteMethod.mode == HproseResultMode.Serialized) {
-                    ostream.write((byte[])result);
+                    data.write((byte[])result);
                 }
                 else {
                     writer.reset();
                     writer.serialize(result);
                 }
                 if (byRef) {
-                    ostream.write(HproseTags.TagArgument);
+                    data.write(HproseTags.TagArgument);
                     writer.reset();
                     writer.writeArray(arguments);
                 }
             }
         } while (tag == HproseTags.TagCall);
-        ostream.write(HproseTags.TagEnd);
-        ostream.flush();
+        data.write(HproseTags.TagEnd);
+        responseEnd(ostream, data, null);
     }
 
-    protected void doFunctionList(HproseMethods methods) throws IOException {
+    protected void doFunctionList(OutputStream ostream, HproseMethods methods) throws IOException {
         ArrayList<String> names = new ArrayList<String>();
         names.addAll(getGlobalMethods().getAllNames());
         if (methods != null) {
             names.addAll(methods.getAllNames());
         }
-        OutputStream ostream = getOutputStream();
-        if (filter != null) {
-            ostream = filter.outputFilter(ostream);
-        }
-        HproseWriter writer = new HproseWriter(ostream, mode);
-        ostream.write(HproseTags.TagFunctions);
+        ByteArrayOutputStream data = new ByteArrayOutputStream();
+        HproseWriter writer = new HproseWriter(data, mode);
+        data.write(HproseTags.TagFunctions);
         writer.writeList(names);
-        ostream.write(HproseTags.TagEnd);
-        ostream.flush();
+        data.write(HproseTags.TagEnd);
+        responseEnd(ostream, data, null);
     }
 
-    protected void handle(HproseMethods methods) throws IOException {
-        sendHeader();
+    protected void handle(InputStream istream, OutputStream ostream, HproseMethods methods) throws IOException {
         try {
-            int tag = getInputStream().read();
+            if (filter != null) {
+                istream = filter.inputFilter(istream);
+            }
+            int tag = istream.read();
             switch (tag) {
                 case HproseTags.TagCall:
-                    doInvoke(methods);
+                    doInvoke(istream, ostream, methods);
                     break;
                 case HproseTags.TagEnd:
-                    doFunctionList(methods);
+                    doFunctionList(ostream, methods);
                     break;
                 default:
-                    sendError("Unknown Tag");
+                    sendError(ostream, "Unknown Tag");
                     break;
             }
         }
@@ -471,10 +459,10 @@ public abstract class HproseService {
                 for (int i = 0, n = st.length; i < n; i++) {
                     es.append(st[i].toString()).append("\r\n");
                 }
-                sendError(es.toString());
+                sendError(ostream, es.toString());
             }
             else {
-                sendError(e.toString());
+                sendError(ostream, e.toString());
             }
         }
     }

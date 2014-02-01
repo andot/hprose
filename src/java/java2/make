@@ -1,9 +1,9 @@
 #!/bin/sh
 if  test ! -d build; then mkdir build; fi
 if  test ! -d dist; then mkdir dist; fi
-javac -source 1.2 -cp lib/servlet.jar -d build src/hprose/common/*.java src/hprose/client/*.java src/hprose/io/*.java src/hprose/server/*.java
-jar cf dist/hprose_for_java_1.2.jar -C build .
+javac -source 1.4 -cp lib/servlet.jar -d build src/hprose/common/*.java src/hprose/client/*.java src/hprose/io/*.java src/hprose/server/*.java
+jar cf dist/hprose_for_java_1.4.jar -C build .
 rm -rf build/hprose/server
 rm -f build\hprose\common\HproseMethod.class
 rm -f build\hprose\common\HproseMethods.class
-jar cf dist/hprose_client_for_java_1.2.jar -C build .
+jar cf dist/hprose_client_for_java_1.4.jar -C build .

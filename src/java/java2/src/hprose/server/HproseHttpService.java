@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http service class for Java.                    *
  *                                                        *
- * LastModified: Jan 4, 2013                              *
+ * LastModified: Feb 1, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -36,8 +36,6 @@ public class HproseHttpService extends HproseService {
     private boolean p3pEnabled = false;
     private boolean getEnabled = true;
     private static ThreadLocal context = new ThreadLocal();
-    private static ThreadLocal output = new ThreadLocal();
-    private static ThreadLocal input = new ThreadLocal();
 
     public static HttpContext getCurrentContext() {
         return (HttpContext)context.get();
@@ -83,24 +81,6 @@ public class HproseHttpService extends HproseService {
         getEnabled = enabled;
     }
 
-    protected OutputStream getOutputStream() throws IOException {
-        OutputStream ostream = (OutputStream)output.get();
-        if (ostream == null) {
-            ostream = new BufferedOutputStream(getCurrentContext().getResponse().getOutputStream());
-            output.set(ostream);
-        }
-        return ostream;
-    }
-
-    protected InputStream getInputStream() throws IOException {
-        InputStream istream = (InputStream)input.get();
-        if (istream == null) {
-            istream = new BufferedInputStream(getCurrentContext().getRequest().getInputStream());
-            input.set(istream);
-        }
-        return istream;
-    }
-
     protected Object[] fixArguments(Class[] argumentTypes, Object[] arguments, int count) {
         if (argumentTypes.length != count) {
             Object[] args = new Object[argumentTypes.length];
@@ -130,10 +110,12 @@ public class HproseHttpService extends HproseService {
         return arguments;
     }
 
-    protected void sendHeader() throws IOException {
-        super.sendHeader();
-        HttpServletRequest request = getCurrentContext().getRequest();
-        HttpServletResponse response = getCurrentContext().getResponse();
+    protected void sendHeader(HttpContext httpContext) throws IOException {
+        if (event != null && HproseHttpServiceEvent.class.isInstance(event)) {
+            ((HproseHttpServiceEvent)event).onSendHeader(httpContext);
+        }
+        HttpServletRequest request = httpContext.getRequest();
+        HttpServletResponse response = httpContext.getResponse();
         response.setContentType("text/plain");
         if (p3pEnabled) {
             response.setHeader("P3P", "CP=\"CAO DSP COR CUR ADM DEV TAI PSA PSD " +
@@ -159,20 +141,22 @@ public class HproseHttpService extends HproseService {
     public void handle(HttpContext httpContext, HproseHttpMethods methods) throws IOException {
         try {
             context.set(httpContext);
+            sendHeader(httpContext);
             String method = httpContext.getRequest().getMethod();
             if (method.equals("GET") && getEnabled) {
-                doFunctionList(methods);
+                OutputStream ostream = new BufferedOutputStream(httpContext.getResponse().getOutputStream());
+                doFunctionList(ostream, methods);
             }
             else if (method.equals("POST")) {
-                super.handle(methods);
+                InputStream istream = new BufferedInputStream(httpContext.getRequest().getInputStream());
+                OutputStream ostream = new BufferedOutputStream(httpContext.getResponse().getOutputStream());
+                super.handle(istream, ostream, methods);
             }
             else {
-                httpContext.getResponse().sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                httpContext.getResponse().sendError(HttpServletResponse.SC_FORBIDDEN);
             }
         }
         finally {
-            output.set(null);
-            input.set(null);
             context.set(null);
         }
     }
