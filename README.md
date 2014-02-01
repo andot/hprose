@@ -13,22 +13,22 @@ Language support
 
 *Hprose* supports many programming languages, for example:
 
-    * AAuto Quicker
-    * ActionScript
-    * ASP
-    * C++
-    * Delphi/Free Pascal
-    * dotNET(C#, Visual Basic...)
-    * Golang
-    * Java
-    * JavaScript
-    * Node.js
-    * Objective-C
-    * Perl
-    * PHP
-    * Python
-    * Ruby
-    * ...
+* AAuto Quicker
+* ActionScript
+* ASP
+* C++
+* Delphi/Free Pascal
+* dotNET(C#, Visual Basic...)
+* Golang
+* Java
+* JavaScript
+* Node.js
+* Objective-C
+* Perl
+* PHP
+* Python
+* Ruby
+* ...
 
 Through *Hprose*, You can conveniently and efficiently intercommunicate between those
 programming languages.
