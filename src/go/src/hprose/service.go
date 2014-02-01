@@ -13,7 +13,7 @@
  *                                                        *
  * hprose service for Go.                                 *
  *                                                        *
- * LastModified: Jan 31, 2014                             *
+ * LastModified: Feb 1, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -123,18 +123,30 @@ func NewBaseService() *BaseService {
 	return &BaseService{Methods: NewMethods()}
 }
 
-func (service *BaseService) sendError(ostream io.Writer, err error) error {
-	if service.ServiceEvent != nil {
+func (service *BaseService) responseEnd(ostream io.Writer, buf []byte, err error) {
+	defer recover()
+	if err == nil {
+		if service.Filter != nil {
+			buf = service.OutputFilter(buf)
+		}
+	}
+	if _, e := ostream.Write(buf); err == nil {
+		err = e
+	}
+	if err != nil && service.ServiceEvent != nil {
 		service.OnSendError(err)
 	}
+}
+
+func (service *BaseService) sendError(ostream io.Writer, err error) {
+	defer recover()
 	buf := new(bytes.Buffer)
 	writer := NewSimpleWriter(buf)
 	writer.Stream().WriteByte(TagError)
 	writer.WriteString(err.Error())
 	writer.Stream().WriteByte(TagEnd)
 	writer.Stream().Flush()
-	_, err = ostream.Write(buf.Bytes())
-	return err
+	service.responseEnd(ostream, buf.Bytes(), err)
 }
 
 func (service *BaseService) doInvoke(istream io.Reader, ostream io.Writer) error {
@@ -282,7 +294,7 @@ func (service *BaseService) doInvoke(istream io.Reader, ostream io.Writer) error
 				}
 			}
 			if remoteMethod.ResultMode == RawWithEndTag {
-				ostream.Write(data)
+				service.responseEnd(ostream, data, nil)
 				return nil
 			}
 		}
@@ -327,7 +339,7 @@ func (service *BaseService) doInvoke(istream io.Reader, ostream io.Writer) error
 		}
 	}
 	buf.WriteByte(TagEnd)
-	ostream.Write(buf.Bytes())
+	service.responseEnd(ostream, buf.Bytes(), nil)
 	return nil
 }
 
@@ -340,7 +352,7 @@ func (service *BaseService) doFunctionList(ostream io.Writer) error {
 	}
 	writer.Stream().WriteByte(TagEnd)
 	writer.Stream().Flush()
-	ostream.Write(buf.Bytes())
+	service.responseEnd(ostream, buf.Bytes(), nil)
 	return nil
 }
 
@@ -356,9 +368,6 @@ func (service *BaseService) Handle(istream io.Reader, ostream io.Writer) {
 	}()
 	if service.Filter != nil {
 		istream = service.InputFilter(istream)
-	}
-	if service.Filter != nil {
-		ostream = service.OutputFilter(ostream)
 	}
 	buf := []byte{0}
 	if _, err = istream.Read(buf); err == nil {

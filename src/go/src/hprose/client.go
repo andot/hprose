@@ -13,7 +13,7 @@
  *                                                        *
  * hprose client for Go.                                  *
  *                                                        *
- * LastModified: Jan 31, 2014                             *
+ * LastModified: Feb 1, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -263,25 +263,25 @@ func (client *BaseClient) invoke(name string, args []reflect.Value, options *Inv
 	if async {
 		return client.asyncInvoke(name, args, options, result)
 	} else {
-		return client.syncInvoke(name, args, options, result)
+		err := make(chan error, 1)
+		err <- client.syncInvoke(name, args, options, result)
+		return err
 	}
 }
 
-func (client *BaseClient) syncInvoke(name string, args []reflect.Value, options *InvokeOptions, result []reflect.Value) <-chan error {
+func (client *BaseClient) syncInvoke(name string, args []reflect.Value, options *InvokeOptions, result []reflect.Value) (err error) {
 	context, err := client.GetInvokeContext(client.Uri())
-	errChan := make(chan error, 1)
 	defer func() {
 		if e := recover(); e != nil && err == nil {
 			err = fmt.Errorf("%v", e)
 		}
-		errChan <- err
 	}()
 	if err == nil {
 		if err = client.doOutput(context, name, args, options); err == nil {
 			err = client.doIntput(context, args, options, result)
 		}
 	}
-	return errChan
+	return err
 }
 
 func (client *BaseClient) asyncInvoke(name string, args []reflect.Value, options *InvokeOptions, result []reflect.Value) <-chan error {
@@ -297,7 +297,7 @@ func (client *BaseClient) asyncInvoke(name string, args []reflect.Value, options
 	}
 	errChan := make(chan error, 1)
 	go func() {
-		err := <-client.syncInvoke(name, args, options, out)
+		err := client.syncInvoke(name, args, options, out)
 		for i := 0; i < length; i++ {
 			sender[i].Send(out[i])
 		}
@@ -308,20 +308,21 @@ func (client *BaseClient) asyncInvoke(name string, args []reflect.Value, options
 
 func (client *BaseClient) doOutput(context interface{}, name string, args []reflect.Value, options *InvokeOptions) (err error) {
 	success := false
+	buf := new(bytes.Buffer)
 	defer func() {
-		e := client.SendData(context, success)
 		if err == nil {
-			err = e
+			data := buf.Bytes()
+			if client.Filter != nil {
+				data = client.OutputFilter(data)
+			}
+			var ostream io.Writer
+			if ostream, err = client.GetOutputStream(context); err == nil {
+				if _, err = ostream.Write(data); err == nil {
+					err = client.SendData(context, success)
+				}
+			}
 		}
 	}()
-	var ostream io.Writer
-	ostream, err = client.GetOutputStream(context)
-	if err != nil {
-		return err
-	}
-	if client.Filter != nil {
-		ostream = client.OutputFilter(ostream)
-	}
 	simple := client.SimpleMode
 	if s, ok := options.SimpleMode.(bool); ok {
 		simple = s
@@ -332,9 +333,9 @@ func (client *BaseClient) doOutput(context interface{}, name string, args []refl
 	}
 	var writer Writer
 	if simple {
-		writer = NewSimpleWriter(ostream)
+		writer = NewSimpleWriter(buf)
 	} else {
-		writer = NewWriter(ostream)
+		writer = NewWriter(buf)
 	}
 	if err = writer.Stream().WriteByte(TagCall); err != nil {
 		return err

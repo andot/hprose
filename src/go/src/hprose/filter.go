@@ -13,7 +13,7 @@
  *                                                        *
  * hprose filter interface for Go.                        *
  *                                                        *
- * LastModified: Jan 29, 2014                             *
+ * LastModified: Feb 1, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -26,5 +26,5 @@ import (
 
 type Filter interface {
 	InputFilter(io.Reader) io.Reader
-	OutputFilter(io.Writer) io.Writer
+	OutputFilter([]byte) []byte
 }

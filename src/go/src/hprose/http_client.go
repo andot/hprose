@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http client for Go.                             *
  *                                                        *
- * LastModified: Jan 31, 2014                             *
+ * LastModified: Feb 1, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -135,11 +135,13 @@ func newHttpTransporter() *HttpTransporter {
 }
 
 func (h *HttpTransporter) GetInvokeContext(uri string) (interface{}, error) {
-	return &HttpContext{uri: uri, buf: new(bytes.Buffer)}, nil
+	return &HttpContext{uri: uri}, nil
 }
 
 func (h *HttpTransporter) GetOutputStream(context interface{}) (io.Writer, error) {
-	return context.(*HttpContext).buf, nil
+	buf := new(bytes.Buffer)
+	context.(*HttpContext).buf = buf
+	return buf, nil
 }
 
 func (h *HttpTransporter) SendData(context interface{}, success bool) error {

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Client Test for Go.                             *
  *                                                        *
- * LastModified: Jan 31, 2014                             *
+ * LastModified: Feb 1, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -105,11 +105,11 @@ func TestRemoteObject(t *testing.T) {
 func TestClient(t *testing.T) {
 	//client := NewClient("http://127.0.0.1/")
 	client := NewClient("http://www.hprose.com/example/")
-	var r1 chan string
+	var r1 string
 	if err := <-client.Invoke("hello", []interface{}{"world"}, nil, &r1); err != nil {
 		t.Error(err.Error())
 	}
-	fmt.Println(<-r1)
+	fmt.Println(r1)
 
 	var r2 chan int
 	if err := <-client.Invoke("sum", []interface{}{1, 2, 3, 4, 5, 6, 7}, nil, &r2); err != nil {
