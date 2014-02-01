@@ -129,10 +129,8 @@ func (service *BaseService) responseEnd(ostream io.Writer, buf []byte, err error
 	if service.Filter != nil {
 		buf = service.OutputFilter(buf)
 	}
-	if err != nil {
-		if service.ServiceEvent != nil {
-			service.OnSendError(err)
-		}
+	if err != nil && service.ServiceEvent != nil {
+		service.OnSendError(err)
 	}
 	if _, err := ostream.Write(buf); err != nil {
 		service.IOError = err
