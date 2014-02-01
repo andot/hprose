@@ -8,7 +8,6 @@ using Hprose.IO;
 
 namespace HproseServer
 {
-    [Serializable]
     public class User
     {
         public string name;

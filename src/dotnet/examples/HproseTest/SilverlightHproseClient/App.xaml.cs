@@ -16,7 +16,6 @@ using Hprose.IO;
 
 namespace SilverlightHproseClient
 {
-    [Serializable]
     public class User
     {
         public string name;

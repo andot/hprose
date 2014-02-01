@@ -8,7 +8,6 @@ using System.IO;
 
 namespace TestSerialize
 {
-    [Serializable]
     public class User
     {
         public string name;
@@ -50,7 +49,7 @@ namespace TestSerialize
             users.Add(user1);
             users.Add(user2);
 
-            MemoryStream s = HproseFormatter.Serialize(users);
+            MemoryStream s = HproseFormatter.Serialize(users, HproseMode.FieldMode);
             Console.WriteLine(Encoding.UTF8.GetString(s.ToArray()));
             s.Position = 0;
             s = HproseFormatter.Serialize(
