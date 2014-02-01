@@ -23,13 +23,25 @@ package hprose
 import (
 	"bufio"
 	"bytes"
+	"crypto/tls"
 	"io"
 	"net"
 	"net/url"
+	"time"
 )
 
 type TcpClient struct {
 	*BaseClient
+	deadline        interface{}
+	keepAlive       interface{}
+	keepAlivePeriod interface{}
+	linger          interface{}
+	noDelay         interface{}
+	readBuffer      interface{}
+	readDeadline    interface{}
+	writerBuffer    interface{}
+	writerDeadline  interface{}
+	config          *tls.Config
 }
 
 type TcpTransporter struct {
@@ -37,6 +49,7 @@ type TcpTransporter struct {
 	uri     string
 	istream *bufio.Reader
 	ostream *bufio.Writer
+	*TcpClient
 }
 
 type TcpContext struct {
@@ -44,7 +57,8 @@ type TcpContext struct {
 }
 
 func NewTcpClient(uri string) Client {
-	client := &TcpClient{NewBaseClient(new(TcpTransporter))}
+	client := &TcpClient{BaseClient: NewBaseClient(new(TcpTransporter))}
+	client.Transporter.(*TcpTransporter).TcpClient = client
 	client.SetUri(uri)
 	return client
 }
@@ -66,6 +80,46 @@ func (client *TcpClient) Close() {
 	}
 }
 
+func (client *TcpClient) SetDeadline(t time.Time) {
+	client.deadline = t
+}
+
+func (client *TcpClient) SetKeepAlive(keepalive bool) {
+	client.keepAlive = keepalive
+}
+
+func (client *TcpClient) SetKeepAlivePeriod(d time.Duration) {
+	client.keepAlivePeriod = d
+}
+
+func (client *TcpClient) SetLinger(sec int) {
+	client.linger = sec
+}
+
+func (client *TcpClient) SetNoDelay(noDelay bool) {
+	client.noDelay = noDelay
+}
+
+func (client *TcpClient) SetReadBuffer(bytes int) {
+	client.readBuffer = bytes
+}
+
+func (client *TcpClient) SetReadDeadline(t time.Time) {
+	client.readDeadline = t
+}
+
+func (client *TcpClient) SetWriteBuffer(bytes int) {
+	client.writerBuffer = bytes
+}
+
+func (client *TcpClient) SetWriteDeadline(t time.Time) {
+	client.writerDeadline = t
+}
+
+func (client *TcpClient) SetTLSConfig(config *tls.Config) {
+	client.config = config
+}
+
 func (t *TcpTransporter) GetInvokeContext(uri string) (interface{}, error) {
 	if t.uri != uri {
 		t.uri = uri
@@ -78,9 +132,58 @@ func (t *TcpTransporter) GetInvokeContext(uri string) (interface{}, error) {
 		if u, err := url.Parse(uri); err == nil {
 			if tcpaddr, err := net.ResolveTCPAddr(u.Scheme, u.Host); err == nil {
 				if conn, err := net.DialTCP("tcp", nil, tcpaddr); err == nil {
-					t.Conn = conn
-					t.istream = bufio.NewReader(conn)
-					t.ostream = bufio.NewWriter(conn)
+					if t.keepAlive != nil {
+						if err := conn.SetKeepAlive(t.keepAlive.(bool)); err != nil {
+							return nil, err
+						}
+					}
+					if t.keepAlivePeriod != nil {
+						if err := conn.SetKeepAlivePeriod(t.keepAlivePeriod.(time.Duration)); err != nil {
+							return nil, err
+						}
+					}
+					if t.linger != nil {
+						if err := conn.SetLinger(t.linger.(int)); err != nil {
+							return nil, err
+						}
+					}
+					if t.noDelay != nil {
+						if err := conn.SetNoDelay(t.noDelay.(bool)); err != nil {
+							return nil, err
+						}
+					}
+					if t.readBuffer != nil {
+						if err := conn.SetReadBuffer(t.readBuffer.(int)); err != nil {
+							return nil, err
+						}
+					}
+					if t.writerBuffer != nil {
+						if err := conn.SetWriteBuffer(t.writerBuffer.(int)); err != nil {
+							return nil, err
+						}
+					}
+					if t.deadline != nil {
+						if err := conn.SetDeadline(t.deadline.(time.Time)); err != nil {
+							return nil, err
+						}
+					}
+					if t.readDeadline != nil {
+						if err := conn.SetReadDeadline(t.readDeadline.(time.Time)); err != nil {
+							return nil, err
+						}
+					}
+					if t.writerDeadline != nil {
+						if err := conn.SetWriteDeadline(t.writerDeadline.(time.Time)); err != nil {
+							return nil, err
+						}
+					}
+					if t.config != nil {
+						t.Conn = tls.Client(conn, t.config)
+					} else {
+						t.Conn = conn
+					}
+					t.istream = bufio.NewReader(t.Conn)
+					t.ostream = bufio.NewWriter(t.Conn)
 				} else {
 					return nil, err
 				}
@@ -107,7 +210,7 @@ func (t *TcpTransporter) SendData(context interface{}, success bool) (err error)
 			err = t.ostream.Flush()
 		}
 		if err != nil {
-			t.Close()
+			t.Conn.Close()
 			t.Conn = nil
 		}
 	}
@@ -120,7 +223,7 @@ func (t *TcpTransporter) GetInputStream(context interface{}) (io.Reader, error) 
 
 func (t *TcpTransporter) EndInvoke(context interface{}, success bool) error {
 	if !success {
-		t.Close()
+		t.Conn.Close()
 		t.Conn = nil
 	}
 	return nil
