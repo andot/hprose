@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for C#.                            *
  *                                                        *
- * LastModified: Jan 28, 2014                             *
+ * LastModified: Feb 2, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -46,7 +46,7 @@ namespace Hprose.IO {
         private Hashtable membersref = new Hashtable();
 #endif
         public HproseReader(Stream stream)
-            : this(stream, HproseMode.PropertyMode) {
+            : this(stream, HproseMode.MemberMode) {
         }
         public HproseReader(Stream stream, HproseMode mode) {
             this.stream = stream;
@@ -629,7 +629,7 @@ namespace Hprose.IO {
             object obj = HproseHelper.NewInstance(type);
             if (obj == null) throw new HproseException("Can not make an instance of type: " + type.FullName);
             references.Add(obj);
-            if (HproseHelper.IsSerializable(type)) {
+            if ((mode != HproseMode.MemberMode) && HproseHelper.IsSerializable(type)) {
                 if (mode == HproseMode.FieldMode) {
                     ReadMapAsObjectFields(obj, type, count);
                 }
@@ -1011,7 +1011,7 @@ namespace Hprose.IO {
                 obj = HproseHelper.NewInstance(type);
                 if (obj == null) throw new HproseException("Can not make an instance of type: " + type.FullName);
                 references.Add(obj);
-                if (HproseHelper.IsSerializable(type)) {
+                if ((mode != HproseMode.MemberMode) && HproseHelper.IsSerializable(type)) {
                     if (mode == HproseMode.FieldMode) {
                         ReadObjectFields(obj, type, count, memberNames);
                     }

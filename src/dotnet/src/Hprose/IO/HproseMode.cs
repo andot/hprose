@@ -13,12 +13,12 @@
  *                                                        *
  * hprose mode enum for C#.                               *
  *                                                        *
- * LastModified: May 22, 2011                             *
+ * LastModified: Feb 2, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 namespace Hprose.IO {
     public enum HproseMode {
-        FieldMode, PropertyMode
+        FieldMode, PropertyMode, MemberMode
     }
 }

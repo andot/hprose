@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for C#.                            *
  *                                                        *
- * LastModified: Jan 4, 2013                              *
+ * LastModified: Feb 2, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -100,7 +100,7 @@ namespace Hprose.IO {
 #endif
 
         public HproseWriter(Stream stream)
-            : this(stream, HproseMode.PropertyMode) {
+            : this(stream, HproseMode.MemberMode) {
         }
 
         public HproseWriter(Stream stream, HproseMode mode) {
@@ -1268,7 +1268,7 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagObject);
             WriteInt(cr, stream);
             stream.WriteByte(HproseTags.TagOpenbrace);
-            if (HproseHelper.IsSerializable(type)) {
+            if ((mode != HproseMode.MemberMode) && HproseHelper.IsSerializable(type)) {
                 WriteSerializableObject(obj, type);
             }
             else {
@@ -1374,7 +1374,7 @@ namespace Hprose.IO {
 
         private int WriteClass(Type type) {
             SerializeCache cache = null;
-            if (HproseHelper.IsSerializable(type)) {
+            if ((mode != HproseMode.MemberMode) && HproseHelper.IsSerializable(type)) {
                 cache = WriteSerializableClass(type);
             }
             else {
