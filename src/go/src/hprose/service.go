@@ -13,7 +13,7 @@
  *                                                        *
  * hprose service for Go.                                 *
  *                                                        *
- * LastModified: Feb 1, 2014                              *
+ * LastModified: Feb 3, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -144,11 +144,10 @@ func (service *BaseService) sendError(ostream io.Writer, err error) {
 	writer.Stream().WriteByte(TagError)
 	writer.WriteString(err.Error())
 	writer.Stream().WriteByte(TagEnd)
-	writer.Stream().Flush()
 	service.responseEnd(ostream, buf.Bytes(), err)
 }
 
-func (service *BaseService) doInvoke(istream io.Reader, ostream io.Writer) (err error) {
+func (service *BaseService) doInvoke(istream BufReader, ostream io.Writer) (err error) {
 	reader := NewReader(istream)
 	buf := new(bytes.Buffer)
 	for {
@@ -171,7 +170,7 @@ func (service *BaseService) doInvoke(istream io.Reader, ostream io.Writer) (err 
 		}
 		if tag == TagList {
 			reader.Reset()
-			if count, err = reader.ReadInt(TagOpenbrace); err != nil {
+			if count, err = reader.ReadInteger(TagOpenbrace); err != nil {
 				service.IOError = err
 				return err
 			}
@@ -341,7 +340,6 @@ func (service *BaseService) doInvoke(istream io.Reader, ostream io.Writer) (err 
 					return err
 				}
 			}
-			writer.Stream().Flush()
 		}
 		if tag != TagCall {
 			break
@@ -360,12 +358,11 @@ func (service *BaseService) doFunctionList(ostream io.Writer) error {
 		return err
 	}
 	writer.Stream().WriteByte(TagEnd)
-	writer.Stream().Flush()
 	service.responseEnd(ostream, buf.Bytes(), nil)
 	return nil
 }
 
-func (service *BaseService) Handle(istream io.Reader, ostream io.Writer) {
+func (service *BaseService) Handle(istream BufReader, ostream io.Writer) {
 	var err error
 	defer func() {
 		if e := recover(); e != nil && err == nil {

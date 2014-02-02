@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http client for Go.                             *
  *                                                        *
- * LastModified: Feb 1, 2014                              *
+ * LastModified: Feb 2, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -21,6 +21,7 @@
 package hprose
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/tls"
 	"io"
@@ -44,7 +45,6 @@ type HttpTransporter struct {
 
 type HttpContext struct {
 	uri  string
-	buf  io.ReadWriter
 	body io.ReadCloser
 }
 
@@ -141,16 +141,10 @@ func (h *HttpTransporter) GetInvokeContext(uri string) (interface{}, error) {
 	return &HttpContext{uri: uri}, nil
 }
 
-func (h *HttpTransporter) GetOutputStream(context interface{}) (io.Writer, error) {
-	buf := new(bytes.Buffer)
-	context.(*HttpContext).buf = buf
-	return buf, nil
-}
-
-func (h *HttpTransporter) SendData(context interface{}, success bool) error {
+func (h *HttpTransporter) SendData(context interface{}, data []byte, success bool) error {
 	if success {
 		context := context.(*HttpContext)
-		req, err := http.NewRequest("POST", context.uri, context.buf)
+		req, err := http.NewRequest("POST", context.uri, bytes.NewReader(data))
 		if err != nil {
 			return err
 		}
@@ -168,8 +162,8 @@ func (h *HttpTransporter) SendData(context interface{}, success bool) error {
 	return nil
 }
 
-func (h *HttpTransporter) GetInputStream(context interface{}) (io.Reader, error) {
-	return context.(*HttpContext).body, nil
+func (h *HttpTransporter) GetInputStream(context interface{}) (BufReader, error) {
+	return bufio.NewReader(context.(*HttpContext).body), nil
 }
 
 func (h *HttpTransporter) EndInvoke(context interface{}, success bool) error {

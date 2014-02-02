@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Reader for Go.                                  *
  *                                                        *
- * LastModified: Jan 30, 2014                             *
+ * LastModified: Feb 3, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -21,24 +21,37 @@
 package hprose
 
 import (
-	"bufio"
 	"bytes"
 	"container/list"
-	"io"
 	"math/big"
 	"reflect"
 	"time"
 	"uuid"
 )
 
+type BufReader interface {
+	Read(p []byte) (n int, err error)
+	ReadByte() (c byte, err error)
+	ReadRune() (r rune, size int, err error)
+	ReadString(delim byte) (line string, err error)
+}
+
 type Reader interface {
-	Stream() *bufio.Reader
+	Stream() BufReader
 	CheckTag(byte) error
 	CheckTags([]byte) (byte, error)
 	Unserialize(interface{}) error
 	ReadValue(reflect.Value) error
-	ReadInt(byte) (int, error)
-	ReadUint(byte) (uint, error)
+	ReadInteger(byte) (int, error)
+	ReadUinteger(byte) (uint, error)
+	ReadInt() (int, error)
+	ReadUint() (uint, error)
+	ReadInt8() (int8, error)
+	ReadUint8() (uint8, error)
+	ReadInt16() (int16, error)
+	ReadUint16() (uint16, error)
+	ReadInt32() (int32, error)
+	ReadUint32() (uint32, error)
 	ReadInt64() (int64, error)
 	ReadUint64() (uint64, error)
 	ReadBigInt() (*big.Int, error)
@@ -73,19 +86,27 @@ type reader struct {
 	ref []interface{}
 }
 
-func NewReader(stream io.Reader) Reader {
-	r := &reader{NewSimpleReader(stream).(*simpleReader), make([]interface{}, 0, 32)}
-	r.setRef = func(p interface{}) {
-		r.ref = append(r.ref, p)
-	}
-	r.readRef = func() (interface{}, error) {
-		i, err := r.ReadInt(TagSemicolon)
-		if err == nil {
-			return r.ref[i], nil
-		}
-		return nil, err
-	}
+func NewReader(stream BufReader) Reader {
+	r := &reader{}
+	r.simpleReader = NewSimpleReader(stream).(*simpleReader)
+	r.setRef = r.readerSetRef
+	r.readRef = r.readerReadRef
 	return r
+}
+
+func (r *reader) readerSetRef(p interface{}) {
+	if r.ref == nil {
+		r.ref = make([]interface{}, 0, 32)
+	}
+	r.ref = append(r.ref, p)
+}
+
+func (r *reader) readerReadRef() (interface{}, error) {
+	i, err := r.ReadInteger(TagSemicolon)
+	if err == nil {
+		return r.ref[i], nil
+	}
+	return nil, err
 }
 
 func (r *reader) Reset() {

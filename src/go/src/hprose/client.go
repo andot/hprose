@@ -13,7 +13,7 @@
  *                                                        *
  * hprose client for Go.                                  *
  *                                                        *
- * LastModified: Feb 1, 2014                              *
+ * LastModified: Feb 2, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -111,7 +111,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"net/url"
 	"reflect"
 	"strings"
@@ -132,9 +131,8 @@ type Client interface {
 
 type Transporter interface {
 	GetInvokeContext(uri string) (interface{}, error)
-	GetOutputStream(context interface{}) (io.Writer, error)
-	SendData(context interface{}, success bool) error
-	GetInputStream(context interface{}) (io.Reader, error)
+	SendData(context interface{}, data []byte, success bool) error
+	GetInputStream(context interface{}) (BufReader, error)
 	EndInvoke(context interface{}, success bool) error
 }
 
@@ -313,12 +311,7 @@ func (client *BaseClient) doOutput(context interface{}, name string, args []refl
 			if client.Filter != nil {
 				data = client.OutputFilter(data)
 			}
-			var ostream io.Writer
-			if ostream, err = client.GetOutputStream(context); err == nil {
-				if _, err = ostream.Write(data); err == nil {
-					err = client.SendData(context, success)
-				}
-			}
+			err = client.SendData(context, data, success)
 		}
 	}()
 	simple := client.SimpleMode
@@ -352,10 +345,7 @@ func (client *BaseClient) doOutput(context interface{}, name string, args []refl
 			}
 		}
 	}
-	if err = writer.Stream().WriteByte(TagEnd); err != nil {
-		return err
-	}
-	if err = writer.Stream().Flush(); err == nil {
+	if err = writer.Stream().WriteByte(TagEnd); err == nil {
 		success = true
 	}
 	return err
@@ -369,7 +359,7 @@ func (client *BaseClient) doIntput(context interface{}, args []reflect.Value, op
 			err = e
 		}
 	}()
-	var istream io.Reader
+	var istream BufReader
 	if istream, err = client.GetInputStream(context); err != nil {
 		success = false
 		return err
@@ -393,7 +383,7 @@ func (client *BaseClient) doIntput(context interface{}, args []reflect.Value, op
 					err = reader.ReadValue(result[0])
 				} else if err = reader.CheckTag(TagList); err == nil {
 					var count int
-					if count, err = reader.ReadInt(TagOpenbrace); err == nil {
+					if count, err = reader.ReadInteger(TagOpenbrace); err == nil {
 						r := make([]reflect.Value, count)
 						if count <= length {
 							for i := 0; i < count; i++ {
@@ -439,7 +429,7 @@ func (client *BaseClient) doIntput(context interface{}, args []reflect.Value, op
 				if err = reader.CheckTag(TagList); err == nil {
 					length := len(args)
 					var count int
-					if count, err = reader.ReadInt(TagOpenbrace); err == nil {
+					if count, err = reader.ReadInteger(TagOpenbrace); err == nil {
 						a := make([]reflect.Value, count)
 						if count <= length {
 							for i := 0; i < count; i++ {

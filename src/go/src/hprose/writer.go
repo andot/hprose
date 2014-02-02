@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Writer for Go.                                  *
  *                                                        *
- * LastModified: Jan 30, 2014                             *
+ * LastModified: Feb 3, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -21,9 +21,7 @@
 package hprose
 
 import (
-	"bufio"
 	"container/list"
-	"io"
 	"math/big"
 	"reflect"
 	"strconv"
@@ -31,8 +29,15 @@ import (
 	"uuid"
 )
 
+type BufWriter interface {
+	Write(p []byte) (n int, err error)
+	WriteByte(c byte) error
+	WriteRune(r rune) (n int, err error)
+	WriteString(s string) (n int, err error)
+}
+
 type Writer interface {
-	Stream() *bufio.Writer
+	Stream() BufWriter
 	Serialize(interface{}) error
 	WriteValue(reflect.Value) error
 	WriteNull() error
@@ -79,28 +84,38 @@ type writer struct {
 	ref map[interface{}]int
 }
 
-func NewWriter(stream io.Writer) Writer {
-	w := &writer{NewSimpleWriter(stream).(*simpleWriter), make(map[interface{}]int)}
-	w.setRef = func(v interface{}) {
-		n := len(w.ref)
-		w.ref[v] = n
-	}
-	w.writeRef = func(v interface{}) (success bool, err error) {
-		if n, found := w.ref[v]; found {
-			s := w.stream
-			if err = s.WriteByte(TagRef); err == nil {
-				if _, err = s.WriteString(strconv.Itoa(n)); err == nil {
-					err = s.WriteByte(TagSemicolon)
-				}
-			}
-			return true, err
-		}
-		return false, nil
-	}
+func NewWriter(stream BufWriter) Writer {
+	w := &writer{}
+	w.simpleWriter = NewSimpleWriter(stream).(*simpleWriter)
+	w.setRef = w.writerSetRef
+	w.writeRef = w.writerWriteRef
 	return w
+}
+
+func (w *writer) writerSetRef(v interface{}) {
+	if w.ref == nil {
+		w.ref = make(map[interface{}]int)
+	}
+	n := len(w.ref)
+	w.ref[v] = n
+}
+
+func (w *writer) writerWriteRef(v interface{}) (success bool, err error) {
+	if n, found := w.ref[v]; found {
+		s := w.stream
+		if err = s.WriteByte(TagRef); err == nil {
+			if _, err = s.WriteString(strconv.Itoa(n)); err == nil {
+				err = s.WriteByte(TagSemicolon)
+			}
+		}
+		return true, err
+	}
+	return false, nil
 }
 
 func (w *writer) Reset() {
 	w.simpleWriter.Reset()
-	w.ref = make(map[interface{}]int)
+	if w.ref != nil {
+		w.ref = make(map[interface{}]int)
+	}
 }

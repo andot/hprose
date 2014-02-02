@@ -13,7 +13,7 @@
  *                                                        *
  * hprose RawReader for Go.                               *
  *                                                        *
- * LastModified: Jan 29, 2014                             *
+ * LastModified: Feb 3, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -21,19 +21,17 @@
 package hprose
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
-	"io"
 	"strings"
 )
 
 type RawReader struct {
-	stream *bufio.Reader
+	stream BufReader
 }
 
-func NewRawReader(stream io.Reader) *RawReader {
-	return &RawReader{stream: bufio.NewReader(stream)}
+func NewRawReader(stream BufReader) *RawReader {
+	return &RawReader{stream: stream}
 }
 
 func (r *RawReader) ReadRaw() (raw []byte, err error) {
@@ -169,8 +167,9 @@ func (r *RawReader) readStringRaw(ostream *bytes.Buffer, tag byte) (err error) {
 
 func (r *RawReader) readGuidRaw(ostream *bytes.Buffer, tag byte) (err error) {
 	if err = ostream.WriteByte(tag); err == nil {
-		if guid, err := r.stream.Peek(38); err == nil {
-			_, err = ostream.Write(guid)
+		var guid [38]byte
+		if _, err := r.stream.Read(guid[:]); err == nil {
+			_, err = ostream.Write(guid[:])
 		}
 	}
 	return err
@@ -199,63 +198,19 @@ func (r *RawReader) readComplexRaw(ostream *bytes.Buffer, tag byte) (err error) 
 
 func (r *RawReader) readUTF8String(length int) (str string, err error) {
 	s := r.stream
-	n := 96
 	if length == 0 {
 		return "", nil
-	} else if length == 1 {
-		n = 3
-	} else if length > 48 {
-		n = length * 2
 	}
-	buf := bytes.NewBuffer(make([]byte, 0, n))
+	buf := bytes.NewBuffer(make([]byte, 0, length*3))
 	for i := 0; i < length; i++ {
-		var c byte
-		c, err = s.ReadByte()
-		if err != nil {
+		var r rune
+		var n int
+		if r, n, err = s.ReadRune(); err != nil {
 			return "", err
 		}
-		switch c >> 4 {
-		case 0, 1, 2, 3, 4, 5, 6, 7:
-			buf.WriteByte(c)
-		case 12, 13:
-			buf.WriteByte(c)
-			c, err = s.ReadByte()
-			if err != nil {
-				return "", err
-			}
-			buf.WriteByte(c)
-		case 14:
-			buf.WriteByte(c)
-			c, err = s.ReadByte()
-			if err != nil {
-				return "", err
-			}
-			buf.WriteByte(c)
-			c, err = s.ReadByte()
-			if err != nil {
-				return "", err
-			}
-			buf.WriteByte(c)
-		case 15:
-			buf.WriteByte(c)
-			c, err = s.ReadByte()
-			if err != nil {
-				return "", err
-			}
-			buf.WriteByte(c)
-			c, err = s.ReadByte()
-			if err != nil {
-				return "", err
-			}
-			buf.WriteByte(c)
-			c, err = s.ReadByte()
-			if err != nil {
-				return "", err
-			}
-			buf.WriteByte(c)
+		buf.WriteRune(r)
+		if n > 3 {
 			i++
-		default:
-			return "", badEncodeError
 		}
 	}
 	return string(buf.Bytes()), nil

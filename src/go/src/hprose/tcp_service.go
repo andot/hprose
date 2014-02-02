@@ -13,7 +13,7 @@
  *                                                        *
  * hprose tcp service for Go.                             *
  *                                                        *
- * LastModified: Feb 1, 2014                              *
+ * LastModified: Feb 3, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -38,7 +38,7 @@ func NewTcpService() *TcpService {
 
 func (service *TcpService) ServeTCP(conn net.Conn) {
 	istream := bufio.NewReader(conn)
-	ostream := bufio.NewWriter(conn)
+	ostream := conn
 	go func() {
 		for {
 			service.Handle(istream, ostream)
@@ -47,7 +47,6 @@ func (service *TcpService) ServeTCP(conn net.Conn) {
 				conn.Close()
 				break
 			}
-			ostream.Flush()
 		}
 	}()
 }

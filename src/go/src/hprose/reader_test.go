@@ -322,7 +322,7 @@ func TestReaderArray(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
-	count, err := reader.ReadInt(TagOpenbrace)
+	count, err := reader.ReadInteger(TagOpenbrace)
 	if err != nil {
 		t.Error(err.Error())
 	}

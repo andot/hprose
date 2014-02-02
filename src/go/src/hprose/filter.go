@@ -13,18 +13,14 @@
  *                                                        *
  * hprose filter interface for Go.                        *
  *                                                        *
- * LastModified: Feb 1, 2014                              *
+ * LastModified: Feb 2, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 
 package hprose
 
-import (
-	"io"
-)
-
 type Filter interface {
-	InputFilter(io.Reader) io.Reader
+	InputFilter(BufReader) BufReader
 	OutputFilter([]byte) []byte
 }

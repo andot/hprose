@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http service for Go.                            *
  *                                                        *
- * LastModified: Jan 31, 2014                             *
+ * LastModified: Feb 2, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -21,6 +21,7 @@
 package hprose
 
 import (
+	"bufio"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -170,7 +171,7 @@ func (service *HttpService) ServeHTTP(response http.ResponseWriter, request *htt
 			response.WriteHeader(403)
 		}
 	case "POST":
-		service.Handle(request.Body, response)
+		service.Handle(bufio.NewReader(request.Body), response)
 		request.Body.Close()
 	}
 }

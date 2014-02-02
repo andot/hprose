@@ -13,7 +13,7 @@
  *                                                        *
  * hprose SimpleWriter for Go.                            *
  *                                                        *
- * LastModified: Jan 30, 2014                             *
+ * LastModified: Feb 3, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -21,10 +21,8 @@
 package hprose
 
 import (
-	"bufio"
 	"container/list"
 	"errors"
-	"io"
 	"math"
 	"math/big"
 	"reflect"
@@ -66,27 +64,31 @@ var serializeType = [...]bool{
 	false, // UnsafePointer
 }
 
+var fieldsCache = make(map[reflect.Type][]reflect.StructField)
+
 type simpleWriter struct {
-	stream    *bufio.Writer
+	stream    BufWriter
 	classref  map[string]int
 	fieldsref [][]reflect.StructField
 	setRef    func(interface{})
 	writeRef  func(interface{}) (bool, error)
 }
 
-func NewSimpleWriter(stream io.Writer) Writer {
+func simpleWriterSetRef(interface{}) {}
+
+func simpleWriterWriteRef(interface{}) (bool, error) {
+	return false, nil
+}
+
+func NewSimpleWriter(stream BufWriter) Writer {
 	w := &simpleWriter{}
-	w.stream = bufio.NewWriter(stream)
-	w.classref = make(map[string]int, 16)
-	w.fieldsref = make([][]reflect.StructField, 0, 16)
-	w.setRef = func(interface{}) {}
-	w.writeRef = func(interface{}) (bool, error) {
-		return false, nil
-	}
+	w.stream = stream
+	w.setRef = simpleWriterSetRef
+	w.writeRef = simpleWriterWriteRef
 	return w
 }
 
-func (w *simpleWriter) Stream() *bufio.Writer {
+func (w *simpleWriter) Stream() BufWriter {
 	return w.stream
 }
 
@@ -227,9 +229,6 @@ func (w *simpleWriter) Serialize(v interface{}) (err error) {
 		}
 	default:
 		err = w.writeComplexData(v)
-	}
-	if err == nil {
-		err = w.stream.Flush()
 	}
 	return err
 }
@@ -619,8 +618,10 @@ func (w *simpleWriter) WriteObjectWithRef(v interface{}) error {
 }
 
 func (w *simpleWriter) Reset() {
-	w.classref = make(map[string]int, cap(w.fieldsref))
-	w.fieldsref = w.fieldsref[:0]
+	if w.classref != nil {
+		w.classref = make(map[string]int, cap(w.fieldsref))
+		w.fieldsref = w.fieldsref[:0]
+	}
 }
 
 // private methods
@@ -741,17 +742,24 @@ func (w *simpleWriter) writeObjectValue(v interface{}, rv reflect.Value) (err er
 		classname = t.Name()
 		ClassManager.Register(t, classname)
 	}
+	if w.classref == nil {
+		w.classref = make(map[string]int, 16)
+		w.fieldsref = make([][]reflect.StructField, 0, 16)
+	}
 	index, found := w.classref[classname]
 	var fields []reflect.StructField
 	if found {
 		fields = w.fieldsref[index]
 	} else {
-		n := t.NumField()
-		fields = make([]reflect.StructField, 0, n)
-		for i := 0; i < n; i++ {
-			if f := t.Field(i); !f.Anonymous && serializeType[f.Type.Kind()] {
-				fields = append(fields, f)
+		if fields, found = fieldsCache[t]; !found {
+			n := t.NumField()
+			fields = make([]reflect.StructField, 0, n)
+			for i := 0; i < n; i++ {
+				if f := t.Field(i); !f.Anonymous && serializeType[f.Type.Kind()] {
+					fields = append(fields, f)
+				}
 			}
+			fieldsCache[t] = fields
 		}
 		if index, err = w.writeClass(classname, fields); err != nil {
 			return err
@@ -762,7 +770,7 @@ func (w *simpleWriter) writeObjectValue(v interface{}, rv reflect.Value) (err er
 		if _, err = s.WriteString(strconv.Itoa(index)); err == nil {
 			if err = s.WriteByte(TagOpenbrace); err == nil {
 				for _, f := range fields {
-					if err = w.Serialize(rv.FieldByIndex(f.Index).Interface()); err != nil {
+					if err = w.Serialize(rv.Field(f.Index[0]).Interface()); err != nil {
 						return err
 					}
 				}

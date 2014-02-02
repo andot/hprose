@@ -13,7 +13,7 @@
  *                                                        *
  * hprose tcp client for Go.                              *
  *                                                        *
- * LastModified: Feb 1, 2014                              *
+ * LastModified: Feb 2, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -24,7 +24,6 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/tls"
-	"io"
 	"net"
 	"net/url"
 	"time"
@@ -48,7 +47,6 @@ type TcpTransporter struct {
 	net.Conn
 	uri     string
 	istream *bufio.Reader
-	ostream *bufio.Writer
 	*TcpClient
 }
 
@@ -183,7 +181,6 @@ func (t *TcpTransporter) GetInvokeContext(uri string) (interface{}, error) {
 						t.Conn = conn
 					}
 					t.istream = bufio.NewReader(t.Conn)
-					t.ostream = bufio.NewWriter(t.Conn)
 				} else {
 					return nil, err
 				}
@@ -197,19 +194,9 @@ func (t *TcpTransporter) GetInvokeContext(uri string) (interface{}, error) {
 	return new(TcpContext), nil
 }
 
-func (t *TcpTransporter) GetOutputStream(context interface{}) (io.Writer, error) {
-	buf := new(bytes.Buffer)
-	context.(*TcpContext).buf = buf
-	return buf, nil
-}
-
-func (t *TcpTransporter) SendData(context interface{}, success bool) (err error) {
+func (t *TcpTransporter) SendData(context interface{}, data []byte, success bool) (err error) {
 	if success {
-		buf := context.(*TcpContext).buf.Bytes()
-		if _, err = t.ostream.Write(buf); err == nil {
-			err = t.ostream.Flush()
-		}
-		if err != nil {
+		if _, err = t.Conn.Write(data); err != nil {
 			t.Conn.Close()
 			t.Conn = nil
 		}
@@ -217,7 +204,7 @@ func (t *TcpTransporter) SendData(context interface{}, success bool) (err error)
 	return err
 }
 
-func (t *TcpTransporter) GetInputStream(context interface{}) (io.Reader, error) {
+func (t *TcpTransporter) GetInputStream(context interface{}) (BufReader, error) {
 	return t.istream, nil
 }
 
