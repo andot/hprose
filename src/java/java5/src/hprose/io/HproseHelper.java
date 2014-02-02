@@ -293,7 +293,7 @@ public final class HproseHelper {
     }
 
     static Map<String, MemberAccessor> getMembers(Class<?> type, HproseMode mode) {
-        return (Serializable.class.isAssignableFrom(type)) ?
+        return ((mode != HproseMode.MemberMode) && Serializable.class.isAssignableFrom(type)) ?
                (mode == HproseMode.FieldMode) ?
                getFields(type) :
                getProperties(type) :

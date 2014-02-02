@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for Java.                          *
  *                                                        *
- * LastModified: Aug 25, 2013                             *
+ * LastModified: Feb 2, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -56,7 +56,7 @@ public final class HproseWriter {
     private int lastclassref = 0;
 
     public HproseWriter(OutputStream stream) {
-        this(stream, HproseMode.PropertyMode);
+        this(stream, HproseMode.MemberMode);
     }
 
     public HproseWriter(OutputStream stream, HproseMode mode) {
@@ -1338,7 +1338,7 @@ public final class HproseWriter {
 
     private SerializeCache getSerializeCache(Class<?> type, HproseMode mode) {
         SoftReference<SerializeCache> sref =
-            (Serializable.class.isAssignableFrom(type)) ?
+            ((mode != HproseMode.MemberMode) && Serializable.class.isAssignableFrom(type)) ?
             (mode == HproseMode.FieldMode) ?
             fieldsCache.get(type) :
             propertiesCache.get(type) :
@@ -1350,7 +1350,7 @@ public final class HproseWriter {
     }
     
     private void putSerializeCache(Class<?> type, HproseMode mode, SerializeCache cache) {
-        if (Serializable.class.isAssignableFrom(type)) {
+        if ((mode != HproseMode.MemberMode) && Serializable.class.isAssignableFrom(type)) {
             if (mode == HproseMode.FieldMode) {
                 fieldsCache.put(type, new SoftReference<SerializeCache>(cache));
             }

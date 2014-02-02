@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for Java.                          *
  *                                                        *
- * LastModified: Jan 28, 2014                             *
+ * LastModified: Feb 2, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -68,7 +68,7 @@ public final class HproseReader {
     private static final Object[] nullArgs = new Object[0];
 
     public HproseReader(InputStream stream) {
-        this(stream, HproseMode.PropertyMode);
+        this(stream, HproseMode.MemberMode);
     }
 
     public HproseReader(InputStream stream, HproseMode mode) {
@@ -1949,7 +1949,8 @@ public final class HproseReader {
             if (Map.class.isAssignableFrom(type)) {
                 map = readMap(count, type);
             }
-            else if (!Serializable.class.isAssignableFrom(type)) {
+            else if ((mode == HproseMode.FieldMode) ||
+                    !Serializable.class.isAssignableFrom(type)) {
                 map = readBean(count, type);
             }
             else if (mode == HproseMode.FieldMode) {
@@ -1996,13 +1997,13 @@ public final class HproseReader {
         int count = memberNames.length;
         Object obj = null;
         Map members = null;
-        boolean isBean = false;
+        boolean isBean = (mode == HproseMode.MemberMode);
         if (Class.class.equals(c.getClass())) {
             Class cls = (Class) c;
             if ((type == null) || type.isAssignableFrom(cls)) {
                 obj = HproseHelper.newInstance(cls);
                 if (obj != null) {
-                    isBean = !(Serializable.class.isAssignableFrom(cls));
+                    isBean = isBean || !(Serializable.class.isAssignableFrom(cls));
                     if (isBean) {
                         members = HproseHelper.getMembers(cls);
                     }
@@ -2022,7 +2023,7 @@ public final class HproseReader {
             obj = HproseHelper.newInstance(type);
         }
         if ((obj != null) && (members == null)) {
-            isBean = !(Serializable.class.isAssignableFrom(type));
+            isBean = isBean || !(Serializable.class.isAssignableFrom(type));
             if (isBean) {
                 members = HproseHelper.getMembers(type);
             }

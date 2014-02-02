@@ -13,12 +13,12 @@
  *                                                        *
  * hprose mode enum for Java.                             *
  *                                                        *
- * LastModified: May 6, 2011                              *
+ * LastModified: Feb 2, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
 package hprose.io;
 
 public enum HproseMode {
-    FieldMode, PropertyMode
+    FieldMode, PropertyMode, MemberMode
 }

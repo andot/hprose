@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for Java.                          *
  *                                                        *
- * LastModified: Jan 4, 2013                              *
+ * LastModified: Feb 2, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -60,7 +60,7 @@ public final class HproseWriter {
     private int lastclassref = 0;
 
     public HproseWriter(OutputStream stream) {
-        this(stream, HproseMode.PropertyMode);
+        this(stream, HproseMode.MemberMode);
     }
 
     public HproseWriter(OutputStream stream, HproseMode mode) {
@@ -550,11 +550,11 @@ public final class HproseWriter {
         }
         stream.write(HproseTags.TagQuote);
     }
-    
+
     public void writeUUID(Object uuid) throws IOException {
         writeUUID(uuid, true);
     }
-    
+
     public void writeUUID(Object uuid, boolean checkRef) throws IOException {
         if (writeRef(uuid, checkRef)) {
             stream.write(HproseTags.TagGuid);
@@ -860,7 +860,7 @@ public final class HproseWriter {
     }
 
     public void writeObject(Object object, boolean checkRef) throws IOException {
-        if (!(object instanceof Serializable)) {
+        if ((mode == HproseMode.MemberMode) || !(object instanceof Serializable)) {
             writeBean(object, checkRef);
             return;
         }
