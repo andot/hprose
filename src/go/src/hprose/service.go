@@ -354,7 +354,7 @@ func (service *BaseService) doFunctionList(ostream io.Writer) error {
 	buf := new(bytes.Buffer)
 	writer := NewSimpleWriter(buf)
 	writer.Stream().WriteByte(TagFunctions)
-	if err := writer.WriteSlice(service.MethodNames); err != nil {
+	if err := writer.Serialize(service.MethodNames); err != nil {
 		return err
 	}
 	writer.Stream().WriteByte(TagEnd)
