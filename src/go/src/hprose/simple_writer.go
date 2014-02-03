@@ -332,6 +332,74 @@ func (w *writer) fastSerialize(v interface{}, rv reflect.Value, n int) error {
 		return w.writeBytesWithRef(&v, v)
 	case *[]byte:
 		return w.writeBytesWithRef(v, *v)
+	case []int:
+		return w.writeIntSliceWithRef(&v, v)
+	case *[]int:
+		return w.writeIntSliceWithRef(v, *v)
+	case []int8:
+		return w.writeInt8SliceWithRef(&v, v)
+	case *[]int8:
+		return w.writeInt8SliceWithRef(v, *v)
+	case []int16:
+		return w.writeInt16SliceWithRef(&v, v)
+	case *[]int16:
+		return w.writeInt16SliceWithRef(v, *v)
+	case []int32:
+		return w.writeInt32SliceWithRef(&v, v)
+	case *[]int32:
+		return w.writeInt32SliceWithRef(v, *v)
+	case []int64:
+		return w.writeInt64SliceWithRef(&v, v)
+	case *[]int64:
+		return w.writeInt64SliceWithRef(v, *v)
+	case []uint:
+		return w.writeUintSliceWithRef(&v, v)
+	case *[]uint:
+		return w.writeUintSliceWithRef(v, *v)
+	case []uint16:
+		return w.writeUint16SliceWithRef(&v, v)
+	case *[]uint16:
+		return w.writeUint16SliceWithRef(v, *v)
+	case []uint32:
+		return w.writeUint32SliceWithRef(&v, v)
+	case *[]uint32:
+		return w.writeUint32SliceWithRef(v, *v)
+	case []uint64:
+		return w.writeUint64SliceWithRef(&v, v)
+	case *[]uint64:
+		return w.writeUint64SliceWithRef(v, *v)
+	case []float32:
+		return w.writeFloat32SliceWithRef(&v, v)
+	case *[]float32:
+		return w.writeFloat32SliceWithRef(v, *v)
+	case []float64:
+		return w.writeFloat64SliceWithRef(&v, v)
+	case *[]float64:
+		return w.writeFloat64SliceWithRef(v, *v)
+	case []bool:
+		return w.writeBoolSliceWithRef(&v, v)
+	case *[]bool:
+		return w.writeBoolSliceWithRef(v, *v)
+	case []string:
+		return w.writeStringSliceWithRef(&v, v)
+	case *[]string:
+		return w.writeStringSliceWithRef(v, *v)
+	case []interface{}:
+		return w.writeObjectSliceWithRef(&v, v)
+	case *[]interface{}:
+		return w.writeObjectSliceWithRef(v, *v)
+	case map[string]string:
+		return w.writeStringMapWithRef(&v, v)
+	case *map[string]string:
+		return w.writeStringMapWithRef(v, *v)
+	case map[string]interface{}:
+		return w.writeStrObjMapWithRef(&v, v)
+	case *map[string]interface{}:
+		return w.writeStrObjMapWithRef(v, *v)
+	case map[interface{}]interface{}:
+		return w.writeObjectMapWithRef(&v, v)
+	case *map[interface{}]interface{}:
+		return w.writeObjectMapWithRef(v, *v)
 	}
 	return w.slowSerialize(v, rv, n)
 }
@@ -552,6 +620,426 @@ func (w *writer) writeListWithRef(v interface{}, l *list.List) error {
 	}
 }
 
+func (w *writer) writeIntSlice(v interface{}, a []int) (err error) {
+	w.setRef(v)
+	s := w.stream
+	if err = s.WriteByte(TagList); err == nil {
+		if count := len(a); count > 0 {
+			if err = w.writeInt(count); err == nil {
+				if err = s.WriteByte(TagOpenbrace); err == nil {
+					for i := 0; i < count; i++ {
+						if err = w.WriteInt64(int64(a[i])); err != nil {
+							return err
+						}
+					}
+					err = s.WriteByte(TagClosebrace)
+				}
+			}
+		} else if err = s.WriteByte(TagOpenbrace); err == nil {
+			err = s.WriteByte(TagClosebrace)
+		}
+	}
+	return err
+}
+
+func (w *writer) writeIntSliceWithRef(v interface{}, a []int) error {
+	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+		return w.writeIntSlice(v, a)
+	} else {
+		return err
+	}
+}
+
+func (w *writer) writeInt8Slice(v interface{}, a []int8) (err error) {
+	w.setRef(v)
+	s := w.stream
+	if err = s.WriteByte(TagList); err == nil {
+		if count := len(a); count > 0 {
+			if err = w.writeInt(count); err == nil {
+				if err = s.WriteByte(TagOpenbrace); err == nil {
+					for i := 0; i < count; i++ {
+						if err = w.WriteInt64(int64(a[i])); err != nil {
+							return err
+						}
+					}
+					err = s.WriteByte(TagClosebrace)
+				}
+			}
+		} else if err = s.WriteByte(TagOpenbrace); err == nil {
+			err = s.WriteByte(TagClosebrace)
+		}
+	}
+	return err
+}
+
+func (w *writer) writeInt8SliceWithRef(v interface{}, a []int8) error {
+	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+		return w.writeInt8Slice(v, a)
+	} else {
+		return err
+	}
+}
+
+func (w *writer) writeInt16Slice(v interface{}, a []int16) (err error) {
+	w.setRef(v)
+	s := w.stream
+	if err = s.WriteByte(TagList); err == nil {
+		if count := len(a); count > 0 {
+			if err = w.writeInt(count); err == nil {
+				if err = s.WriteByte(TagOpenbrace); err == nil {
+					for i := 0; i < count; i++ {
+						if err = w.WriteInt64(int64(a[i])); err != nil {
+							return err
+						}
+					}
+					err = s.WriteByte(TagClosebrace)
+				}
+			}
+		} else if err = s.WriteByte(TagOpenbrace); err == nil {
+			err = s.WriteByte(TagClosebrace)
+		}
+	}
+	return err
+}
+
+func (w *writer) writeInt16SliceWithRef(v interface{}, a []int16) error {
+	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+		return w.writeInt16Slice(v, a)
+	} else {
+		return err
+	}
+}
+
+func (w *writer) writeInt32Slice(v interface{}, a []int32) (err error) {
+	w.setRef(v)
+	s := w.stream
+	if err = s.WriteByte(TagList); err == nil {
+		if count := len(a); count > 0 {
+			if err = w.writeInt(count); err == nil {
+				if err = s.WriteByte(TagOpenbrace); err == nil {
+					for i := 0; i < count; i++ {
+						if err = w.WriteInt64(int64(a[i])); err != nil {
+							return err
+						}
+					}
+					err = s.WriteByte(TagClosebrace)
+				}
+			}
+		} else if err = s.WriteByte(TagOpenbrace); err == nil {
+			err = s.WriteByte(TagClosebrace)
+		}
+	}
+	return err
+}
+
+func (w *writer) writeInt32SliceWithRef(v interface{}, a []int32) error {
+	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+		return w.writeInt32Slice(v, a)
+	} else {
+		return err
+	}
+}
+
+func (w *writer) writeInt64Slice(v interface{}, a []int64) (err error) {
+	w.setRef(v)
+	s := w.stream
+	if err = s.WriteByte(TagList); err == nil {
+		if count := len(a); count > 0 {
+			if err = w.writeInt(count); err == nil {
+				if err = s.WriteByte(TagOpenbrace); err == nil {
+					for i := 0; i < count; i++ {
+						if err = w.WriteInt64(a[i]); err != nil {
+							return err
+						}
+					}
+					err = s.WriteByte(TagClosebrace)
+				}
+			}
+		} else if err = s.WriteByte(TagOpenbrace); err == nil {
+			err = s.WriteByte(TagClosebrace)
+		}
+	}
+	return err
+}
+
+func (w *writer) writeInt64SliceWithRef(v interface{}, a []int64) error {
+	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+		return w.writeInt64Slice(v, a)
+	} else {
+		return err
+	}
+}
+
+func (w *writer) writeUintSlice(v interface{}, a []uint) (err error) {
+	w.setRef(v)
+	s := w.stream
+	if err = s.WriteByte(TagList); err == nil {
+		if count := len(a); count > 0 {
+			if err = w.writeInt(count); err == nil {
+				if err = s.WriteByte(TagOpenbrace); err == nil {
+					for i := 0; i < count; i++ {
+						if err = w.WriteUint64(uint64(a[i])); err != nil {
+							return err
+						}
+					}
+					err = s.WriteByte(TagClosebrace)
+				}
+			}
+		} else if err = s.WriteByte(TagOpenbrace); err == nil {
+			err = s.WriteByte(TagClosebrace)
+		}
+	}
+	return err
+}
+
+func (w *writer) writeUintSliceWithRef(v interface{}, a []uint) error {
+	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+		return w.writeUintSlice(v, a)
+	} else {
+		return err
+	}
+}
+
+func (w *writer) writeUint16Slice(v interface{}, a []uint16) (err error) {
+	w.setRef(v)
+	s := w.stream
+	if err = s.WriteByte(TagList); err == nil {
+		if count := len(a); count > 0 {
+			if err = w.writeInt(count); err == nil {
+				if err = s.WriteByte(TagOpenbrace); err == nil {
+					for i := 0; i < count; i++ {
+						if err = w.WriteUint64(uint64(a[i])); err != nil {
+							return err
+						}
+					}
+					err = s.WriteByte(TagClosebrace)
+				}
+			}
+		} else if err = s.WriteByte(TagOpenbrace); err == nil {
+			err = s.WriteByte(TagClosebrace)
+		}
+	}
+	return err
+}
+
+func (w *writer) writeUint16SliceWithRef(v interface{}, a []uint16) error {
+	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+		return w.writeUint16Slice(v, a)
+	} else {
+		return err
+	}
+}
+
+func (w *writer) writeUint32Slice(v interface{}, a []uint32) (err error) {
+	w.setRef(v)
+	s := w.stream
+	if err = s.WriteByte(TagList); err == nil {
+		if count := len(a); count > 0 {
+			if err = w.writeInt(count); err == nil {
+				if err = s.WriteByte(TagOpenbrace); err == nil {
+					for i := 0; i < count; i++ {
+						if err = w.WriteUint64(uint64(a[i])); err != nil {
+							return err
+						}
+					}
+					err = s.WriteByte(TagClosebrace)
+				}
+			}
+		} else if err = s.WriteByte(TagOpenbrace); err == nil {
+			err = s.WriteByte(TagClosebrace)
+		}
+	}
+	return err
+}
+
+func (w *writer) writeUint32SliceWithRef(v interface{}, a []uint32) error {
+	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+		return w.writeUint32Slice(v, a)
+	} else {
+		return err
+	}
+}
+
+func (w *writer) writeUint64Slice(v interface{}, a []uint64) (err error) {
+	w.setRef(v)
+	s := w.stream
+	if err = s.WriteByte(TagList); err == nil {
+		if count := len(a); count > 0 {
+			if err = w.writeInt(count); err == nil {
+				if err = s.WriteByte(TagOpenbrace); err == nil {
+					for i := 0; i < count; i++ {
+						if err = w.WriteUint64(a[i]); err != nil {
+							return err
+						}
+					}
+					err = s.WriteByte(TagClosebrace)
+				}
+			}
+		} else if err = s.WriteByte(TagOpenbrace); err == nil {
+			err = s.WriteByte(TagClosebrace)
+		}
+	}
+	return err
+}
+
+func (w *writer) writeUint64SliceWithRef(v interface{}, a []uint64) error {
+	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+		return w.writeUint64Slice(v, a)
+	} else {
+		return err
+	}
+}
+
+func (w *writer) writeFloat32Slice(v interface{}, a []float32) (err error) {
+	w.setRef(v)
+	s := w.stream
+	if err = s.WriteByte(TagList); err == nil {
+		if count := len(a); count > 0 {
+			if err = w.writeInt(count); err == nil {
+				if err = s.WriteByte(TagOpenbrace); err == nil {
+					for i := 0; i < count; i++ {
+						if err = w.WriteFloat64(float64(a[i])); err != nil {
+							return err
+						}
+					}
+					err = s.WriteByte(TagClosebrace)
+				}
+			}
+		} else if err = s.WriteByte(TagOpenbrace); err == nil {
+			err = s.WriteByte(TagClosebrace)
+		}
+	}
+	return err
+}
+
+func (w *writer) writeFloat32SliceWithRef(v interface{}, a []float32) error {
+	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+		return w.writeFloat32Slice(v, a)
+	} else {
+		return err
+	}
+}
+
+func (w *writer) writeFloat64Slice(v interface{}, a []float64) (err error) {
+	w.setRef(v)
+	s := w.stream
+	if err = s.WriteByte(TagList); err == nil {
+		if count := len(a); count > 0 {
+			if err = w.writeInt(count); err == nil {
+				if err = s.WriteByte(TagOpenbrace); err == nil {
+					for i := 0; i < count; i++ {
+						if err = w.WriteFloat64(a[i]); err != nil {
+							return err
+						}
+					}
+					err = s.WriteByte(TagClosebrace)
+				}
+			}
+		} else if err = s.WriteByte(TagOpenbrace); err == nil {
+			err = s.WriteByte(TagClosebrace)
+		}
+	}
+	return err
+}
+
+func (w *writer) writeFloat64SliceWithRef(v interface{}, a []float64) error {
+	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+		return w.writeFloat64Slice(v, a)
+	} else {
+		return err
+	}
+}
+
+func (w *writer) writeBoolSlice(v interface{}, a []bool) (err error) {
+	w.setRef(v)
+	s := w.stream
+	if err = s.WriteByte(TagList); err == nil {
+		if count := len(a); count > 0 {
+			if err = w.writeInt(count); err == nil {
+				if err = s.WriteByte(TagOpenbrace); err == nil {
+					for i := 0; i < count; i++ {
+						if err = w.WriteBool(a[i]); err != nil {
+							return err
+						}
+					}
+					err = s.WriteByte(TagClosebrace)
+				}
+			}
+		} else if err = s.WriteByte(TagOpenbrace); err == nil {
+			err = s.WriteByte(TagClosebrace)
+		}
+	}
+	return err
+}
+
+func (w *writer) writeBoolSliceWithRef(v interface{}, a []bool) error {
+	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+		return w.writeBoolSlice(v, a)
+	} else {
+		return err
+	}
+}
+
+func (w *writer) writeStringSlice(v interface{}, a []string) (err error) {
+	w.setRef(v)
+	s := w.stream
+	if err = s.WriteByte(TagList); err == nil {
+		if count := len(a); count > 0 {
+			if err = w.writeInt(count); err == nil {
+				if err = s.WriteByte(TagOpenbrace); err == nil {
+					for i := 0; i < count; i++ {
+						if err = w.WriteStringWithRef(a[i]); err != nil {
+							return err
+						}
+					}
+					err = s.WriteByte(TagClosebrace)
+				}
+			}
+		} else if err = s.WriteByte(TagOpenbrace); err == nil {
+			err = s.WriteByte(TagClosebrace)
+		}
+	}
+	return err
+}
+
+func (w *writer) writeStringSliceWithRef(v interface{}, a []string) error {
+	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+		return w.writeStringSlice(v, a)
+	} else {
+		return err
+	}
+}
+
+func (w *writer) writeObjectSlice(v interface{}, a []interface{}) (err error) {
+	w.setRef(v)
+	s := w.stream
+	if err = s.WriteByte(TagList); err == nil {
+		if count := len(a); count > 0 {
+			if err = w.writeInt(count); err == nil {
+				if err = s.WriteByte(TagOpenbrace); err == nil {
+					for i := 0; i < count; i++ {
+						if err = w.Serialize(a[i]); err != nil {
+							return err
+						}
+					}
+					err = s.WriteByte(TagClosebrace)
+				}
+			}
+		} else if err = s.WriteByte(TagOpenbrace); err == nil {
+			err = s.WriteByte(TagClosebrace)
+		}
+	}
+	return err
+}
+
+func (w *writer) writeObjectSliceWithRef(v interface{}, a []interface{}) error {
+	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+		return w.writeObjectSlice(v, a)
+	} else {
+		return err
+	}
+}
+
 func (w *writer) writeSlice(v interface{}, rv reflect.Value) (err error) {
 	w.setRef(v)
 	s := w.stream
@@ -577,6 +1065,105 @@ func (w *writer) writeSlice(v interface{}, rv reflect.Value) (err error) {
 func (w *writer) writeSliceWithRef(v interface{}, rv reflect.Value) error {
 	if success, err := w.writeRef(w.stream, v); err == nil && !success {
 		return w.writeSlice(v, rv)
+	} else {
+		return err
+	}
+}
+
+func (w *writer) writeStringMap(v interface{}, m map[string]string) (err error) {
+	w.setRef(v)
+	s := w.stream
+	if err = s.WriteByte(TagMap); err == nil {
+		if count := len(m); count > 0 {
+			if err = w.writeInt(count); err == nil {
+				if err = s.WriteByte(TagOpenbrace); err == nil {
+					for k, v := range m {
+						if err = w.writeStringWithRef(k, k); err != nil {
+							return err
+						}
+						if err = w.writeStringWithRef(v, v); err != nil {
+							return err
+						}
+					}
+					err = s.WriteByte(TagClosebrace)
+				}
+			}
+		} else if err = s.WriteByte(TagOpenbrace); err == nil {
+			err = s.WriteByte(TagClosebrace)
+		}
+	}
+	return err
+}
+
+func (w *writer) writeStringMapWithRef(v interface{}, m map[string]string) error {
+	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+		return w.writeStringMap(v, m)
+	} else {
+		return err
+	}
+}
+
+func (w *writer) writeStrObjMap(v interface{}, m map[string]interface{}) (err error) {
+	w.setRef(v)
+	s := w.stream
+	if err = s.WriteByte(TagMap); err == nil {
+		if count := len(m); count > 0 {
+			if err = w.writeInt(count); err == nil {
+				if err = s.WriteByte(TagOpenbrace); err == nil {
+					for k, v := range m {
+						if err = w.writeStringWithRef(k, k); err != nil {
+							return err
+						}
+						if err = w.Serialize(v); err != nil {
+							return err
+						}
+					}
+					err = s.WriteByte(TagClosebrace)
+				}
+			}
+		} else if err = s.WriteByte(TagOpenbrace); err == nil {
+			err = s.WriteByte(TagClosebrace)
+		}
+	}
+	return err
+}
+
+func (w *writer) writeStrObjMapWithRef(v interface{}, m map[string]interface{}) error {
+	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+		return w.writeStrObjMap(v, m)
+	} else {
+		return err
+	}
+}
+
+func (w *writer) writeObjectMap(v interface{}, m map[interface{}]interface{}) (err error) {
+	w.setRef(v)
+	s := w.stream
+	if err = s.WriteByte(TagMap); err == nil {
+		if count := len(m); count > 0 {
+			if err = w.writeInt(count); err == nil {
+				if err = s.WriteByte(TagOpenbrace); err == nil {
+					for k, v := range m {
+						if err = w.Serialize(k); err != nil {
+							return err
+						}
+						if err = w.Serialize(v); err != nil {
+							return err
+						}
+					}
+					err = s.WriteByte(TagClosebrace)
+				}
+			}
+		} else if err = s.WriteByte(TagOpenbrace); err == nil {
+			err = s.WriteByte(TagClosebrace)
+		}
+	}
+	return err
+}
+
+func (w *writer) writeObjectMapWithRef(v interface{}, m map[interface{}]interface{}) error {
+	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+		return w.writeObjectMap(v, m)
 	} else {
 		return err
 	}
