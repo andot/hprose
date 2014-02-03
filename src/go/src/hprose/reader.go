@@ -81,35 +81,37 @@ type Reader interface {
 	Reset()
 }
 
-type reader struct {
-	*simpleReader
+type readerRefer interface {
+	setRef(p interface{})
+	readRef(i int, err error) (interface{}, error)
+	resetRef()
+}
+
+type realReaderRefer struct {
 	ref []interface{}
 }
 
-func NewReader(stream BufReader) Reader {
-	r := &reader{}
-	r.simpleReader = NewSimpleReader(stream).(*simpleReader)
-	r.setRef = r.readerSetRef
-	r.readRef = r.readerReadRef
-	return r
-}
-
-func (r *reader) readerSetRef(p interface{}) {
+func (r *realReaderRefer) setRef(p interface{}) {
 	if r.ref == nil {
-		r.ref = make([]interface{}, 0, 32)
+		r.ref = make([]interface{}, 0)
 	}
 	r.ref = append(r.ref, p)
 }
 
-func (r *reader) readerReadRef() (interface{}, error) {
-	i, err := r.ReadInteger(TagSemicolon)
+func (r *realReaderRefer) readRef(i int, err error) (interface{}, error) {
 	if err == nil {
 		return r.ref[i], nil
 	}
 	return nil, err
 }
 
-func (r *reader) Reset() {
-	r.simpleReader.Reset()
+func (r *realReaderRefer) resetRef() {
 	r.ref = r.ref[:0]
+}
+
+func NewReader(stream BufReader) Reader {
+	return &reader{
+		RawReader:   &RawReader{stream},
+		readerRefer: &realReaderRefer{},
+	}
 }

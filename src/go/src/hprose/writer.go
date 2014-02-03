@@ -79,30 +79,26 @@ type Writer interface {
 	Reset()
 }
 
-type writer struct {
-	*simpleWriter
+type writerRefer interface {
+	setRef(v interface{})
+	writeRef(s BufWriter, v interface{}) (success bool, err error)
+	resetRef()
+}
+
+type realWriterRefer struct {
 	ref map[interface{}]int
 }
 
-func NewWriter(stream BufWriter) Writer {
-	w := &writer{}
-	w.simpleWriter = NewSimpleWriter(stream).(*simpleWriter)
-	w.setRef = w.writerSetRef
-	w.writeRef = w.writerWriteRef
-	return w
-}
-
-func (w *writer) writerSetRef(v interface{}) {
-	if w.ref == nil {
-		w.ref = make(map[interface{}]int)
+func (r *realWriterRefer) setRef(v interface{}) {
+	if r.ref == nil {
+		r.ref = make(map[interface{}]int)
 	}
-	n := len(w.ref)
-	w.ref[v] = n
+	n := len(r.ref)
+	r.ref[v] = n
 }
 
-func (w *writer) writerWriteRef(v interface{}) (success bool, err error) {
-	if n, found := w.ref[v]; found {
-		s := w.stream
+func (r *realWriterRefer) writeRef(s BufWriter, v interface{}) (success bool, err error) {
+	if n, found := r.ref[v]; found {
 		if err = s.WriteByte(TagRef); err == nil {
 			if _, err = s.WriteString(strconv.Itoa(n)); err == nil {
 				err = s.WriteByte(TagSemicolon)
@@ -113,9 +109,15 @@ func (w *writer) writerWriteRef(v interface{}) (success bool, err error) {
 	return false, nil
 }
 
-func (w *writer) Reset() {
-	w.simpleWriter.Reset()
-	if w.ref != nil {
-		w.ref = make(map[interface{}]int)
+func (r *realWriterRefer) resetRef() {
+	if r.ref != nil {
+		r.ref = make(map[interface{}]int)
+	}
+}
+
+func NewWriter(stream BufWriter) Writer {
+	return &writer{
+		stream:      stream,
+		writerRefer: &realWriterRefer{},
 	}
 }

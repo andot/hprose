@@ -28,6 +28,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 	"uuid"
@@ -58,33 +59,40 @@ var timeZero = time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)
 var soMapType = reflect.TypeOf(map[string]interface{}(nil))
 var ooMapType = reflect.TypeOf(map[interface{}]interface{}(nil))
 
-type simpleReader struct {
+var readerFieldsCache struct {
+	sync.RWMutex
+	cache map[reflect.Type]map[string]field
+}
+
+type reader struct {
 	*RawReader
 	classref  []interface{}
 	fieldsref [][]string
-	setRef    func(p interface{})
-	readRef   func() (interface{}, error)
+	readerRefer
 }
 
-func simpleReaderSetRef(p interface{}) {}
+type fakeReaderRefer struct{}
 
-func simpleReaderReadRef() (interface{}, error) {
+func (r fakeReaderRefer) setRef(p interface{}) {}
+
+func (r fakeReaderRefer) readRef(i int, err error) (interface{}, error) {
 	return nil, refError
 }
 
+func (r fakeReaderRefer) resetRef() {}
+
 func NewSimpleReader(stream BufReader) Reader {
-	r := &simpleReader{}
-	r.RawReader = &RawReader{stream: stream}
-	r.setRef = simpleReaderSetRef
-	r.readRef = simpleReaderReadRef
-	return r
+	return &reader{
+		RawReader:   &RawReader{stream},
+		readerRefer: fakeReaderRefer{},
+	}
 }
 
-func (r *simpleReader) Stream() BufReader {
+func (r *reader) Stream() BufReader {
 	return r.stream
 }
 
-func (r *simpleReader) CheckTag(expectTag byte) error {
+func (r *reader) CheckTag(expectTag byte) error {
 	tag, err := r.stream.ReadByte()
 	if err == nil {
 		return unexpectedTag(tag, []byte{expectTag})
@@ -92,7 +100,7 @@ func (r *simpleReader) CheckTag(expectTag byte) error {
 	return err
 }
 
-func (r *simpleReader) CheckTags(expectTags []byte) (tag byte, err error) {
+func (r *reader) CheckTags(expectTags []byte) (tag byte, err error) {
 	tag, err = r.stream.ReadByte()
 	if err == nil {
 		if err = unexpectedTag(tag, expectTags); err == nil {
@@ -102,7 +110,7 @@ func (r *simpleReader) CheckTags(expectTags []byte) (tag byte, err error) {
 	return 0, err
 }
 
-func (r *simpleReader) Unserialize(p interface{}) (err error) {
+func (r *reader) Unserialize(p interface{}) (err error) {
 	switch p := p.(type) {
 	case nil:
 		return errors.New("argument p must be non-null pointer")
@@ -372,7 +380,7 @@ func (r *simpleReader) Unserialize(p interface{}) (err error) {
 	return err
 }
 
-func (r *simpleReader) ReadInteger(tag byte) (int, error) {
+func (r *reader) ReadInteger(tag byte) (int, error) {
 	s := r.stream
 	i := 0
 	b, err := s.ReadByte()
@@ -398,12 +406,12 @@ func (r *simpleReader) ReadInteger(tag byte) (int, error) {
 	return i, err
 }
 
-func (r *simpleReader) ReadUinteger(tag byte) (uint, error) {
+func (r *reader) ReadUinteger(tag byte) (uint, error) {
 	i, err := r.ReadInteger(tag)
 	return uint(i), err
 }
 
-func (r *simpleReader) ReadInt() (int, error) {
+func (r *reader) ReadInt() (int, error) {
 	s := r.stream
 	tag, err := s.ReadByte()
 	if err == nil {
@@ -432,7 +440,7 @@ func (r *simpleReader) ReadInt() (int, error) {
 			}
 		case TagRef:
 			var ref interface{}
-			if ref, err = r.readRef(); err == nil {
+			if ref, err = r.readRef(r.ReadInteger(TagSemicolon)); err == nil {
 				if ref, ok := ref.(string); ok {
 					i, err := strconv.ParseInt(ref, 10, 64)
 					return int(i), err
@@ -447,11 +455,11 @@ func (r *simpleReader) ReadInt() (int, error) {
 	return 0, err
 }
 
-func (r *simpleReader) ReadIntWithoutTag() (int, error) {
+func (r *reader) ReadIntWithoutTag() (int, error) {
 	return r.ReadInteger(TagSemicolon)
 }
 
-func (r *simpleReader) ReadUint() (uint, error) {
+func (r *reader) ReadUint() (uint, error) {
 	s := r.stream
 	tag, err := s.ReadByte()
 	if err == nil {
@@ -480,7 +488,7 @@ func (r *simpleReader) ReadUint() (uint, error) {
 			}
 		case TagRef:
 			var ref interface{}
-			if ref, err = r.readRef(); err == nil {
+			if ref, err = r.readRef(r.ReadInteger(TagSemicolon)); err == nil {
 				if ref, ok := ref.(string); ok {
 					i, err := strconv.ParseUint(ref, 10, 64)
 					return uint(i), err
@@ -495,11 +503,11 @@ func (r *simpleReader) ReadUint() (uint, error) {
 	return 0, err
 }
 
-func (r *simpleReader) ReadUintWithoutTag() (uint, error) {
+func (r *reader) ReadUintWithoutTag() (uint, error) {
 	return r.ReadUinteger(TagSemicolon)
 }
 
-func (r *simpleReader) ReadInt64() (int64, error) {
+func (r *reader) ReadInt64() (int64, error) {
 	s := r.stream
 	tag, err := s.ReadByte()
 	if err == nil {
@@ -527,7 +535,7 @@ func (r *simpleReader) ReadInt64() (int64, error) {
 			}
 		case TagRef:
 			var ref interface{}
-			if ref, err = r.readRef(); err == nil {
+			if ref, err = r.readRef(r.ReadInteger(TagSemicolon)); err == nil {
 				if ref, ok := ref.(string); ok {
 					return strconv.ParseInt(ref, 10, 64)
 				}
@@ -541,11 +549,11 @@ func (r *simpleReader) ReadInt64() (int64, error) {
 	return 0, err
 }
 
-func (r *simpleReader) ReadInt64WithoutTag() (int64, error) {
+func (r *reader) ReadInt64WithoutTag() (int64, error) {
 	return r.readInt(TagSemicolon)
 }
 
-func (r *simpleReader) ReadUint64() (uint64, error) {
+func (r *reader) ReadUint64() (uint64, error) {
 	s := r.stream
 	tag, err := s.ReadByte()
 	if err == nil {
@@ -573,7 +581,7 @@ func (r *simpleReader) ReadUint64() (uint64, error) {
 			}
 		case TagRef:
 			var ref interface{}
-			if ref, err = r.readRef(); err == nil {
+			if ref, err = r.readRef(r.ReadInteger(TagSemicolon)); err == nil {
 				if ref, ok := ref.(string); ok {
 					return strconv.ParseUint(ref, 10, 64)
 				}
@@ -587,11 +595,11 @@ func (r *simpleReader) ReadUint64() (uint64, error) {
 	return 0, err
 }
 
-func (r *simpleReader) ReadUint64WithoutTag() (uint64, error) {
+func (r *reader) ReadUint64WithoutTag() (uint64, error) {
 	return r.readUint(TagSemicolon)
 }
 
-func (r *simpleReader) ReadInt8() (int8, error) {
+func (r *reader) ReadInt8() (int8, error) {
 	s := r.stream
 	tag, err := s.ReadByte()
 	if err == nil {
@@ -620,7 +628,7 @@ func (r *simpleReader) ReadInt8() (int8, error) {
 			}
 		case TagRef:
 			var ref interface{}
-			if ref, err = r.readRef(); err == nil {
+			if ref, err = r.readRef(r.ReadInteger(TagSemicolon)); err == nil {
 				if ref, ok := ref.(string); ok {
 					i, err := strconv.ParseInt(ref, 10, 64)
 					return int8(i), err
@@ -635,11 +643,11 @@ func (r *simpleReader) ReadInt8() (int8, error) {
 	return 0, err
 }
 
-func (r *simpleReader) ReadInt8WithoutTag() (int8, error) {
+func (r *reader) ReadInt8WithoutTag() (int8, error) {
 	return r.readInt8(TagSemicolon)
 }
 
-func (r *simpleReader) ReadUint8() (uint8, error) {
+func (r *reader) ReadUint8() (uint8, error) {
 	s := r.stream
 	tag, err := s.ReadByte()
 	if err == nil {
@@ -668,7 +676,7 @@ func (r *simpleReader) ReadUint8() (uint8, error) {
 			}
 		case TagRef:
 			var ref interface{}
-			if ref, err = r.readRef(); err == nil {
+			if ref, err = r.readRef(r.ReadInteger(TagSemicolon)); err == nil {
 				if ref, ok := ref.(string); ok {
 					i, err := strconv.ParseUint(ref, 10, 64)
 					return uint8(i), err
@@ -683,11 +691,11 @@ func (r *simpleReader) ReadUint8() (uint8, error) {
 	return 0, err
 }
 
-func (r *simpleReader) ReadUint8WithoutTag() (uint8, error) {
+func (r *reader) ReadUint8WithoutTag() (uint8, error) {
 	return r.readUint8(TagSemicolon)
 }
 
-func (r *simpleReader) ReadInt16() (int16, error) {
+func (r *reader) ReadInt16() (int16, error) {
 	s := r.stream
 	tag, err := s.ReadByte()
 	if err == nil {
@@ -716,7 +724,7 @@ func (r *simpleReader) ReadInt16() (int16, error) {
 			}
 		case TagRef:
 			var ref interface{}
-			if ref, err = r.readRef(); err == nil {
+			if ref, err = r.readRef(r.ReadInteger(TagSemicolon)); err == nil {
 				if ref, ok := ref.(string); ok {
 					i, err := strconv.ParseInt(ref, 10, 64)
 					return int16(i), err
@@ -731,11 +739,11 @@ func (r *simpleReader) ReadInt16() (int16, error) {
 	return 0, err
 }
 
-func (r *simpleReader) ReadInt16WithoutTag() (int16, error) {
+func (r *reader) ReadInt16WithoutTag() (int16, error) {
 	return r.readInt16(TagSemicolon)
 }
 
-func (r *simpleReader) ReadUint16() (uint16, error) {
+func (r *reader) ReadUint16() (uint16, error) {
 	s := r.stream
 	tag, err := s.ReadByte()
 	if err == nil {
@@ -764,7 +772,7 @@ func (r *simpleReader) ReadUint16() (uint16, error) {
 			}
 		case TagRef:
 			var ref interface{}
-			if ref, err = r.readRef(); err == nil {
+			if ref, err = r.readRef(r.ReadInteger(TagSemicolon)); err == nil {
 				if ref, ok := ref.(string); ok {
 					i, err := strconv.ParseUint(ref, 10, 64)
 					return uint16(i), err
@@ -779,11 +787,11 @@ func (r *simpleReader) ReadUint16() (uint16, error) {
 	return 0, err
 }
 
-func (r *simpleReader) ReadUint16WithoutTag() (uint16, error) {
+func (r *reader) ReadUint16WithoutTag() (uint16, error) {
 	return r.readUint16(TagSemicolon)
 }
 
-func (r *simpleReader) ReadInt32() (int32, error) {
+func (r *reader) ReadInt32() (int32, error) {
 	s := r.stream
 	tag, err := s.ReadByte()
 	if err == nil {
@@ -812,7 +820,7 @@ func (r *simpleReader) ReadInt32() (int32, error) {
 			}
 		case TagRef:
 			var ref interface{}
-			if ref, err = r.readRef(); err == nil {
+			if ref, err = r.readRef(r.ReadInteger(TagSemicolon)); err == nil {
 				if ref, ok := ref.(string); ok {
 					i, err := strconv.ParseInt(ref, 10, 64)
 					return int32(i), err
@@ -827,11 +835,11 @@ func (r *simpleReader) ReadInt32() (int32, error) {
 	return 0, err
 }
 
-func (r *simpleReader) ReadInt32WithoutTag() (int32, error) {
+func (r *reader) ReadInt32WithoutTag() (int32, error) {
 	return r.readInt32(TagSemicolon)
 }
 
-func (r *simpleReader) ReadUint32() (uint32, error) {
+func (r *reader) ReadUint32() (uint32, error) {
 	s := r.stream
 	tag, err := s.ReadByte()
 	if err == nil {
@@ -860,7 +868,7 @@ func (r *simpleReader) ReadUint32() (uint32, error) {
 			}
 		case TagRef:
 			var ref interface{}
-			if ref, err = r.readRef(); err == nil {
+			if ref, err = r.readRef(r.ReadInteger(TagSemicolon)); err == nil {
 				if ref, ok := ref.(string); ok {
 					i, err := strconv.ParseUint(ref, 10, 64)
 					return uint32(i), err
@@ -875,11 +883,11 @@ func (r *simpleReader) ReadUint32() (uint32, error) {
 	return 0, err
 }
 
-func (r *simpleReader) ReadUint32WithoutTag() (uint32, error) {
+func (r *reader) ReadUint32WithoutTag() (uint32, error) {
 	return r.readUint32(TagSemicolon)
 }
 
-func (r *simpleReader) ReadBigInt() (*big.Int, error) {
+func (r *reader) ReadBigInt() (*big.Int, error) {
 	s := r.stream
 	tag, err := s.ReadByte()
 	if err == nil {
@@ -907,7 +915,7 @@ func (r *simpleReader) ReadBigInt() (*big.Int, error) {
 			}
 		case TagRef:
 			var ref interface{}
-			if ref, err = r.readRef(); err == nil {
+			if ref, err = r.readRef(r.ReadInteger(TagSemicolon)); err == nil {
 				if ref, ok := ref.(string); ok {
 					return stringToBigInt(ref)
 				}
@@ -921,7 +929,7 @@ func (r *simpleReader) ReadBigInt() (*big.Int, error) {
 	return nil, err
 }
 
-func (r *simpleReader) ReadBigIntWithoutTag() (*big.Int, error) {
+func (r *reader) ReadBigIntWithoutTag() (*big.Int, error) {
 	s := r.stream
 	tag := TagSemicolon
 	i := big.NewInt(0)
@@ -951,7 +959,7 @@ func (r *simpleReader) ReadBigIntWithoutTag() (*big.Int, error) {
 	return i, err
 }
 
-func (r *simpleReader) ReadFloat32() (float32, error) {
+func (r *reader) ReadFloat32() (float32, error) {
 	s := r.stream
 	tag, err := s.ReadByte()
 	if err == nil {
@@ -984,7 +992,7 @@ func (r *simpleReader) ReadFloat32() (float32, error) {
 			}
 		case TagRef:
 			var ref interface{}
-			if ref, err = r.readRef(); err == nil {
+			if ref, err = r.readRef(r.ReadInteger(TagSemicolon)); err == nil {
 				if ref, ok := ref.(string); ok {
 					f, err := strconv.ParseFloat(ref, 32)
 					return float32(f), err
@@ -999,7 +1007,7 @@ func (r *simpleReader) ReadFloat32() (float32, error) {
 	return 0, err
 }
 
-func (r *simpleReader) ReadFloat32WithoutTag() (float32, error) {
+func (r *reader) ReadFloat32WithoutTag() (float32, error) {
 	if str, err := r.readUntil(TagSemicolon); err == nil {
 		f, _ := strconv.ParseFloat(str, 32)
 		return float32(f), nil
@@ -1007,7 +1015,7 @@ func (r *simpleReader) ReadFloat32WithoutTag() (float32, error) {
 		return float32(math.NaN()), err
 	}
 }
-func (r *simpleReader) ReadFloat64() (float64, error) {
+func (r *reader) ReadFloat64() (float64, error) {
 	s := r.stream
 	tag, err := s.ReadByte()
 	if err == nil {
@@ -1038,7 +1046,7 @@ func (r *simpleReader) ReadFloat64() (float64, error) {
 			}
 		case TagRef:
 			var ref interface{}
-			if ref, err = r.readRef(); err == nil {
+			if ref, err = r.readRef(r.ReadInteger(TagSemicolon)); err == nil {
 				if ref, ok := ref.(string); ok {
 					return strconv.ParseFloat(ref, 64)
 				}
@@ -1052,7 +1060,7 @@ func (r *simpleReader) ReadFloat64() (float64, error) {
 	return 0, err
 }
 
-func (r *simpleReader) ReadFloat64WithoutTag() (float64, error) {
+func (r *reader) ReadFloat64WithoutTag() (float64, error) {
 	if str, err := r.readUntil(TagSemicolon); err == nil {
 		f, _ := strconv.ParseFloat(str, 64)
 		return f, nil
@@ -1061,7 +1069,7 @@ func (r *simpleReader) ReadFloat64WithoutTag() (float64, error) {
 	}
 }
 
-func (r *simpleReader) ReadBool() (bool, error) {
+func (r *reader) ReadBool() (bool, error) {
 	s := r.stream
 	tag, err := s.ReadByte()
 	if err == nil {
@@ -1097,7 +1105,7 @@ func (r *simpleReader) ReadBool() (bool, error) {
 			}
 		case TagRef:
 			var ref interface{}
-			if ref, err = r.readRef(); err == nil {
+			if ref, err = r.readRef(r.ReadInteger(TagSemicolon)); err == nil {
 				if ref, ok := ref.(string); ok {
 					return strconv.ParseBool(ref)
 				}
@@ -1111,7 +1119,7 @@ func (r *simpleReader) ReadBool() (bool, error) {
 	return false, err
 }
 
-func (r *simpleReader) ReadDateTime() (time.Time, error) {
+func (r *reader) ReadDateTime() (time.Time, error) {
 	s := r.stream
 	tag, err := s.ReadByte()
 	if err == nil {
@@ -1131,7 +1139,7 @@ func (r *simpleReader) ReadDateTime() (time.Time, error) {
 			return r.ReadTimeWithoutTag()
 		case TagRef:
 			var ref interface{}
-			if ref, err = r.readRef(); err == nil {
+			if ref, err = r.readRef(r.ReadInteger(TagSemicolon)); err == nil {
 				switch ref := ref.(type) {
 				case time.Time:
 					return ref, nil
@@ -1149,7 +1157,7 @@ func (r *simpleReader) ReadDateTime() (time.Time, error) {
 	return timeZero, err
 }
 
-func (r *simpleReader) ReadDateWithoutTag() (time.Time, error) {
+func (r *reader) ReadDateWithoutTag() (time.Time, error) {
 	s := r.stream
 	var year, month, day, hour, min, sec, nsec int
 	tag, err := s.ReadByte()
@@ -1204,7 +1212,7 @@ func (r *simpleReader) ReadDateWithoutTag() (time.Time, error) {
 	return d, nil
 }
 
-func (r *simpleReader) ReadTimeWithoutTag() (time.Time, error) {
+func (r *reader) ReadTimeWithoutTag() (time.Time, error) {
 	hour, min, sec, nsec, tag, err := r.readTime()
 	if err != nil {
 		return timeZero, err
@@ -1222,7 +1230,7 @@ func (r *simpleReader) ReadTimeWithoutTag() (time.Time, error) {
 	return t, nil
 }
 
-func (r *simpleReader) ReadString() (string, error) {
+func (r *reader) ReadString() (string, error) {
 	s := r.stream
 	tag, err := s.ReadByte()
 	if err == nil {
@@ -1268,7 +1276,7 @@ func (r *simpleReader) ReadString() (string, error) {
 			}
 		case TagRef:
 			var ref interface{}
-			if ref, err = r.readRef(); err == nil {
+			if ref, err = r.readRef(r.ReadInteger(TagSemicolon)); err == nil {
 				if ref, ok := ref.(string); ok {
 					return ref, nil
 				}
@@ -1282,14 +1290,14 @@ func (r *simpleReader) ReadString() (string, error) {
 	return "", err
 }
 
-func (r *simpleReader) ReadStringWithoutTag() (str string, err error) {
+func (r *reader) ReadStringWithoutTag() (str string, err error) {
 	if str, err = r.readStringWithoutTag(); err == nil {
 		r.setRef(str)
 	}
 	return str, err
 }
 
-func (r *simpleReader) ReadBytes() (*[]byte, error) {
+func (r *reader) ReadBytes() (*[]byte, error) {
 	var bytes []byte = nil
 	s := r.stream
 	tag, err := s.ReadByte()
@@ -1318,7 +1326,7 @@ func (r *simpleReader) ReadBytes() (*[]byte, error) {
 			return &bytes, err
 		case TagRef:
 			var ref interface{}
-			if ref, err = r.readRef(); err == nil {
+			if ref, err = r.readRef(r.ReadInteger(TagSemicolon)); err == nil {
 				if ref, ok := ref.(*[]byte); ok {
 					return ref, nil
 				}
@@ -1332,7 +1340,7 @@ func (r *simpleReader) ReadBytes() (*[]byte, error) {
 	return &bytes, err
 }
 
-func (r *simpleReader) ReadBytesWithoutTag() (*[]byte, error) {
+func (r *reader) ReadBytesWithoutTag() (*[]byte, error) {
 	s := r.stream
 	if length, err := r.ReadInteger(TagQuote); err == nil {
 		b := make([]byte, length)
@@ -1346,7 +1354,7 @@ func (r *simpleReader) ReadBytesWithoutTag() (*[]byte, error) {
 	}
 }
 
-func (r *simpleReader) ReadUUID() (*uuid.UUID, error) {
+func (r *reader) ReadUUID() (*uuid.UUID, error) {
 	id := new(uuid.UUID)
 	s := r.stream
 	tag, err := s.ReadByte()
@@ -1371,7 +1379,7 @@ func (r *simpleReader) ReadUUID() (*uuid.UUID, error) {
 			return id, err
 		case TagRef:
 			var ref interface{}
-			if ref, err = r.readRef(); err == nil {
+			if ref, err = r.readRef(r.ReadInteger(TagSemicolon)); err == nil {
 				if ref, ok := ref.(*uuid.UUID); ok {
 					return ref, nil
 				}
@@ -1385,7 +1393,7 @@ func (r *simpleReader) ReadUUID() (*uuid.UUID, error) {
 	return id, err
 }
 
-func (r *simpleReader) ReadUUIDWithoutTag() (*uuid.UUID, error) {
+func (r *reader) ReadUUIDWithoutTag() (*uuid.UUID, error) {
 	s := r.stream
 	err := r.CheckTag(TagOpenbrace)
 	if err == nil {
@@ -1400,7 +1408,7 @@ func (r *simpleReader) ReadUUIDWithoutTag() (*uuid.UUID, error) {
 	return new(uuid.UUID), err
 }
 
-func (r *simpleReader) ReadList() (*list.List, error) {
+func (r *reader) ReadList() (*list.List, error) {
 	l := list.New()
 	s := r.stream
 	tag, err := s.ReadByte()
@@ -1412,7 +1420,7 @@ func (r *simpleReader) ReadList() (*list.List, error) {
 			return r.ReadListWithoutTag()
 		case TagRef:
 			var ref interface{}
-			if ref, err = r.readRef(); err == nil {
+			if ref, err = r.readRef(r.ReadInteger(TagSemicolon)); err == nil {
 				if ref, ok := ref.(*list.List); ok {
 					return ref, nil
 				}
@@ -1426,7 +1434,7 @@ func (r *simpleReader) ReadList() (*list.List, error) {
 	return l, err
 }
 
-func (r *simpleReader) ReadListWithoutTag() (*list.List, error) {
+func (r *reader) ReadListWithoutTag() (*list.List, error) {
 	l := list.New()
 	r.setRef(l)
 	length, err := r.ReadInteger(TagOpenbrace)
@@ -1445,7 +1453,7 @@ func (r *simpleReader) ReadListWithoutTag() (*list.List, error) {
 	return l, err
 }
 
-func (r *simpleReader) ReadArray(a []reflect.Value) error {
+func (r *reader) ReadArray(a []reflect.Value) error {
 	length := len(a)
 	r.setRef(&a)
 	for i := 0; i < length; i++ {
@@ -1456,7 +1464,7 @@ func (r *simpleReader) ReadArray(a []reflect.Value) error {
 	return r.CheckTag(TagClosebrace)
 }
 
-func (r *simpleReader) ReadSlice(p interface{}) error {
+func (r *reader) ReadSlice(p interface{}) error {
 	v, err := r.checkPointer(p)
 	if err == nil {
 		return r.readSlice(v.Elem())
@@ -1464,7 +1472,7 @@ func (r *simpleReader) ReadSlice(p interface{}) error {
 	return err
 }
 
-func (r *simpleReader) ReadSliceWithoutTag(p interface{}) error {
+func (r *reader) ReadSliceWithoutTag(p interface{}) error {
 	v, err := r.checkPointer(p)
 	if err == nil {
 		return r.readSliceWithoutTag(v.Elem())
@@ -1472,7 +1480,7 @@ func (r *simpleReader) ReadSliceWithoutTag(p interface{}) error {
 	return err
 }
 
-func (r *simpleReader) ReadMap(p interface{}) error {
+func (r *reader) ReadMap(p interface{}) error {
 	v, err := r.checkPointer(p)
 	if err == nil {
 		return r.readMap(v.Elem())
@@ -1480,7 +1488,7 @@ func (r *simpleReader) ReadMap(p interface{}) error {
 	return err
 }
 
-func (r *simpleReader) ReadMapWithoutTag(p interface{}) error {
+func (r *reader) ReadMapWithoutTag(p interface{}) error {
 	v, err := r.checkPointer(p)
 	if err == nil {
 		return r.readMapWithoutTag(v.Elem())
@@ -1488,7 +1496,7 @@ func (r *simpleReader) ReadMapWithoutTag(p interface{}) error {
 	return err
 }
 
-func (r *simpleReader) ReadObject(p interface{}) error {
+func (r *reader) ReadObject(p interface{}) error {
 	v, err := r.checkPointer(p)
 	if err == nil {
 		return r.readObject(v.Elem())
@@ -1496,7 +1504,7 @@ func (r *simpleReader) ReadObject(p interface{}) error {
 	return err
 }
 
-func (r *simpleReader) ReadObjectWithoutTag(p interface{}) error {
+func (r *reader) ReadObjectWithoutTag(p interface{}) error {
 	v, err := r.checkPointer(p)
 	if err == nil {
 		return r.readObjectWithoutTag(v.Elem())
@@ -1504,16 +1512,17 @@ func (r *simpleReader) ReadObjectWithoutTag(p interface{}) error {
 	return err
 }
 
-func (r *simpleReader) Reset() {
+func (r *reader) Reset() {
 	if r.classref != nil {
 		r.classref = r.classref[:0]
 		r.fieldsref = r.fieldsref[:0]
 	}
+	r.resetRef()
 }
 
 // private methods
 
-func (r *simpleReader) checkPointer(p interface{}) (v reflect.Value, err error) {
+func (r *reader) checkPointer(p interface{}) (v reflect.Value, err error) {
 	v = reflect.ValueOf(p)
 	if v.Kind() != reflect.Ptr {
 		return v, errors.New("argument p must be a pointer")
@@ -1521,7 +1530,7 @@ func (r *simpleReader) checkPointer(p interface{}) (v reflect.Value, err error) 
 	return v, nil
 }
 
-func (r *simpleReader) ReadValue(v reflect.Value) error {
+func (r *reader) ReadValue(v reflect.Value) error {
 	t := v.Type()
 	switch t.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -1624,7 +1633,7 @@ func (r *simpleReader) ReadValue(v reflect.Value) error {
 	return errors.New("unsupported Type:" + t.String())
 }
 
-func (r *simpleReader) readInterface() (interface{}, error) {
+func (r *reader) readInterface() (interface{}, error) {
 	s := r.stream
 	tag, err := s.ReadByte()
 	if err == nil {
@@ -1682,14 +1691,14 @@ func (r *simpleReader) readInterface() (interface{}, error) {
 			err := r.ReadObjectWithoutTag(&e)
 			return e, err
 		case TagRef:
-			return r.readRef()
+			return r.readRef(r.ReadInteger(TagSemicolon))
 		}
 		return nil, unexpectedTag(tag, nil)
 	}
 	return nil, err
 }
 
-func (r *simpleReader) readUntil(tag byte) (string, error) {
+func (r *reader) readUntil(tag byte) (string, error) {
 	if s, err := r.stream.ReadString(tag); err == nil {
 		b := []byte(s)
 		return string(b[:len(b)-1]), nil
@@ -1698,12 +1707,12 @@ func (r *simpleReader) readUntil(tag byte) (string, error) {
 	}
 }
 
-func (r *simpleReader) skipUntil(tag byte) error {
+func (r *reader) skipUntil(tag byte) error {
 	_, err := r.stream.ReadString(tag)
 	return err
 }
 
-func (r *simpleReader) readInt(tag byte) (int64, error) {
+func (r *reader) readInt(tag byte) (int64, error) {
 	s := r.stream
 	i := int64(0)
 	b, err := s.ReadByte()
@@ -1729,12 +1738,12 @@ func (r *simpleReader) readInt(tag byte) (int64, error) {
 	return i, err
 }
 
-func (r *simpleReader) readUint(tag byte) (uint64, error) {
+func (r *reader) readUint(tag byte) (uint64, error) {
 	i, err := r.readInt(tag)
 	return uint64(i), err
 }
 
-func (r *simpleReader) readInt8(tag byte) (int8, error) {
+func (r *reader) readInt8(tag byte) (int8, error) {
 	s := r.stream
 	i := int8(0)
 	b, err := s.ReadByte()
@@ -1760,12 +1769,12 @@ func (r *simpleReader) readInt8(tag byte) (int8, error) {
 	return i, err
 }
 
-func (r *simpleReader) readUint8(tag byte) (uint8, error) {
+func (r *reader) readUint8(tag byte) (uint8, error) {
 	i, err := r.readInt8(tag)
 	return uint8(i), err
 }
 
-func (r *simpleReader) readInt16(tag byte) (int16, error) {
+func (r *reader) readInt16(tag byte) (int16, error) {
 	s := r.stream
 	i := int16(0)
 	b, err := s.ReadByte()
@@ -1791,12 +1800,12 @@ func (r *simpleReader) readInt16(tag byte) (int16, error) {
 	return i, err
 }
 
-func (r *simpleReader) readUint16(tag byte) (uint16, error) {
+func (r *reader) readUint16(tag byte) (uint16, error) {
 	i, err := r.readInt16(tag)
 	return uint16(i), err
 }
 
-func (r *simpleReader) readInt32(tag byte) (int32, error) {
+func (r *reader) readInt32(tag byte) (int32, error) {
 	s := r.stream
 	i := int32(0)
 	b, err := s.ReadByte()
@@ -1822,12 +1831,12 @@ func (r *simpleReader) readInt32(tag byte) (int32, error) {
 	return i, err
 }
 
-func (r *simpleReader) readUint32(tag byte) (uint32, error) {
+func (r *reader) readUint32(tag byte) (uint32, error) {
 	i, err := r.readInt32(tag)
 	return uint32(i), err
 }
 
-func (r *simpleReader) readIntAsFloat64(tag byte) (float64, error) {
+func (r *reader) readIntAsFloat64(tag byte) (float64, error) {
 	s := r.stream
 	f := float64(0)
 	b, err := s.ReadByte()
@@ -1853,12 +1862,12 @@ func (r *simpleReader) readIntAsFloat64(tag byte) (float64, error) {
 	return f, err
 }
 
-func (r *simpleReader) readIntAsFloat32(tag byte) (float32, error) {
+func (r *reader) readIntAsFloat32(tag byte) (float32, error) {
 	f, err := r.readIntAsFloat64(tag)
 	return float32(f), err
 }
 
-func (r *simpleReader) readInfinity() (float64, error) {
+func (r *reader) readInfinity() (float64, error) {
 	if sign, err := r.stream.ReadByte(); err == nil {
 		switch sign {
 		case '+':
@@ -1873,7 +1882,7 @@ func (r *simpleReader) readInfinity() (float64, error) {
 	}
 }
 
-func (r *simpleReader) readTime() (hour int, min int, sec int, nsec int, tag byte, err error) {
+func (r *reader) readTime() (hour int, min int, sec int, nsec int, tag byte, err error) {
 	s := r.stream
 	if tag, err = s.ReadByte(); err == nil {
 		hour = int(tag - '0')
@@ -1953,7 +1962,7 @@ func (r *simpleReader) readTime() (hour int, min int, sec int, nsec int, tag byt
 	return hour, min, sec, nsec, tag, err
 }
 
-func (r *simpleReader) readStringWithoutTag() (str string, err error) {
+func (r *reader) readStringWithoutTag() (str string, err error) {
 	var length int
 	if length, err = r.ReadInteger(TagQuote); err == nil {
 		if str, err = r.readUTF8String(length); err == nil {
@@ -1963,7 +1972,7 @@ func (r *simpleReader) readStringWithoutTag() (str string, err error) {
 	return str, err
 }
 
-func (r *simpleReader) readInt64(v reflect.Value) error {
+func (r *reader) readInt64(v reflect.Value) error {
 	if x, err := r.ReadInt64(); err == nil || err == NilError {
 		v.SetInt(x)
 		return nil
@@ -1972,7 +1981,7 @@ func (r *simpleReader) readInt64(v reflect.Value) error {
 	}
 }
 
-func (r *simpleReader) readUint64(v reflect.Value) error {
+func (r *reader) readUint64(v reflect.Value) error {
 	if x, err := r.ReadUint64(); err == nil || err == NilError {
 		v.SetUint(x)
 		return nil
@@ -1981,7 +1990,7 @@ func (r *simpleReader) readUint64(v reflect.Value) error {
 	}
 }
 
-func (r *simpleReader) readBool(v reflect.Value) error {
+func (r *reader) readBool(v reflect.Value) error {
 	if x, err := r.ReadBool(); err == nil || err == NilError {
 		v.SetBool(x)
 		return nil
@@ -1990,7 +1999,7 @@ func (r *simpleReader) readBool(v reflect.Value) error {
 	}
 }
 
-func (r *simpleReader) readFloat32(v reflect.Value) error {
+func (r *reader) readFloat32(v reflect.Value) error {
 	if x, err := r.ReadFloat32(); err == nil || err == NilError {
 		v.SetFloat(float64(x))
 		return nil
@@ -1999,7 +2008,7 @@ func (r *simpleReader) readFloat32(v reflect.Value) error {
 	}
 }
 
-func (r *simpleReader) readFloat64(v reflect.Value) error {
+func (r *reader) readFloat64(v reflect.Value) error {
 	if x, err := r.ReadFloat64(); err == nil || err == NilError {
 		v.SetFloat(x)
 		return nil
@@ -2008,7 +2017,7 @@ func (r *simpleReader) readFloat64(v reflect.Value) error {
 	}
 }
 
-func (r *simpleReader) readBigInt(v reflect.Value) error {
+func (r *reader) readBigInt(v reflect.Value) error {
 	if x, err := r.ReadBigInt(); err == nil || err == NilError {
 		v.Set(reflect.ValueOf(*x))
 		return nil
@@ -2017,7 +2026,7 @@ func (r *simpleReader) readBigInt(v reflect.Value) error {
 	}
 }
 
-func (r *simpleReader) readDateTime(v reflect.Value) error {
+func (r *reader) readDateTime(v reflect.Value) error {
 	if x, err := r.ReadDateTime(); err == nil || err == NilError {
 		v.Set(reflect.ValueOf(x))
 		return nil
@@ -2026,7 +2035,7 @@ func (r *simpleReader) readDateTime(v reflect.Value) error {
 	}
 }
 
-func (r *simpleReader) readString(v reflect.Value) error {
+func (r *reader) readString(v reflect.Value) error {
 	if x, err := r.ReadString(); err == nil || err == NilError {
 		v.SetString(x)
 		return nil
@@ -2035,7 +2044,7 @@ func (r *simpleReader) readString(v reflect.Value) error {
 	}
 }
 
-func (r *simpleReader) readBytes(v reflect.Value) error {
+func (r *reader) readBytes(v reflect.Value) error {
 	if x, err := r.ReadBytes(); err == nil || err == NilError {
 		v.Set(reflect.ValueOf(*x))
 		return nil
@@ -2044,7 +2053,7 @@ func (r *simpleReader) readBytes(v reflect.Value) error {
 	}
 }
 
-func (r *simpleReader) readUUID(v reflect.Value) error {
+func (r *reader) readUUID(v reflect.Value) error {
 	if x, err := r.ReadUUID(); err == nil || err == NilError {
 		v.Set(reflect.ValueOf(*x))
 		return nil
@@ -2053,7 +2062,7 @@ func (r *simpleReader) readUUID(v reflect.Value) error {
 	}
 }
 
-func (r *simpleReader) readList(v reflect.Value) error {
+func (r *reader) readList(v reflect.Value) error {
 	if x, err := r.ReadList(); err == nil || err == NilError {
 		v.Set(reflect.ValueOf(*x))
 		return nil
@@ -2062,9 +2071,9 @@ func (r *simpleReader) readList(v reflect.Value) error {
 	}
 }
 
-func (r *simpleReader) getRef(v reflect.Value) error {
+func (r *reader) getRef(v reflect.Value) error {
 	t := v.Type()
-	if ref, err := r.readRef(); err == nil {
+	if ref, err := r.readRef(r.ReadInteger(TagSemicolon)); err == nil {
 		refValue := reflect.ValueOf(ref)
 		refType := refValue.Type()
 		if refType.Kind() == reflect.Ptr {
@@ -2083,7 +2092,7 @@ func (r *simpleReader) getRef(v reflect.Value) error {
 	}
 }
 
-func (r *simpleReader) readSlice(v reflect.Value) error {
+func (r *reader) readSlice(v reflect.Value) error {
 	s := r.Stream()
 	t := v.Type()
 	tag, err := s.ReadByte()
@@ -2103,7 +2112,7 @@ func (r *simpleReader) readSlice(v reflect.Value) error {
 	return err
 }
 
-func (r *simpleReader) readSliceWithoutTag(v reflect.Value) error {
+func (r *reader) readSliceWithoutTag(v reflect.Value) error {
 	t := v.Type()
 	switch t.Kind() {
 	case reflect.Slice:
@@ -2153,7 +2162,7 @@ func (r *simpleReader) readSliceWithoutTag(v reflect.Value) error {
 	return err
 }
 
-func (r *simpleReader) readSliceAsMap(v reflect.Value) error {
+func (r *reader) readSliceAsMap(v reflect.Value) error {
 	t := v.Type()
 	switch t.Kind() {
 	case reflect.Map:
@@ -2217,7 +2226,7 @@ func (r *simpleReader) readSliceAsMap(v reflect.Value) error {
 	return err
 }
 
-func (r *simpleReader) readMap(v reflect.Value) error {
+func (r *reader) readMap(v reflect.Value) error {
 	s := r.Stream()
 	t := v.Type()
 	tag, err := s.ReadByte()
@@ -2246,7 +2255,7 @@ func (r *simpleReader) readMap(v reflect.Value) error {
 	return err
 }
 
-func (r *simpleReader) readMapWithoutTag(v reflect.Value) error {
+func (r *reader) readMapWithoutTag(v reflect.Value) error {
 	t := v.Type()
 	switch t.Kind() {
 	case reflect.Struct:
@@ -2307,7 +2316,7 @@ func (r *simpleReader) readMapWithoutTag(v reflect.Value) error {
 	return err
 }
 
-func (r *simpleReader) readMapAsObject(v reflect.Value) error {
+func (r *reader) readMapAsObject(v reflect.Value) error {
 	t := v.Type()
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
@@ -2317,16 +2326,14 @@ func (r *simpleReader) readMapAsObject(v reflect.Value) error {
 	obj := objPointer.Elem()
 	count, err := r.ReadInteger(TagOpenbrace)
 	if err == nil {
+		fieldsCache := getFieldsCache(t)
 		for i := 0; i < count; i++ {
 			key, err := r.ReadString()
 			if err != nil {
 				return err
 			}
-			field := obj.FieldByNameFunc(func(name string) bool {
-				return strings.EqualFold(key, name)
-			})
-			if field.IsValid() {
-				err = r.ReadValue(field)
+			if f, ok := fieldsCache[strings.ToLower(key)]; ok {
+				err = r.ReadValue(obj.FieldByIndex(f.Index))
 			} else {
 				_, err = r.readInterface()
 			}
@@ -2355,7 +2362,7 @@ func (r *simpleReader) readMapAsObject(v reflect.Value) error {
 	return err
 }
 
-func (r *simpleReader) readObject(v reflect.Value) error {
+func (r *reader) readObject(v reflect.Value) error {
 	s := r.Stream()
 	t := v.Type()
 	tag, err := s.ReadByte()
@@ -2382,18 +2389,20 @@ func (r *simpleReader) readObject(v reflect.Value) error {
 	return err
 }
 
-func (r *simpleReader) readObjectAsMap(v reflect.Value, index int) error {
+func (r *reader) readObjectAsMap(v reflect.Value, index int) error {
 	t := soMapType
 	mPointer := reflect.New(t)
 	r.setRef(mPointer.Interface())
 	m := mPointer.Elem()
 	m.Set(reflect.MakeMap(t))
-	fileds := r.fieldsref[index]
-	length := len(fileds)
+	fields := r.fieldsref[index]
+	length := len(fields)
+	tk := t.Key()
+	tv := t.Elem()
 	for i := 0; i < length; i++ {
-		key := reflect.New(t.Key()).Elem()
-		val := reflect.New(t.Elem()).Elem()
-		key.SetString(fileds[i])
+		key := reflect.New(tk).Elem()
+		val := reflect.New(tv).Elem()
+		key.SetString(fields[i])
 		if err := r.ReadValue(val); err != nil {
 			return err
 		}
@@ -2419,8 +2428,9 @@ func (r *simpleReader) readObjectAsMap(v reflect.Value, index int) error {
 	return err
 }
 
-func (r *simpleReader) readObjectWithoutTag(v reflect.Value) error {
+func (r *reader) readObjectWithoutTag(v reflect.Value) error {
 	t := v.Type()
+	kind := t.Kind()
 	index, err := r.ReadInteger(TagOpenbrace)
 	if err != nil {
 		return err
@@ -2428,20 +2438,20 @@ func (r *simpleReader) readObjectWithoutTag(v reflect.Value) error {
 	key := r.classref[index]
 	class, ok := key.(reflect.Type)
 	if !ok {
-		if t.Kind() == reflect.Struct {
+		if kind == reflect.Struct {
 			class = t
-		} else if t.Kind() == reflect.Ptr && t.Elem().Kind() == reflect.Struct {
+		} else if kind == reflect.Ptr && t.Elem().Kind() == reflect.Struct {
 			class = t.Elem()
 		} else {
 			class = soMapType
 		}
 	} else {
-		if t == soMapType || (t.Kind() == reflect.Ptr && t.Elem() == soMapType) {
+		if t == soMapType || (kind == reflect.Ptr && t.Elem() == soMapType) {
 			class = soMapType
 		}
 	}
 	assignable := class.AssignableTo(t)
-	if t.Kind() == reflect.Ptr {
+	if kind == reflect.Ptr {
 		assignable = class.AssignableTo(t.Elem())
 	}
 	if !assignable {
@@ -2453,14 +2463,12 @@ func (r *simpleReader) readObjectWithoutTag(v reflect.Value) error {
 	objPointer := reflect.New(class)
 	r.setRef(objPointer.Interface())
 	obj := objPointer.Elem()
-	fileds := r.fieldsref[index]
-	count := len(fileds)
+	fields := r.fieldsref[index]
+	fieldsCache := getFieldsCache(class)
+	count := len(fields)
 	for i := 0; i < count; i++ {
-		field := obj.FieldByNameFunc(func(name string) bool {
-			return strings.EqualFold(fileds[i], name)
-		})
-		if field.IsValid() {
-			err = r.ReadValue(field)
+		if f, ok := fieldsCache[strings.ToLower(fields[i])]; ok {
+			err = r.ReadValue(obj.FieldByIndex(f.Index))
 		} else {
 			_, err = r.readInterface()
 		}
@@ -2469,17 +2477,17 @@ func (r *simpleReader) readObjectWithoutTag(v reflect.Value) error {
 		}
 	}
 	if err = r.CheckTag(TagClosebrace); err == nil {
-		switch t := v.Type(); t.Kind() {
+		switch kind {
 		case reflect.Struct:
 			v.Set(obj)
 		case reflect.Interface:
 			v.Set(objPointer)
 		case reflect.Ptr:
-			switch t.Elem().Kind() {
+			switch t := t.Elem(); t.Kind() {
 			case reflect.Struct:
 				v.Set(objPointer)
 			case reflect.Interface:
-				v.Set(reflect.New(t.Elem()))
+				v.Set(reflect.New(t))
 				v.Elem().Set(objPointer)
 			}
 		}
@@ -2488,7 +2496,7 @@ func (r *simpleReader) readObjectWithoutTag(v reflect.Value) error {
 	return err
 }
 
-func (r *simpleReader) readClass() error {
+func (r *reader) readClass() error {
 	className, err := r.readStringWithoutTag()
 	if err != nil {
 		return err
@@ -2497,7 +2505,7 @@ func (r *simpleReader) readClass() error {
 	if err != nil {
 		return err
 	}
-	fields := make([]string, count, count)
+	fields := make([]string, count)
 	for i := 0; i < count; i++ {
 		if fields[i], err = r.ReadString(); err != nil {
 			return err
@@ -2508,8 +2516,8 @@ func (r *simpleReader) readClass() error {
 	}
 	class := ClassManager.GetClass(className)
 	if r.classref == nil {
-		r.classref = make([]interface{}, 0, 16)
-		r.fieldsref = make([][]string, 0, 16)
+		r.classref = make([]interface{}, 0)
+		r.fieldsref = make([][]string, 0)
 	}
 	var key interface{} = class
 	if class == nil {
@@ -2520,7 +2528,7 @@ func (r *simpleReader) readClass() error {
 	return nil
 }
 
-func (r *simpleReader) readPointer(v reflect.Value, readValue func() (interface{}, error), setValue func(reflect.Value, interface{})) error {
+func (r *reader) readPointer(v reflect.Value, readValue func() (interface{}, error), setValue func(reflect.Value, interface{})) error {
 	if x, err := readValue(); err == nil {
 		if reflect.TypeOf(x).Kind() != reflect.Ptr {
 			v.Set(reflect.New(v.Type().Elem()))
@@ -2537,67 +2545,67 @@ func (r *simpleReader) readPointer(v reflect.Value, readValue func() (interface{
 	}
 }
 
-func (r *simpleReader) readInt64Pointer(v reflect.Value) error {
+func (r *reader) readInt64Pointer(v reflect.Value) error {
 	return r.readPointer(v,
 		func() (interface{}, error) { return r.ReadInt64() },
 		func(v reflect.Value, x interface{}) { v.SetInt(x.(int64)) })
 }
 
-func (r *simpleReader) readUint64Pointer(v reflect.Value) error {
+func (r *reader) readUint64Pointer(v reflect.Value) error {
 	return r.readPointer(v,
 		func() (interface{}, error) { return r.ReadUint64() },
 		func(v reflect.Value, x interface{}) { v.SetUint(x.(uint64)) })
 }
 
-func (r *simpleReader) readBoolPointer(v reflect.Value) error {
+func (r *reader) readBoolPointer(v reflect.Value) error {
 	return r.readPointer(v,
 		func() (interface{}, error) { return r.ReadBool() },
 		func(v reflect.Value, x interface{}) { v.SetBool(x.(bool)) })
 }
 
-func (r *simpleReader) readFloat32Pointer(v reflect.Value) error {
+func (r *reader) readFloat32Pointer(v reflect.Value) error {
 	return r.readPointer(v,
 		func() (interface{}, error) { return r.ReadFloat32() },
 		func(v reflect.Value, x interface{}) { v.SetFloat(float64(x.(float32))) })
 }
 
-func (r *simpleReader) readFloat64Pointer(v reflect.Value) error {
+func (r *reader) readFloat64Pointer(v reflect.Value) error {
 	return r.readPointer(v,
 		func() (interface{}, error) { return r.ReadFloat64() },
 		func(v reflect.Value, x interface{}) { v.SetFloat(x.(float64)) })
 }
 
-func (r *simpleReader) readBigIntPointer(v reflect.Value) error {
+func (r *reader) readBigIntPointer(v reflect.Value) error {
 	return r.readPointer(v,
 		func() (interface{}, error) { return r.ReadBigInt() },
 		func(v reflect.Value, x interface{}) { v.Set(reflect.ValueOf(x)) })
 }
 
-func (r *simpleReader) readDateTimePointer(v reflect.Value) error {
+func (r *reader) readDateTimePointer(v reflect.Value) error {
 	return r.readPointer(v,
 		func() (interface{}, error) { return r.ReadDateTime() },
 		func(v reflect.Value, x interface{}) { v.Set(reflect.ValueOf(x)) })
 }
 
-func (r *simpleReader) readStringPointer(v reflect.Value) error {
+func (r *reader) readStringPointer(v reflect.Value) error {
 	return r.readPointer(v,
 		func() (interface{}, error) { return r.ReadString() },
 		func(v reflect.Value, x interface{}) { v.SetString(x.(string)) })
 }
 
-func (r *simpleReader) readBytesPointer(v reflect.Value) error {
+func (r *reader) readBytesPointer(v reflect.Value) error {
 	return r.readPointer(v,
 		func() (interface{}, error) { return r.ReadBytes() },
 		func(v reflect.Value, x interface{}) { v.Set(reflect.ValueOf(x)) })
 }
 
-func (r *simpleReader) readUUIDPointer(v reflect.Value) error {
+func (r *reader) readUUIDPointer(v reflect.Value) error {
 	return r.readPointer(v,
 		func() (interface{}, error) { return r.ReadUUID() },
 		func(v reflect.Value, x interface{}) { v.Set(reflect.ValueOf(x)) })
 }
 
-func (r *simpleReader) readListPointer(v reflect.Value) error {
+func (r *reader) readListPointer(v reflect.Value) error {
 	return r.readPointer(v,
 		func() (interface{}, error) { return r.ReadList() },
 		func(v reflect.Value, x interface{}) { v.Set(reflect.ValueOf(x)) })
@@ -2667,4 +2675,26 @@ func stringToBigInt(str string) (*big.Int, error) {
 		return bigint, nil
 	}
 	return big.NewInt(0), errors.New(`cannot convert string "` + str + `" to type big.Int`)
+}
+
+func getFieldsCache(class reflect.Type) map[string]field {
+	readerFieldsCache.RLock()
+	fieldsCache, ok := readerFieldsCache.cache[class]
+	readerFieldsCache.RUnlock()
+	if !ok {
+		readerFieldsCache.Lock()
+		if readerFieldsCache.cache == nil {
+			readerFieldsCache.cache = make(map[reflect.Type]map[string]field)
+		}
+		count := class.NumField()
+		fieldsCache = make(map[string]field, count)
+		for i := 0; i < count; i++ {
+			if f := class.Field(i); !f.Anonymous {
+				fieldsCache[strings.ToLower(f.Name)] = field{f.Name, f.Index}
+			}
+		}
+		readerFieldsCache.cache[class] = fieldsCache
+		readerFieldsCache.Unlock()
+	}
+	return fieldsCache
 }
