@@ -111,7 +111,7 @@ func (r *realWriterRefer) writeRef(s BufWriter, v interface{}) (success bool, er
 
 func (r *realWriterRefer) resetRef() {
 	if r.ref != nil {
-		r.ref = make(map[interface{}]int)
+		r.ref = nil
 	}
 }
 

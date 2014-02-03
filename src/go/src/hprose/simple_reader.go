@@ -59,9 +59,9 @@ var timeZero = time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)
 var soMapType = reflect.TypeOf(map[string]interface{}(nil))
 var ooMapType = reflect.TypeOf(map[interface{}]interface{}(nil))
 
-var readerFieldsCache struct {
+var indexCache struct {
 	sync.RWMutex
-	cache map[reflect.Type]map[string]field
+	cache map[reflect.Type]map[string][]int
 }
 
 type reader struct {
@@ -1514,8 +1514,8 @@ func (r *reader) ReadObjectWithoutTag(p interface{}) error {
 
 func (r *reader) Reset() {
 	if r.classref != nil {
-		r.classref = r.classref[:0]
-		r.fieldsref = r.fieldsref[:0]
+		r.classref = nil
+		r.fieldsref = nil
 	}
 	r.resetRef()
 }
@@ -2326,14 +2326,23 @@ func (r *reader) readMapAsObject(v reflect.Value) error {
 	obj := objPointer.Elem()
 	count, err := r.ReadInteger(TagOpenbrace)
 	if err == nil {
-		fieldsCache := getFieldsCache(t)
+		indexMap := getIndexCache(t)
 		for i := 0; i < count; i++ {
 			key, err := r.ReadString()
 			if err != nil {
 				return err
 			}
-			if f, ok := fieldsCache[strings.ToLower(key)]; ok {
-				err = r.ReadValue(obj.FieldByIndex(f.Index))
+			if index, ok := indexMap[strings.ToLower(key)]; ok {
+				f := obj.Field(index[0])
+				n := len(index)
+				for j := 1; j < n; j++ {
+					if f.Kind() == reflect.Ptr {
+						f.Set(reflect.New(f.Type().Elem()))
+						f = f.Elem()
+					}
+					f = f.Field(index[j])
+				}
+				err = r.ReadValue(f)
 			} else {
 				_, err = r.readInterface()
 			}
@@ -2464,11 +2473,20 @@ func (r *reader) readObjectWithoutTag(v reflect.Value) error {
 	r.setRef(objPointer.Interface())
 	obj := objPointer.Elem()
 	fields := r.fieldsref[index]
-	fieldsCache := getFieldsCache(class)
+	indexMap := getIndexCache(class)
 	count := len(fields)
 	for i := 0; i < count; i++ {
-		if f, ok := fieldsCache[strings.ToLower(fields[i])]; ok {
-			err = r.ReadValue(obj.FieldByIndex(f.Index))
+		if index, ok := indexMap[strings.ToLower(fields[i])]; ok {
+			f := obj.Field(index[0])
+			n := len(index)
+			for j := 1; j < n; j++ {
+				if f.Kind() == reflect.Ptr {
+					f.Set(reflect.New(f.Type().Elem()))
+					f = f.Elem()
+				}
+				f = f.Field(index[j])
+			}
+			err = r.ReadValue(f)
 		} else {
 			_, err = r.readInterface()
 		}
@@ -2677,24 +2695,21 @@ func stringToBigInt(str string) (*big.Int, error) {
 	return big.NewInt(0), errors.New(`cannot convert string "` + str + `" to type big.Int`)
 }
 
-func getFieldsCache(class reflect.Type) map[string]field {
-	readerFieldsCache.RLock()
-	fieldsCache, ok := readerFieldsCache.cache[class]
-	readerFieldsCache.RUnlock()
+func getIndexCache(class reflect.Type) map[string][]int {
+	indexCache.RLock()
+	indexMap, ok := indexCache.cache[class]
+	indexCache.RUnlock()
 	if !ok {
-		readerFieldsCache.Lock()
-		if readerFieldsCache.cache == nil {
-			readerFieldsCache.cache = make(map[reflect.Type]map[string]field)
+		indexCache.Lock()
+		if indexCache.cache == nil {
+			indexCache.cache = make(map[reflect.Type]map[string][]int)
 		}
-		count := class.NumField()
-		fieldsCache = make(map[string]field, count)
-		for i := 0; i < count; i++ {
-			if f := class.Field(i); !f.Anonymous {
-				fieldsCache[strings.ToLower(f.Name)] = field{f.Name, f.Index}
-			}
-		}
-		readerFieldsCache.cache[class] = fieldsCache
-		readerFieldsCache.Unlock()
+		indexMap = make(map[string][]int)
+		getFieldsFunc(class, func(f reflect.StructField) {
+			indexMap[strings.ToLower(f.Name)] = f.Index
+		})
+		indexCache.cache[class] = indexMap
+		indexCache.Unlock()
 	}
-	return fieldsCache
+	return indexMap
 }

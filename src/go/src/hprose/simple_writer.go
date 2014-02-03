@@ -70,9 +70,14 @@ type field struct {
 	Index []int
 }
 
-var writerFieldsCache struct {
+type cacheType struct {
+	fields            []field
+	hasAnonymousField bool
+}
+
+var fieldCache struct {
 	sync.RWMutex
-	cache map[reflect.Type][]field
+	cache map[reflect.Type]cacheType
 }
 
 type writer struct {
@@ -731,8 +736,8 @@ func (w *writer) WriteObjectWithRef(v interface{}) error {
 
 func (w *writer) Reset() {
 	if w.classref != nil {
-		w.classref = make(map[string]int, cap(w.fieldsref))
-		w.fieldsref = w.fieldsref[:0]
+		w.classref = nil
+		w.fieldsref = nil
 	}
 	w.resetRef()
 }
@@ -811,6 +816,50 @@ func (w *writer) writeMapValue(v reflect.Value) (err error) {
 	return err
 }
 
+func (w *writer) writeObjectAsMap(v reflect.Value, fields []field) (err error) {
+	s := w.Stream()
+	length := len(fields)
+	elements := make([]reflect.Value, 0, length)
+	names := make([]string, 0, length)
+NEXT:
+	for i := 0; i < length; i++ {
+		f := fields[i]
+		e := v.Field(f.Index[0])
+		n := len(f.Index)
+		if n > 1 {
+			for j := 1; j < n; j++ {
+				if e.Kind() == reflect.Ptr && e.IsNil() {
+					continue NEXT
+				}
+				e = reflect.Indirect(e).Field(f.Index[j])
+			}
+		}
+		elements = append(elements, e)
+		names = append(names, f.Name)
+	}
+	count := len(elements)
+	if err = s.WriteByte(TagMap); err == nil {
+		if count > 0 {
+			if err = w.writeInt(count); err == nil {
+				if err = s.WriteByte(TagOpenbrace); err == nil {
+					for i, name := range names {
+						if err = w.WriteStringWithRef(name); err != nil {
+							return err
+						}
+						if err = w.WriteValue(elements[i]); err != nil {
+							return err
+						}
+					}
+					err = s.WriteByte(TagClosebrace)
+				}
+			}
+		} else if err = s.WriteByte(TagOpenbrace); err == nil {
+			err = s.WriteByte(TagClosebrace)
+		}
+	}
+	return err
+}
+
 func (w *writer) writeObjectValue(v interface{}, rv reflect.Value) (err error) {
 	s := w.stream
 	t := rv.Type()
@@ -820,34 +869,43 @@ func (w *writer) writeObjectValue(v interface{}, rv reflect.Value) (err error) {
 		ClassManager.Register(t, classname)
 	}
 	if w.classref == nil {
-		w.classref = make(map[string]int, 16)
-		w.fieldsref = make([][]field, 0, 16)
+		w.classref = make(map[string]int)
+		w.fieldsref = make([][]field, 0)
 	}
 	index, found := w.classref[classname]
 	var fields []field
 	if found {
 		fields = w.fieldsref[index]
 	} else {
-		writerFieldsCache.RLock()
-		fields, found = writerFieldsCache.cache[t]
-		writerFieldsCache.RUnlock()
+		fieldCache.RLock()
+		cache, found := fieldCache.cache[t]
+		fieldCache.RUnlock()
 		if !found {
-			n := t.NumField()
-			fields = make([]field, 0, n)
-			for i := 0; i < n; i++ {
-				if f := t.Field(i); !f.Anonymous && serializeType[f.Type.Kind()] {
-					fields = append(fields, field{firstLetterToLower(f.Name), f.Index})
+			fieldCache.Lock()
+			if fieldCache.cache == nil {
+				fieldCache.cache = make(map[reflect.Type]cacheType)
+			}
+			fields = make([]field, 0)
+			hasAnonymousField := false
+			getFieldsFunc(t, func(f reflect.StructField) {
+				if len(f.Index) > 1 {
+					hasAnonymousField = true
 				}
-			}
-			writerFieldsCache.Lock()
-			if writerFieldsCache.cache == nil {
-				writerFieldsCache.cache = make(map[reflect.Type][]field)
-			}
-			writerFieldsCache.cache[t] = fields
-			writerFieldsCache.Unlock()
+				fields = append(fields, field{firstLetterToLower(f.Name), f.Index})
+			})
+			cache = cacheType{fields, hasAnonymousField}
+			fieldCache.cache[t] = cache
+			fieldCache.Unlock()
+		} else {
+			fields = cache.fields
 		}
-		if index, err = w.writeClass(classname, fields); err != nil {
-			return err
+		if !cache.hasAnonymousField {
+			if index, err = w.writeClass(classname, fields); err != nil {
+				return err
+			}
+		} else {
+			w.setRef(v)
+			return w.writeObjectAsMap(rv, fields)
 		}
 	}
 	w.setRef(v)
@@ -1182,4 +1240,49 @@ func firstLetterToLower(s string) string {
 	b := ([]byte)(s)
 	b[0] = b[0] - 'A' + 'a'
 	return string(b)
+}
+
+func getFieldsFunc(class reflect.Type, set func(reflect.StructField)) {
+	count := class.NumField()
+	for i := 0; i < count; i++ {
+		if f := class.Field(i); serializeType[f.Type.Kind()] {
+			if !f.Anonymous {
+				b := f.Name[0]
+				if 'A' <= b && b <= 'Z' {
+					set(f)
+				}
+			} else {
+				ft := f.Type
+				if ft.Name() == "" && ft.Kind() == reflect.Ptr {
+					ft = ft.Elem()
+				}
+				if ft.Kind() == reflect.Struct {
+					getAnonymousFieldsFunc(ft, f.Index, set)
+				}
+			}
+		}
+	}
+}
+
+func getAnonymousFieldsFunc(class reflect.Type, index []int, set func(reflect.StructField)) {
+	count := class.NumField()
+	for i := 0; i < count; i++ {
+		if f := class.Field(i); serializeType[f.Type.Kind()] {
+			f.Index = append(index, f.Index[0])
+			if !f.Anonymous {
+				b := f.Name[0]
+				if 'A' <= b && b <= 'Z' {
+					set(f)
+				}
+			} else {
+				ft := f.Type
+				if ft.Name() == "" && ft.Kind() == reflect.Ptr {
+					ft = ft.Elem()
+				}
+				if ft.Kind() == reflect.Struct {
+					getAnonymousFieldsFunc(ft, f.Index, set)
+				}
+			}
+		}
+	}
 }

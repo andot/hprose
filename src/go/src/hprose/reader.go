@@ -106,7 +106,9 @@ func (r *realReaderRefer) readRef(i int, err error) (interface{}, error) {
 }
 
 func (r *realReaderRefer) resetRef() {
-	r.ref = r.ref[:0]
+	if r.ref != nil {
+		r.ref = nil
+	}
 }
 
 func NewReader(stream BufReader) Reader {
