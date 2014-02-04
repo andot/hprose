@@ -467,3 +467,55 @@ To create a hprose TCP client is the same as HTTP client:
 </pre>
 
 You can also specify <code>tcp4://</code> scheme to using ipv4 or <code>tcp6://</code> scheme to using ipv6.
+
+### Service Event ###
+
+Hprose defines a <code>ServiceEvent</code> interface.
+
+<pre lang="go">
+type ServiceEvent interface {
+	OnBeforeInvoke(name string, args []reflect.Value, byref bool)
+	OnAfterInvoke(name string, args []reflect.Value, byref bool, result []reflect.Value)
+	OnSendError(err error)
+}
+</pre>
+
+If you want to log some thing about the service, you can implement this interface. For example:
+
+<pre lang="go">
+package main
+
+import (
+	"fmt"
+	"hprose"
+	"net/http"
+	"reflect"
+)
+
+func hello(name string) string {
+	return "Hello " + name + "!"
+}
+
+type myServiceEvent struct{}
+
+func (myServiceEvent) OnBeforeInvoke(name string, args []reflect.Value, byref bool) {
+	fmt.Println(name, args, byref)
+}
+
+func (myServiceEvent) OnAfterInvoke(name string, args []reflect.Value, byref bool, result []reflect.Value) {
+	fmt.Println(name, args, byref, result)
+}
+
+func (myServiceEvent) OnSendError(err error) {
+	fmt.Println(err)
+}
+
+func main() {
+	service := hprose.NewHttpService()
+	service.ServiceEvent = myServiceEvent{}
+	service.AddFunction("hello", hello)
+	http.ListenAndServe(":8080", service)
+}
+</pre>
+
+The <code>TcpService</code> and <code>TcpServer</code> also have this interface field.
