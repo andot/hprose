@@ -160,3 +160,33 @@ func main() {
 </pre>
 
 You will get the result <code>0</code>, but do not know what happened.
+
+#### Function/Method Alias ####
+
+Golang does not support method overload, but some other languages support. So hprose provides "Function/Method Alias" to invoke overloaded methods in other languages. You can also use it to invoke the same function/method with different names.
+
+For example:
+
+<pre lang="go">
+package main
+
+import (
+	"fmt"
+	"hprose"
+)
+
+type clientStub struct {
+	Hello      func(string) string
+	AsyncHello func(string) &lt;-chan string `name:"hello"`
+}
+
+func main() {
+	client := hprose.NewClient("http://127.0.0.1:8080/")
+	var ro *clientStub
+	client.UseService(&ro)
+	fmt.Println(ro.Hello("Synchronous Invoking"))
+	fmt.Println(&lt;-ro.AsyncHello("Asynchronous Invoking"))
+}
+</pre>
+
+The real remote function/method name is specified in the function field tag.
