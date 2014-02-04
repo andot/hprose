@@ -92,7 +92,7 @@ type fakeWriterRefer struct{}
 
 func (r fakeWriterRefer) setRef(interface{}) {}
 
-func (r fakeWriterRefer) writeRef(s BufWriter, v interface{}) (success bool, err error) {
+func (r fakeWriterRefer) writeRef(w *writer, v interface{}) (success bool, err error) {
 	return false, nil
 }
 
@@ -511,7 +511,7 @@ func (w *writer) writeTime(v interface{}, t time.Time) (err error) {
 }
 
 func (w *writer) writeTimeWithRef(v interface{}, t time.Time) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeTime(v, t)
 	} else {
 		return err
@@ -538,7 +538,7 @@ func (w *writer) writeString(v interface{}, str string) (err error) {
 }
 
 func (w *writer) writeStringWithRef(v interface{}, str string) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeString(v, str)
 	} else {
 		return err
@@ -565,7 +565,7 @@ func (w *writer) writeBytes(v interface{}, bytes []byte) (err error) {
 }
 
 func (w *writer) writeBytesWithRef(v interface{}, bytes []byte) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeBytes(v, bytes)
 	} else {
 		return err
@@ -586,7 +586,7 @@ func (w *writer) writeUUID(v interface{}, u uuid.UUID) (err error) {
 }
 
 func (w *writer) writeUUIDWithRef(v interface{}, u uuid.UUID) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeUUID(v, u)
 	} else {
 		return err
@@ -617,7 +617,7 @@ func (w *writer) writeList(v interface{}, l *list.List) (err error) {
 }
 
 func (w *writer) writeListWithRef(v interface{}, l *list.List) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeList(v, l)
 	} else {
 		return err
@@ -647,7 +647,7 @@ func (w *writer) writeIntSlice(v interface{}, a []int) (err error) {
 }
 
 func (w *writer) writeIntSliceWithRef(v interface{}, a []int) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeIntSlice(v, a)
 	} else {
 		return err
@@ -677,7 +677,7 @@ func (w *writer) writeInt8Slice(v interface{}, a []int8) (err error) {
 }
 
 func (w *writer) writeInt8SliceWithRef(v interface{}, a []int8) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeInt8Slice(v, a)
 	} else {
 		return err
@@ -707,7 +707,7 @@ func (w *writer) writeInt16Slice(v interface{}, a []int16) (err error) {
 }
 
 func (w *writer) writeInt16SliceWithRef(v interface{}, a []int16) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeInt16Slice(v, a)
 	} else {
 		return err
@@ -737,7 +737,7 @@ func (w *writer) writeInt32Slice(v interface{}, a []int32) (err error) {
 }
 
 func (w *writer) writeInt32SliceWithRef(v interface{}, a []int32) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeInt32Slice(v, a)
 	} else {
 		return err
@@ -767,7 +767,7 @@ func (w *writer) writeInt64Slice(v interface{}, a []int64) (err error) {
 }
 
 func (w *writer) writeInt64SliceWithRef(v interface{}, a []int64) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeInt64Slice(v, a)
 	} else {
 		return err
@@ -797,7 +797,7 @@ func (w *writer) writeUintSlice(v interface{}, a []uint) (err error) {
 }
 
 func (w *writer) writeUintSliceWithRef(v interface{}, a []uint) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeUintSlice(v, a)
 	} else {
 		return err
@@ -827,7 +827,7 @@ func (w *writer) writeUint16Slice(v interface{}, a []uint16) (err error) {
 }
 
 func (w *writer) writeUint16SliceWithRef(v interface{}, a []uint16) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeUint16Slice(v, a)
 	} else {
 		return err
@@ -857,7 +857,7 @@ func (w *writer) writeUint32Slice(v interface{}, a []uint32) (err error) {
 }
 
 func (w *writer) writeUint32SliceWithRef(v interface{}, a []uint32) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeUint32Slice(v, a)
 	} else {
 		return err
@@ -887,7 +887,7 @@ func (w *writer) writeUint64Slice(v interface{}, a []uint64) (err error) {
 }
 
 func (w *writer) writeUint64SliceWithRef(v interface{}, a []uint64) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeUint64Slice(v, a)
 	} else {
 		return err
@@ -917,7 +917,7 @@ func (w *writer) writeFloat32Slice(v interface{}, a []float32) (err error) {
 }
 
 func (w *writer) writeFloat32SliceWithRef(v interface{}, a []float32) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeFloat32Slice(v, a)
 	} else {
 		return err
@@ -947,7 +947,7 @@ func (w *writer) writeFloat64Slice(v interface{}, a []float64) (err error) {
 }
 
 func (w *writer) writeFloat64SliceWithRef(v interface{}, a []float64) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeFloat64Slice(v, a)
 	} else {
 		return err
@@ -977,7 +977,7 @@ func (w *writer) writeBoolSlice(v interface{}, a []bool) (err error) {
 }
 
 func (w *writer) writeBoolSliceWithRef(v interface{}, a []bool) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeBoolSlice(v, a)
 	} else {
 		return err
@@ -1007,7 +1007,7 @@ func (w *writer) writeStringSlice(v interface{}, a []string) (err error) {
 }
 
 func (w *writer) writeStringSliceWithRef(v interface{}, a []string) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeStringSlice(v, a)
 	} else {
 		return err
@@ -1037,7 +1037,7 @@ func (w *writer) writeObjectSlice(v interface{}, a []interface{}) (err error) {
 }
 
 func (w *writer) writeObjectSliceWithRef(v interface{}, a []interface{}) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeObjectSlice(v, a)
 	} else {
 		return err
@@ -1067,7 +1067,7 @@ func (w *writer) writeSlice(v interface{}, rv reflect.Value) (err error) {
 }
 
 func (w *writer) writeSliceWithRef(v interface{}, rv reflect.Value) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeSlice(v, rv)
 	} else {
 		return err
@@ -1100,7 +1100,7 @@ func (w *writer) writeStringMap(v interface{}, m map[string]string) (err error) 
 }
 
 func (w *writer) writeStringMapWithRef(v interface{}, m map[string]string) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeStringMap(v, m)
 	} else {
 		return err
@@ -1133,7 +1133,7 @@ func (w *writer) writeStrObjMap(v interface{}, m map[string]interface{}) (err er
 }
 
 func (w *writer) writeStrObjMapWithRef(v interface{}, m map[string]interface{}) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeStrObjMap(v, m)
 	} else {
 		return err
@@ -1166,7 +1166,7 @@ func (w *writer) writeObjectMap(v interface{}, m map[interface{}]interface{}) (e
 }
 
 func (w *writer) writeObjectMapWithRef(v interface{}, m map[interface{}]interface{}) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeObjectMap(v, m)
 	} else {
 		return err
@@ -1200,7 +1200,7 @@ func (w *writer) writeMap(v interface{}, rv reflect.Value) (err error) {
 }
 
 func (w *writer) writeMapWithRef(v interface{}, rv reflect.Value) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeMap(v, rv)
 	} else {
 		return err
@@ -1316,7 +1316,7 @@ func (w *writer) writeObject(v interface{}, rv reflect.Value) (err error) {
 }
 
 func (w *writer) writeObjectWithRef(v interface{}, rv reflect.Value) error {
-	if success, err := w.writeRef(w.stream, v); err == nil && !success {
+	if success, err := w.writeRef(w, v); err == nil && !success {
 		return w.writeObject(v, rv)
 	} else {
 		return err

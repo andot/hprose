@@ -23,7 +23,6 @@ package hprose
 import (
 	"math/big"
 	"reflect"
-	"strconv"
 	"time"
 )
 
@@ -55,7 +54,7 @@ type Writer interface {
 
 type writerRefer interface {
 	setRef(v interface{})
-	writeRef(s BufWriter, v interface{}) (success bool, err error)
+	writeRef(w *writer, v interface{}) (success bool, err error)
 	resetRef()
 }
 
@@ -71,10 +70,11 @@ func (r *realWriterRefer) setRef(v interface{}) {
 	r.ref[v] = n
 }
 
-func (r *realWriterRefer) writeRef(s BufWriter, v interface{}) (success bool, err error) {
+func (r *realWriterRefer) writeRef(w *writer, v interface{}) (success bool, err error) {
 	if n, found := r.ref[v]; found {
+		s := w.stream
 		if err = s.WriteByte(TagRef); err == nil {
-			if _, err = s.WriteString(strconv.Itoa(n)); err == nil {
+			if err = w.writeInt(n); err == nil {
 				err = s.WriteByte(TagSemicolon)
 			}
 		}

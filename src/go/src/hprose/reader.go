@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Reader for Go.                                  *
  *                                                        *
- * LastModified: Feb 3, 2014                              *
+ * LastModified: Feb 4, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -113,7 +113,7 @@ func (r *realReaderRefer) resetRef() {
 
 func NewReader(stream BufReader) Reader {
 	return &reader{
-		RawReader:   &RawReader{stream},
+		RawReader:   &RawReader{stream: stream},
 		readerRefer: &realReaderRefer{},
 	}
 }
