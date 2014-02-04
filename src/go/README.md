@@ -43,7 +43,7 @@ func main() {
 }
 </pre>
 
-You can publish multi-valued functions/methods, the multi-valued result will be automatically convert to an array result.
+You can publish multi-valued functions/methods, the multi-valued result will be automatically converted to an array result.
 
 ### Http Client ###
 
