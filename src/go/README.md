@@ -441,3 +441,29 @@ The result is:
 0
 0 The method 'Power' is not implemented.
 </pre>
+
+### TCP Server and Client ###
+
+Hprose for Golang supports TCP Server and Client. It is very easy to use like the HTTP Server and Client.
+
+To create a hprose TCP server, you can use <code>NewTcpService</code> or <code>NewTcpServer</code>.
+
+To use <code>NewTcpService</code>, you need call the ServeTCP method and passing the TCP Connection to it.
+
+using <code>NewTcpServer</code> is easier than <code>NewTcpService</code>. For example:
+<pre lang="go">
+	...
+	server := hprose.NewTcpServer("tcp://127.0.0.1:1234/")
+	server.AddFunction("hello", hello)
+	server.Start()
+	...
+</pre>
+
+To create a hprose TCP client is the same as HTTP client:
+<pre lang="go">
+	...
+	client := hprose.NewClient("tcp://127.0.0.1:1234/")
+	...
+</pre>
+
+You can also specify <code>tcp4://</code> scheme to using ipv4 or <code>tcp6://</code> scheme to using ipv6.
