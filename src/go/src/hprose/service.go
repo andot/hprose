@@ -13,7 +13,7 @@
  *                                                        *
  * hprose service for Go.                                 *
  *                                                        *
- * LastModified: Feb 3, 2014                              *
+ * LastModified: Feb 4, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -106,6 +106,22 @@ func (this *Methods) AddMethods(obj interface{}, options ...interface{}) {
 	n := t.NumMethod()
 	for i := 0; i < n; i++ {
 		this.AddFunction(t.Method(i).Name, v.Method(i).Interface(), options...)
+	}
+	for ; t.Kind() == reflect.Ptr && !v.IsNil(); v = v.Elem() {
+		t = t.Elem()
+	}
+	if t.Kind() == reflect.Struct {
+		n = t.NumField()
+		for i := 0; i < n; i++ {
+			f := v.Field(i)
+			if f.IsValid() {
+				for ; f.Kind() == reflect.Ptr && !f.IsNil(); f = f.Elem() {
+				}
+				if f.Kind() == reflect.Func && !f.IsNil() {
+					this.AddFunction(t.Field(i).Name, f.Interface(), options...)
+				}
+			}
+		}
 	}
 }
 
