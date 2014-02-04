@@ -21,7 +21,6 @@
 package hprose
 
 import (
-	"bytes"
 	"container/list"
 	"math/big"
 	"reflect"
@@ -77,7 +76,7 @@ type Reader interface {
 	ReadObject(interface{}) error
 	ReadObjectWithoutTag(interface{}) error
 	ReadRaw() ([]byte, error)
-	ReadRawTo(*bytes.Buffer) error
+	ReadRawTo(BufWriter) error
 	Reset()
 }
 

@@ -41,7 +41,7 @@ func (r *RawReader) ReadRaw() (raw []byte, err error) {
 	return ostream.Bytes(), err
 }
 
-func (r *RawReader) ReadRawTo(ostream *bytes.Buffer) (err error) {
+func (r *RawReader) ReadRawTo(ostream BufWriter) (err error) {
 	var tag byte
 	if tag, err = r.stream.ReadByte(); err == nil {
 		err = r.readRaw(ostream, tag)
@@ -49,7 +49,7 @@ func (r *RawReader) ReadRawTo(ostream *bytes.Buffer) (err error) {
 	return err
 }
 
-func (r *RawReader) readRaw(ostream *bytes.Buffer, tag byte) (err error) {
+func (r *RawReader) readRaw(ostream BufWriter, tag byte) (err error) {
 	switch tag {
 	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 		TagNull, TagEmpty, TagTrue, TagFalse, TagNaN:
@@ -88,7 +88,7 @@ func (r *RawReader) readRaw(ostream *bytes.Buffer, tag byte) (err error) {
 	return err
 }
 
-func (r *RawReader) readNumberRaw(ostream *bytes.Buffer, tag byte) (err error) {
+func (r *RawReader) readNumberRaw(ostream BufWriter, tag byte) (err error) {
 	err = ostream.WriteByte(tag)
 	for err == nil {
 		if tag, err = r.stream.ReadByte(); err == nil {
@@ -100,7 +100,7 @@ func (r *RawReader) readNumberRaw(ostream *bytes.Buffer, tag byte) (err error) {
 	return err
 }
 
-func (r *RawReader) readDateTimeRaw(ostream *bytes.Buffer, tag byte) (err error) {
+func (r *RawReader) readDateTimeRaw(ostream BufWriter, tag byte) (err error) {
 	err = ostream.WriteByte(tag)
 	for err == nil {
 		if tag, err = r.stream.ReadByte(); err == nil {
@@ -112,7 +112,7 @@ func (r *RawReader) readDateTimeRaw(ostream *bytes.Buffer, tag byte) (err error)
 	return err
 }
 
-func (r *RawReader) readUTF8CharRaw(ostream *bytes.Buffer, tag byte) (err error) {
+func (r *RawReader) readUTF8CharRaw(ostream BufWriter, tag byte) (err error) {
 	if err = ostream.WriteByte(tag); err == nil {
 		var c rune
 		if c, _, err = r.stream.ReadRune(); err == nil {
@@ -122,7 +122,7 @@ func (r *RawReader) readUTF8CharRaw(ostream *bytes.Buffer, tag byte) (err error)
 	return err
 }
 
-func (r *RawReader) readBytesRaw(ostream *bytes.Buffer, tag byte) (err error) {
+func (r *RawReader) readBytesRaw(ostream BufWriter, tag byte) (err error) {
 	err = ostream.WriteByte(tag)
 	count := 0
 	tag = '0'
@@ -144,7 +144,7 @@ func (r *RawReader) readBytesRaw(ostream *bytes.Buffer, tag byte) (err error) {
 	return err
 }
 
-func (r *RawReader) readStringRaw(ostream *bytes.Buffer, tag byte) (err error) {
+func (r *RawReader) readStringRaw(ostream BufWriter, tag byte) (err error) {
 	err = ostream.WriteByte(tag)
 	count := 0
 	tag = '0'
@@ -166,7 +166,7 @@ func (r *RawReader) readStringRaw(ostream *bytes.Buffer, tag byte) (err error) {
 	return err
 }
 
-func (r *RawReader) readGuidRaw(ostream *bytes.Buffer, tag byte) (err error) {
+func (r *RawReader) readGuidRaw(ostream BufWriter, tag byte) (err error) {
 	if err = ostream.WriteByte(tag); err == nil {
 		var guid [38]byte
 		if _, err := r.stream.Read(guid[:]); err == nil {
@@ -176,7 +176,7 @@ func (r *RawReader) readGuidRaw(ostream *bytes.Buffer, tag byte) (err error) {
 	return err
 }
 
-func (r *RawReader) readComplexRaw(ostream *bytes.Buffer, tag byte) (err error) {
+func (r *RawReader) readComplexRaw(ostream BufWriter, tag byte) (err error) {
 	err = ostream.WriteByte(tag)
 	for err == nil && tag != TagOpenbrace {
 		if tag, err = r.stream.ReadByte(); err == nil {
