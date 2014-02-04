@@ -302,3 +302,57 @@ In <code>Raw</code> result mode, all the reply will be returned directly to the 
 The <code>RawWithEndTag</code> is similar to the <code>Raw</code> result mode, but it has the hprose end tag.
 
 With the ResultMode option, you can store, cache and forward the result in the original format.
+
+### Simple Mode ###
+
+By default, the data between the hprose client and server can be passed with internal references. if your data have no internal references, you can open the simple mode to improve performance.
+
+You can open simple mode in server like this:
+<pre lang="go">
+package main
+
+import (
+	"hprose"
+	"net/http"
+)
+
+func hello(name string) string {
+	return "Hello " + name + "!"
+}
+
+func main() {
+	service := hprose.NewHttpService()
+	service.AddFunction("hello", hello, true)
+	http.ListenAndServe(":8080", service)
+}
+</pre>
+
+The option parameter <code>true</code> is the simple mode switch. The result will be transmitted to the client in simple mode when it is on.
+
+To open the client simple mode is like this:
+<pre lang="go">
+package main
+
+import (
+	"fmt"
+	"hprose"
+)
+
+type clientStub struct {
+	Hello func(string) string       `simple:"true"`
+	Swap  func(int, int) (int, int) `simple:"true"`
+	Sum   func(...int) (int, error)
+}
+
+func main() {
+	client := hprose.NewClient("http://127.0.0.1:8181/")
+	var ro *clientStub
+	client.UseService(&ro)
+	fmt.Println(ro.Hello("World"))
+	fmt.Println(ro.Swap(1, 2))
+	fmt.Println(ro.Sum(1, 2, 3, 4, 5))
+	fmt.Println(ro.Sum(1))
+}
+</pre>
+The arguments will be transmitted to the server in simple mode when it is on.
+
