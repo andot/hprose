@@ -13,7 +13,7 @@
  *                                                        *
  * hprose client for Go.                                  *
  *                                                        *
- * LastModified: Feb 2, 2014                              *
+ * LastModified: Feb 4, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -558,7 +558,7 @@ func (client *BaseClient) remoteMethod(t reflect.Type, sf reflect.StructField) f
 		switch numout {
 		case 0:
 			var result interface{}
-			if err := <-client.invoke(name, args, options, []reflect.Value{reflect.ValueOf(&result)}); err == nil {
+			if err := <-client.invoke(name, args, options, []reflect.Value{reflect.ValueOf(&result).Elem()}); err == nil {
 				return out
 			} else {
 				panic(err.Error())
@@ -568,7 +568,7 @@ func (client *BaseClient) remoteMethod(t reflect.Type, sf reflect.StructField) f
 			if rt0.Kind() == reflect.Chan {
 				if rt0.Elem().Kind() == reflect.Interface && rt0.Elem().Name() == "error" {
 					var result chan interface{}
-					err := client.invoke(name, args, options, []reflect.Value{reflect.ValueOf(&result)})
+					err := client.invoke(name, args, options, []reflect.Value{reflect.ValueOf(&result).Elem()})
 					out[0] = reflect.ValueOf(&err).Elem()
 					return out
 				} else {
@@ -579,7 +579,7 @@ func (client *BaseClient) remoteMethod(t reflect.Type, sf reflect.StructField) f
 			} else {
 				if rt0.Kind() == reflect.Interface && rt0.Name() == "error" {
 					var result interface{}
-					err := <-client.invoke(name, args, options, []reflect.Value{reflect.ValueOf(&result)})
+					err := <-client.invoke(name, args, options, []reflect.Value{reflect.ValueOf(&result).Elem()})
 					out[0] = reflect.ValueOf(&err).Elem()
 					return out
 				} else {
