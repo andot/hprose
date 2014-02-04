@@ -356,3 +356,86 @@ func main() {
 </pre>
 The arguments will be transmitted to the server in simple mode when it is on.
 
+### Missing Method ###
+
+Hprose supports publishing a special method: MissingMethod. All methods not explicitly published will be redirected to the method. For example:
+
+<pre lang="go">
+package main
+
+import (
+	"hprose"
+	"net/http"
+	"reflect"
+	"strings"
+)
+
+func hello(name string) string {
+	return "Hello " + name + "!"
+}
+
+func missing(name string, args []reflect.Value) (result []reflect.Value) {
+	result = make([]reflect.Value, 1)
+	switch strings.ToLower(name) {
+	case "add":
+		result[0] = reflect.ValueOf(args[0].Interface().(int) + args[1].Interface().(int))
+	case "sub":
+		result[0] = reflect.ValueOf(args[0].Interface().(int) - args[1].Interface().(int))
+	case "mul":
+		result[0] = reflect.ValueOf(args[0].Interface().(int) * args[1].Interface().(int))
+	case "div":
+		result[0] = reflect.ValueOf(args[0].Interface().(int) / args[1].Interface().(int))
+	default:
+		panic("The method '" + name + "' is not implemented.")
+	}
+	return
+}
+
+func main() {
+	service := hprose.NewHttpService()
+	service.AddFunction("hello", hello, true)
+	service.AddMissingMethod(missing, true)
+	http.ListenAndServe(":8080", service)
+}
+</pre>
+
+If you want return an error to the client, please use panic. The error type return value can't be processed in the method.
+
+The simple mode and the result mode options can also be used with it.
+
+Invoking the missing method makes no difference with the normal method. For example:
+<pre lang="go">
+package main
+
+import (
+	"fmt"
+	"hprose"
+)
+
+type clientStub struct {
+	Add   func(int, int) int
+	Sub   func(int, int) int
+	Mul   func(int, int) int
+	Div   func(int, int) int
+	Power func(int, int) (int, error)
+}
+
+func main() {
+	client := hprose.NewClient("http://127.0.0.1:8080/")
+	var ro *clientStub
+	client.UseService(&ro)
+	fmt.Println(ro.Add(1, 2))
+	fmt.Println(ro.Sub(1, 2))
+	fmt.Println(ro.Mul(1, 2))
+	fmt.Println(ro.Div(1, 2))
+	fmt.Println(ro.Power(1, 2))
+}
+</pre>
+The result is:
+<pre>
+3
+-1
+2
+0
+0 The method 'Power' is not implemented.
+</pre>
