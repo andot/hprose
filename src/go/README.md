@@ -227,3 +227,78 @@ func main() {
 </pre>
 
 The server of this example was written in PHP. In fact, You can use any language which hprose supported to write the server.
+
+### Hprose Proxy ###
+
+You can use hprose server and client to create a hprose proxy server. All requests sent to the hprose proxy server will be forwarded to the backend hprose server. For example:
+
+<pre lang="go">
+package main
+
+import (
+	"hprose"
+	"net/http"
+)
+
+type proxyStub struct {
+	Hello func(string) (string, error)
+	Swap  func(int, int) (int, int)
+	Sum   func(...int) (int)
+}
+
+func main() {
+	client := hprose.NewClient("http://127.0.0.1:8080/")
+	var ro *proxyStub
+	client.UseService(&ro)
+	service := hprose.NewHttpService()
+	service.AddMethods(ro)
+	http.ListenAndServe(":8181", service)
+}
+</pre>
+
+Whether the definition of the error out parameter does not matter, the exception will be automatically forwarded.
+
+#### Better Proxy ####
+
+Hprose provides an ResultMode options to improve performance of the proxy server. You can use it like this:
+<pre lang="go">
+package main
+
+import (
+	"hprose"
+	"net/http"
+)
+
+type proxyStub struct {
+	Hello func(string) []byte   `result:"raw"`
+	Swap  func(int, int) []byte `result:"raw"`
+	Sum   func(...int) []byte   `result:"raw"`
+}
+
+func main() {
+	client := hprose.NewClient("http://127.0.0.1:8080/")
+	var ro *proxyStub
+	client.UseService(&ro)
+	service := hprose.NewHttpService()
+	service.AddMethods(ro, hprose.Raw)
+	http.ListenAndServe(":8181", service)
+}
+</pre>
+
+The client result mode option is setting in the func field tag, and the return value must be <code>[]byte</code>. The server result mode option is setting by <code>AddMethods</code> parameter.
+
+The ResultMode have 4 values:
+* Normal
+* Serialized
+* Raw
+* RawWithEndTag
+
+The <code>Normal</code> result mode is the default value.
+
+In <code>Serialized</code> result mode, the returned value is a hprose serialized data in []byte, but the arguments and exception will be parsed to the real value.
+
+In <code>Raw</code> result mode, all the reply will be returned directly to the result in []byte, but the result data doesn't have the hprose end tag.
+
+The <code>RawWithEndTag</code> is similar to the <code>Raw</code> result mode, but it has the hprose end tag.
+
+With the ResultMode option, you can store, cache and forward the result in the original format.
