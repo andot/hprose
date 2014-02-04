@@ -41,7 +41,6 @@ func main() {
 	service.AddMethods(myService{})
 	http.ListenAndServe(":8080", service)
 }
-
 </pre>
 
 ### Http Client ###
@@ -73,7 +72,6 @@ func main() {
 	fmt.Println(ro.Sum(1, 2, 3, 4, 5))
 	fmt.Println(ro.Sum(1))
 }
-
 </pre>
 
 #### Synchronous Exception Handling ####
@@ -99,7 +97,6 @@ func main() {
 	fmt.Println(ro.Sum(1, 2, 3, 4, 5))
 	fmt.Println(ro.Sum(1))
 }
-
 </pre>
 
 If an error (must be the last out parameter) returned by server-side function/method, or it panics in the server-side, the client will receive it. If the client stub has an error out parameter (also must be the last one), you can get the server-side error or panic from it. If the client stub have not define an error out parameter, the client stub will panic when receive the server-side error or panic.
@@ -129,7 +126,6 @@ func main() {
 	sum, err = ro.Sum(1)
 	fmt.Println(&lt;-sum, &lt;-err)
 }
-
 </pre>
 
 #### Asynchronous Exception Handling ####
@@ -156,7 +152,6 @@ func main() {
 	client.UseService(&ro)
 	fmt.Println(&lt;-ro.Sum(1))
 }
-
 </pre>
 
 You will get the result <code>0</code>, but do not know what happened.
@@ -190,3 +185,45 @@ func main() {
 </pre>
 
 The real remote function/method name is specified in the function field tag.
+
+#### Passing by reference parameters ####
+
+Hprose supports passing by reference parameters. The parameters must be pointer types. Open this option also in the function field tag. For example:
+
+<pre lang="go">
+package main
+
+import (
+	"fmt"
+	"hprose"
+)
+
+type clientStub struct {
+	Swap func(*map[string]string) `name:"swapKeyAndValue" byref:"true"`
+}
+
+func main() {
+	client := hprose.NewClient("http://hprose.com/example/")
+	var ro *clientStub
+	client.UseService(&ro)
+	m := map[string]string{
+		"Jan": "January",
+		"Feb": "February",
+		"Mar": "March",
+		"Apr": "April",
+		"May": "May",
+		"Jun": "June",
+		"Jul": "July",
+		"Aug": "August",
+		"Sep": "September",
+		"Oct": "October",
+		"Nov": "November",
+		"Dec": "December",
+	}
+	fmt.Println(m)
+	ro.Swap(&m)
+	fmt.Println(m)
+}
+</pre>
+
+The server of this example was written in PHP. In fact, You can use any language which hprose supported to write the server.
