@@ -46,6 +46,9 @@ type Writer interface {
 	WriteBool(bool) error
 	WriteTime(time.Time) error
 	WriteString(string) error
+	WriteStringWithRef(string) error
+	WriteBytes([]byte) error
+	WriteBytesWithRef([]byte) error
 	WriteArray([]reflect.Value) error
 	Reset()
 }

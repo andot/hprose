@@ -219,6 +219,20 @@ func (w *writer) WriteStringWithRef(str string) (err error) {
 	return err
 }
 
+func (w *writer) WriteBytes(bytes []byte) (err error) {
+	return w.writeBytes(&bytes, bytes)
+}
+
+func (w *writer) WriteBytesWithRef(bytes []byte) (err error) {
+	s := w.stream
+	if length := len(bytes); length == 0 {
+		err = s.WriteByte(TagEmpty)
+	} else {
+		err = w.writeBytesWithRef(&bytes, bytes)
+	}
+	return err
+}
+
 func (w *writer) WriteArray(v []reflect.Value) (err error) {
 	w.setRef(&v)
 	s := w.stream
@@ -329,7 +343,7 @@ func (w *writer) fastSerialize(v interface{}, rv reflect.Value, n int) error {
 	case *list.List:
 		return w.writeListWithRef(v, v)
 	case []byte:
-		return w.writeBytesWithRef(&v, v)
+		return w.WriteBytesWithRef(v)
 	case *[]byte:
 		return w.writeBytesWithRef(v, *v)
 	case []int:
@@ -413,9 +427,6 @@ func (w *writer) slowSerialize(v interface{}, rv reflect.Value, n int) error {
 		}
 		return w.slowSerialize(v, rv.Elem(), n+1)
 	case reflect.Struct:
-		if n == 0 {
-			v = &v
-		}
 		switch x := rv.Interface().(type) {
 		case big.Int:
 			return w.WriteBigInt(&x)
@@ -424,6 +435,9 @@ func (w *writer) slowSerialize(v interface{}, rv reflect.Value, n int) error {
 		case list.List:
 			return w.writeListWithRef(v, &x)
 		default:
+			if n == 0 {
+				v = &v
+			}
 			return w.writeObjectWithRef(v, rv)
 		}
 	case reflect.Map:
@@ -438,15 +452,15 @@ func (w *writer) slowSerialize(v interface{}, rv reflect.Value, n int) error {
 		if rv.IsNil() {
 			return w.WriteNull()
 		} else {
-			if n == 0 {
-				v = &v
-			}
 			switch x := rv.Interface().(type) {
 			case []byte:
 				return w.writeBytesWithRef(v, x)
 			case uuid.UUID:
 				return w.writeUUIDWithRef(v, x)
 			default:
+				if n == 0 {
+					v = &v
+				}
 				return w.writeSliceWithRef(v, rv)
 			}
 		}
@@ -456,10 +470,7 @@ func (w *writer) slowSerialize(v interface{}, rv reflect.Value, n int) error {
 		}
 		return w.writeSliceWithRef(v, rv)
 	case reflect.String:
-		if n > 0 {
-			return w.writeStringWithRef(v, rv.String())
-		}
-		return w.WriteStringWithRef(rv.String())
+		return w.writeStringWithRef(v, rv.String())
 	case reflect.Bool:
 		return w.WriteBool(rv.Bool())
 	case reflect.Float32, reflect.Float64:
@@ -553,14 +564,7 @@ func (w *writer) writeBytes(v interface{}, bytes []byte) (err error) {
 	return err
 }
 
-func (w *writer) writeEmpty() error {
-	return w.stream.WriteByte(TagEmpty)
-}
-
 func (w *writer) writeBytesWithRef(v interface{}, bytes []byte) error {
-	if len(bytes) == 0 {
-		return w.writeEmpty()
-	}
 	if success, err := w.writeRef(w.stream, v); err == nil && !success {
 		return w.writeBytes(v, bytes)
 	} else {
