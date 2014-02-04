@@ -190,7 +190,7 @@ func (client *BaseClient) UseService(args ...interface{}) {
 			return
 		default:
 			if isStructPointer(arg0) {
-				client.createRemoteObject(arg0)
+				client.createStub(arg0)
 				return
 			}
 		}
@@ -209,7 +209,7 @@ func (client *BaseClient) UseService(args ...interface{}) {
 			panic("The arguments can't be nil.")
 		}
 		if isStructPointer(args[1]) {
-			client.createRemoteObject(args[1])
+			client.createStub(args[1])
 		}
 	}
 	panic("Wrong arguments.")
@@ -504,8 +504,8 @@ func (client *BaseClient) doIntput(context interface{}, args []reflect.Value, op
 	return err
 }
 
-func (client *BaseClient) createRemoteObject(ro interface{}) {
-	v := reflect.ValueOf(ro).Elem()
+func (client *BaseClient) createStub(stub interface{}) {
+	v := reflect.ValueOf(stub).Elem()
 	t := v.Type()
 	et := t
 	if et.Kind() == reflect.Ptr {
