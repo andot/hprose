@@ -13,7 +13,7 @@
  *                                                        *
  * hprose tcp client for Go.                              *
  *                                                        *
- * LastModified: Feb 2, 2014                              *
+ * LastModified: Feb 5, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -22,10 +22,10 @@ package hprose
 
 import (
 	"bufio"
-	"bytes"
 	"crypto/tls"
 	"net"
 	"net/url"
+	"sync"
 	"time"
 )
 
@@ -43,20 +43,101 @@ type TcpClient struct {
 	config          *tls.Config
 }
 
+type TcpConnEntry struct {
+	uri    string
+	conn   net.Conn
+	reader BufReader
+	free   bool
+	valid  bool
+}
+
+func (connEntry *TcpConnEntry) Get() net.Conn {
+	return connEntry.conn
+}
+
+func (connEntry *TcpConnEntry) GetBufReader() BufReader {
+	return connEntry.reader
+}
+
+func (connEntry *TcpConnEntry) Set(conn net.Conn) {
+	if conn != nil {
+		connEntry.conn = conn
+		connEntry.reader = bufio.NewReader(conn)
+	}
+}
+
+func (connEntry *TcpConnEntry) Close() {
+	connEntry.free = true
+	connEntry.valid = false
+}
+
+type TcpConnPool struct {
+	sync.Mutex
+	pool []*TcpConnEntry
+}
+
+func (connPool *TcpConnPool) Get(uri string) *TcpConnEntry {
+	connPool.Lock()
+	defer connPool.Unlock()
+	for _, entry := range connPool.pool {
+		if entry.free && entry.valid {
+			if entry.uri == uri {
+				entry.free = false
+				return entry
+			} else if entry.uri == "" {
+				entry.free = false
+				entry.valid = false
+				entry.uri = uri
+				return entry
+			}
+		}
+	}
+	entry := &TcpConnEntry{uri, nil, nil, false, false}
+	connPool.pool = append(connPool.pool, entry)
+	return entry
+}
+
+func (connPool *TcpConnPool) Close(uri string) {
+	connPool.Lock()
+	defer connPool.Unlock()
+	for _, entry := range connPool.pool {
+		if entry.uri == uri {
+			if entry.free && entry.valid {
+				entry.conn.Close()
+				entry.conn = nil
+				entry.reader = nil
+				entry.uri = ""
+			} else {
+				entry.Close()
+			}
+		}
+	}
+}
+
+func (connPool *TcpConnPool) Free(entry *TcpConnEntry) {
+	connPool.Lock()
+	defer connPool.Unlock()
+	if entry.free && !entry.valid {
+		if entry.conn != nil {
+			entry.conn.Close()
+			entry.conn = nil
+		}
+		entry.reader = nil
+		entry.uri = ""
+	}
+	entry.free = true
+	entry.valid = true
+}
+
 type TcpTransporter struct {
-	net.Conn
-	uri     string
-	istream *bufio.Reader
+	connPool *TcpConnPool
 	*TcpClient
 }
 
-type TcpContext struct {
-	buf *bytes.Buffer
-}
-
 func NewTcpClient(uri string) Client {
-	client := &TcpClient{BaseClient: NewBaseClient(new(TcpTransporter))}
-	client.Transporter.(*TcpTransporter).TcpClient = client
+	trans := &TcpTransporter{connPool: &TcpConnPool{pool: make([]*TcpConnEntry, 0)}}
+	client := &TcpClient{BaseClient: NewBaseClient(trans)}
+	trans.TcpClient = client
 	client.SetUri(uri)
 	return client
 }
@@ -67,14 +148,14 @@ func (client *TcpClient) SetUri(uri string) {
 			panic("This client desn't support " + u.Scheme + " scheme.")
 		}
 	}
+	client.Close()
 	client.BaseClient.SetUri(uri)
 }
 
 func (client *TcpClient) Close() {
-	conn := client.Transporter.(*TcpTransporter).Conn
-	if conn != nil {
-		conn.Close()
-		client.Transporter.(*TcpTransporter).Conn = nil
+	uri := client.Uri()
+	if uri == "" {
+		client.Transporter.(*TcpTransporter).connPool.Close(uri)
 	}
 }
 
@@ -118,100 +199,102 @@ func (client *TcpClient) SetTLSConfig(config *tls.Config) {
 	client.config = config
 }
 
-func (t *TcpTransporter) GetInvokeContext(uri string) (interface{}, error) {
-	if t.uri != uri {
-		t.uri = uri
-		if t.Conn != nil {
-			t.Conn.Close()
-			t.Conn = nil
+func (t *TcpTransporter) GetInvokeContext(uri string) (context interface{}, err error) {
+	connEntry := t.connPool.Get(uri)
+	defer func() {
+		if err != nil {
+			connEntry.Close()
+			t.connPool.Free(connEntry)
 		}
-	}
-	if t.Conn == nil {
-		if u, err := url.Parse(uri); err == nil {
-			if tcpaddr, err := net.ResolveTCPAddr(u.Scheme, u.Host); err == nil {
-				if conn, err := net.DialTCP("tcp", nil, tcpaddr); err == nil {
-					if t.keepAlive != nil {
-						if err := conn.SetKeepAlive(t.keepAlive.(bool)); err != nil {
-							return nil, err
-						}
-					}
-					if t.keepAlivePeriod != nil {
-						if err := conn.SetKeepAlivePeriod(t.keepAlivePeriod.(time.Duration)); err != nil {
-							return nil, err
-						}
-					}
-					if t.linger != nil {
-						if err := conn.SetLinger(t.linger.(int)); err != nil {
-							return nil, err
-						}
-					}
-					if t.noDelay != nil {
-						if err := conn.SetNoDelay(t.noDelay.(bool)); err != nil {
-							return nil, err
-						}
-					}
-					if t.readBuffer != nil {
-						if err := conn.SetReadBuffer(t.readBuffer.(int)); err != nil {
-							return nil, err
-						}
-					}
-					if t.writerBuffer != nil {
-						if err := conn.SetWriteBuffer(t.writerBuffer.(int)); err != nil {
-							return nil, err
-						}
-					}
-					if t.deadline != nil {
-						if err := conn.SetDeadline(t.deadline.(time.Time)); err != nil {
-							return nil, err
-						}
-					}
-					if t.readDeadline != nil {
-						if err := conn.SetReadDeadline(t.readDeadline.(time.Time)); err != nil {
-							return nil, err
-						}
-					}
-					if t.writerDeadline != nil {
-						if err := conn.SetWriteDeadline(t.writerDeadline.(time.Time)); err != nil {
-							return nil, err
-						}
-					}
-					if t.config != nil {
-						t.Conn = tls.Client(conn, t.config)
-					} else {
-						t.Conn = conn
-					}
-					t.istream = bufio.NewReader(t.Conn)
-				} else {
-					return nil, err
-				}
-			} else {
-				return nil, err
-			}
-		} else {
+	}()
+	conn := connEntry.Get()
+	if conn == nil {
+		var u *url.URL
+		if u, err = url.Parse(uri); err != nil {
 			return nil, err
 		}
+		var tcpaddr *net.TCPAddr
+		if tcpaddr, err = net.ResolveTCPAddr(u.Scheme, u.Host); err != nil {
+			return nil, err
+		}
+		if conn, err = net.DialTCP("tcp", nil, tcpaddr); err != nil {
+			return nil, err
+		}
+		if t.keepAlive != nil {
+			if err = conn.(*net.TCPConn).SetKeepAlive(t.keepAlive.(bool)); err != nil {
+				return nil, err
+			}
+		}
+		if t.keepAlivePeriod != nil {
+			if err = conn.(*net.TCPConn).SetKeepAlivePeriod(t.keepAlivePeriod.(time.Duration)); err != nil {
+				return nil, err
+			}
+		}
+		if t.linger != nil {
+			if err = conn.(*net.TCPConn).SetLinger(t.linger.(int)); err != nil {
+				return nil, err
+			}
+		}
+		if t.noDelay != nil {
+			if err = conn.(*net.TCPConn).SetNoDelay(t.noDelay.(bool)); err != nil {
+				return nil, err
+			}
+		}
+		if t.readBuffer != nil {
+			if err = conn.(*net.TCPConn).SetReadBuffer(t.readBuffer.(int)); err != nil {
+				return nil, err
+			}
+		}
+		if t.writerBuffer != nil {
+			if err = conn.(*net.TCPConn).SetWriteBuffer(t.writerBuffer.(int)); err != nil {
+				return nil, err
+			}
+		}
+		if t.deadline != nil {
+			if err = conn.SetDeadline(t.deadline.(time.Time)); err != nil {
+				return nil, err
+			}
+		}
+		if t.readDeadline != nil {
+			if err = conn.SetReadDeadline(t.readDeadline.(time.Time)); err != nil {
+				return nil, err
+			}
+		}
+		if t.writerDeadline != nil {
+			if err = conn.SetWriteDeadline(t.writerDeadline.(time.Time)); err != nil {
+				return nil, err
+			}
+		}
+		if t.config != nil {
+			conn = tls.Client(conn, t.config)
+		}
+		connEntry.Set(conn)
 	}
-	return new(TcpContext), nil
+	return connEntry, err
 }
 
 func (t *TcpTransporter) SendData(context interface{}, data []byte, success bool) (err error) {
+	connEntry := context.(*TcpConnEntry)
 	if success {
-		if _, err = t.Conn.Write(data); err != nil {
-			t.Conn.Close()
-			t.Conn = nil
+		if _, err = connEntry.conn.Write(data); err != nil {
+			connEntry.Close()
+			t.connPool.Free(connEntry)
 		}
+	} else {
+		t.connPool.Free(connEntry)
 	}
 	return err
 }
 
 func (t *TcpTransporter) GetInputStream(context interface{}) (BufReader, error) {
-	return t.istream, nil
+	return context.(*TcpConnEntry).GetBufReader(), nil
 }
 
 func (t *TcpTransporter) EndInvoke(context interface{}, success bool) error {
+	connEntry := context.(*TcpConnEntry)
 	if !success {
-		t.Conn.Close()
-		t.Conn = nil
+		connEntry.Close()
 	}
+	t.connPool.Free(connEntry)
 	return nil
 }

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose client for Go.                                  *
  *                                                        *
- * LastModified: Feb 4, 2014                              *
+ * LastModified: Feb 5, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -162,7 +162,10 @@ func NewClient(uri string) Client {
 }
 
 func (client *BaseClient) Uri() string {
-	return client.uri.String()
+	if client.uri != nil {
+		return client.uri.String()
+	}
+	return ""
 }
 
 func (client *BaseClient) SetUri(uri string) {
@@ -306,12 +309,14 @@ func (client *BaseClient) doOutput(context interface{}, name string, args []refl
 	success := false
 	buf := new(bytes.Buffer)
 	defer func() {
+		data := buf.Bytes()
 		if err == nil {
-			data := buf.Bytes()
 			if client.Filter != nil {
 				data = client.OutputFilter(data)
 			}
-			err = client.SendData(context, data, success)
+		}
+		if e := client.SendData(context, data, success); err == nil {
+			err = e
 		}
 	}()
 	simple := client.SimpleMode

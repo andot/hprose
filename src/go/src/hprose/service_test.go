@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Service Test for Go.                            *
  *                                                        *
- * LastModified: Feb 1, 2014                              *
+ * LastModified: Feb 5, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -126,6 +126,54 @@ func TestTcpService(t *testing.T) {
 		fmt.Println(sum)
 	}
 	if err := ro.PanicTest(); err != nil {
+		fmt.Println(err.Error())
+	} else {
+		t.Error("missing panic")
+	}
+}
+
+type testRemoteObject3 struct {
+	Hello     func(string) (<-chan string, <-chan error)
+	Swap      func(int, int) (<-chan int, <-chan int, <-chan error)
+	Sum       func(...int) (<-chan int, <-chan error)
+	PanicTest func() <-chan error
+}
+
+func TestTcpServiceAsync(t *testing.T) {
+	server := hprose.NewTcpServer("")
+	server.AddFunction("hello", hello)
+	server.AddMethods(new(testServe))
+	go server.Start()
+	defer server.Close()
+	client := hprose.NewClient(server.URL)
+	var ro *testRemoteObject3
+	client.UseService(&ro)
+	s, err1 := ro.Hello("World")
+	a, b, err2 := ro.Swap(1, 2)
+	sum1, err3 := ro.Sum(1)
+	if err := <-err1; err != nil {
+		t.Error(err.Error())
+	} else {
+		fmt.Println(<-s)
+	}
+	if err := <-err2; err != nil {
+		t.Error(err.Error())
+	} else {
+		fmt.Println(<-a, <-b)
+	}
+	if err := <-err3; err != nil {
+		fmt.Println(err.Error())
+	} else {
+		t.Error(<-sum1)
+	}
+	sum2, err4 := ro.Sum(1, 2, 3, 4, 5)
+	err5 := ro.PanicTest()
+	if err := <-err4; err != nil {
+		t.Error(err.Error())
+	} else {
+		fmt.Println(<-sum2)
+	}
+	if err := <-err5; err != nil {
 		fmt.Println(err.Error())
 	} else {
 		t.Error("missing panic")
