@@ -13,7 +13,7 @@
  *                                                        *
  * hprose SimpleReader for Go.                            *
  *                                                        *
- * LastModified: Feb 4, 2014                              *
+ * LastModified: Feb 7, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -2546,8 +2546,8 @@ func (r *reader) readClass() error {
 	return nil
 }
 
-func (r *reader) readPointer(v reflect.Value, readValue func() (interface{}, error), setValue func(reflect.Value, interface{})) error {
-	if x, err := readValue(); err == nil {
+func (r *reader) readPointer(v reflect.Value, getValue func() (interface{}, error), setValue func(reflect.Value, interface{})) error {
+	if x, err := getValue(); err == nil {
 		if reflect.TypeOf(x).Kind() != reflect.Ptr {
 			v.Set(reflect.New(v.Type().Elem()))
 			setValue(v.Elem(), x)
@@ -2563,70 +2563,70 @@ func (r *reader) readPointer(v reflect.Value, readValue func() (interface{}, err
 	}
 }
 
+func (r *reader) getInt64() (interface{}, error)          { return r.ReadInt64() }
+func (r *reader) setInt64(v reflect.Value, x interface{}) { v.SetInt(x.(int64)) }
 func (r *reader) readInt64Pointer(v reflect.Value) error {
-	return r.readPointer(v,
-		func() (interface{}, error) { return r.ReadInt64() },
-		func(v reflect.Value, x interface{}) { v.SetInt(x.(int64)) })
+	return r.readPointer(v, r.getInt64, r.setInt64)
 }
 
+func (r *reader) getUint64() (interface{}, error)          { return r.ReadUint64() }
+func (r *reader) setUint64(v reflect.Value, x interface{}) { v.SetUint(x.(uint64)) }
 func (r *reader) readUint64Pointer(v reflect.Value) error {
-	return r.readPointer(v,
-		func() (interface{}, error) { return r.ReadUint64() },
-		func(v reflect.Value, x interface{}) { v.SetUint(x.(uint64)) })
+	return r.readPointer(v, r.getUint64, r.setUint64)
 }
 
+func (r *reader) getBool() (interface{}, error)          { return r.ReadBool() }
+func (r *reader) setBool(v reflect.Value, x interface{}) { v.SetBool(x.(bool)) }
 func (r *reader) readBoolPointer(v reflect.Value) error {
-	return r.readPointer(v,
-		func() (interface{}, error) { return r.ReadBool() },
-		func(v reflect.Value, x interface{}) { v.SetBool(x.(bool)) })
+	return r.readPointer(v, r.getBool, r.setBool)
 }
 
+func (r *reader) getFloat32() (interface{}, error)          { return r.ReadFloat32() }
+func (r *reader) setFloat32(v reflect.Value, x interface{}) { v.SetFloat(float64(x.(float32))) }
 func (r *reader) readFloat32Pointer(v reflect.Value) error {
-	return r.readPointer(v,
-		func() (interface{}, error) { return r.ReadFloat32() },
-		func(v reflect.Value, x interface{}) { v.SetFloat(float64(x.(float32))) })
+	return r.readPointer(v, r.getFloat32, r.setFloat32)
 }
 
+func (r *reader) getFloat64() (interface{}, error)          { return r.ReadFloat64() }
+func (r *reader) setFloat64(v reflect.Value, x interface{}) { v.SetFloat(x.(float64)) }
 func (r *reader) readFloat64Pointer(v reflect.Value) error {
-	return r.readPointer(v,
-		func() (interface{}, error) { return r.ReadFloat64() },
-		func(v reflect.Value, x interface{}) { v.SetFloat(x.(float64)) })
+	return r.readPointer(v, r.getFloat64, r.setFloat64)
 }
 
+func (r *reader) getBigInt() (interface{}, error)          { return r.ReadBigInt() }
+func (r *reader) setBigInt(v reflect.Value, x interface{}) { v.Set(reflect.ValueOf(x)) }
 func (r *reader) readBigIntPointer(v reflect.Value) error {
-	return r.readPointer(v,
-		func() (interface{}, error) { return r.ReadBigInt() },
-		func(v reflect.Value, x interface{}) { v.Set(reflect.ValueOf(x)) })
+	return r.readPointer(v, r.getBigInt, r.setBigInt)
 }
 
+func (r *reader) getDateTime() (interface{}, error)          { return r.ReadDateTime() }
+func (r *reader) setDateTime(v reflect.Value, x interface{}) { v.Set(reflect.ValueOf(x)) }
 func (r *reader) readDateTimePointer(v reflect.Value) error {
-	return r.readPointer(v,
-		func() (interface{}, error) { return r.ReadDateTime() },
-		func(v reflect.Value, x interface{}) { v.Set(reflect.ValueOf(x)) })
+	return r.readPointer(v, r.getDateTime, r.setDateTime)
 }
 
+func (r *reader) getString() (interface{}, error)          { return r.ReadString() }
+func (r *reader) setString(v reflect.Value, x interface{}) { v.SetString(x.(string)) }
 func (r *reader) readStringPointer(v reflect.Value) error {
-	return r.readPointer(v,
-		func() (interface{}, error) { return r.ReadString() },
-		func(v reflect.Value, x interface{}) { v.SetString(x.(string)) })
+	return r.readPointer(v, r.getString, r.setString)
 }
 
+func (r *reader) getBytes() (interface{}, error)          { return r.ReadBytes() }
+func (r *reader) setBytes(v reflect.Value, x interface{}) { v.Set(reflect.ValueOf(x)) }
 func (r *reader) readBytesPointer(v reflect.Value) error {
-	return r.readPointer(v,
-		func() (interface{}, error) { return r.ReadBytes() },
-		func(v reflect.Value, x interface{}) { v.Set(reflect.ValueOf(x)) })
+	return r.readPointer(v, r.getBytes, r.setBytes)
 }
 
+func (r *reader) getUUID() (interface{}, error)          { return r.ReadUUID() }
+func (r *reader) setUUID(v reflect.Value, x interface{}) { v.Set(reflect.ValueOf(x)) }
 func (r *reader) readUUIDPointer(v reflect.Value) error {
-	return r.readPointer(v,
-		func() (interface{}, error) { return r.ReadUUID() },
-		func(v reflect.Value, x interface{}) { v.Set(reflect.ValueOf(x)) })
+	return r.readPointer(v, r.getUUID, r.setUUID)
 }
 
+func (r *reader) getList() (interface{}, error)          { return r.ReadList() }
+func (r *reader) setList(v reflect.Value, x interface{}) { v.Set(reflect.ValueOf(x)) }
 func (r *reader) readListPointer(v reflect.Value) error {
-	return r.readPointer(v,
-		func() (interface{}, error) { return r.ReadList() },
-		func(v reflect.Value, x interface{}) { v.Set(reflect.ValueOf(x)) })
+	return r.readPointer(v, r.getList, r.setList)
 }
 
 // private functions
