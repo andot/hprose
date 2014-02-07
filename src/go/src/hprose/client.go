@@ -13,7 +13,7 @@
  *                                                        *
  * hprose client for Go.                                  *
  *                                                        *
- * LastModified: Feb 5, 2014                              *
+ * LastModified: Feb 8, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -327,12 +327,7 @@ func (client *BaseClient) doOutput(context interface{}, name string, args []refl
 	if br, ok := options.ByRef.(bool); ok {
 		byref = br
 	}
-	var writer Writer
-	if simple {
-		writer = NewSimpleWriter(buf)
-	} else {
-		writer = NewWriter(buf)
-	}
+	writer := NewWriter(buf, simple)
 	if err = writer.Stream().WriteByte(TagCall); err != nil {
 		return err
 	}
@@ -374,7 +369,7 @@ func (client *BaseClient) doIntput(context interface{}, args []reflect.Value, op
 	}
 	resultMode := options.ResultMode
 	buf := new(bytes.Buffer)
-	reader := NewReader(istream)
+	reader := NewReader(istream, false)
 	expectTags := []byte{TagResult, TagArgument, TagError, TagEnd}
 	var tag byte
 	for tag, err = reader.CheckTags(expectTags); err == nil && tag != TagEnd; tag, err = reader.CheckTags(expectTags) {

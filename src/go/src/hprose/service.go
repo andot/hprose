@@ -13,7 +13,7 @@
  *                                                        *
  * hprose service for Go.                                 *
  *                                                        *
- * LastModified: Feb 4, 2014                              *
+ * LastModified: Feb 8, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -156,7 +156,7 @@ func (service *BaseService) responseEnd(ostream io.Writer, buf []byte, err error
 func (service *BaseService) sendError(ostream io.Writer, err error) {
 	defer recover()
 	buf := new(bytes.Buffer)
-	writer := NewSimpleWriter(buf)
+	writer := NewWriter(buf, true)
 	writer.Stream().WriteByte(TagError)
 	writer.WriteString(err.Error())
 	writer.Stream().WriteByte(TagEnd)
@@ -164,7 +164,7 @@ func (service *BaseService) sendError(ostream io.Writer, err error) {
 }
 
 func (service *BaseService) doInvoke(istream BufReader, ostream io.Writer) (err error) {
-	reader := NewReader(istream)
+	reader := NewReader(istream, false)
 	buf := new(bytes.Buffer)
 	for {
 		reader.Reset()
@@ -325,12 +325,7 @@ func (service *BaseService) doInvoke(istream BufReader, ostream io.Writer) (err 
 		if remoteMethod.ResultMode == Raw {
 			buf.Write(data)
 		} else {
-			var writer Writer
-			if remoteMethod.SimpleMode {
-				writer = NewSimpleWriter(buf)
-			} else {
-				writer = NewWriter(buf)
-			}
+			writer := NewWriter(buf, remoteMethod.SimpleMode)
 			writer.Stream().WriteByte(TagResult)
 			if remoteMethod.ResultMode == Serialized {
 				if _, err = writer.Stream().Write(data); err != nil {
@@ -368,7 +363,7 @@ func (service *BaseService) doInvoke(istream BufReader, ostream io.Writer) (err 
 
 func (service *BaseService) doFunctionList(ostream io.Writer) error {
 	buf := new(bytes.Buffer)
-	writer := NewSimpleWriter(buf)
+	writer := NewWriter(buf, true)
 	writer.Stream().WriteByte(TagFunctions)
 	if err := writer.Serialize(service.MethodNames); err != nil {
 		return err

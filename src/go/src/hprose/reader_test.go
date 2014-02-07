@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Writer Test for Go.                             *
  *                                                        *
- * LastModified: Feb 7, 2014                              *
+ * LastModified: Feb 8, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -33,7 +33,7 @@ import (
 
 func TestReaderTime(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	writer.Serialize(time.Date(2014, 1, 19, 20, 25, 33, 12345678, time.UTC))
 	writer.Serialize(time.Date(2014, 1, 19, 20, 25, 33, 12345678, time.UTC))
 	writer.Serialize(time.Date(2014, 1, 19, 0, 0, 0, 0, time.Local))
@@ -41,7 +41,7 @@ func TestReaderTime(t *testing.T) {
 	if b.String() != "D20140119T202533.012345678Zr0;D20140119;T010101;" {
 		t.Error(b.String())
 	}
-	reader := NewReader(b)
+	reader := NewReader(b, false)
 	var t1, t2, t3, t4 time.Time
 	if err := reader.Unserialize(&t1); err != nil {
 		t.Error(err.Error())
@@ -62,7 +62,7 @@ func TestReaderTime(t *testing.T) {
 
 func TestReaderString(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	writer.Serialize("")
 	writer.Serialize("我爱你")
 	writer.Serialize("我爱你")
@@ -70,7 +70,7 @@ func TestReaderString(t *testing.T) {
 	if b.String() != `es3"我爱你"r0;` {
 		t.Error(b.String())
 	}
-	reader := NewReader(b)
+	reader := NewReader(b, false)
 	var s1, s2, s3 string
 	if err := reader.Unserialize(&s1); err != nil {
 		t.Error(err.Error())
@@ -91,7 +91,7 @@ func TestReaderString(t *testing.T) {
 
 func TestReaderBytes(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	writer.Serialize([]byte(""))
 	bb := []byte("我爱你")
 	writer.Serialize(&bb)
@@ -99,7 +99,7 @@ func TestReaderBytes(t *testing.T) {
 	if b.String() != `b""b9"我爱你"r1;` {
 		t.Error(b.String())
 	}
-	reader := NewReader(b)
+	reader := NewReader(b, false)
 	var x1, x2, x3 *[]byte
 	if err := reader.Unserialize(&x1); err != nil {
 		t.Error(err.Error())
@@ -117,7 +117,7 @@ func TestReaderBytes(t *testing.T) {
 
 func TestReaderUUID(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	u := uuid.Parse("3f257da1-0b85-48d6-8f5c-6cd13d2d60c9")
 	writer.Serialize(&u)
 	writer.Serialize(&u)
@@ -126,7 +126,7 @@ func TestReaderUUID(t *testing.T) {
 		t.Error(b.String())
 	}
 	var u2, u3 *uuid.UUID
-	reader := NewReader(b)
+	reader := NewReader(b, false)
 	if err := reader.Unserialize(&u); err != nil {
 		t.Error(err.Error())
 	}
@@ -143,7 +143,7 @@ func TestReaderUUID(t *testing.T) {
 
 func TestReaderList(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	a := list.New()
 	a.PushBack("hello")
 	a.PushBack("hprose")
@@ -155,7 +155,7 @@ func TestReaderList(t *testing.T) {
 	if b.String() != `a3{s5"hello"s6"hprose"s5"world"}a3{r1;r2;r3;}r0;` {
 		t.Error(b.String())
 	}
-	reader := NewReader(b)
+	reader := NewReader(b, false)
 	var x1, x2, x3 *list.List
 	if err := reader.Unserialize(&x1); err != nil {
 		t.Error(err.Error())
@@ -176,7 +176,7 @@ func TestReaderList(t *testing.T) {
 
 func TestReaderSlice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	a := []string{"hello", "hprose", "world"}
 	writer.Serialize(&a)
 	writer.Serialize(a)
@@ -186,7 +186,7 @@ func TestReaderSlice(t *testing.T) {
 		t.Error(b.String())
 	}
 	var x []string
-	reader := NewReader(b)
+	reader := NewReader(b, false)
 	if err := reader.Unserialize(&x); err != nil {
 		t.Error(err.Error())
 	}
@@ -209,7 +209,7 @@ func TestReaderSlice(t *testing.T) {
 
 func TestReaderMap(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	m := make(map[string]interface{})
 	m["name"] = "马秉尧"
 	m["age"] = 33
@@ -222,7 +222,7 @@ func TestReaderMap(t *testing.T) {
 	if b.String() != s {
 		t.Error(b.String())
 	}
-	reader := NewReader(b)
+	reader := NewReader(b, false)
 	var x map[string]interface{}
 	if err := reader.Unserialize(&x); err != nil {
 		t.Error(err.Error())
@@ -246,7 +246,7 @@ func TestReaderMap(t *testing.T) {
 
 func TestReaderObject(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	p := testPerson{"马秉尧", 33, true}
 	writer.Serialize(p)
 	writer.Serialize(&p)
@@ -257,7 +257,7 @@ func TestReaderObject(t *testing.T) {
 	if b.String() != s {
 		t.Error(b.String())
 	}
-	reader := NewReader(b)
+	reader := NewReader(b, false)
 	var x testPerson
 	if err := reader.Unserialize(&x); err != nil {
 		t.Error(err.Error())
@@ -287,7 +287,7 @@ func TestReaderObject(t *testing.T) {
 
 func TestReaderReset(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	p := testPerson{"马秉尧", 33, true}
 	writer.Serialize(p)
 	writer.Reset()
@@ -301,7 +301,7 @@ func TestReaderReset(t *testing.T) {
 	if b.String() != s {
 		t.Error(b.String())
 	}
-	reader := NewReader(b)
+	reader := NewReader(b, false)
 	reader.Unserialize(&p)
 	reader.Reset()
 	reader.Unserialize(&pp)
@@ -313,11 +313,11 @@ func TestReaderReset(t *testing.T) {
 
 func TestReaderArray(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	p := testPerson{"马秉尧", 33, true}
 	a := []interface{}{123, "hello world!", p}
 	writer.Serialize(a)
-	reader := NewReader(b)
+	reader := NewReader(b, false)
 	err := reader.CheckTag(TagList)
 	if err != nil {
 		t.Error(err.Error())

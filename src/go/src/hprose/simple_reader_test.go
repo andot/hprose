@@ -13,7 +13,7 @@
  *                                                        *
  * hprose SimpleReader Test for Go.                       *
  *                                                        *
- * LastModified: Jan 31, 2014                             *
+ * LastModified: Feb 8, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -34,7 +34,7 @@ import (
 
 func TestSimpleReaderInt(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewSimpleWriter(b)
+	writer := NewWriter(b, true)
 	writer.Serialize(-1)
 	writer.Serialize(math.MaxInt16)
 	var f32 float32 = math.MaxFloat32
@@ -46,7 +46,7 @@ func TestSimpleReaderInt(t *testing.T) {
 	writer.Serialize(false)
 	writer.Serialize(true)
 	writer.Serialize(nil)
-	reader := NewSimpleReader(b)
+	reader := NewReader(b, true)
 	var i int
 	var err error
 	if err = reader.Unserialize(&i); err != nil {
@@ -115,7 +115,7 @@ func TestSimpleReaderInt(t *testing.T) {
 
 func TestSimpleReaderUint(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewSimpleWriter(b)
+	writer := NewWriter(b, true)
 	writer.Serialize(-1)
 	writer.Serialize(math.MaxUint32)
 	writer.Serialize(math.MaxUint32)
@@ -129,7 +129,7 @@ func TestSimpleReaderUint(t *testing.T) {
 	writer.Serialize(nil)
 	writer.Serialize(false)
 	writer.Serialize(true)
-	reader := NewSimpleReader(b)
+	reader := NewReader(b, true)
 	var i uint
 	var err error
 	if err = reader.Unserialize(&i); err != nil {
@@ -213,7 +213,7 @@ func TestSimpleReaderUint(t *testing.T) {
 
 func TestSimpleReaderBool(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewSimpleWriter(b)
+	writer := NewWriter(b, true)
 	writer.Serialize(-1)
 	writer.Serialize(0)
 	writer.Serialize(1)
@@ -231,7 +231,7 @@ func TestSimpleReaderBool(t *testing.T) {
 	writer.Serialize(true)
 	writer.Serialize(nil)
 	writer.Serialize(nil)
-	reader := NewSimpleReader(b)
+	reader := NewReader(b, true)
 	var i bool
 	var p *bool = &i
 	var err error
@@ -338,7 +338,7 @@ func TestSimpleReaderBool(t *testing.T) {
 
 func TestSimpleReaderBigInt(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewSimpleWriter(b)
+	writer := NewWriter(b, true)
 	writer.Serialize(-1)
 	writer.Serialize(math.MaxInt16)
 	var f32 float32 = math.MaxFloat32
@@ -349,7 +349,7 @@ func TestSimpleReaderBigInt(t *testing.T) {
 	writer.Serialize(nil)
 	writer.Serialize(false)
 	writer.Serialize(true)
-	reader := NewSimpleReader(b)
+	reader := NewReader(b, true)
 	var i big.Int
 	var err error
 	if err = reader.Unserialize(&i); err != nil {
@@ -411,7 +411,7 @@ func TestSimpleReaderBigInt(t *testing.T) {
 
 func TestSimpleReaderFloat32(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewSimpleWriter(b)
+	writer := NewWriter(b, true)
 	writer.Serialize(-1)
 	writer.Serialize(math.MaxUint32)
 	var f32 float32 = math.MaxFloat32
@@ -422,7 +422,7 @@ func TestSimpleReaderFloat32(t *testing.T) {
 	writer.Serialize(nil)
 	writer.Serialize(false)
 	writer.Serialize(true)
-	reader := NewSimpleReader(b)
+	reader := NewReader(b, true)
 	var i float32
 	var err error
 	if err = reader.Unserialize(&i); err != nil {
@@ -485,7 +485,7 @@ func TestSimpleReaderFloat32(t *testing.T) {
 
 func TestSimpleReaderFloat64(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewSimpleWriter(b)
+	writer := NewWriter(b, true)
 	writer.Serialize(-1)
 	writer.Serialize(math.MaxUint32)
 	var f64 float64 = math.MaxFloat64
@@ -496,7 +496,7 @@ func TestSimpleReaderFloat64(t *testing.T) {
 	writer.Serialize(nil)
 	writer.Serialize(false)
 	writer.Serialize(true)
-	reader := NewSimpleReader(b)
+	reader := NewReader(b, true)
 	var i float64
 	var err error
 	if err = reader.Unserialize(&i); err != nil {
@@ -559,7 +559,7 @@ func TestSimpleReaderFloat64(t *testing.T) {
 
 func TestSimpleReaderTime(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewSimpleWriter(b)
+	writer := NewWriter(b, true)
 	now := time.Now()
 	writer.Serialize(now)
 	writer.Serialize(now)
@@ -570,7 +570,7 @@ func TestSimpleReaderTime(t *testing.T) {
 	tim := time.Date(1, 1, 1, 19, 23, 19, 123000, time.UTC)
 	writer.Serialize(tim)
 	writer.Serialize(datetime.String())
-	reader := NewSimpleReader(b)
+	reader := NewReader(b, true)
 	var x time.Time
 	var err error
 	if err = reader.Unserialize(&x); err != nil {
@@ -615,7 +615,7 @@ func TestSimpleReaderTime(t *testing.T) {
 
 func TestSimpleReaderString(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewSimpleWriter(b)
+	writer := NewWriter(b, true)
 	str := "hello 你好"
 	writer.Serialize(str)
 	writer.Serialize([]byte(str))
@@ -630,7 +630,7 @@ func TestSimpleReaderString(t *testing.T) {
 	writer.Serialize(nil)
 	writer.Serialize(nil)
 
-	reader := NewSimpleReader(b)
+	reader := NewReader(b, true)
 	var x string
 	var err error
 	if err = reader.Unserialize(&x); err != nil {
@@ -706,7 +706,7 @@ func TestSimpleReaderString(t *testing.T) {
 
 func TestSimpleReaderBytes(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewSimpleWriter(b)
+	writer := NewWriter(b, true)
 	str := "hello 你好"
 	writer.Serialize(str)
 	writer.Serialize([]byte(str))
@@ -715,7 +715,7 @@ func TestSimpleReaderBytes(t *testing.T) {
 	writer.Serialize(nil)
 	writer.Serialize(nil)
 
-	reader := NewSimpleReader(b)
+	reader := NewReader(b, true)
 	var x []byte
 	var p *[]byte
 	var err error
@@ -760,7 +760,7 @@ func TestSimpleReaderBytes(t *testing.T) {
 
 func TestSimpleReaderUUID(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewSimpleWriter(b)
+	writer := NewWriter(b, true)
 	u := uuid.NewUUID()
 	writer.Serialize(u)
 	writer.Serialize(u)
@@ -769,7 +769,7 @@ func TestSimpleReaderUUID(t *testing.T) {
 	writer.Serialize(nil)
 	writer.Serialize(nil)
 
-	reader := NewSimpleReader(b)
+	reader := NewReader(b, true)
 	var x uuid.UUID
 	var p *uuid.UUID
 	var err error
@@ -813,7 +813,7 @@ func TestSimpleReaderUUID(t *testing.T) {
 
 func TestSimpleReaderList(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewSimpleWriter(b)
+	writer := NewWriter(b, true)
 	l := list.New()
 	l.PushBack(1)
 	l.PushBack(2.0)
@@ -831,7 +831,7 @@ func TestSimpleReaderList(t *testing.T) {
 	writer.Serialize(nil)
 	writer.Serialize(nil)
 
-	reader := NewSimpleReader(b)
+	reader := NewReader(b, true)
 	var x list.List
 	var p *list.List
 	var err error
@@ -873,7 +873,7 @@ func TestSimpleReaderList(t *testing.T) {
 
 func TestSimpleReaderSlice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewSimpleWriter(b)
+	writer := NewWriter(b, true)
 	a := []interface{}{1, 2.0, true, false, math.Inf(1), math.Inf(-1), "", "我", "Hello World", "你好"}
 	ia := []int{1, 2, 3, 4, 5, 6}
 	aa := [][]int{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}
@@ -888,7 +888,7 @@ func TestSimpleReaderSlice(t *testing.T) {
 	writer.Serialize(nil)
 	writer.Serialize(nil)
 
-	reader := NewSimpleReader(b)
+	reader := NewReader(b, true)
 	var x []interface{}
 	var p *[]interface{}
 	var i interface{}
@@ -966,7 +966,7 @@ func TestSimpleReaderSlice(t *testing.T) {
 
 func TestSimpleReaderMap(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewSimpleWriter(b)
+	writer := NewWriter(b, true)
 	m := make(map[interface{}]interface{})
 	m["name"] = "张山"
 	m["age"] = 38
@@ -982,7 +982,7 @@ func TestSimpleReaderMap(t *testing.T) {
 	writer.Serialize(nil)
 	writer.Serialize(nil)
 
-	reader := NewSimpleReader(b)
+	reader := NewReader(b, true)
 	var x map[interface{}]interface{}
 	var p *map[interface{}]interface{}
 	var i interface{}
@@ -1038,7 +1038,7 @@ type emptyInterface interface{}
 
 func TestSimpleReaderObject(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewSimpleWriter(b)
+	writer := NewWriter(b, true)
 	p := testPerson{"马秉尧", 33, true}
 	err := writer.Serialize(p)
 	if err != nil {
@@ -1066,7 +1066,7 @@ func TestSimpleReaderObject(t *testing.T) {
 		t.Error(err.Error())
 	}
 
-	reader := NewSimpleReader(b)
+	reader := NewReader(b, true)
 	var x testPerson
 	var px *testPerson
 	var i interface{}
@@ -1117,7 +1117,7 @@ func TestSimpleReaderObject(t *testing.T) {
 	}
 
 	b = bytes.NewBufferString(`c10"testPerson"4{s4"name"s3"age"s4"male"s2"qq"}o0{s3"马秉尧"i33;ts8"53958317"}`)
-	reader = NewSimpleReader(b)
+	reader = NewReader(b, true)
 	if err = reader.Unserialize(&x); err != nil {
 		t.Error(err.Error())
 	}

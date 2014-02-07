@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Writer Test for Go.                             *
  *                                                        *
- * LastModified: Feb 7, 2014                              *
+ * LastModified: Feb 8, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -34,7 +34,7 @@ import (
 
 func TestWriterNil(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	err := writer.Serialize(nil)
 	if err != nil {
 		t.Error(err.Error())
@@ -46,7 +46,7 @@ func TestWriterNil(t *testing.T) {
 
 func TestWriterByte(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	err := writer.Serialize(byte(13))
 	if err != nil {
 		t.Error(err.Error())
@@ -58,7 +58,7 @@ func TestWriterByte(t *testing.T) {
 
 func TestWriterUint8(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	err := writer.Serialize(uint8(0))
 	if err != nil {
 		t.Error(err.Error())
@@ -70,7 +70,7 @@ func TestWriterUint8(t *testing.T) {
 
 func TestWriterUint16(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	err := writer.Serialize(uint16(12345))
 	if err != nil {
 		t.Error(err.Error())
@@ -82,7 +82,7 @@ func TestWriterUint16(t *testing.T) {
 
 func TestWriterUint64(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	err := writer.Serialize(uint64(12345))
 	if err != nil {
 		t.Error(err.Error())
@@ -98,7 +98,7 @@ func TestWriterUint64(t *testing.T) {
 
 func TestWriterBigInt(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	var bb big.Int
 	err := writer.Serialize(bb)
 	if err != nil {
@@ -111,7 +111,7 @@ func TestWriterBigInt(t *testing.T) {
 
 func TestWriterBigIntPointer(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	bb := big.NewInt(1234567890)
 	err := writer.Serialize(bb)
 	if err != nil {
@@ -129,7 +129,7 @@ func TestWriterBigIntPointer(t *testing.T) {
 
 func TestWriterFloat64(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	err := writer.Serialize(3.1415926)
 	if err != nil {
 		t.Error(err.Error())
@@ -141,7 +141,7 @@ func TestWriterFloat64(t *testing.T) {
 
 func TestWriterNaN(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	err := writer.Serialize(math.NaN())
 	if err != nil {
 		t.Error(err.Error())
@@ -153,7 +153,7 @@ func TestWriterNaN(t *testing.T) {
 
 func TestWriterInf(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	err := writer.Serialize(math.Inf(1))
 	if err != nil {
 		t.Error(err.Error())
@@ -169,7 +169,7 @@ func TestWriterInf(t *testing.T) {
 
 func TestWriterBool(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	err := writer.Serialize(true)
 	if err != nil {
 		t.Error(err.Error())
@@ -185,7 +185,7 @@ func TestWriterBool(t *testing.T) {
 
 func TestWriterTime(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	err := writer.Serialize(time.Date(2014, 1, 19, 20, 25, 33, 12345678, time.UTC))
 	if err != nil {
 		t.Error(err.Error())
@@ -205,7 +205,7 @@ func TestWriterTime(t *testing.T) {
 
 func TestWriterString(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	err := writer.Serialize("")
 	if err != nil {
 		t.Error(err.Error())
@@ -230,7 +230,7 @@ func TestWriterString(t *testing.T) {
 
 func TestWriterBytes(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	err := writer.Serialize([]byte(""))
 	if err != nil {
 		t.Error(err.Error())
@@ -255,7 +255,7 @@ func TestWriterBytes(t *testing.T) {
 
 func TestWriterUUID(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	err := writer.Serialize(uuid.Parse("3f257da1-0b85-48d6-8f5c-6cd13d2d60c9"))
 	if err != nil {
 		t.Error(err.Error())
@@ -267,7 +267,7 @@ func TestWriterUUID(t *testing.T) {
 
 func TestWriterList(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	a := list.New()
 	a.PushBack(1)
 	a.PushBack(2)
@@ -292,7 +292,7 @@ func TestWriterList(t *testing.T) {
 
 func TestWriterArray(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	a := [10]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 	err := writer.Serialize(a)
 	if err != nil {
@@ -314,7 +314,7 @@ func TestWriterArray(t *testing.T) {
 
 func TestWriterSlice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	a := []int{0, 1, 2}
 	err := writer.Serialize(a)
 	if err != nil {
@@ -336,7 +336,7 @@ func TestWriterSlice(t *testing.T) {
 
 func TestWriterMap(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	m := make(map[string]interface{})
 	m["name"] = "马秉尧"
 	m["age"] = 33
@@ -362,7 +362,7 @@ func TestWriterMap(t *testing.T) {
 
 func TestWriterObject(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	p := testPerson{"马秉尧", 33, true}
 	err := writer.Serialize(p)
 	if err != nil {
@@ -385,7 +385,7 @@ func TestWriterObject(t *testing.T) {
 
 func TestWriterReset(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b)
+	writer := NewWriter(b, false)
 	p := testPerson{"马秉尧", 33, true}
 	err := writer.Serialize(p)
 	if err != nil {

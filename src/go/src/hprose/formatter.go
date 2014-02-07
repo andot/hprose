@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Reader for Go.                                  *
  *                                                        *
- * LastModified: Feb 3, 2014                              *
+ * LastModified: Feb 8, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -83,13 +83,8 @@ func (r *bufReader) ReadString(delim byte) (line string, err error) {
 
 func Serialize(v interface{}, simple bool) ([]byte, error) {
 	buf := new(bytes.Buffer)
-	var w Writer
-	if simple {
-		w = NewSimpleWriter(buf)
-	} else {
-		w = NewWriter(buf)
-	}
-	err := w.Serialize(v)
+	writer := NewWriter(buf, simple)
+	err := writer.Serialize(v)
 	return buf.Bytes(), err
 }
 
@@ -99,13 +94,8 @@ func Marshal(v interface{}) ([]byte, error) {
 
 func Unserialize(b []byte, p interface{}, simple bool) error {
 	buf := NewBufReader(b)
-	var r Reader
-	if simple {
-		r = NewSimpleReader(buf)
-	} else {
-		r = NewReader(buf)
-	}
-	return r.Unserialize(p)
+	reader := NewReader(buf, simple)
+	return reader.Unserialize(p)
 }
 
 func Unmarshal(b []byte, p interface{}) error {
