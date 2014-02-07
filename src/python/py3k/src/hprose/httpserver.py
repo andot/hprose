@@ -40,7 +40,7 @@ class HproseHttpService(HproseService):
         self._clientAccessPolicyXmlContent = None
         self._lastModified = datetime.datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT");
         self._etag = '"%x:%x"' % (trunc(random() * 2147483647), trunc(random() * 2147483647));
-        self.sessionName = sessionName     
+        self.sessionName = sessionName
 
     def __call__(self, environ, start_response = None):
         result = self.handle(environ)

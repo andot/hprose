@@ -21,7 +21,7 @@ package hprose.io {
     import flash.utils.ByteArray;
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    
+
     public final class HproseFormatter {
         public static function serialize(o:*, stream:IDataOutput = null, simple:Boolean = false):IDataOutput {
             if (stream == null) {

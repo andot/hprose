@@ -25,7 +25,7 @@ package hprose.client {
     import flash.net.URLStream;
     import flash.utils.ByteArray;
     import flash.utils.IDataInput;
-    
+
     import hprose.common.HproseException;
     import hprose.common.HproseResultMode;
     import hprose.common.IHproseFilter;
@@ -34,7 +34,7 @@ package hprose.client {
     import hprose.io.HproseTags;
     import hprose.io.HproseSimpleWriter;
     import hprose.io.HproseWriter;
-    
+
     [Event(name="error", type="hprose.client.HproseErrorEvent")]
     [Event(name="success", type="hprose.client.HproseSuccessEvent")]
     [Event(name="progress", type="flash.events.ProgressEvent")]
@@ -54,7 +54,7 @@ package hprose.client {
         private var simple:Boolean;
         private var filter:IHproseFilter;
         private var httpRequest:HproseHttpRequest = null;
-        
+
         public function HproseHttpInvoker(url:String, header:Object, func:String, args:Array, byref:Boolean, callback:Function, errorHandler:Function, progressHandler:Function, dispatcher:EventDispatcher, timeout:uint, resultMode:int, simple:Boolean, filter:IHproseFilter) {
             this.url = url;
             this.header = header;
@@ -74,27 +74,27 @@ package hprose.client {
         public function get byRef():Boolean {
             return byref;
         }
-        
+
         public function set byRef(value:Boolean):void {
             byref = value;
         }
-        
+
         public function isSuccess():Boolean {
             return success;
         }
-        
+
         public function isCompleted():Boolean {
             return completed;
         }
-        
+
         public function getResult():* {
             return result;
         }
-        
+
         public function getArguments():Array {
             return args;
         }
-        
+
         public function start(callback:Function = null, errorHandler:Function = null, progressHandler:Function = null):HproseHttpInvoker {
             var stream:ByteArray = new ByteArray();
             stream.writeByte(HproseTags.TagCall);

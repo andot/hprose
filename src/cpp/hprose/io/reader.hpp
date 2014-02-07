@@ -166,7 +166,7 @@ namespace hprose
             read_infinity(ret, include_tag);
             return ret;
         }
-        
+
         template<typename ValueType>
         void read_double(ValueType & d, bool include_tag = true)
         {
@@ -914,7 +914,7 @@ namespace hprose
                 case TagRef:
                     cast_error(TagToString(tag), typeid(ValueType).name());
                 case TagError:
-                    HPROSE_THROW_EXCEPTION(read_string());    
+                    HPROSE_THROW_EXCEPTION(read_string());
                 case (char)0xFF:
                     HPROSE_THROW_EXCEPTION("No byte found in stream");
                 default:

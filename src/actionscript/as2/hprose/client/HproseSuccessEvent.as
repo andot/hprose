@@ -21,7 +21,7 @@ class hprose.client.HproseSuccessEvent {
     public static var SUCCESS:String = 'success';
     private var _result;
     private var _args:Array;
-        
+
     public function HproseSuccessEvent(result, args:Array) {
         this._result = result;
         this._args = args;
@@ -30,7 +30,7 @@ class hprose.client.HproseSuccessEvent {
     public function get result() {
         return _result;
     }
-        
+
     public function get args():Array {
         return _args;
     }

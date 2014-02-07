@@ -24,7 +24,7 @@ class HproseDate {
     public $year;
     public $month;
     public $day;
-    public $utc = false;    
+    public $utc = false;
     public function __construct() {
         $args_num = func_num_args();
         $args = func_get_args();
@@ -202,7 +202,7 @@ class HproseDate {
             return gmmktime(0, 0, 0, $this->month, $this->day, $this->year);
         }
         else {
-            return mktime(0, 0, 0, $this->month, $this->day, $this->year);            
+            return mktime(0, 0, 0, $this->month, $this->day, $this->year);
         }
     }
     public function toString($fullformat = true) {
@@ -211,7 +211,7 @@ class HproseDate {
         if ($this->utc) {
             $str .= 'Z';
         }
-        return $str;        
+        return $str;
     }
     public function __toString() {
         return $this->toString();

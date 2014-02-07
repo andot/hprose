@@ -53,7 +53,7 @@ package java.util;
  * interfaces cannot contain constructors) but the SDK implementation
  * (TreeMap) complies.<p>
  *
- * This interface is a member of the 
+ * This interface is a member of the
  * <a href="{@docRoot}/../guide/collections/index.html">
  * Java Collections Framework</a>.
  *
@@ -101,20 +101,20 @@ public interface SortedMap extends Map {
      * The following idiom obtains a view containing all of the key-value
      * mappings in <tt>m</tt> whose keys are between <tt>low</tt> and
      * <tt>high</tt>, inclusive:
-     * 
+     *
      * 	    <pre>    Map sub = m.subMap(low, high+"\0");</pre>
-     * 
+     *
      * A similarly technique can be used to generate an <i>open range</i>
      * (which contains neither endpoint).  The following idiom obtains a
      * view containing  all of the key-value mappings in <tt>m</tt> whose keys
      * are between <tt>low</tt> and <tt>high</tt>, exclusive:
-     * 
+     *
      * 	    <pre>    Map sub = m.subMap(low+"\0", high);</pre>
      *
      * @param fromKey low endpoint (inclusive) of the subMap.
      * @param toKey high endpoint (exclusive) of the subMap.
      * @return a view of the specified range within this sorted map.
-     * 
+     *
      * @throws ClassCastException if <tt>fromKey</tt> and <tt>toKey</tt>
      *         cannot be compared to one another using this map's comparator
      *         (or, if the map has no comparator, using natural ordering).
@@ -149,7 +149,7 @@ public interface SortedMap extends Map {
      * are strings.  The following idiom obtains a view containing all of the
      * key-value mappings in <tt>m</tt> whose keys are less than or equal to
      * <tt>high</tt>:
-     * 
+     *
      * 	    <pre>    Map head = m.headMap(high+"\0");</pre>
      *
      * @param toKey high endpoint (exclusive) of the subMap.
@@ -187,7 +187,7 @@ public interface SortedMap extends Map {
      * are strings.  The following idiom obtains a view containing all of the
      * key-value mappings in <tt>m</tt> whose keys are strictly greater than
      * <tt>low</tt>:
-     * 
+     *
      * 	    <pre>    Map tail = m.tailMap(low+"\0");</pre>
      *
      * @param fromKey low endpoint (inclusive) of the tailMap.

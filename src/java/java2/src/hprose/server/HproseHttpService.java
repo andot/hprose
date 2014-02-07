@@ -56,14 +56,14 @@ public class HproseHttpService extends HproseService {
             throw new ClassCastException("methods must be a HproseHttpMethods instance");
         }
     }
-    
+
     public boolean isCrossDomainEnabled() {
         return crossDomainEnabled;
     }
 
     public void setCrossDomainEnabled(boolean enabled) {
         crossDomainEnabled = enabled;
-    }    
+    }
 
     public boolean isP3pEnabled() {
         return p3pEnabled;
@@ -127,7 +127,7 @@ public class HproseHttpService extends HproseService {
             String origin = request.getHeader("Origin");
             if (origin != null && !origin.equals("null")) {
                 response.setHeader("Access-Control-Allow-Origin", origin);
-                response.setHeader("Access-Control-Allow-Credentials", "true");  
+                response.setHeader("Access-Control-Allow-Credentials", "true");
             }
             else {
                 response.setHeader("Access-Control-Allow-Origin", "*");

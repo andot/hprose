@@ -22,7 +22,7 @@
 
 interface HproseFilter {
     function inputFilter($data);
-    function outputFilter($data);    
+    function outputFilter($data);
 }
 
 ?>

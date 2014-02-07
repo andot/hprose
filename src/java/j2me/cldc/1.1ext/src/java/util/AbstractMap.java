@@ -33,7 +33,7 @@ import java.util.Map.Entry;
  * implementation in detail.  Each of these methods may be overridden if the
  * map being implemented admits a more efficient implementation.<p>
  *
- * This class is a member of the 
+ * This class is a member of the
  * <a href="{@docRoot}/../guide/collections/index.html">
  * Java Collections Framework</a>.
  *
@@ -92,7 +92,7 @@ public abstract class AbstractMap implements Map {
      * linear time in the size of the map.
      *
      * @param value value whose presence in this map is to be tested.
-     * 
+     *
      * @return <tt>true</tt> if this map maps one or more keys to this value.
      */
     public boolean containsValue(Object value) {
@@ -127,7 +127,7 @@ public abstract class AbstractMap implements Map {
      * @param key key whose presence in this map is to be tested.
      * @return <tt>true</tt> if this map contains a mapping for the specified
      *            key.
-     * 
+     *
      * @throws NullPointerException key is <tt>null</tt> and this map does not
      *            not permit <tt>null</tt> keys.
      */
@@ -166,10 +166,10 @@ public abstract class AbstractMap implements Map {
      *
      * @param key key whose associated value is to be returned.
      * @return the value to which this map maps the specified key.
-     * 
+     *
      * @throws NullPointerException if the key is <tt>null</tt> and this map
      *		  does not not permit <tt>null</tt> keys.
-     * 
+     *
      * @see #containsKey(Object)
      */
     public Object get(Object key) {
@@ -203,22 +203,22 @@ public abstract class AbstractMap implements Map {
      *
      * @param key key with which the specified value is to be associated.
      * @param value value to be associated with the specified key.
-     * 
+     *
      * @return previous value associated with specified key, or <tt>null</tt>
      *	       if there was no mapping for key.  (A <tt>null</tt> return can
      *	       also indicate that the map previously associated <tt>null</tt>
      *	       with the specified key, if the implementation supports
      *	       <tt>null</tt> values.)
-     * 
+     *
      * @throws UnsupportedOperationException if the <tt>put</tt> operation is
      *	          not supported by this map.
-     * 
+     *
      * @throws ClassCastException if the class of the specified key or value
      * 	          prevents it from being stored in this map.
-     * 
+     *
      * @throws IllegalArgumentException if some aspect of this key or value *
      *            prevents it from being stored in this map.
-     * 
+     *
      * @throws NullPointerException this map does not permit <tt>null</tt>
      *            keys or values, and the specified key or value is
      *            <tt>null</tt>.
@@ -296,13 +296,13 @@ public abstract class AbstractMap implements Map {
      * the <tt>put</tt> operation and the specified map is nonempty.
      *
      * @param t mappings to be stored in this map.
-     * 
+     *
      * @throws UnsupportedOperationException if the <tt>putAll</tt> operation
      * 		  is not supported by this map.
-     * 
+     *
      * @throws ClassCastException if the class of a key or value in the
      * 	          specified map prevents it from being stored in this map.
-     * 
+     *
      * @throws IllegalArgumentException if some aspect of a key or value in
      *	          the specified map prevents it from being stored in this map.
      * @throws NullPointerException the specified map is <tt>null</tt>, or if
@@ -586,7 +586,7 @@ public abstract class AbstractMap implements Map {
 	    Entry e = (Entry) (i.next());
             Object key = e.getKey();
             Object value = e.getValue();
-            buf.append((key == this ?  "(this Map)" : key) + "=" + 
+            buf.append((key == this ?  "(this Map)" : key) + "=" +
                        (value == this ? "(this Map)": value));
 
             hasNext = i.hasNext();

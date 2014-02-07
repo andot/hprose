@@ -90,7 +90,7 @@ namespace hprose
                 void clear();
 
                 bool connect(tcp::socket & socket, const std::string & host, const std::string & port, bool secure);
- 
+
                 void write(boost::asio::streambuf & buf, bool secure);
 
                 size_t read_line(boost::asio::streambuf & buf, bool secure);

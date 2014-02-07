@@ -96,17 +96,17 @@ public abstract class HproseClient implements HproseInvoker {
             return Proxy.newProxyInstance(type.getClassLoader(), type.getInterfaces(), handler);
         }
     }
-    
+
     public final Object useService(String uri, Class type, String ns) {
         useService(uri);
         return useService(type, ns);
     }
-    
+
     public final Object useService(Class[] types, String ns) {
         HproseInvocationHandler handler = new HproseInvocationHandler(this, ns);
         return Proxy.newProxyInstance(types[0].getClassLoader(), types, handler);
     }
-    
+
     public final Object useService(String uri, Class[] types, String ns) {
         useService(uri);
         return useService(types, ns);

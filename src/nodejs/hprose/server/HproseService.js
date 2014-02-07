@@ -160,7 +160,7 @@ function HproseService() {
             responseEnd(ostream, response, m_filter);
         }
     }
-    
+
     // protected methods
 
     this._doFunctionList = function(response) {
@@ -198,7 +198,7 @@ function HproseService() {
     this.isDebugEnabled = function() {
         return m_debug;
     }
-    
+
     this.setDebugEnabled = function(enable) {
         if (enable === undefined) enable = true;
         m_debug = enable;
@@ -207,7 +207,7 @@ function HproseService() {
     this.getSimpleMode = function() {
         return m_simple;
     }
-    
+
     this.setSimpleMode = function(value) {
         if (value === undefined) value = true;
         m_simple = value;
@@ -216,7 +216,7 @@ function HproseService() {
     this.addMissingFunction = function(func, resultMode, async, simple) {
         this.addFunction(func, "*", resultMode, async, simple);
     }
-    
+
     this.addAsyncMissingFunction = function(func, resultMode, simple) {
         this.addMissingFunction(func, resultMode, true, simple);
     }
@@ -242,7 +242,7 @@ function HproseService() {
                     alias = getFuncName(func);
                     if (alias != "") break;
                 default:
-                    throw new HproseException('Need an alias');                            
+                    throw new HproseException('Need an alias');
             }
         }
         if (typeof(alias) == "string") {
@@ -293,11 +293,11 @@ function HproseService() {
                 case "string":
                     alias = method;
                     break;
-                case "function": 
+                case "function":
                     alias = getFuncName(method, obj);
                     if (alias != "") break;
                 default:
-                    throw new HproseException('Need an alias');                            
+                    throw new HproseException('Need an alias');
             }
         }
         if (typeof(alias) == "string") {

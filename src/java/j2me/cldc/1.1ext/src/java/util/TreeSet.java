@@ -50,12 +50,12 @@ package java.util;
  * <p>Note that the fail-fast behavior of an iterator cannot be guaranteed
  * as it is, generally speaking, impossible to make any hard guarantees in the
  * presence of unsynchronized concurrent modification.  Fail-fast iterators
- * throw <tt>ConcurrentModificationException</tt> on a best-effort basis. 
+ * throw <tt>ConcurrentModificationException</tt> on a best-effort basis.
  * Therefore, it would be wrong to write a program that depended on this
  * exception for its correctness:   <i>the fail-fast behavior of iterators
  * should be used only to detect bugs.</i><p>
  *
- * This class is a member of the 
+ * This class is a member of the
  * <a href="{@docRoot}/../guide/collections/index.html">
  * Java Collections Framework</a>.
  *
@@ -96,7 +96,7 @@ public class TreeSet extends AbstractSet implements SortedSet {
      * set that violates this constraint (for example, the user attempts to
      * add a string element to a set whose elements are integers), the
      * <tt>add(Object)</tt> call will throw a <tt>ClassCastException</tt>.
-     * 
+     *
      * @see Comparable
      */
     public TreeSet() {
@@ -137,7 +137,7 @@ public class TreeSet extends AbstractSet implements SortedSet {
      */
     public TreeSet(Collection c) {
         this();
-        addAll(c);        
+        addAll(c);
     }
 
     /**
@@ -185,7 +185,7 @@ public class TreeSet extends AbstractSet implements SortedSet {
      *
      * @param o the object to be checked for containment in this set.
      * @return <tt>true</tt> if this set contains the specified element.
-     * 
+     *
      * @throws ClassCastException if the specified object cannot be compared
      * 		  with the elements currently in the set.
      */
@@ -199,7 +199,7 @@ public class TreeSet extends AbstractSet implements SortedSet {
      * @param o element to be added to this set.
      * @return <tt>true</tt> if the set did not already contain the specified
      *         element.
-     * 
+     *
      * @throws ClassCastException if the specified object cannot be compared
      * 		  with the elements currently in the set.
      */
@@ -212,7 +212,7 @@ public class TreeSet extends AbstractSet implements SortedSet {
      *
      * @param o object to be removed from this set, if present.
      * @return <tt>true</tt> if the set contained the specified element.
-     * 
+     *
      * @throws ClassCastException if the specified object cannot be compared
      * 		  with the elements currently in the set.
      */
@@ -239,7 +239,7 @@ public class TreeSet extends AbstractSet implements SortedSet {
      */
     public boolean addAll(Collection c) {
         // Use linear-time version if applicable
-        if (m.size()==0 && c.size() > 0 && c instanceof SortedSet && 
+        if (m.size()==0 && c.size() > 0 && c instanceof SortedSet &&
             m instanceof TreeMap) {
             SortedSet set = (SortedSet)c;
             TreeMap map = (TreeMap)m;
@@ -277,7 +277,7 @@ public class TreeSet extends AbstractSet implements SortedSet {
      * <tt>high</tt>, inclusive: <pre>
      *     SortedSet sub = s.subSet(low, high+"\0");
      * </pre>
-     * 
+     *
      * A similar technique can be used to generate an <i>open range</i> (which
      * contains neither endpoint).  The following idiom obtains a view
      * containing all of the strings in <tt>s</tt> from <tt>low</tt> to

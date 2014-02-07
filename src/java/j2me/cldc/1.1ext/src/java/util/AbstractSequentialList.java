@@ -36,7 +36,7 @@ package java.util;
  * constructor, as per the recommendation in the <tt>Collection</tt> interface
  * specification.<p>
  *
- * This class is a member of the 
+ * This class is a member of the
  * <a href="{@docRoot}/../guide/collections/index.html">
  * Java Collections Framework</a>.
  *
@@ -65,7 +65,7 @@ public abstract class AbstractSequentialList extends AbstractList {
      * using <tt>ListIterator.next</tt> and returns it.
      * @param index index of element to return.
      *
-     * @return the element at the specified position in this list.  
+     * @return the element at the specified position in this list.
      * @throws IndexOutOfBoundsException if the specified index is out of
      *         range (<tt>index &lt; 0 || index &gt;= size()</tt>).
      */
@@ -239,7 +239,7 @@ public abstract class AbstractSequentialList extends AbstractList {
 
     /**
      * Returns an iterator over the elements in this list (in proper
-     * sequence).<p> 
+     * sequence).<p>
      *
      * This implementation merely returns a list iterator over the list.
      *
@@ -253,7 +253,7 @@ public abstract class AbstractSequentialList extends AbstractList {
      * Returns a list iterator over the elements in this list (in proper
      * sequence).
      *
-     * @param  index index of first element to be returned from the list 
+     * @param  index index of first element to be returned from the list
      *		iterator (by a call to the <code>next</code> method)
      * @return a list iterator over the elements in this list (in proper
      *      sequence).

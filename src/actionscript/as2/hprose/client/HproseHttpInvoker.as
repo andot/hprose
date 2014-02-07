@@ -51,7 +51,7 @@ class hprose.client.HproseHttpInvoker {
     private var resultMode:Number;
     private var simple:Boolean;
     private var filter:IHproseFilter;
-    
+
     public function HproseHttpInvoker(url:String, header:Object, func:String, args:Array, byref:Boolean, callback:Function, errorHandler:Function, progressHandler:Function, onerror:Array, timeout:Number, resultMode:Number, simple:Boolean, filter:IHproseFilter) {
         this.url = url;
         this.header = header;
@@ -75,23 +75,23 @@ class hprose.client.HproseHttpInvoker {
             start(callback, errorHandler, progressHandler);
         }
     }
-    
+
     public function get byRef():Boolean {
         return byref;
     }
-    
+
     public function set byRef(value:Boolean) {
         byref = value;
     }
-    
+
     public function isSuccess():Boolean {
         return success;
     }
-    
+
     public function isCompleted():Boolean {
         return completed;
     }
-    
+
     public function addEventListener(type:String, listener:Function) {
         function addEvent(events:Array, listener:Function) {
             for (var i = 0, l = events.length; i < l; i++) {
@@ -117,7 +117,7 @@ class hprose.client.HproseHttpInvoker {
         }
         return this;
     }
-    
+
     public function removeEventListener(type:String, listener:Function) {
         function deleteEvent(events:Array, listener:Function) {
             for (var i = events.length - 1; i >= 0; i--) {
@@ -142,21 +142,21 @@ class hprose.client.HproseHttpInvoker {
         }
         return this;
     }
-    
+
     private function fireEvent(events:Array, event) {
         for (var i = 0, l = events.length; i < l; i++) {
             events[i].call(this, event);
         }
     }
-    
+
     public function getResult() {
         return result;
     }
-    
+
     public function getArguments() {
         return args;
     }
-    
+
     public function start(callback, errorHandler, progressHandler) {
         var stream:HproseStringOutputStream = new HproseStringOutputStream();
         stream.write(HproseTags.TagCall);
@@ -254,7 +254,7 @@ class hprose.client.HproseHttpInvoker {
         }
         return this;
     }
-    
+
     public function stop() {
         onprogress = [];
         onsuccess = [];

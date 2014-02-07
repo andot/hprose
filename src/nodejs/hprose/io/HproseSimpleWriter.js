@@ -14,7 +14,7 @@
  *                                                        *
  * HproseSimpleWriter for Node.js.                        *
  *                                                        *
- * LastModified: Dec 28, 2013                             *
+ * LastModified: Feb 7, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -69,7 +69,7 @@ function getClassName(obj) {
         }
     }
     if (classname != 'Object') {
-        HproseClassManager.register(cls, classname);       
+        HproseClassManager.register(cls, classname);
     }
     return classname;
 }
@@ -106,12 +106,7 @@ function HproseSimpleWriter(stream) {
                     this.writeListWithRef(variable);
                 }
                 else if (Buffer.isBuffer(variable)) {
-                    if (variable.length == 0) {
-                        writeEmpty();
-                    }
-                    else {
-                        this.writeBytesWithRef(variable);
-                    }
+                    this.writeBytesWithRef(variable);
                 }
                 else {
                     var classname = getClassName(variable);
@@ -204,7 +199,7 @@ function HproseSimpleWriter(stream) {
             if (millisecond != '000') {
                 stream.write(HproseTags.TagPoint);
                 stream.write(millisecond);
-            }                        
+            }
         }
         else {
             stream.write(HproseTags.TagDate);
@@ -214,7 +209,7 @@ function HproseSimpleWriter(stream) {
             if (millisecond != '000') {
                 stream.write(HproseTags.TagPoint);
                 stream.write(millisecond);
-            }                        
+            }
         }
         stream.write(HproseTags.TagSemicolon);
     }
@@ -231,7 +226,7 @@ function HproseSimpleWriter(stream) {
         if (millisecond != '000') {
             stream.write(HproseTags.TagPoint);
             stream.write(millisecond);
-        }                        
+        }
         stream.write(HproseTags.TagSemicolon);
     }
     function writeTimeWithRef(time) {

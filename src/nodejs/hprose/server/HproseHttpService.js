@@ -80,7 +80,7 @@ function HproseHttpService() {
         this.emit('sendHeader', request, response);
         response.setHeader('Content-Type', "text/plain");
         if (m_P3P) {
-            response.setHeader('P3P', 
+            response.setHeader('P3P',
                 'CP="CAO DSP COR CUR ADM DEV TAI PSA PSD IVAi IVDi ' +
                 'CONi TELo OTPi OUR DELi SAMi OTRi UNRi PUBi IND PHY ONL ' +
                 'UNI PUR FIN COM NAV INT DEM CNT STA POL HEA PRE GOV"');
@@ -89,7 +89,7 @@ function HproseHttpService() {
             var origin = request.headers["origin"];
             if (origin && origin != "null") {
                 response.setHeader('Access-Control-Allow-Origin', origin);
-                response.setHeader('Access-Control-Allow-Credentials', 'true');  
+                response.setHeader('Access-Control-Allow-Credentials', 'true');
             }
             else {
                 response.setHeader('Access-Control-Allow-Origin', '*');
@@ -128,11 +128,11 @@ function HproseHttpService() {
     this.getTimeout = function() {
         return m_timeout;
     }
-    
+
     this.setTimeout = function(timeout) {
         m_timeout = timeout;
     }
-    
+
     this.getCrossDomainXmlFile = function() {
         return m_crossDomainXmlFile;
     }

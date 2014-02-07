@@ -224,13 +224,7 @@ func (w *writer) WriteBytes(bytes []byte) (err error) {
 }
 
 func (w *writer) WriteBytesWithRef(bytes []byte) (err error) {
-	s := w.stream
-	if length := len(bytes); length == 0 {
-		err = s.WriteByte(TagEmpty)
-	} else {
-		err = w.writeBytesWithRef(&bytes, bytes)
-	}
-	return err
+	return w.writeBytesWithRef(&bytes, bytes)
 }
 
 func (w *writer) WriteArray(v []reflect.Value) (err error) {

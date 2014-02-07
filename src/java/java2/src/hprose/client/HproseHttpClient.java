@@ -136,11 +136,11 @@ public class HproseHttpClient extends HproseClient {
     public void setProxyPass(String proxyPass) {
         this.proxyPass = proxyPass;
     }
-    
+
     public int getTimeout() {
         return timeout;
     }
-    
+
     public void setTimeout(int timeout) {
         this.timeout = timeout;
         System.setProperty("sun.net.client.defaultConnectTimeout", Integer.toString(timeout));
@@ -157,7 +157,7 @@ public class HproseHttpClient extends HproseClient {
         }
         else {
             prop.remove("http.proxyHost");
-            prop.remove("http.proxyPort");            
+            prop.remove("http.proxyPort");
         }
         HttpURLConnection conn = (HttpURLConnection)url.openConnection();
         conn.setRequestProperty("Cookie", cookieManager.getCookie(url.getHost(),

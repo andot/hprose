@@ -62,7 +62,7 @@ package java.util;
  * Such exceptions are marked as "optional" in the specification for this
  * interface.
  *
- * <p>This interface is a member of the 
+ * <p>This interface is a member of the
  * <a href="{@docRoot}/../guide/collections/index.html">
  * Java Collections Framework</a>.
  *
@@ -105,7 +105,7 @@ public interface Map {
      * @param key key whose presence in this map is to be tested.
      * @return <tt>true</tt> if this map contains a mapping for the specified
      *         key.
-     * 
+     *
      * @throws ClassCastException if the key is of an inappropriate type for
      * 		  this map (optional).
      * @throws NullPointerException if the key is <tt>null</tt> and this map
@@ -147,12 +147,12 @@ public interface Map {
      * @param key key whose associated value is to be returned.
      * @return the value to which this map maps the specified key, or
      *	       <tt>null</tt> if the map contains no mapping for this key.
-     * 
+     *
      * @throws ClassCastException if the key is of an inappropriate type for
      * 		  this map (optional).
      * @throws NullPointerException key is <tt>null</tt> and this map does not
      *		  not permit <tt>null</tt> keys (optional).
-     * 
+     *
      * @see #containsKey(Object)
      */
     Object get(Object key);
@@ -165,7 +165,7 @@ public interface Map {
      * this key, the old value is replaced by the specified value.  (A map
      * <tt>m</tt> is said to contain a mapping for a key <tt>k</tt> if and only
      * if {@link #containsKey(Object) m.containsKey(k)} would return
-     * <tt>true</tt>.)) 
+     * <tt>true</tt>.))
      *
      * @param key key with which the specified value is to be associated.
      * @param value value to be associated with the specified key.
@@ -174,7 +174,7 @@ public interface Map {
      *	       also indicate that the map previously associated <tt>null</tt>
      *	       with the specified key, if the implementation supports
      *	       <tt>null</tt> values.
-     * 
+     *
      * @throws UnsupportedOperationException if the <tt>put</tt> operation is
      *	          not supported by this map.
      * @throws ClassCastException if the class of the specified key or value
@@ -221,18 +221,18 @@ public interface Map {
      * Copies all of the mappings from the specified map to this map
      * (optional operation).  The effect of this call is equivalent to that
      * of calling {@link #put(Object,Object) put(k, v)} on this map once
-     * for each mapping from key <tt>k</tt> to value <tt>v</tt> in the 
+     * for each mapping from key <tt>k</tt> to value <tt>v</tt> in the
      * specified map.  The behavior of this operation is unspecified if the
      * specified map is modified while the operation is in progress.
      *
      * @param t Mappings to be stored in this map.
-     * 
+     *
      * @throws UnsupportedOperationException if the <tt>putAll</tt> method is
      * 		  not supported by this map.
-     * 
+     *
      * @throws ClassCastException if the class of a key or value in the
      * 	          specified map prevents it from being stored in this map.
-     * 
+     *
      * @throws IllegalArgumentException some aspect of a key or value in the
      *	          specified map prevents it from being stored in this map.
      * @throws NullPointerException the specified map is <tt>null</tt>, or if
@@ -335,7 +335,7 @@ public interface Map {
 	 *
 	 * @param value new value to be stored in this entry.
 	 * @return old value corresponding to the entry.
-         * 
+         *
 	 * @throws UnsupportedOperationException if the <tt>put</tt> operation
 	 *	      is not supported by the backing map.
 	 * @throws ClassCastException if the class of the specified value

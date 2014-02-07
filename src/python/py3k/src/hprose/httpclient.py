@@ -239,7 +239,7 @@ class HproseHttpInvokeContext:
     def __init__(self):
         self.instream = None
         self.outstream = None
-    
+
 class HproseHttpClient(HproseClient):
     def __init__(self, uri = None):
         super(HproseHttpClient, self).__init__(uri)
@@ -312,7 +312,7 @@ class HproseHttpClient(HproseClient):
 
     def _getInovkeContext(self):
         return HproseHttpInvokeContext()
-    
+
     def _getOutputStream(self, context):
         context.outstream = BytesIO()
         return context.outstream

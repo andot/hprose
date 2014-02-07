@@ -145,7 +145,7 @@ namespace hprose
             _get_timezone(&timezone);
             return timezone;
         #else
-            return ::timezone;        
+            return ::timezone;
         #endif
         }
 

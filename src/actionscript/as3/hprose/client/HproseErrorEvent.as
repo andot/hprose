@@ -19,12 +19,12 @@
 \**********************************************************/
 package hprose.client {
     import flash.events.Event;
-    
+
     public class HproseErrorEvent extends Event {
         public static const ERROR:String = 'error';
         private var _name:String;
         private var _error:Error;
-        
+
         public function HproseErrorEvent(name:String, error:Error) {
             super(ERROR);
             this._name = name;
@@ -34,13 +34,13 @@ package hprose.client {
         public function get name():String {
             return _name;
         }
-        
+
         public function get error():Error {
             return _error;
         }
-        
-        public override function toString():String { 
-            return formatToString("HproseErrorEvent", "type", "bubbles", "cancelable", "eventPhase", "name", "error"); 
+
+        public override function toString():String {
+            return formatToString("HproseErrorEvent", "type", "bubbles", "cancelable", "eventPhase", "name", "error");
         }
     }
 }

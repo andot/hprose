@@ -28,7 +28,7 @@ abstract class HproseAbstractStream {
     public abstract function seek($offset, $whence = SEEK_SET);
     public abstract function mark();
     public abstract function unmark();
-    public abstract function reset();    
+    public abstract function reset();
     public abstract function skip($n);
     public abstract function eof();
     public abstract function write($string, $length = -1);

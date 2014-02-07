@@ -19,12 +19,12 @@
 \**********************************************************/
 package hprose.client {
     import flash.events.Event;
-    
+
     public class HproseSuccessEvent extends Event {
         public static const SUCCESS:String = 'success';
         private var _result:*;
         private var _args:Array;
-        
+
         public function HproseSuccessEvent(result:*, args:Array) {
             super(SUCCESS);
             this._result = result;
@@ -34,13 +34,13 @@ package hprose.client {
         public function get result():* {
             return _result;
         }
-        
+
         public function get args():Array {
             return _args;
         }
-        
-        public override function toString():String { 
-            return formatToString("HproseSuccessEvent", "type", "bubbles", "cancelable", "eventPhase", "result", "args"); 
+
+        public override function toString():String {
+            return formatToString("HproseSuccessEvent", "type", "bubbles", "cancelable", "eventPhase", "result", "args");
         }
     }
 }

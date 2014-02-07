@@ -59,7 +59,7 @@ module Hprose
     protected
     class HttpInvokeContext
       attr_accessor :instream, :outstream
-    end    
+    end
     def get_invoke_context
       context = HttpInvokeContext.new
     end
@@ -70,10 +70,10 @@ module Hprose
       request = @filter.output_filter(context.outstream.string)
       context.outstream.close
       context.outstream = nil
-      context.instream = StringIO.new(@filter.input_filter(_post(request)), 'rb')      
+      context.instream = StringIO.new(@filter.input_filter(_post(request)), 'rb')
     end
     def get_input_stream(context)
-      context.instream      
+      context.instream
     end
     def end_invoke(context)
       context.instream.close

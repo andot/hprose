@@ -213,7 +213,7 @@ var HproseHttpClient = (function () {
             }
         }
         else {
-            xmlhttp.open('POST', url, false);            
+            xmlhttp.open('POST', url, false);
         }
         for (var name in header) {
             xmlhttp.setRequestHeader(name, header[name]);
@@ -339,7 +339,7 @@ var HproseHttpClient = (function () {
             if (value === undefined) value = true;
             m_byref = value;
         }
-        
+
         this.setFilter = function(filter) {
             m_filter = filter;
         }
@@ -357,7 +357,7 @@ var HproseHttpClient = (function () {
         this.onError = function(name, error) {
             // your code for asynchronous invoke
         }
-        
+
         this.waitForResponse = function(timeout) {
             for (var i = 0, l = m_xhrs.length; i < l; i++) {
                 if (m_xhrs[i]) {
@@ -440,7 +440,7 @@ var HproseHttpClient = (function () {
                 }
             }
         }
-        
+
         function getResult(response, func, args, resultMode) {
             var result = null;
             if (resultMode == r_HproseResultMode.RawWithEndTag) {
@@ -485,7 +485,7 @@ var HproseHttpClient = (function () {
             }
             return result;
         }
-        
+
         function invoke(func, args) {
             var resultMode = r_HproseResultMode.Normal;
             var byref = m_byref;
@@ -732,7 +732,7 @@ var HproseHttpClient = (function () {
     }
     HproseHttpClient.keepSession = function() {
         s_keepSession = true;
-        if (Session("HPROSE_COOKIE_MANAGER")) { 
+        if (Session("HPROSE_COOKIE_MANAGER")) {
             s_cookieManager = Session("HPROSE_COOKIE_MANAGER");
         }
     }

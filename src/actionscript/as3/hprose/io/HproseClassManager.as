@@ -26,7 +26,7 @@ package hprose.io {
     public final class HproseClassManager {
         private static const classCache1:Dictionary = new Dictionary();
         private static const classCache2:Object = {};
-        
+
         public static function register(classReference:*, alias:String):void {
             classCache1[classReference] = alias;
             classCache2[alias] = classReference;

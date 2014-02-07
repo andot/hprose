@@ -20,7 +20,7 @@
 
 #import <Foundation/Foundation.h>
 
-@interface HproseClassManager : NSObject 
+@interface HproseClassManager : NSObject
 
 + (void) registerClass:(Class)cls withAlias:(NSString *)alias;
 + (NSString *) getClassAlias:(Class)cls;

@@ -151,7 +151,7 @@ module Hprose
             @@class_cache2[aliasname] = cls
         end
       end
-            
+
       def getClass(aliasname)
         return @@class_cache2[aliasname] if @@class_cache2.key?(aliasname)
         cls = get_class_by_alias(aliasname)
@@ -734,12 +734,12 @@ module Hprose
         @stream.putc(TagPoint)
         @stream.write(usec.div(1000).to_s.rjust(3, '0'))
         @stream.write(usec.modulo(1000).to_s.rjust(3, '0')) if usec % 1000 > 0
-      end      
+      end
     end
     protected
     def write_ref(obj)
       return false
-    end    
+    end
     public
     def initialize(stream)
       @stream = stream
@@ -876,7 +876,7 @@ module Hprose
     def write_guid(guid)
       @stream.putc(TagGuid)
       @stream.putc(TagOpenbrace)
-      @stream.write(guid.to_s)      
+      @stream.write(guid.to_s)
       @stream.putc(TagClosebrace)
     end
     def write_guid_with_ref(guid)

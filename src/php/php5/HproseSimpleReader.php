@@ -57,7 +57,7 @@ class HproseSimpleReader extends HproseRawReader {
             case HproseTags::TagDate: $result = $this->readDateWithoutTag(); break;
             case HproseTags::TagTime: $result = $this->readTimeWithoutTag(); break;
             case HproseTags::TagBytes: $result = $this->readBytesWithoutTag(); break;
-            case HproseTags::TagUTF8Char: $result = $this->readUTF8CharWithoutTag(); break;            
+            case HproseTags::TagUTF8Char: $result = $this->readUTF8CharWithoutTag(); break;
             case HproseTags::TagString: $result = $this->readStringWithoutTag(); break;
             case HproseTags::TagGuid: $result = $this->readGuidWithoutTag(); break;
             case HproseTags::TagList: $result = &$this->readListWithoutTag(); break;
@@ -208,7 +208,7 @@ class HproseSimpleReader extends HproseRawReader {
             }
         }
         elseif ($tag == HproseTags::TagUTC) {
-            $date = new HproseDate($year, $month, $day, true);            
+            $date = new HproseDate($year, $month, $day, true);
         }
         else {
             $date = new HproseDate($year, $month, $day);

@@ -42,8 +42,8 @@ elseif (function_exists('iconv')) {
     }
 }
 else {
-    function is_utf8($s) { 
-        $len = strlen($s); 
+    function is_utf8($s) {
+        $len = strlen($s);
         for($i = 0; $i < $len; ++$i){
             $c = ord($s{$i});
             switch ($c >> 4) {

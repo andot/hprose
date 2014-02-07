@@ -84,7 +84,7 @@ dynamic class hprose.client.HproseHttpClient extends Object {
     public function get uri():String {
         return this.url;
     }
-    
+
     public function setHeader(name:String, value:String) {
         if (name.toLowerCase() != 'content-type' &&
             name.toLowerCase() != 'content-length') {
@@ -113,7 +113,7 @@ dynamic class hprose.client.HproseHttpClient extends Object {
         }
         return this;
     }
-    
+
     public function removeEventListener(type:String, listener:Function) {
         function deleteEvent(events:Array, listener:Function) {
             for (var i = events.length - 1; i >= 0; i--) {

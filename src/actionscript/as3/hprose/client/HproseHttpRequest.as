@@ -33,9 +33,9 @@ package hprose.client {
     import flash.net.URLStream;
     import flash.utils.ByteArray;
     import flash.utils.Timer;
-    
+
     public final class HproseHttpRequest {
-        public static function post(url:String, header:Object, data:ByteArray, callback:Function, progress:Function, timeout:uint, filter:IHproseFilter):HproseHttpRequest {            
+        public static function post(url:String, header:Object, data:ByteArray, callback:Function, progress:Function, timeout:uint, filter:IHproseFilter):HproseHttpRequest {
             var request:URLRequest = new URLRequest(url);
             request.method = URLRequestMethod.POST;
             request.contentType = "application/hprose";
@@ -58,7 +58,7 @@ package hprose.client {
             timer = new Timer(timeout);
             stream.addEventListener(Event.COMPLETE, completeHandler);
             stream.addEventListener(HTTPStatusEvent.HTTP_STATUS, httpStatusHandler);
-            stream.addEventListener(IOErrorEvent.IO_ERROR, ioErrorHandler); 
+            stream.addEventListener(IOErrorEvent.IO_ERROR, ioErrorHandler);
             stream.addEventListener(SecurityErrorEvent.SECURITY_ERROR, securityErrorHandler);
             stream.addEventListener(ProgressEvent.PROGRESS, progressHandler);
             stream.load(request);

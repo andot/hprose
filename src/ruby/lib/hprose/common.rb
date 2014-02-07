@@ -21,7 +21,7 @@
 
 module Hprose
   class Exception < Exception; end
-  
+
   module ResultMode
     Normal = 0
     Serialized = 1

@@ -54,9 +54,9 @@ package java.util;
  * the insertion of an ineligible element into the collection may throw an
  * exception or it may succeed, at the option of the implementation.
  * Such exceptions are marked as "optional" in the specification for this
- * interface. 
+ * interface.
  *
- * <p>This interface is a member of the 
+ * <p>This interface is a member of the
  * <a href="{@docRoot}/../guide/collections/index.html">
  * Java Collections Framework</a>.
  *
@@ -85,7 +85,7 @@ public interface Collection {
      * Returns the number of elements in this collection.  If this collection
      * contains more than <tt>Integer.MAX_VALUE</tt> elements, returns
      * <tt>Integer.MAX_VALUE</tt>.
-     * 
+     *
      * @return the number of elements in this collection
      */
     int size();
@@ -118,7 +118,7 @@ public interface Collection {
      * guarantees concerning the order in which the elements are returned
      * (unless this collection is an instance of some class that provides a
      * guarantee).
-     * 
+     *
      * @return an <tt>Iterator</tt> over the elements in this collection
      */
     Iterator iterator();
@@ -165,7 +165,7 @@ public interface Collection {
      * @param o element whose presence in this collection is to be ensured.
      * @return <tt>true</tt> if this collection changed as a result of the
      *         call
-     * 
+     *
      * @throws UnsupportedOperationException <tt>add</tt> is not supported by
      *         this collection.
      * @throws ClassCastException class of the specified element prevents it
@@ -189,7 +189,7 @@ public interface Collection {
      * @param o element to be removed from this collection, if present.
      * @return <tt>true</tt> if this collection changed as a result of the
      *         call
-     * 
+     *
      * @throws ClassCastException if the type of the specified element
      * 	       is incompatible with this collection (optional).
      * @throws NullPointerException if the specified element is null and this
@@ -232,7 +232,7 @@ public interface Collection {
      * @param c elements to be inserted into this collection.
      * @return <tt>true</tt> if this collection changed as a result of the
      *         call
-     * 
+     *
      * @throws UnsupportedOperationException if this collection does not
      *         support the <tt>addAll</tt> method.
      * @throws ClassCastException if the class of an element of the specified
@@ -248,7 +248,7 @@ public interface Collection {
     boolean addAll(Collection c);
 
     /**
-     * 
+     *
      * Removes all this collection's elements that are also contained in the
      * specified collection (optional operation).  After this call returns,
      * this collection will contain no elements in common with the specified
@@ -257,7 +257,7 @@ public interface Collection {
      * @param c elements to be removed from this collection.
      * @return <tt>true</tt> if this collection changed as a result of the
      *         call
-     * 
+     *
      * @throws UnsupportedOperationException if the <tt>removeAll</tt> method
      * 	       is not supported by this collection.
      * @throws ClassCastException if the types of one or more elements
@@ -282,14 +282,14 @@ public interface Collection {
      * @param c elements to be retained in this collection.
      * @return <tt>true</tt> if this collection changed as a result of the
      *         call
-     * 
+     *
      * @throws UnsupportedOperationException if the <tt>retainAll</tt> method
      * 	       is not supported by this Collection.
      * @throws ClassCastException if the types of one or more elements
      *         in this collection are incompatible with the specified
      *         collection (optional).
      * @throws NullPointerException if this collection contains one or more
-     *         null elements and the specified collection does not support null 
+     *         null elements and the specified collection does not support null
      *         elements (optional).
      * @throws NullPointerException if the specified collection is
      *         <tt>null</tt>.
@@ -339,7 +339,7 @@ public interface Collection {
      * @param o Object to be compared for equality with this collection.
      * @return <tt>true</tt> if the specified object is equal to this
      * collection
-     * 
+     *
      * @see Object#equals(Object)
      * @see Set#equals(Object)
      * @see List#equals(Object)
@@ -357,7 +357,7 @@ public interface Collection {
      * <tt>c1.hashCode()==c2.hashCode()</tt>.
      *
      * @return the hash code value for this collection
-     * 
+     *
      * @see Object#hashCode()
      * @see Object#equals(Object)
      */

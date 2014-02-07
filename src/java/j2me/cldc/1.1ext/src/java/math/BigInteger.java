@@ -313,7 +313,7 @@ public class BigInteger implements Comparable {
         mag[mag.length - 1] = Integer.parseInt(group, radix);
 	if (mag[mag.length - 1] < 0)
 	    throw new NumberFormatException("Illegal digit");
-        
+
 	// Process remaining digit groups
         int superRadix = intRadix[radix];
         int groupVal = 0;
@@ -357,18 +357,18 @@ public class BigInteger implements Comparable {
         int numWords;
         if (len < 10) {
             numWords = 1;
-        } else {    
+        } else {
             int numBits = (int)(((numDigits * bitsPerDigit[10]) >>> 10) + 1);
             numWords = (numBits + 31) /32;
         }
         mag = new int[numWords];
- 
+
 	// Process first (potentially short) digit group
 	int firstGroupLen = numDigits % digitsPerInt[10];
 	if (firstGroupLen == 0)
 	    firstGroupLen = digitsPerInt[10];
         mag[mag.length-1] = parseInt(val, cursor,  cursor += firstGroupLen);
-        
+
 	// Process remaining digit groups
 	while (cursor < len) {
 	    int groupVal = parseInt(val, cursor, cursor += digitsPerInt[10]);
@@ -563,12 +563,12 @@ public class BigInteger implements Comparable {
             // Do cheap "pre-test" if applicable
             if (bitLength > 6) {
                 long r = p.remainder(SMALL_PRIME_PRODUCT).longValue();
-                if ((r%3==0)  || (r%5==0)  || (r%7==0)  || (r%11==0) || 
-                    (r%13==0) || (r%17==0) || (r%19==0) || (r%23==0) || 
+                if ((r%3==0)  || (r%5==0)  || (r%7==0)  || (r%11==0) ||
+                    (r%13==0) || (r%17==0) || (r%19==0) || (r%23==0) ||
                     (r%29==0) || (r%31==0) || (r%37==0) || (r%41==0))
                     continue; // Candidate is composite; try another
             }
-            
+
             // All candidates of bitLength 2 and 3 are prime by this point
             if (bitLength < 4)
                 return p;
@@ -668,7 +668,7 @@ public class BigInteger implements Comparable {
             // 5, -7, 9, -11, ...
             d = (d<0) ? Math.abs(d)+2 : -(d+2);
         }
-        
+
         // Step 2
         BigInteger u = lucasLehmerSequence(d, thisPlusOne, this);
 
@@ -758,7 +758,7 @@ public class BigInteger implements Comparable {
                     u2.signum = - u2.signum;
                 }
                 u2 = u2.shiftRight(1);
-                
+
                 v2 = v.add(d.multiply(u)).mod(n);
                 if (v2.testBit(0)) {
                     v2 = n.subtract(v2);
@@ -980,7 +980,7 @@ public class BigInteger implements Comparable {
 
         // Add common parts of both numbers
         while(yIndex > 0) {
-            sum = (x[--xIndex] & LONG_MASK) + 
+            sum = (x[--xIndex] & LONG_MASK) +
                   (y[--yIndex] & LONG_MASK) + (sum >>> 32);
             result[xIndex] = (int)sum;
         }
@@ -1044,7 +1044,7 @@ public class BigInteger implements Comparable {
 
         // Subtract common parts of both numbers
         while(littleIndex > 0) {
-            difference = (big[--bigIndex] & LONG_MASK) - 
+            difference = (big[--bigIndex] & LONG_MASK) -
                          (little[--littleIndex] & LONG_MASK) +
                          (difference >> 32);
             result[bigIndex] = (int)difference;
@@ -1071,8 +1071,8 @@ public class BigInteger implements Comparable {
     public BigInteger multiply(BigInteger val) {
         if (signum == 0 || val.signum==0)
 	    return ZERO;
-        
-        int[] result = multiplyToLen(mag, mag.length, 
+
+        int[] result = multiplyToLen(mag, mag.length,
                                      val.mag, val.mag.length, null);
         result = trustedStripLeadingZeroInts(result);
         return new BigInteger(result, signum*val.signum);
@@ -1101,8 +1101,8 @@ public class BigInteger implements Comparable {
         for (int i = xstart-1; i >= 0; i--) {
             carry = 0;
             for (int j=ystart, k=ystart+1+i; j>=0; j--, k--) {
-                long product = (y[j] & LONG_MASK) * 
-                               (x[i] & LONG_MASK) + 
+                long product = (y[j] & LONG_MASK) *
+                               (x[i] & LONG_MASK) +
                                (z[k] & LONG_MASK) + carry;
                 z[k] = (int)product;
                 carry = product >>> 32;
@@ -1166,7 +1166,7 @@ public class BigInteger implements Comparable {
         int zlen = len << 1;
         if (z == null || z.length < zlen)
             z = new int[zlen];
-        
+
         // Store the squares, right shifted one bit (i.e., divided by 2)
         int lastProductLowWord = 0;
         for (int j=0, i=0; j<len; j++) {
@@ -1271,7 +1271,7 @@ public class BigInteger implements Comparable {
 
 	while (exponent != 0) {
 	    if ((exponent & 1)==1) {
-		result = multiplyToLen(result, result.length, 
+		result = multiplyToLen(result, result.length,
                                        baseToPow2, baseToPow2.length, null);
 		result = trustedStripLeadingZeroInts(result);
 	    }
@@ -1313,7 +1313,7 @@ public class BigInteger implements Comparable {
         int nInts = n >>> 5;
         int nBits = n&0x1F;
         int bitsInHighWord = bitLen(a[0]);
-        
+
         // If shift can be done without recopy, do so
         if (n <= (32-bitsInHighWord)) {
             primitiveLeftShift(a, len, nBits);
@@ -1372,7 +1372,7 @@ public class BigInteger implements Comparable {
 
     /**
      * Returns a BigInteger whose value is the absolute value of this
-     * BigInteger. 
+     * BigInteger.
      *
      * @return <tt>abs(this)</tt>
      */
@@ -1446,7 +1446,7 @@ public class BigInteger implements Comparable {
 
         if (this.equals(negConst[1]) && (!exponent.testBit(0)))
             return (m.equals(ONE) ? ZERO : ONE);
-            
+
 	boolean invertResult;
 	if ((invertResult = (exponent.signum < 0)))
 	    exponent = exponent.negate();
@@ -1577,7 +1577,7 @@ public class BigInteger implements Comparable {
 
         // Calculate appropriate table size
         int tblmask = 1 << wbits;
-        
+
         // Allocate table for precomputed odd powers of base in Montgomery form
         int[][] table = new int[tblmask][];
         for (int i=0; i<tblmask; i++)
@@ -1615,7 +1615,7 @@ public class BigInteger implements Comparable {
         for(int i=0; i<modLen; i++)
             t[i] = b[i];
 
-        // Fill in the table with odd powers of the base        
+        // Fill in the table with odd powers of the base
         for (int i=1; i<tblmask; i++) {
             int[] prod = multiplyToLen(t, modLen, table[i-1], modLen, null);
             table[i] = montReduce(prod, mod, modLen, inv);
@@ -1623,7 +1623,7 @@ public class BigInteger implements Comparable {
 
         // Pre load the window that slides over the exponent
         int bitpos = 1 << ((ebits-1) & (32-1));
-        
+
         int buf = 0;
         int elen = exp.length;
         int eIndex = 0;
@@ -1718,7 +1718,7 @@ public class BigInteger implements Comparable {
         t2 = new int[modLen];
         for(int i=0; i<modLen; i++)
             t2[i] = b[i];
-           
+
         return new BigInteger(1, t2);
     }
 
@@ -1737,7 +1737,7 @@ public class BigInteger implements Comparable {
             c += addOne(n, offset, mlen, carry);
             offset++;
         } while(--len > 0);
-        
+
         while(c>0)
             c += subN(n, mod, mlen);
 
@@ -1771,7 +1771,7 @@ public class BigInteger implements Comparable {
         long sum = 0;
 
         while(--len >= 0) {
-            sum = (a[len] & LONG_MASK) - 
+            sum = (a[len] & LONG_MASK) -
                  (b[len] & LONG_MASK) + (sum >> 32);
             a[len] = (int)sum;
         }
@@ -1803,7 +1803,7 @@ public class BigInteger implements Comparable {
     static int addOne(int[] a, int offset, int mlen, int carry) {
         offset = a.length-1-mlen-offset;
         long t = (a[offset] & LONG_MASK) + (carry & LONG_MASK);
-        
+
         a[offset] = (int)t;
         if ((t >>> 32) == 0)
             return 0;
@@ -1894,8 +1894,8 @@ public class BigInteger implements Comparable {
 
         MutableBigInteger a = new MutableBigInteger(modVal);
         MutableBigInteger b = new MutableBigInteger(m);
-  
-        MutableBigInteger result = a.mutableModInverse(b);  
+
+        MutableBigInteger result = a.mutableModInverse(b);
         return new BigInteger(result, 1);
     }
 
@@ -1951,7 +1951,7 @@ public class BigInteger implements Comparable {
      * Returns a BigInteger whose value is <tt>(this &gt;&gt; n)</tt>.  Sign
      * extension is performed.  The shift distance, <tt>n</tt>, may be
      * negative, in which case this method performs a left shift.
-     * (Computes <tt>floor(this / 2<sup>n</sup>)</tt>.) 
+     * (Computes <tt>floor(this / 2<sup>n</sup>)</tt>.)
      *
      * @param  n shift distance, in bits.
      * @return <tt>this &gt;&gt; n</tt>
@@ -2042,7 +2042,7 @@ public class BigInteger implements Comparable {
     /**
      * Returns a BigInteger whose value is <tt>(this | val)</tt>.  (This method
      * returns a negative BigInteger if and only if either this or val is
-     * negative.) 
+     * negative.)
      *
      * @param val value to be OR'ed with this BigInteger.
      * @return <tt>this | val</tt>
@@ -2491,7 +2491,7 @@ public class BigInteger implements Comparable {
      * Returns the minimum of this BigInteger and <tt>val</tt>.
      *
      * @param  val value with with the minimum is to be computed.
-     * @return the BigInteger whose value is the lesser of this BigInteger and 
+     * @return the BigInteger whose value is the lesser of this BigInteger and
      *	       <tt>val</tt>.  If they are equal, either may be returned.
      */
     public BigInteger min(BigInteger val) {
@@ -2552,7 +2552,7 @@ public class BigInteger implements Comparable {
 	// Compute upper bound on number of digit groups and allocate space
 	int maxNumDigitGroups = (4*mag.length + 6)/7;
 	String digitGroup[] = new String[maxNumDigitGroups];
-        
+
 	// Translate number to string, a digit group at a time
 	BigInteger tmp = this.abs();
 	int numGroups = 0;
@@ -2763,7 +2763,7 @@ public class BigInteger implements Comparable {
             int result[] = new int[val.length - keep];
             for(int i=0; i<val.length - keep; i++)
                result[i] = val[keep+i];
-            return result; 
+            return result;
         }
         return val;
     }
@@ -2803,7 +2803,7 @@ public class BigInteger implements Comparable {
 	// Find first non-sign (0xff) byte of input
 	for (keep=0; keep<byteLength && a[keep]==-1; keep++) {}
 
-        
+
 	/* Allocate output array.  If all non-sign bytes are 0x00, we must
 	 * allocate space for one extra output byte. */
 	for (k=keep; k<byteLength && a[k]==0; k++) {}

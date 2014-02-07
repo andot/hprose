@@ -26,7 +26,7 @@ class HproseProcStream extends HproseAbstractStream {
     protected $process;
     protected $pipes;
     protected $buf;
-    protected $unmark;    
+    protected $unmark;
     protected $pos;
     protected $length;
     public function __construct($process, $pipes) {
@@ -35,7 +35,7 @@ class HproseProcStream extends HproseAbstractStream {
         $this->buf = "";
         $this->unmark = true;
         $this->pos = -1;
-        $this->length = 0;        
+        $this->length = 0;
     }
     public function close() {
         fclose($this->pipes[0]);
@@ -50,7 +50,7 @@ class HproseProcStream extends HproseAbstractStream {
             return $this->buf{$this->pos++};
         }
         elseif ($this->unmark) {
-            $this->buf = "";        
+            $this->buf = "";
             $this->pos = -1;
             $this->length = 0;
             return fgetc($this->pipes[1]);
@@ -77,10 +77,10 @@ class HproseProcStream extends HproseAbstractStream {
             $this->pos += strlen($s);
         }
         elseif ($this->unmark) {
-            $this->buf = "";        
+            $this->buf = "";
             $this->pos = -1;
             $this->length = 0;
-            return fread($this->pipes[1], $length);           
+            return fread($this->pipes[1], $length);
         }
         elseif (($s = fread($this->pipes[1], $length)) !== "") {
             $this->buf .= $s;

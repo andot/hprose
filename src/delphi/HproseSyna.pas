@@ -7,7 +7,7 @@ unit HproseSyna;
 interface
 
 uses
-  blcksock, httpsend, synaip, synafpc, synautil, synsock, HproseClient, 
+  blcksock, httpsend, synaip, synafpc, synautil, synsock, HproseClient,
   HproseCommon, HproseIO, HproseSynaHttpClient, LazarusPackageIntf;
 
 implementation

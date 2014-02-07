@@ -224,7 +224,7 @@ public final class HproseHelper {
             try {
                 int size = al.size();
                 int[] pos = new int[size];
-                
+
                 for (int i = 0; i < size; i++) {
                     pos[i] = ((Integer) al.elementAt(i)).intValue();
                 }

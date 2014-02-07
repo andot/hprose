@@ -111,9 +111,9 @@ class hprose.io.HproseRawReader {
         do {
             tag = stream.getc();
             ostream.write(tag);
-        } while (tag != HproseTags.TagSemicolon);        
+        } while (tag != HproseTags.TagSemicolon);
     }
-    
+
     private function readDateTimeRaw(ostream:HproseStringOutputStream, tag:String) {
         ostream.write(tag);
         do {

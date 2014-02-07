@@ -63,7 +63,7 @@ class _AsyncInvoke(object):
             elif argcount == 1:
                 self.__callback(result)
             else:
-                self.__callback(result, self.__args)    
+                self.__callback(result, self.__args)
         except Exception as e:
             if self.__onerror != None:
                 self.__onerror(self.__name, e)
@@ -101,7 +101,7 @@ class HproseClient(object):
         if uri != None:
             self.setUri(uri)
         return _Proxy(self.invoke)
-        
+
     def setUri(self, uri):
         raise NotImplementedError
 

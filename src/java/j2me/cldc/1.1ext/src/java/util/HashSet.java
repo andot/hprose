@@ -31,7 +31,7 @@ package java.util;
  * <tt>Collections.synchronizedSet</tt> method.  This is best done at creation
  * time, to prevent accidental unsynchronized access to the <tt>HashSet</tt>
  * instance:
- * 
+ *
  * <pre>
  *     Set s = Collections.synchronizedSet(new HashSet(...));
  * </pre><p>
@@ -43,16 +43,16 @@ package java.util;
  * Thus, in the face of concurrent modification, the iterator fails quickly
  * and cleanly, rather than risking arbitrary, non-deterministic behavior at
  * an undetermined time in the future.
- * 
+ *
  * <p>Note that the fail-fast behavior of an iterator cannot be guaranteed
  * as it is, generally speaking, impossible to make any hard guarantees in the
  * presence of unsynchronized concurrent modification.  Fail-fast iterators
- * throw <tt>ConcurrentModificationException</tt> on a best-effort basis. 
+ * throw <tt>ConcurrentModificationException</tt> on a best-effort basis.
  * Therefore, it would be wrong to write a program that depended on this
  * exception for its correctness: <i>the fail-fast behavior of iterators
  * should be used only to detect bugs.</i><p>
  *
- * This class is a member of the 
+ * This class is a member of the
  * <a href="{@docRoot}/../guide/collections/index.html">
  * Java Collections Framework</a>.
  *
@@ -123,7 +123,7 @@ public class HashSet extends AbstractSet implements Set {
 
     /**
      * Constructs a new, empty linked hash set.  (This package private
-     * constructor is only used by LinkedHashSet.) The backing 
+     * constructor is only used by LinkedHashSet.) The backing
      * HashMap instance is a LinkedHashMap with the specified initial
      * capacity and the specified load factor.
      *

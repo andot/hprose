@@ -1442,7 +1442,7 @@ public final class HproseReader {
         }
         if (HproseHelper.uuidClass != null &&
             (type == null ||
-            Object.class.equals(type) ||  
+            Object.class.equals(type) ||
             HproseHelper.uuidClass.equals(type))) {
             try {
                 return HproseHelper.uuidFromString.invoke(null, new Object[] {s});
@@ -2144,7 +2144,7 @@ public final class HproseReader {
     private Object castError(Object obj, Class type) throws IOException {
         throw new HproseException(obj.getClass().getName() + " can't change to " + type.getName());
     }
-    
+
     public ByteArrayOutputStream readRaw() throws IOException {
     	ByteArrayOutputStream ostream = new ByteArrayOutputStream();
     	readRaw(ostream);
@@ -2226,9 +2226,9 @@ public final class HproseReader {
         do {
             tag = stream.read();
             ostream.write(tag);
-        } while (tag != HproseTags.TagSemicolon);        
+        } while (tag != HproseTags.TagSemicolon);
     }
-    
+
     private void readDateTimeRaw(OutputStream ostream, int tag) throws IOException {
         ostream.write(tag);
         do {
@@ -2293,7 +2293,7 @@ public final class HproseReader {
             len -= size;
         }
         ostream.write(b);
-        ostream.write(stream.read());        
+        ostream.write(stream.read());
     }
 
     private void readStringRaw(OutputStream ostream, int tag) throws IOException {

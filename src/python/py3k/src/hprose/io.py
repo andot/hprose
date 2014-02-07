@@ -14,7 +14,7 @@
 #                                                          #
 # hprose io for python 3.0+                                #
 #                                                          #
-# LastModified: Jan 1, 2014                                #
+# LastModified: Feb 7, 2014                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -135,7 +135,7 @@ class HproseClassManager:
         finally:
             _classCacheLock.release()
     register = staticmethod(register)
-            
+
     def getClass(alias):
         if alias in _classCache2:
             return _classCache2[alias]
@@ -143,7 +143,7 @@ class HproseClassManager:
         HproseClassManager.register(cls, alias)
         return cls
     getClass = staticmethod(getClass)
-    
+
     def getClassAlias(cls):
         if cls in _classCache1:
             return _classCache1[cls]
@@ -638,11 +638,7 @@ class HproseSimpleWriter(object):
         elif isinstance(v, bool): self.writeBoolean(v)
         elif isinstance(v, int): self.writeInteger(v)
         elif isinstance(v, float): self.writeDouble(v)
-        elif isinstance(v, (bytes, bytearray, memoryview)):
-            if v == b'':
-                self.writeEmpty()
-            else:
-                self.writeBytesWithRef(v)
+        elif isinstance(v, (bytes, bytearray, memoryview)): self.writeBytesWithRef(v)
         elif isinstance(v, str):
             if v == '':
                 self.writeEmpty()
@@ -660,7 +656,7 @@ class HproseSimpleWriter(object):
         else: raise HproseSerializeException('Not support to serialize this data')
     def writeInteger(self, i):
         if 0 <= i <= 9:
-            self.stream.write(str(i).encode('utf-8'))        
+            self.stream.write(str(i).encode('utf-8'))
         elif -2147483648 <= i <= 2147483647:
             self.stream.write(HproseTags.TagInteger)
             self.stream.write(str(i).encode('utf-8'))
@@ -706,7 +702,7 @@ class HproseSimpleWriter(object):
             else:
                 format = '%c%s%c%s' % (str(HproseTags.TagDate, 'utf-8'), '%Y%m%d',
                                        str(HproseTags.TagTime, 'utf-8'), '%H%M%S')
-            if date.microsecond > 0:                
+            if date.microsecond > 0:
                 format = '%s%c%s' % (format, str(HproseTags.TagPoint, 'utf-8'), '%f')
             if date.utcoffset() == ZERO:
                 format = '%s%c' % (format, str(HproseTags.TagUTC, 'utf-8'))
@@ -715,18 +711,18 @@ class HproseSimpleWriter(object):
         else:
             format = '%c%s%c' % (str(HproseTags.TagDate, 'utf-8'),
                                  '%Y%m%d',
-                                 str(HproseTags.TagSemicolon, 'utf-8'))            
+                                 str(HproseTags.TagSemicolon, 'utf-8'))
         self.stream.write(date.strftime(format).encode('utf-8'))
     def writeDateWithRef(self, date):
         if not self._writeRef(date): self.writeDate(date)
     def writeTime(self, time):
         format = '%c%s' % (str(HproseTags.TagTime, 'utf-8'), '%H%M%S')
-        if time.microsecond > 0:                
-            format = '%s%c%s' % (format, str(HproseTags.TagPoint, 'utf-8'), '%f')        
+        if time.microsecond > 0:
+            format = '%s%c%s' % (format, str(HproseTags.TagPoint, 'utf-8'), '%f')
         if time.utcoffset() == ZERO:
             format = '%s%c' % (format, str(HproseTags.TagUTC, 'utf-8'))
         else:
-            format = '%s%c' % (format, str(HproseTags.TagSemicolon, 'utf-8'))        
+            format = '%s%c' % (format, str(HproseTags.TagSemicolon, 'utf-8'))
         self.stream.write(time.strftime(format).encode('utf-8'))
     def writeTimeWithRef(self, time):
         if not self._writeRef(time): self.writeTime(time)

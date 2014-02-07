@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Writer Test for Go.                             *
  *                                                        *
- * LastModified: Jan 31, 2014                             *
+ * LastModified: Feb 7, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -96,7 +96,7 @@ func TestReaderBytes(t *testing.T) {
 	bb := []byte("我爱你")
 	writer.Serialize(&bb)
 	writer.Serialize(&bb)
-	if b.String() != `eb9"我爱你"r0;` {
+	if b.String() != `b""b9"我爱你"r1;` {
 		t.Error(b.String())
 	}
 	reader := NewReader(b)

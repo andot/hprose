@@ -162,7 +162,7 @@
                 @throw [HproseException exceptionWithReason:
                         [NSString stringWithFormat:@"Http error %d: %@",
                          (int)statusCode,
-                         [NSHTTPURLResponse localizedStringForStatusCode:statusCode]]];                
+                         [NSHTTPURLResponse localizedStringForStatusCode:statusCode]]];
             }
             if (data == nil) {
                 @throw [HproseException exceptionWithReason:[error localizedDescription]];
@@ -205,7 +205,7 @@
 
 - (void) sendDataAsync:(id)context isSuccess:(BOOL)success {
     NSOutputStream *ostream = [context ostream];
-    @try { 
+    @try {
         if (success) {
             NSData *data = [ostream propertyForKey:NSStreamDataWrittenToMemoryStreamKey];
             if (filter != nil) {
@@ -222,7 +222,7 @@
             }
             else {
                 [request setValue:@"close" forHTTPHeaderField:@"Connection"];
-            }            
+            }
             [request setHTTPShouldHandleCookies:YES];
             [request setHTTPMethod:@"POST"];
             [request setHTTPBody:data];
@@ -249,7 +249,7 @@
 }
 
 - (void) endInvokeAsync:(id)context isSuccess:(BOOL)success {
-    @try { 
+    @try {
         NSInputStream *istream = [context istream];
         [istream close];
     }

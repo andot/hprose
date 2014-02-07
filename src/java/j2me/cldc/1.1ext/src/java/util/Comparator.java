@@ -28,7 +28,7 @@ package java.util;
  * the sorted set (or sorted map) will behave "strangely."  In particular the
  * sorted set (or sorted map) will violate the general contract for set (or
  * map), which is defined in terms of <tt>equals</tt>.<p>
- * 
+ *
  * For example, if one adds two keys <tt>a</tt> and <tt>b</tt> such that
  * <tt>(a.equals((Object)b) && c.compare((Object)a, (Object)b) != 0)</tt> to a
  * sorted set with comparator <tt>c</tt>, the second <tt>add</tt> operation
@@ -60,7 +60,7 @@ package java.util;
  *       {(x, y) such that x.equals((Object)y)}.
  * </pre><p>
  *
- * This interface is a member of the 
+ * This interface is a member of the
  * <a href="{@docRoot}/../guide/collections/index.html">
  * Java Collections Framework</a>.
  *
@@ -95,24 +95,24 @@ public interface Comparator {
      * implies that <tt>sgn(compare(x, z))==sgn(compare(y, z))</tt> for all
      * <tt>z</tt>.<p>
      *
-     * It is generally the case, but <i>not</i> strictly required that 
+     * It is generally the case, but <i>not</i> strictly required that
      * <tt>(compare(x, y)==0) == (x.equals(y))</tt>.  Generally speaking,
      * any comparator that violates this condition should clearly indicate
      * this fact.  The recommended language is "Note: this comparator
      * imposes orderings that are inconsistent with equals."
-     * 
+     *
      * @param o1 the first object to be compared.
      * @param o2 the second object to be compared.
      * @return a negative integer, zero, or a positive integer as the
      * 	       first argument is less than, equal to, or greater than the
-     *	       second. 
+     *	       second.
      * @throws ClassCastException if the arguments' types prevent them from
      * 	       being compared by this Comparator.
      */
     int compare(Object o1, Object o2);
 
     /**
-     * 
+     *
      * Indicates whether some other object is &quot;equal to&quot; this
      * Comparator.  This method must obey the general contract of
      * <tt>Object.equals(Object)</tt>.  Additionally, this method can return

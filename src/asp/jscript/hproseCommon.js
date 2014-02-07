@@ -123,7 +123,7 @@ var HproseUtil = {
     toVBArray: function(jsarray) {
         return this.toDictionary(jsarray).Items();
     },
-    
+
     binaryToString: function(binary, charSet) {
         try {
             var adTypeText = 2;

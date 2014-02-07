@@ -51,7 +51,7 @@ package java.util;
  * interfaces cannot contain constructors) but the SDK implementation (the
  * <tt>TreeSet</tt> class) complies.<p>
  *
- * This interface is a member of the 
+ * This interface is a member of the
  * <a href="{@docRoot}/../guide/collections/index.html">
  * Java Collections Framework</a>.
  *
@@ -89,7 +89,7 @@ public interface SortedSet extends Set {
      * The sorted set returned by this method will throw an
      * <tt>IllegalArgumentException</tt> if the user attempts to insert a
      * element outside the specified range.<p>
-     * 
+     *
      * Note: this method always returns a <i>half-open range</i> (which
      * includes its low endpoint but not its high endpoint).  If you need a
      * <i>closed range</i> (which includes both endpoints), and the element
@@ -101,7 +101,7 @@ public interface SortedSet extends Set {
      * <tt>high</tt>, inclusive: <pre>
      * SortedSet sub = s.subSet(low, high+"\0");
      * </pre>
-     * 
+     *
      * A similar technique can be used to generate an <i>open range</i> (which
      * contains neither endpoint).  The following idiom obtains a view
      * containing all of the Strings in <tt>s</tt> from <tt>low</tt> to
@@ -112,7 +112,7 @@ public interface SortedSet extends Set {
      * @param fromElement low endpoint (inclusive) of the subSet.
      * @param toElement high endpoint (exclusive) of the subSet.
      * @return a view of the specified range within this sorted set.
-     * 
+     *
      * @throws ClassCastException if <tt>fromElement</tt> and
      *         <tt>toElement</tt> cannot be compared to one another using this
      *         set's comparator (or, if the set has no comparator, using
@@ -186,7 +186,7 @@ public interface SortedSet extends Set {
      * For example, suppose that <tt>s</tt> is a sorted set of strings.  The
      * following idiom obtains a view containing all of the strings in
      * <tt>s</tt> that are strictly greater than <tt>low</tt>:
-     * 
+     *
      * 	    <pre>    SortedSet tail = s.tailSet(low+"\0");</pre>
      *
      * @param fromElement low endpoint (inclusive) of the tailSet.

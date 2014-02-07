@@ -205,7 +205,7 @@ if (!hasMap) {
                 writable: true,
                 configurable: true,
                 enumerable: false
-            }               
+            }
         }));
     }
 }

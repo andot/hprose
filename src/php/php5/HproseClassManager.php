@@ -25,7 +25,7 @@ class HproseClassManager {
     private static $classCache2 = array();
     public static function register($class, $alias) {
         self::$classCache1[$alias] = $class;
-        self::$classCache2[$class] = $alias;        
+        self::$classCache2[$class] = $alias;
     }
     public static function getClassAlias($class) {
         if (array_key_exists($class, self::$classCache2)) {

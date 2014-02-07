@@ -24,16 +24,16 @@ import java.util.HashMap;
 public final class ClassManager {
     private static final HashMap classCache1 = new HashMap();
     private static final HashMap classCache2 = new HashMap();
-    
+
     private ClassManager() {
     }
-    
+
     public static void register(Class type, String alias) {
         synchronized (classCache1) {
             classCache1.put(type, alias);
         }
         synchronized (classCache2) {
-            classCache2.put(alias, type);            
+            classCache2.put(alias, type);
         }
     }
 
@@ -48,10 +48,10 @@ public final class ClassManager {
             return (Class)classCache2.get(alias);
         }
     }
-    
+
     public static boolean containsClass(String alias) {
         synchronized (classCache2) {
             return classCache2.containsKey(alias);
         }
-    }    
+    }
 }

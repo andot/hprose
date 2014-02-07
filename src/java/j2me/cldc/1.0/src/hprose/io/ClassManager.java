@@ -25,10 +25,10 @@ public final class ClassManager {
     private static final Hashtable classCache1 = new Hashtable();
     private static final Hashtable classCache2 = new Hashtable();
     private static final Object Null = new Object();
-    
+
     private ClassManager() {
     }
-    
+
     public static void register(Class type, String alias) {
         if (type != null) {
             classCache1.put(type, alias);
@@ -53,5 +53,5 @@ public final class ClassManager {
 
     public static boolean containsClass(String alias) {
         return classCache2.containsKey(alias);
-    }    
+    }
 }

@@ -31,7 +31,7 @@ package java.util;
  * <p>Note that fail-fast behavior cannot be guaranteed as it is, generally
  * speaking, impossible to make any hard guarantees in the presence of
  * unsynchronized concurrent modification.  Fail-fast operations
- * throw <tt>ConcurrentModificationException</tt> on a best-effort basis. 
+ * throw <tt>ConcurrentModificationException</tt> on a best-effort basis.
  * Therefore, it would be wrong to write a program that depended on this
  * exception for its correctness: <i><tt>ConcurrentModificationException</tt>
  * should be used only to detect bugs.</i>

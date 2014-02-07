@@ -21,7 +21,7 @@ class hprose.client.HproseErrorEvent {
     public static var ERROR:String = 'error';
     private var _name:String;
     private var _error:Error;
-        
+
     public function HproseErrorEvent(name:String, error:Error) {
         this._name = name;
         this._error = error;
@@ -30,7 +30,7 @@ class hprose.client.HproseErrorEvent {
     public function get name():String {
         return _name;
     }
-        
+
     public function get error():Error {
         return _error;
     }

@@ -27,7 +27,7 @@ import java.util.Collection;
 public class HproseMethods {
 
     protected HashMap remoteMethods = new HashMap();
-    protected HashMap methodNames = new HashMap();    
+    protected HashMap methodNames = new HashMap();
 
     public HproseMethods() {
     }

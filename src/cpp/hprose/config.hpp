@@ -79,7 +79,7 @@
 #ifndef BOOST_NO_STATIC_ASSERT
 #define HPROSE_STATIC_ASSERT(Exp, Msg) static_assert(Exp, Msg)
 #else
-#define HPROSE_STATIC_ASSERT(Exp, Msg) BOOST_STATIC_ASSERT(Exp)   
+#define HPROSE_STATIC_ASSERT(Exp, Msg) BOOST_STATIC_ASSERT(Exp)
 #endif
 
 #ifdef BOOST_WINDOWS

@@ -23,7 +23,7 @@ package java.util;
  * the <tt>AbstractCollection</tt> class.  It merely adds implementations
  * for <tt>equals</tt> and <tt>hashCode</tt>.<p>
  *
- * This class is a member of the 
+ * This class is a member of the
  * <a href="{@docRoot}/../guide/collections/index.html">
  * Java Collections Framework</a>.
  *

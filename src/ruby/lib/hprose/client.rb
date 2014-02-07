@@ -75,22 +75,22 @@ module Hprose
     end
     def uri=(uri)
       raise NotImplementedError.new("#{self.class.name}#uri is an abstract attr")
-    end    
+    end
     protected
     def get_invoke_context
-      raise NotImplementedError.new("#{self.class.name}#get_invoke_context is an abstract method")      
+      raise NotImplementedError.new("#{self.class.name}#get_invoke_context is an abstract method")
     end
     def get_output_stream(context)
-      raise NotImplementedError.new("#{self.class.name}#get_output_stream is an abstract method")      
+      raise NotImplementedError.new("#{self.class.name}#get_output_stream is an abstract method")
     end
     def send_data(context)
-      raise NotImplementedError.new("#{self.class.name}#send_data is an abstract method")      
+      raise NotImplementedError.new("#{self.class.name}#send_data is an abstract method")
     end
     def get_input_stream(context)
-      raise NotImplementedError.new("#{self.class.name}#get_input_stream is an abstract method")      
+      raise NotImplementedError.new("#{self.class.name}#get_input_stream is an abstract method")
     end
     def end_invoke(context)
-      raise NotImplementedError.new("#{self.class.name}#end_invoke is an abstract method")      
+      raise NotImplementedError.new("#{self.class.name}#end_invoke is an abstract method")
     end
     private
     def _invoke(methodname, args, byref, resultMode, simple)

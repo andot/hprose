@@ -13,7 +13,7 @@
  *                                                        *
  * hprose SimpleWriter Test for Go.                       *
  *                                                        *
- * LastModified: Jan 31, 2014                             *
+ * LastModified: Feb 7, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -248,7 +248,7 @@ func TestSimpleWriterBytes(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
-	if b.String() != `eb3"我"b9"我爱你"b9"字符串"` {
+	if b.String() != `b""b3"我"b9"我爱你"b9"字符串"` {
 		t.Error(b.String())
 	}
 }

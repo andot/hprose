@@ -299,7 +299,7 @@ public final class HproseHelper {
                getProperties(type) :
                getMembers(type);
     }
-    
+
     public static String getClassName(Class<?> type) {
         String className = ClassManager.getClassAlias(type);
         if (className == null) {

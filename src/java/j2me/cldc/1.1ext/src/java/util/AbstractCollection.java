@@ -30,7 +30,7 @@ package java.util;
  * implementation in detail.  Each of these methods may be overridden if
  * the collection being implemented admits a more efficient implementation.<p>
  *
- * This class is a member of the 
+ * This class is a member of the
  * <a href="{@docRoot}/../guide/collections/index.html">
  * Java Collections Framework</a>.
  *
@@ -145,17 +145,17 @@ public abstract class AbstractCollection implements Collection {
      *
      * @param o element whose presence in this collection is to be ensured.
      * @return <tt>true</tt> if the collection changed as a result of the call.
-     * 
+     *
      * @throws UnsupportedOperationException if the <tt>add</tt> method is not
      *		  supported by this collection.
-     * 
+     *
      * @throws NullPointerException if this collection does not permit
      * 		  <tt>null</tt> elements, and the specified element is
      * 		  <tt>null</tt>.
-     * 
+     *
      * @throws ClassCastException if the class of the specified element
      * 		  prevents it from being added to this collection.
-     * 
+     *
      * @throws IllegalArgumentException if some aspect of this element
      *            prevents it from being added to this collection.
      */
@@ -223,7 +223,7 @@ public abstract class AbstractCollection implements Collection {
      * @return <tt>true</tt> if this collection contains all of the elements
      * 	       in the specified collection.
      * @throws NullPointerException if the specified collection is null.
-     * 
+     *
      * @see #contains(Object)
      */
     public boolean containsAll(Collection c) {
@@ -256,7 +256,7 @@ public abstract class AbstractCollection implements Collection {
      * @throws UnsupportedOperationException if this collection does not
      *         support the <tt>addAll</tt> method.
      * @throws NullPointerException if the specified collection is null.
-     * 
+     *
      * @see #add(Object)
      */
     public boolean addAll(Collection c) {
@@ -388,7 +388,7 @@ public abstract class AbstractCollection implements Collection {
      * except the last, the string <tt>", "</tt> is appended.  Finally a right
      * bracket is appended.  A string is obtained from the string buffer, and
      * returned.
-     * 
+     *
      * @return a string representation of this collection.
      */
     public String toString() {

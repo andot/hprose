@@ -86,7 +86,7 @@ var HproseHttpRequest = (function(global) {
         }
         return xhr;
     }
-    
+
     function createMSXMLHttp() {
         if (s_XMLHttpNameCache != null) {
             // Use the cache name first.
@@ -97,7 +97,7 @@ var HproseHttpRequest = (function(global) {
                      'MSXML2.XMLHTTP.5.0',
                      'MSXML2.XMLHTTP.4.0',
                      'MSXML2.XMLHTTP.3.0',
-                     'MsXML2.XMLHTTP.2.6',                         
+                     'MsXML2.XMLHTTP.2.6',
                      'Microsoft.XMLHTTP',
                      'Microsoft.XMLHTTP.1.0',
                      'Microsoft.XMLHTTP.1'];
@@ -186,7 +186,7 @@ var HproseHttpRequest = (function(global) {
                 '<param name="movie" value="', s_flashpath , 'hproseHttpRequest.swf" />',
                 '<param name="allowScriptAccess" value="always" />',
                 '<param name="quality" value="high" />',
-                '<param name="wmode" value="opaque" />',                
+                '<param name="wmode" value="opaque" />',
                 '</object>'].join('');
                 break;
             case 2:
@@ -305,7 +305,7 @@ var HproseHttpRequest = (function(global) {
     }
 
     function post(url, header, data, callbackid, timeout) {
-        if (s_request && !s_localfile && 
+        if (s_request && !s_localfile &&
            (url.substr(0, 7).toLowerCase() == "http://" ||
             url.substr(0, 8).toLowerCase() == "https://")) {
             flashpost(url, header, data, callbackid, timeout);
@@ -360,7 +360,7 @@ var HproseHttpRequest = (function(global) {
                     instance[name] = null;
                  }
             }
-            catch (flashEx) { 
+            catch (flashEx) {
             }
         };
         while (s_swfTaskQueue.length > 0) {

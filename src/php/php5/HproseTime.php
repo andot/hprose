@@ -67,7 +67,7 @@ class HproseTime {
                 if (($args[3] < 0) || ($args[3] > 999999)) {
                     throw new HproseException('Unexpected arguments');
                 }
-                $this->microsecond = $args[3];             
+                $this->microsecond = $args[3];
             case 3:
                 if (!self::isValidTime($args[0], $args[1], $args[2])) {
                     throw new HproseException('Unexpected arguments');
@@ -101,7 +101,7 @@ class HproseTime {
         }
         else {
             $format = ($fullformat ? '%02d:%02d:%02d.%06d': '%02d%02d%02d.%06d');
-            $str = sprintf($format, $this->hour, $this->minute, $this->second, $this->microsecond);            
+            $str = sprintf($format, $this->hour, $this->minute, $this->second, $this->microsecond);
         }
         if ($this->utc) {
             $str .= 'Z';

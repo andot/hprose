@@ -296,7 +296,7 @@ sub write_array {
     my $stream = $self->{stream};
     $stream->print(Hprose::Tags->List, scalar(@$val) || '', Hprose::Tags->Openbrace);
     $self->serialize($_) foreach (@$val);
-    $stream->print(Hprose::Tags->Closebrace);    
+    $stream->print(Hprose::Tags->Closebrace);
 }
 
 sub write_array_with_ref {
@@ -311,9 +311,9 @@ sub write_hash {
     $stream->print(Hprose::Tags->Map, scalar(@keys) || '', Hprose::Tags->Openbrace);
     foreach (@keys) {
         $self->serialize($_);
-        $self->serialize($val->{$_});        
+        $self->serialize($val->{$_});
     }
-    $stream->print(Hprose::Tags->Closebrace);    
+    $stream->print(Hprose::Tags->Closebrace);
 }
 
 sub write_hash_with_ref {

@@ -23,7 +23,7 @@ import hprose.common.WeakMap;
 class hprose.io.HproseClassManager {
     private static var classCache:Object = {};
     private static var aliasCache:WeakMap = new WeakMap();
-        
+
     public static function register(cls, alias:String) {
         aliasCache.set(cls, alias);
         classCache[alias] = cls;

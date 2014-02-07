@@ -75,12 +75,12 @@ package java.util;
  * <p>Note that the fail-fast behavior of an iterator cannot be guaranteed
  * as it is, generally speaking, impossible to make any hard guarantees in the
  * presence of unsynchronized concurrent modification.  Fail-fast iterators
- * throw <tt>ConcurrentModificationException</tt> on a best-effort basis. 
+ * throw <tt>ConcurrentModificationException</tt> on a best-effort basis.
  * Therefore, it would be wrong to write a program that depended on this
  * exception for its correctness: <i>the fail-fast behavior of iterators
  * should be used only to detect bugs.</i>
  *
- * <p>This class is a member of the 
+ * <p>This class is a member of the
  * <a href="{@docRoot}/../guide/collections/index.html">
  * Java Collections Framework</a>.
  *
@@ -123,13 +123,13 @@ public class HashMap extends AbstractMap implements Map {
      * The number of key-value mappings contained in this identity hash map.
      */
     transient int size;
-  
+
     /**
      * The next size value at which to resize (capacity * load factor).
      * @serial
      */
     int threshold;
-  
+
     /**
      * The load factor for the hash table.
      *
@@ -167,15 +167,15 @@ public class HashMap extends AbstractMap implements Map {
 
         // Find a power of 2 >= initialCapacity
         int capacity = 1;
-        while (capacity < initialCapacity) 
+        while (capacity < initialCapacity)
             capacity <<= 1;
-    
+
         this.loadFactor = loadFactor;
         threshold = (int)(capacity * loadFactor);
         table = new Entry[capacity];
         init();
     }
-  
+
     /**
      * Constructs an empty <tt>HashMap</tt> with the specified initial
      * capacity and the default load factor (0.75).
@@ -245,10 +245,10 @@ public class HashMap extends AbstractMap implements Map {
     }
 
     /**
-     * Returns a hash value for the specified object.  In addition to 
+     * Returns a hash value for the specified object.  In addition to
      * the object's own hashCode, this method applies a "supplemental
      * hash function," which defends against poor quality hash functions.
-     * This is critical because HashMap uses power-of two length 
+     * This is critical because HashMap uses power-of two length
      * hash tables.<p>
      *
      * The shift distances in this function were chosen as the result
@@ -264,20 +264,20 @@ public class HashMap extends AbstractMap implements Map {
         return h;
     }
 
-    /** 
-     * Check for equality of non-null reference x and possibly-null y. 
+    /**
+     * Check for equality of non-null reference x and possibly-null y.
      */
     static boolean eq(Object x, Object y) {
         return x == y || x.equals(y);
     }
 
     /**
-     * Returns index for hash code h. 
+     * Returns index for hash code h.
      */
     static int indexFor(int h, int length) {
         return h & (length-1);
     }
- 
+
     /**
      * Returns the number of key-value mappings in this map.
      *
@@ -286,7 +286,7 @@ public class HashMap extends AbstractMap implements Map {
     public int size() {
         return size;
     }
-  
+
     /**
      * Returns <tt>true</tt> if this map contains no key-value mappings.
      *
@@ -313,11 +313,11 @@ public class HashMap extends AbstractMap implements Map {
         Object k = maskNull(key);
         int hash = hash(k);
         int i = indexFor(hash, table.length);
-        Entry e = table[i]; 
+        Entry e = table[i];
         while (true) {
             if (e == null)
                 return e;
-            if (e.hash == hash && eq(k, e.key)) 
+            if (e.hash == hash && eq(k, e.key))
                 return e.value;
             e = e.next;
         }
@@ -335,9 +335,9 @@ public class HashMap extends AbstractMap implements Map {
         Object k = maskNull(key);
         int hash = hash(k);
         int i = indexFor(hash, table.length);
-        Entry e = table[i]; 
+        Entry e = table[i];
         while (e != null) {
-            if (e.hash == hash && eq(k, e.key)) 
+            if (e.hash == hash && eq(k, e.key))
                 return true;
             e = e.next;
         }
@@ -353,12 +353,12 @@ public class HashMap extends AbstractMap implements Map {
         Object k = maskNull(key);
         int hash = hash(k);
         int i = indexFor(hash, table.length);
-        Entry e = table[i]; 
+        Entry e = table[i];
         while (e != null && !(e.hash == hash && eq(k, e.key)))
             e = e.next;
         return e;
     }
-  
+
     /**
      * Associates the specified value with the specified key in this map.
      * If the map previously contained a mapping for this key, the old
@@ -451,7 +451,7 @@ public class HashMap extends AbstractMap implements Map {
         threshold = (int)(newCapacity * loadFactor);
     }
 
-    /** 
+    /**
      * Transfer all entries from current table to newTable.
      */
     void transfer(Entry[] newTable) {
@@ -463,7 +463,7 @@ public class HashMap extends AbstractMap implements Map {
                 src[j] = null;
                 do {
                     Entry next = e.next;
-                    int i = indexFor(e.hash, newCapacity);  
+                    int i = indexFor(e.hash, newCapacity);
                     e.next = newTable[i];
                     newTable[i] = e;
                     e = next;
@@ -510,7 +510,7 @@ public class HashMap extends AbstractMap implements Map {
             put(e.getKey(), e.getValue());
         }
     }
-  
+
     /**
      * Removes the mapping for this key from this map if present.
      *
@@ -542,7 +542,7 @@ public class HashMap extends AbstractMap implements Map {
             if (e.hash == hash && eq(k, e.key)) {
                 modCount++;
                 size--;
-                if (prev == e) 
+                if (prev == e)
                     table[i] = next;
                 else
                     prev.next = next;
@@ -552,7 +552,7 @@ public class HashMap extends AbstractMap implements Map {
             prev = e;
             e = next;
         }
-   
+
         return e;
     }
 
@@ -575,7 +575,7 @@ public class HashMap extends AbstractMap implements Map {
             if (e.hash == hash && e.equals(entry)) {
                 modCount++;
                 size--;
-                if (prev == e) 
+                if (prev == e)
                     table[i] = next;
                 else
                     prev.next = next;
@@ -585,7 +585,7 @@ public class HashMap extends AbstractMap implements Map {
             prev = e;
             e = next;
         }
-   
+
         return e;
     }
 
@@ -595,7 +595,7 @@ public class HashMap extends AbstractMap implements Map {
     public void clear() {
         modCount++;
         Entry tab[] = table;
-        for (int i = 0; i < tab.length; i++) 
+        for (int i = 0; i < tab.length; i++)
             tab[i] = null;
         size = 0;
     }
@@ -609,7 +609,7 @@ public class HashMap extends AbstractMap implements Map {
      *         specified value.
      */
     public boolean containsValue(Object value) {
-	if (value == null) 
+	if (value == null)
             return containsNullValue();
 
 	Entry tab[] = table;
@@ -641,8 +641,8 @@ public class HashMap extends AbstractMap implements Map {
         /**
          * Create new entry.
          */
-        Entry(int h, Object k, Object v, Entry n) { 
-            value = v; 
+        Entry(int h, Object k, Object v, Entry n) {
+            value = v;
             next = n;
             key = k;
             hash = h;
@@ -655,13 +655,13 @@ public class HashMap extends AbstractMap implements Map {
         public Object getValue() {
             return value;
         }
-    
+
         public Object setValue(Object newValue) {
             Object oldValue = value;
             value = newValue;
             return oldValue;
         }
-    
+
         public boolean equals(Object o) {
             if (!(o instanceof Map.Entry))
                 return false;
@@ -671,17 +671,17 @@ public class HashMap extends AbstractMap implements Map {
             if (k1 == k2 || (k1 != null && k1.equals(k2))) {
                 Object v1 = getValue();
                 Object v2 = e.getValue();
-                if (v1 == v2 || (v1 != null && v1.equals(v2))) 
+                if (v1 == v2 || (v1 != null && v1.equals(v2)))
                     return true;
             }
             return false;
         }
-    
+
         public int hashCode() {
             return (key==NULL_KEY ? 0 : key.hashCode()) ^
                    (value==null   ? 0 : value.hashCode());
         }
-    
+
         public String toString() {
             return getKey() + "=" + getValue();
         }
@@ -704,14 +704,14 @@ public class HashMap extends AbstractMap implements Map {
 
     /**
      * Add a new entry with the specified key, value and hash code to
-     * the specified bucket.  It is the responsibility of this 
+     * the specified bucket.  It is the responsibility of this
      * method to resize the table if appropriate.
      *
      * Subclass overrides this to alter the behavior of put method.
      */
     void addEntry(int hash, Object key, Object value, int bucketIndex) {
         table[bucketIndex] = new Entry(hash, key, value, table[bucketIndex]);
-        if (size++ >= threshold) 
+        if (size++ >= threshold)
             resize(2 * table.length);
     }
 
@@ -730,8 +730,8 @@ public class HashMap extends AbstractMap implements Map {
 
     private abstract class HashIterator implements Iterator {
         Entry next;                  // next entry to return
-        int expectedModCount;        // For fast-fail 
-        int index;                   // current slot 
+        int expectedModCount;        // For fast-fail
+        int index;                   // current slot
         Entry current;               // current entry
 
         HashIterator() {
@@ -750,13 +750,13 @@ public class HashMap extends AbstractMap implements Map {
             return next != null;
         }
 
-        Entry nextEntry() { 
+        Entry nextEntry() {
             if (modCount != expectedModCount)
                 throw new ConcurrentModificationException();
             Entry e = next;
-            if (e == null) 
+            if (e == null)
                 throw new NoSuchElementException();
-                
+
             Entry n = e.next;
             Entry[] t = table;
             int i = index;

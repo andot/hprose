@@ -50,17 +50,17 @@ package java.util;
  * <p>Note that the fail-fast behavior of an iterator cannot be guaranteed
  * as it is, generally speaking, impossible to make any hard guarantees in the
  * presence of unsynchronized concurrent modification.  Fail-fast iterators
- * throw <tt>ConcurrentModificationException</tt> on a best-effort basis. 
+ * throw <tt>ConcurrentModificationException</tt> on a best-effort basis.
  * Therefore, it would be wrong to write a program that depended on this
  * exception for its correctness:   <i>the fail-fast behavior of iterators
  * should be used only to detect bugs.</i><p>
  *
- * This class is a member of the 
+ * This class is a member of the
  * <a href="{@docRoot}/../guide/collections/index.html">
  * Java Collections Framework</a>.
  *
  * @author  Josh Bloch
- * @version 1.46, 01/23/03 
+ * @version 1.46, 01/23/03
  * @see	    List
  * @see	    ArrayList
  * @see	    Vector
@@ -144,7 +144,7 @@ public class LinkedList extends AbstractSequentialList implements List {
 
     /**
      * Inserts the given element at the beginning of this list.
-     * 
+     *
      * @param o the element to be inserted at the beginning of this list.
      */
     public void addFirst(Object o) {
@@ -154,7 +154,7 @@ public class LinkedList extends AbstractSequentialList implements List {
     /**
      * Appends the given element to the end of this list.  (Identical in
      * function to the <tt>add</tt> method; included only for consistency.)
-     * 
+     *
      * @param o the element to be inserted at the end of this list.
      */
     public void addLast(Object o) {
@@ -293,7 +293,7 @@ public class LinkedList extends AbstractSequentialList implements List {
      *
      * @param index index of element to return.
      * @return the element at the specified position in this list.
-     * 
+     *
      * @throws IndexOutOfBoundsException if the specified index is is out of
      * range (<tt>index &lt; 0 || index &gt;= size()</tt>).
      */
@@ -325,7 +325,7 @@ public class LinkedList extends AbstractSequentialList implements List {
      *
      * @param index index at which the specified element is to be inserted.
      * @param element element to be inserted.
-     * 
+     *
      * @throws IndexOutOfBoundsException if the specified index is out of
      *		  range (<tt>index &lt; 0 || index &gt; size()</tt>).
      */
@@ -340,7 +340,7 @@ public class LinkedList extends AbstractSequentialList implements List {
      *
      * @param index the index of the element to removed.
      * @return the element previously at the specified position.
-     * 
+     *
      * @throws IndexOutOfBoundsException if the specified index is out of
      * 		  range (<tt>index &lt; 0 || index &gt;= size()</tt>).
      */

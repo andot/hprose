@@ -113,7 +113,7 @@ function HproseRawReader(stream) {
         do {
             tag = stream.getc();
             ostream.write(tag);
-        } while (tag != HproseTags.TagSemicolon);        
+        } while (tag != HproseTags.TagSemicolon);
     }
     function readDateTimeRaw(ostream, tag) {
         ostream.write(tag);

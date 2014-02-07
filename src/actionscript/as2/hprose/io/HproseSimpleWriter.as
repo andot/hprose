@@ -210,7 +210,7 @@ class hprose.io.HproseSimpleWriter {
     public function writeDateWithRef(date):Void {
         if (!writeRef(date)) writeDate(date);
     }
-    
+
     public function writeTime(time):Void {
         var hour = ('00' + time.getHours()).slice(-2);
         var minute = ('00' + time.getMinutes()).slice(-2);
@@ -288,18 +288,18 @@ class hprose.io.HproseSimpleWriter {
                     fields[fields.length] = key;
                 }
             }
-            index = writeClass(alias, fields);            
+            index = writeClass(alias, fields);
         }
         stream.write(HproseTags.TagObject + index + HproseTags.TagOpenbrace);
         return fields;
     }
-    
+
     private function writeObjectEnd(obj, fields):Void {
         var count = fields.length;
         for (var i = 0; i < count; i++) {
             serialize(obj[fields[i]]);
         }
-        stream.write(HproseTags.TagClosebrace);        
+        stream.write(HproseTags.TagClosebrace);
     }
 
     public function writeObject(obj):Void {
@@ -324,11 +324,11 @@ class hprose.io.HproseSimpleWriter {
         fieldsref[index] = fields;
         return index;
     }
-    
+
     public function writeRef(obj):Boolean {
         return false;
     }
-    
+
     public function reset():Void {
         classref = {};
         fieldsref.length = 0;

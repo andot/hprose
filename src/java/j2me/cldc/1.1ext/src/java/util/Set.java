@@ -43,9 +43,9 @@ package java.util;
  * the insertion of an ineligible element into the set may throw an
  * exception or it may succeed, at the option of the implementation.
  * Such exceptions are marked as "optional" in the specification for this
- * interface. 
+ * interface.
  *
- * <p>This interface is a member of the 
+ * <p>This interface is a member of the
  * <a href="{@docRoot}/../guide/collections/index.html">
  * Java Collections Framework</a>.
  *
@@ -136,7 +136,7 @@ public interface Set extends Collection {
      * @param o element to be added to this set.
      * @return <tt>true</tt> if this set did not already contain the specified
      *         element.
-     * 
+     *
      * @throws UnsupportedOperationException if the <tt>add</tt> method is not
      * 	       supported by this set.
      * @throws ClassCastException if the class of the specified element
@@ -202,7 +202,7 @@ public interface Set extends Collection {
      *
      * @param c collection whose elements are to be added to this set.
      * @return <tt>true</tt> if this set changed as a result of the call.
-     * 
+     *
      * @throws UnsupportedOperationException if the <tt>addAll</tt> method is
      * 		  not supported by this set.
      * @throws ClassCastException if the class of some element of the
@@ -236,7 +236,7 @@ public interface Set extends Collection {
      *            (optional).
      * @throws NullPointerException if this set contains a null element and
      *            the specified collection does not support null elements
-     *            (optional). 
+     *            (optional).
      * @throws NullPointerException if the specified collection is
      *           <tt>null</tt>.
      * @see #remove(Object)
@@ -254,7 +254,7 @@ public interface Set extends Collection {
      * @param  c collection that defines which elements will be removed from
      *           this set.
      * @return <tt>true</tt> if this set changed as a result of the call.
-     * 
+     *
      * @throws UnsupportedOperationException if the <tt>removeAll</tt>
      * 		  method is not supported by this Collection.
      * @throws ClassCastException if the types of one or more elements in this
@@ -262,7 +262,7 @@ public interface Set extends Collection {
      *            (optional).
      * @throws NullPointerException if this set contains a null element and
      *            the specified collection does not support null elements
-     *            (optional). 
+     *            (optional).
      * @throws NullPointerException if the specified collection is
      *           <tt>null</tt>.
      * @see    #remove(Object)
@@ -297,7 +297,7 @@ public interface Set extends Collection {
     boolean equals(Object o);
 
     /**
-     * 
+     *
      * Returns the hash code value for this set.  The hash code of a set is
      * defined to be the sum of the hash codes of the elements in the set,
      * where the hashcode of a <tt>null</tt> element is defined to be zero.

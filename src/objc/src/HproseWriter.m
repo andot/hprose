@@ -117,16 +117,11 @@ static Class classOfNSCFBoolean;
             [self writeUTCDate:(NSDate *)obj checkRef:YES];
         }
         else {
-            [self writeDate:(NSDate *)obj checkRef:YES];            
+            [self writeDate:(NSDate *)obj checkRef:YES];
         }
     }
     else if ([c isSubclassOfClass:[NSData class]]) {
-        if ([obj length] > 0) {
-            [self writeData:(NSData *)obj checkRef:YES];
-        }
-        else {
-            [self writeEmpty];
-        }
+        [self writeData:(NSData *)obj checkRef:YES];
     }
     else if ([c isSubclassOfClass:[NSString class]]) {
         if ([obj length] == 0) {
@@ -348,12 +343,12 @@ static Class classOfNSCFBoolean;
 
 - (void) writeInf {
     [stream writeByte:HproseTagInfinity];
-    [stream writeByte:HproseTagPos];   
+    [stream writeByte:HproseTagPos];
 }
 
 - (void) writeNInf {
     [stream writeByte:HproseTagInfinity];
-    [stream writeByte:HproseTagNeg]; 
+    [stream writeByte:HproseTagNeg];
 }
 
 - (void) writeEmpty {
@@ -455,7 +450,7 @@ static Class classOfNSCFBoolean;
         [stream writeByte:HproseTagBytes];
         int length = (int)[data length];
         if (length > 0) {
-            [self writeInt32:length withStream:stream];            
+            [self writeInt32:length withStream:stream];
         }
         [stream writeByte:HproseTagQuote];
         if (length > 0) {
@@ -490,7 +485,7 @@ static Class classOfNSCFBoolean;
         [stream writeByte:HproseTagString];
         int length = (int)[s length];
         if (length > 0) {
-            [self writeInt32:length withStream:stream];            
+            [self writeInt32:length withStream:stream];
         }
         [stream writeByte:HproseTagQuote];
         if (length > 0) {
@@ -510,7 +505,7 @@ static Class classOfNSCFBoolean;
         [stream writeByte:HproseTagList];
         int count = (int)[a count];
         if (count > 0) {
-            [self writeInt32:count withStream:stream];            
+            [self writeInt32:count withStream:stream];
         }
         [stream writeByte:HproseTagOpenbrace];
         if (count > 0) {

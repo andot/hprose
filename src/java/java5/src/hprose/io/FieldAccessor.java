@@ -32,7 +32,7 @@ final class FieldAccessor extends MemberAccessor {
         this.cls = HproseHelper.toClass(type);
         this.typecode = TypeCode.get(cls);
     }
-    
+
     @Override
     void set(Object obj, Object value) throws IllegalAccessException,
                                               IllegalArgumentException,

@@ -445,7 +445,7 @@ package hprose.io {
         protected function readListBegin():Array {
             return [];
         }
-        
+
         protected function readListEnd(list:Array):Array {
             var count:int = readInt(HproseTags.TagOpenbrace);
             for (var i:int = 0; i < count; i++) {
@@ -471,7 +471,7 @@ package hprose.io {
         protected function readMapBegin():Dictionary {
             return new Dictionary();
         }
-        
+
         protected function readMapEnd(map:Dictionary):Dictionary {
             var count:int = readInt(HproseTags.TagOpenbrace);
             for (var i:int = 0; i < count; i++) {

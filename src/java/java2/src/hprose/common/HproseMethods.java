@@ -276,7 +276,7 @@ public class HproseMethods {
     public void addInstanceMethods(Object obj, Class type) {
         addInstanceMethods(obj, type, HproseResultMode.Normal);
     }
-    
+
     public void addInstanceMethods(Object obj, String aliasPrefix) {
         addInstanceMethods(obj, obj.getClass(), aliasPrefix);
     }

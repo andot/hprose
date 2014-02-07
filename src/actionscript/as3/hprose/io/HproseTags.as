@@ -35,7 +35,7 @@ package hprose.io {
         public static const TagBytes:int = 'b'.charCodeAt(0);
         public static const TagUTF8Char:int = 'u'.charCodeAt(0);
         public static const TagString:int = 's'.charCodeAt(0);
-        public static const TagGuid:int = 'g'.charCodeAt(0);        
+        public static const TagGuid:int = 'g'.charCodeAt(0);
         public static const TagList:int = 'a'.charCodeAt(0);
         public static const TagMap:int = 'm'.charCodeAt(0);
         public static const TagClass:int = 'c'.charCodeAt(0);

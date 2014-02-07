@@ -347,7 +347,7 @@ NSMutableArray *getArguments(NSUInteger count, NSMethodSignature *methodSignatur
                         @throw [HproseException exceptionWithReason:
                                 [NSString stringWithFormat:@"Not support this type: %s", type]];
                         break;
-                }                
+                }
                 break;
             }
             default:
@@ -485,7 +485,7 @@ void setArguments(NSUInteger count, NSMethodSignature *methodSignature, NSInvoca
                         @throw [HproseException exceptionWithReason:
                                 [NSString stringWithFormat:@"Not support this type: %s", type]];
                         break;
-                }                   
+                }
                 break;
             }
             case _C_ARY_B: {
@@ -677,7 +677,7 @@ void setReturnValue(char type, id result, NSInvocation *anInvocation) {
             @throw [HproseException exceptionWithReason:
                     [NSString stringWithFormat:@"Not support this type: %c", type]];
             break;
-    }    
+    }
 }
 
 @implementation HproseClientProxy
@@ -788,7 +788,7 @@ void setReturnValue(char type, id result, NSInvocation *anInvocation) {
             else {
                 result = [client invoke:name
                                withArgs:args
-                                  byRef:byRef];                
+                                  byRef:byRef];
             }
         }
         else {

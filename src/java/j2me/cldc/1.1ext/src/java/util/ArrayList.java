@@ -27,7 +27,7 @@ package java.util;
  * at least as large as the list size.  As elements are added to an ArrayList,
  * its capacity grows automatically.  The details of the growth policy are not
  * specified beyond the fact that adding an element has constant amortized
- * time cost.<p> 
+ * time cost.<p>
  *
  * An application can increase the capacity of an <tt>ArrayList</tt> instance
  * before adding a large number of elements using the <tt>ensureCapacity</tt>
@@ -60,12 +60,12 @@ package java.util;
  * Note that the fail-fast behavior of an iterator cannot be guaranteed
  * as it is, generally speaking, impossible to make any hard guarantees in the
  * presence of unsynchronized concurrent modification.  Fail-fast iterators
- * throw <tt>ConcurrentModificationException</tt> on a best-effort basis. 
+ * throw <tt>ConcurrentModificationException</tt> on a best-effort basis.
  * Therefore, it would be wrong to write a program that depended on this
  * exception for its correctness: <i>the fail-fast behavior of iterators
  * should be used only to detect bugs.</i><p>
  *
- * This class is a member of the 
+ * This class is a member of the
  * <a href="{@docRoot}/../guide/collections/index.html">
  * Java Collections Framework</a>.
  *
@@ -148,7 +148,7 @@ public class ArrayList extends AbstractList implements List, RandomAccess {
     /**
      * Increases the capacity of this <tt>ArrayList</tt> instance, if
      * necessary, to ensure  that it can hold at least the number of elements
-     * specified by the minimum capacity argument. 
+     * specified by the minimum capacity argument.
      *
      * @param   minCapacity   the desired minimum capacity.
      */
@@ -196,8 +196,8 @@ public class ArrayList extends AbstractList implements List, RandomAccess {
     }
 
     /**
-     * Searches for the first occurence of the given argument, testing 
-     * for equality using the <tt>equals</tt> method. 
+     * Searches for the first occurence of the given argument, testing
+     * for equality using the <tt>equals</tt> method.
      *
      * @param   elem   an object.
      * @return  the index of the first occurrence of the argument in this

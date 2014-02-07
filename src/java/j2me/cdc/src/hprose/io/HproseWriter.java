@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for Java.                          *
  *                                                        *
- * LastModified: Feb 2, 2014                              *
+ * LastModified: Feb 7, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -121,12 +121,7 @@ public final class HproseWriter {
             }
         }
         else if (obj instanceof byte[]) {
-            if (((byte[]) obj).length == 0) {
-                writeEmpty();
-            }
-            else {
-                writeBytes((byte[]) obj, true);
-            }
+            writeBytes((byte[]) obj, true);
         }
         else if (obj instanceof short[]) {
             writeArray((short[]) obj, true);

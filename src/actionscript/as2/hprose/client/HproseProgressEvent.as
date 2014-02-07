@@ -21,7 +21,7 @@ class hprose.client.HproseProgressEvent {
     public static var PROGRESS:String = 'progress';
     private var _bytesLoaded:Number;
     private var _bytesTotal:Number;
-        
+
     public function HproseProgressEvent(bytesLoaded:Number, bytesTotal:Number) {
         this._bytesLoaded = bytesLoaded;
         this._bytesTotal = bytesTotal;
@@ -30,7 +30,7 @@ class hprose.client.HproseProgressEvent {
     public function get bytesLoaded():Number {
         return _bytesLoaded;
     }
-        
+
     public function get bytesTotal():Number {
         return _bytesTotal;
     }

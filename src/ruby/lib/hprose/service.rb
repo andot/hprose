@@ -279,7 +279,7 @@ module Hprose
           ostream.write(result)
           return
         elsif resultMode == Raw then
-          ostream.write(result)            
+          ostream.write(result)
         else
           ostream.putc(TagResult)
           if resultMode == Serialized then

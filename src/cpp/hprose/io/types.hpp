@@ -380,8 +380,8 @@ namespace hprose
     struct TypeToType<GUID>
     {
         typedef GuidType type;
-    };    
-    
+    };
+
     template<typename Type>
     struct ContainerType
     {
@@ -404,7 +404,7 @@ namespace hprose
     struct ContainerType<char>
     {
         typedef BytesType type;
-    };    
+    };
 
     template<typename Type>
     struct StaticArrayType
@@ -430,7 +430,7 @@ namespace hprose
         typedef StringType type;
     };
 
-#ifndef BOOST_NO_INTRINSIC_WCHAR_T    
+#ifndef BOOST_NO_INTRINSIC_WCHAR_T
     template<>
     struct StaticArrayType<wchar_t>
     {
@@ -438,7 +438,7 @@ namespace hprose
     };
 #endif
 
-#ifndef BOOST_NO_CHAR16_T    
+#ifndef BOOST_NO_CHAR16_T
     template<>
     struct StaticArrayType<char16_t>
     {

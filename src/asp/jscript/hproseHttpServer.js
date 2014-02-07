@@ -38,7 +38,7 @@ var HproseHttpServer = (function() {
                     result = eval(method + "(" + a.join(', ') + ")");
                 }
                 else {
-                    result = eval("method(" + a.join(', ') + ")");                    
+                    result = eval("method(" + a.join(', ') + ")");
                 }
             }
             else {
@@ -85,7 +85,7 @@ var HproseHttpServer = (function() {
             }
             return result;
         }
-        
+
         function getRefName(ref) {
             for (var name in ref) return name;
         }
@@ -94,7 +94,7 @@ var HproseHttpServer = (function() {
             var f = func.toString();
             return f.substr(0, f.indexOf('(')).replace(/(^\s*function\s*)|(\s*$)/ig, '');
         }
-        
+
         function HproseHttpServer(vbs) {
             var m_functions = {};
             var m_funcNames = {};
@@ -141,7 +141,7 @@ var HproseHttpServer = (function() {
                 }
                 Response.addHeader('Content-Type', "text/plain");
                 if (m_P3P) {
-                    Response.addHeader('P3P', 
+                    Response.addHeader('P3P',
                         'CP="CAO DSP COR CUR ADM DEV TAI PSA PSD IVAi IVDi ' +
                         'CONi TELo OTPi OUR DELi SAMi OTRi UNRi PUBi IND PHY ONL ' +
                         'UNI PUR FIN COM NAV INT DEM CNT STA POL HEA PRE GOV"');
@@ -150,7 +150,7 @@ var HproseHttpServer = (function() {
                     var origin = Request.ServerVariables("HTTP_ORIGIN");
                     if (origin && origin != "null") {
                         Response.addHeader('Access-Control-Allow-Origin', origin);
-                        Response.addHeader('Access-Control-Allow-Credentials', 'true');  
+                        Response.addHeader('Access-Control-Allow-Credentials', 'true');
                     }
                     else {
                         Response.addHeader('Access-Control-Allow-Origin', '*');
@@ -294,11 +294,11 @@ var HproseHttpServer = (function() {
                         case "object":
                             alias = getRefName(func);
                             break;
-                        case "function": 
+                        case "function":
                             alias = getFuncName(func);
                             if (alias != "") break;
                         default:
-                            throw new r_HproseException('Need an alias');                            
+                            throw new r_HproseException('Need an alias');
                     }
                 }
                 if (typeof(alias) == "string") {
@@ -351,11 +351,11 @@ var HproseHttpServer = (function() {
                         case "object":
                             alias = getRefName(method);
                             break;
-                        case "function": 
+                        case "function":
                             alias = getFuncName(method);
                             if (alias != "") break;
                         default:
-                            throw new r_HproseException('Need an alias');                            
+                            throw new r_HproseException('Need an alias');
                     }
                 }
                 if (typeof(alias) == "string") {
@@ -392,7 +392,7 @@ var HproseHttpServer = (function() {
                     this.addMethod(methods[i], obj, aliases[i], context, resultMode, simple);
                 }
             }
-            
+
             this.addInstanceMethods = function(obj, aliasPrefix, context, resultMode, simple) {
                 var alias;
                 for (var name in obj) {

@@ -49,7 +49,7 @@ proxy.hello("world", function(result) {
 To start it use:
 
     node --harmony client.js
-    
+
 or
 
     node --harmony-proxies client.js

@@ -81,7 +81,7 @@ class HproseService(object):
                     if argcount == 5:
                         self.onBeforeInvoke(session, environ, functionName, functionArgs, byref)
                     elif argcount == 4:
-                        self.onBeforeInvoke(environ, functionName, functionArgs, byref)                    
+                        self.onBeforeInvoke(environ, functionName, functionArgs, byref)
                     elif argcount == 3:
                         self.onBeforeInvoke(functionName, functionArgs, byref)
                     elif argcount == 2:
@@ -133,7 +133,7 @@ class HproseService(object):
                     elif argcount == 5:
                         self.onAfterInvoke(environ, functionName, functionArgs, byref, result)
                     elif argcount == 4:
-                        self.onAfterInvoke(functionName, functionArgs, byref, result)                    
+                        self.onAfterInvoke(functionName, functionArgs, byref, result)
                     elif argcount == 3:
                         self.onAfterInvoke(functionName, functionArgs, byref)
                     elif argcount == 2:
@@ -148,7 +148,7 @@ class HproseService(object):
                 ostream.write(result)
                 return
             if resultMode == HproseResultMode.Raw:
-                ostream.write(result)            
+                ostream.write(result)
             else:
                 ostream.write(HproseTags.TagResult)
                 if resultMode == HproseResultMode.Serialized:
@@ -173,7 +173,7 @@ class HproseService(object):
         ostream.write(HproseTags.TagFunctions)
         writer.writeList(self.__funcNames.values())
         ostream.write(HproseTags.TagEnd)
-        
+
     def _handle(self, istream, ostream, session, environ):
         try:
             exceptTags = (HproseTags.TagCall, HproseTags.TagEnd)
@@ -331,7 +331,7 @@ class HproseService(object):
 
     def isDebugEnabled(self):
         return self._debug
-        
+
     def setDebugEnabled(self, enable = True):
         self._debug = enable
 

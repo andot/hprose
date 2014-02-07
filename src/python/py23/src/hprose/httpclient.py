@@ -239,7 +239,7 @@ class HproseHttpInvokeContext:
     def __init__(self):
         self.instream = None
         self.outstream = None
-    
+
 class HproseHttpClient(HproseClient):
     def __init__(self, uri = None):
         super(HproseHttpClient, self).__init__(uri)
@@ -312,7 +312,7 @@ class HproseHttpClient(HproseClient):
 
     def _getInovkeContext(self):
         return HproseHttpInvokeContext()
-    
+
     def _getOutputStream(self, context):
         context.outstream = StringIO()
         return context.outstream
@@ -347,7 +347,7 @@ class HproseHttpClient(HproseClient):
             else:
                 httpclient = httplib.HTTPConnection(self.__proxy.ip, self.__proxy.port)
         return httpclient
-    
+
     def __getconnect_new(self):
         if self.__proxy == None:
             if self.__scheme == 'https':
@@ -360,12 +360,12 @@ class HproseHttpClient(HproseClient):
             else:
                 httpclient = httplib.HTTPConnection(self.__proxy.ip, self.__proxy.port, timeout = self.timeout)
         return httpclient
-    
+
     if httplib.HTTPConnection.__init__.func_code.co_argcount == 4:
         __getconnect = __getconnect_old
     else:
         __getconnect = __getconnect_new
-    
+
     def __post(self, data):
         header = {'Content-Type': 'application/hprose'}
         header['Host'] = self.__host

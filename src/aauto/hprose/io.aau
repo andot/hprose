@@ -85,9 +85,9 @@ namespace hprose.io {
         }
         return len;
     };
-    
+
     var ulen = ..hprose.io.ulen;
-    
+
     class InputStream {
         ctor(buf) {
             if (type(buf) !== type.string) error("buf must be a string.");
@@ -276,7 +276,7 @@ namespace hprose.io {
                         error("tag '" ++ expectTags ++ "' expected, but '" ++ tag ++ "' found in stream");
                     }
                     else {
-                        error("Unexpected serialize tag '" ++ tag ++ "' in stream");    
+                        error("Unexpected serialize tag '" ++ tag ++ "' in stream");
                     }
                 }
             }
@@ -411,10 +411,10 @@ namespace hprose.io {
                     return tag[1] - 48;
                 }
                 case tags.TagInteger {
-                    return this.readIntegerWithoutTag(); 
+                    return this.readIntegerWithoutTag();
                 }
                 case tags.TagLong {
-                    return this.readLongWithoutTag(); 
+                    return this.readLongWithoutTag();
                 }
                 case tags.TagDouble {
                     return this.readDoubleWithoutTag();
@@ -546,7 +546,7 @@ namespace hprose.io {
                     this.unexpectedTag(tag);
                 }
             }
-        };        
+        };
         readInfinityWithoutTag = function() {
             if (stream.getc() == tags.TagNeg) {
                 return -Inf;
@@ -900,7 +900,7 @@ namespace hprose.io {
             this.unexpectedTag(tags.TagRef);
         };
         _reset = function() {
-            classref = {};        
+            classref = {};
         }
         reset = _reset;
     }
@@ -1116,7 +1116,7 @@ namespace hprose.io {
             var second = format("%02i",date.second);
             var millisecond = format("%03i",date.milliseconds);
             var timezone = (date.format[[1]] == '!') ? tags.TagUTC : tags.TagSemicolon;
-            
+
             if ((hour == '00') && (minute == '00') &&
                 (second == '00') && (millisecond == '000')) {
                 stream.write(tags.TagDate, year, month, day, timezone);
@@ -1125,7 +1125,7 @@ namespace hprose.io {
                 stream.write(tags.TagTime, hour, minute, second);
                 if (millisecond != '000') {
                     stream.write(tags.TagPoint, millisecond);
-                }                        
+                }
                 stream.write(timezone);
             }
             else {
@@ -1312,7 +1312,7 @@ namespace hprose.io {
             refcount = 0;
     	}
     }
-    
+
     namespace HproseFormatter {
         serialize = function(variable, simple = false) {
             var stream = ..hprose.io.OutputStream();

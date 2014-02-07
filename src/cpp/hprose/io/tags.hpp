@@ -46,7 +46,7 @@ namespace hprose
     const char TagBytes       = 'b';
     const char TagUTF8Char    = 'u';
     const char TagString      = 's';
-    const char TagGuid        = 'g';  
+    const char TagGuid        = 'g';
     const char TagList        = 'a';
     const char TagMap         = 'm';
     const char TagClass       = 'c';
@@ -81,7 +81,7 @@ namespace hprose
     const char MapTags[2]      = {TagMap, TagRef};
     const char ObjectTags[3]   = {TagClass, TagObject, TagRef};
     const char ResultTags[4]   = {TagResult, TagArgument, TagError, TagEnd};
-    
+
     inline std::string TagToString(char tag)
     {
         switch (tag)

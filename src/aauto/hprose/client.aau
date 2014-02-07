@@ -129,12 +129,12 @@ namespace hprose.client {
             }
         }
     }
-    
+
     var threadManager = ..thread.manage();
-    
+
     class HproseClient {
         ctor(uri) {
-            this.uri = uri;        
+            this.uri = uri;
             this.filter =  ..hprose.common.HproseFilter();
             this.onerror = function(){};
             this.send = null;
@@ -157,7 +157,7 @@ namespace hprose.client {
                 if (type(onerror) != type.function) {
                     error("onerror must be a function.");
                 }
-                var tab = ..thread.table("f9ccdb4e-61c8-4dc3-8bbb-0963910e42de"); 
+                var tab = ..thread.table("f9ccdb4e-61c8-4dc3-8bbb-0963910e42de");
                 tab.set('hproseClient', owner);
                 tab.set('syncInvoke', owner.syncInvoke);
                 tab.set('send', owner.send);
@@ -412,10 +412,10 @@ namespace hprose.client {
                 } while (next);
                 setCookie(cookies, host);
             }
-            var tbuffer = {}; 
-            for(str, size in http.eachRead()) { 
-                ..table.push(tbuffer, str); 
-            }  
+            var tbuffer = {};
+            for(str, size in http.eachRead()) {
+                ..table.push(tbuffer, str);
+            }
             data =  ..string.join(tbuffer);
             http.endRequest();
             return data;

@@ -47,7 +47,7 @@ class HproseHttpClient extends HproseBaseHttpClient {
         }
         $f->setMethod("post");
         $f->setPostData($request);
-        $f->setConnectTimeout($this->timeout);        
+        $f->setConnectTimeout($this->timeout);
         $f->setSendTimeout($this->timeout);
         $f->setReadTimeout($this->timeout);
         $response = $f->fetch($this->url);

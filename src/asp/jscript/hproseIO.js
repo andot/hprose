@@ -124,7 +124,7 @@ var HproseClassManager = new (function() {
     }
     this.getClass = function(alias) {
         return classCache[alias];
-    } 
+    }
     this.register(Object, 'Object');
 })();
 
@@ -264,7 +264,7 @@ var HproseSimpleWriter, HproseWriter;
                 return (typeof(obj.getClassName) == 'function') ? obj.getClassName() : 'Object';
             }
             if (classname != 'Object') {
-                hproseClassManager.register(cls, classname);       
+                hproseClassManager.register(cls, classname);
             }
             return classname;
         }
@@ -347,7 +347,7 @@ var HproseSimpleWriter, HproseWriter;
                 do {
                     tag = stream.getc();
                     ostream.write(tag);
-                } while (tag != HproseTags.TagSemicolon);        
+                } while (tag != HproseTags.TagSemicolon);
             }
             function readDateTimeRaw(ostream, tag) {
                 ostream.write(tag);
@@ -963,14 +963,14 @@ var HproseSimpleWriter, HproseWriter;
                     stream.write(hproseTags.TagTime + hour + minute + second);
                     if (millisecond != '000') {
                         stream.write(hproseTags.TagPoint + millisecond);
-                    }                        
+                    }
                 }
                 else {
                     stream.write(hproseTags.TagDate + year + month + day +
                                  hproseTags.TagTime + hour + minute + second);
                     if (millisecond != '000') {
                         stream.write(hproseTags.TagPoint + millisecond);
-                    }                        
+                    }
                 }
                 stream.write(hproseTags.TagSemicolon);
             }
@@ -991,7 +991,7 @@ var HproseSimpleWriter, HproseWriter;
                 stream.write(hproseTags.TagTime + hour + minute + second);
                 if (millisecond != '000') {
                     stream.write(hproseTags.TagPoint + millisecond);
-                }                        
+                }
                 stream.write(hproseTags.TagSemicolon);
             }
             function writeTimeWithRef(time) {

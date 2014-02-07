@@ -40,7 +40,7 @@ package java.util;
  * synchronizing on some object that naturally encapsulates the map.  If no
  * such object exists, the map should be "wrapped" using the
  * <tt>Collections.synchronizedMap</tt> method.  This is best done at creation
- * time, to prevent accidental unsynchronized access to the map: 
+ * time, to prevent accidental unsynchronized access to the map:
  * <pre>
  *     Map m = Collections.synchronizedMap(new TreeMap(...));
  * </pre><p>
@@ -57,12 +57,12 @@ package java.util;
  * <p>Note that the fail-fast behavior of an iterator cannot be guaranteed
  * as it is, generally speaking, impossible to make any hard guarantees in the
  * presence of unsynchronized concurrent modification.  Fail-fast iterators
- * throw <tt>ConcurrentModificationException</tt> on a best-effort basis. 
+ * throw <tt>ConcurrentModificationException</tt> on a best-effort basis.
  * Therefore, it would be wrong to write a program that depended on this
  * exception for its correctness:   <i>the fail-fast behavior of iterators
  * should be used only to detect bugs.</i><p>
  *
- * This class is a member of the 
+ * This class is a member of the
  * <a href="{@docRoot}/../guide/collections/index.html">
  * Java Collections Framework</a>.
  *
@@ -188,7 +188,7 @@ public class TreeMap extends AbstractMap implements SortedMap {
      * key.
      *
      * @param key key whose presence in this map is to be tested.
-     * 
+     *
      * @return <tt>true</tt> if this map contains a mapping for the
      *            specified key.
      * @throws ClassCastException if the key cannot be compared with the keys
@@ -255,7 +255,7 @@ public class TreeMap extends AbstractMap implements SortedMap {
      * @throws NullPointerException key is <tt>null</tt> and this map uses
      *                  natural ordering, or its comparator does not tolerate
      *                  <tt>null</tt> keys.
-     * 
+     *
      * @see #containsKey(Object)
      */
     public Object get(Object key) {
@@ -302,9 +302,9 @@ public class TreeMap extends AbstractMap implements SortedMap {
      * @param     map mappings to be stored in this map.
      * @throws    ClassCastException class of a key or value in the specified
      *                   map prevents it from being stored in this map.
-     * 
+     *
      * @throws NullPointerException if the given map is <tt>null</tt> or
-     *         this map does not permit <tt>null</tt> keys and a 
+     *         this map does not permit <tt>null</tt> keys and a
      *         key in the specified map is <tt>null</tt>.
      */
     public void putAll(Map map) {
@@ -420,7 +420,7 @@ public class TreeMap extends AbstractMap implements SortedMap {
     }
 
     /**
-     * Returns the key corresonding to the specified Entry.  Throw 
+     * Returns the key corresonding to the specified Entry.  Throw
      * NoSuchElementException if the Entry is <tt>null</tt>.
      */
     private static Object key(Entry e) {
@@ -436,7 +436,7 @@ public class TreeMap extends AbstractMap implements SortedMap {
      *
      * @param key key with which the specified value is to be associated.
      * @param value value to be associated with the specified key.
-     * 
+     *
      * @return previous value associated with specified key, or <tt>null</tt>
      *         if there was no mapping for key.  A <tt>null</tt> return can
      *         also indicate that the map previously associated <tt>null</tt>
@@ -490,7 +490,7 @@ public class TreeMap extends AbstractMap implements SortedMap {
      *         if there was no mapping for key.  A <tt>null</tt> return can
      *         also indicate that the map previously associated
      *         <tt>null</tt> with the specified key.
-     * 
+     *
      * @throws    ClassCastException key cannot be compared with the keys
      *            currently in the map.
      * @throws NullPointerException key is <tt>null</tt> and this map uses
@@ -701,10 +701,10 @@ public class TreeMap extends AbstractMap implements SortedMap {
      *
      * @param fromKey low endpoint (inclusive) of the subMap.
      * @param toKey high endpoint (exclusive) of the subMap.
-     * 
+     *
      * @return a view of the portion of this map whose keys range from
      *                <tt>fromKey</tt>, inclusive, to <tt>toKey</tt>, exclusive.
-     * 
+     *
      * @throws ClassCastException if <tt>fromKey</tt> and <tt>toKey</tt>
      *         cannot be compared to one another using this map's comparator
      *         (or, if the map has no comparator, using natural ordering).
@@ -1001,8 +1001,8 @@ public class TreeMap extends AbstractMap implements SortedMap {
                 throw new IllegalStateException();
             if (modCount != expectedModCount)
                 throw new ConcurrentModificationException();
-            if (lastReturned.left != null && lastReturned.right != null) 
-                next = lastReturned; 
+            if (lastReturned.left != null && lastReturned.right != null)
+                next = lastReturned;
             deleteEntry(lastReturned);
             expectedModCount++;
             lastReturned = null;
@@ -1074,10 +1074,10 @@ public class TreeMap extends AbstractMap implements SortedMap {
         boolean color = BLACK;
 
         /**
-         * Make a new cell with given key, value, and parent, and with 
-         * <tt>null</tt> child links, and BLACK color. 
+         * Make a new cell with given key, value, and parent, and with
+         * <tt>null</tt> child links, and BLACK color.
          */
-        Entry(Object key, Object value, Entry parent) { 
+        Entry(Object key, Object value, Entry parent) {
             this.key = key;
             this.value = value;
             this.parent = parent;
@@ -1088,8 +1088,8 @@ public class TreeMap extends AbstractMap implements SortedMap {
          *
          * @return the key.
          */
-        public Object getKey() { 
-            return key; 
+        public Object getKey() {
+            return key;
         }
 
         /**
@@ -1193,20 +1193,20 @@ public class TreeMap extends AbstractMap implements SortedMap {
         return (p == null ? BLACK : p.color);
     }
 
-    private static Entry  parentOf(Entry p) { 
+    private static Entry  parentOf(Entry p) {
         return (p == null ? null: p.parent);
     }
 
-    private static void setColor(Entry p, boolean c) { 
-        if (p != null)  p.color = c; 
+    private static void setColor(Entry p, boolean c) {
+        if (p != null)  p.color = c;
     }
 
-    private static Entry  leftOf(Entry p) { 
-        return (p == null)? null: p.left; 
+    private static Entry  leftOf(Entry p) {
+        return (p == null)? null: p.left;
     }
 
-    private static Entry  rightOf(Entry p) { 
-        return (p == null)? null: p.right; 
+    private static Entry  rightOf(Entry p) {
+        return (p == null)? null: p.right;
     }
 
     /** From CLR **/
@@ -1261,7 +1261,7 @@ public class TreeMap extends AbstractMap implements SortedMap {
                     }
                     setColor(parentOf(x), BLACK);
                     setColor(parentOf(parentOf(x)), RED);
-                    if (parentOf(parentOf(x)) != null) 
+                    if (parentOf(parentOf(x)) != null)
                         rotateRight(parentOf(parentOf(x)));
                 }
             } else {
@@ -1278,7 +1278,7 @@ public class TreeMap extends AbstractMap implements SortedMap {
                     }
                     setColor(parentOf(x),  BLACK);
                     setColor(parentOf(parentOf(x)), RED);
-                    if (parentOf(parentOf(x)) != null) 
+                    if (parentOf(parentOf(x)) != null)
                         rotateLeft(parentOf(parentOf(x)));
                 }
             }
@@ -1297,8 +1297,8 @@ public class TreeMap extends AbstractMap implements SortedMap {
         // point to successor.
         if (p.left != null && p.right != null) {
             Entry s = successor (p);
-            p.key = s.key;       
-            p.value = s.value;  
+            p.key = s.key;
+            p.value = s.value;
             p = s;
         } // p has 2 children
 
@@ -1350,7 +1350,7 @@ public class TreeMap extends AbstractMap implements SortedMap {
                     sib = rightOf(parentOf(x));
                 }
 
-                if (colorOf(leftOf(sib))  == BLACK && 
+                if (colorOf(leftOf(sib))  == BLACK &&
                     colorOf(rightOf(sib)) == BLACK) {
                     setColor(sib,  RED);
                     x = parentOf(x);
@@ -1377,7 +1377,7 @@ public class TreeMap extends AbstractMap implements SortedMap {
                     sib = leftOf(parentOf(x));
                 }
 
-                if (colorOf(rightOf(sib)) == BLACK && 
+                if (colorOf(rightOf(sib)) == BLACK &&
                     colorOf(leftOf(sib)) == BLACK) {
                     setColor(sib,  RED);
                     x = parentOf(x);
@@ -1397,7 +1397,7 @@ public class TreeMap extends AbstractMap implements SortedMap {
             }
         }
 
-        setColor(x, BLACK); 
+        setColor(x, BLACK);
     }
 
     /** Intended to be called only from TreeSet.addAll **/
@@ -1437,7 +1437,7 @@ public class TreeMap extends AbstractMap implements SortedMap {
      *        iterator or stream, as described above.
      * @throws IOException propagated from stream reads. This cannot
      *         occur if str is null.
-     * @throws ClassNotFoundException propagated from readObject. 
+     * @throws ClassNotFoundException propagated from readObject.
      *         This cannot occur if str is null.
      */
     private void buildFromSorted(int size, Iterator it,
@@ -1459,19 +1459,19 @@ public class TreeMap extends AbstractMap implements SortedMap {
      * @param lo the first element index of this subtree. Initial should be 0.
      * @param hi the last element index of this subtree.  Initial should be
      *              size-1.
-     * @param redLevel the level at which nodes should be red. 
+     * @param redLevel the level at which nodes should be red.
      *        Must be equal to computeRedLevel for tree of this size.
      */
     private static Entry buildFromSorted(int level, int lo, int hi,
                                          int redLevel,
                                          Iterator it,
-                                         Object defaultVal) 
+                                         Object defaultVal)
         throws  java.io.IOException, ClassNotFoundException {
         /*
          * Strategy: The root is the middlemost element. To get to it, we
          * have to first recursively construct the entire left subtree,
          * so as to grab all of its elements. We can then proceed with right
-         * subtree. 
+         * subtree.
          *
          * The lo and hi arguments are the minimum and maximum
          * indices to pull out of the iterator or stream for current subtree.
@@ -1482,12 +1482,12 @@ public class TreeMap extends AbstractMap implements SortedMap {
         if (hi < lo) return null;
 
         int mid = (lo + hi) / 2;
-        
+
         Entry left  = null;
-        if (lo < mid) 
+        if (lo < mid)
             left = buildFromSorted(level+1, lo, mid - 1, redLevel,
                                    it, defaultVal);
-        
+
         // extract key and/or value from iterator or stream
         Object key;
         Object value;
@@ -1501,23 +1501,23 @@ public class TreeMap extends AbstractMap implements SortedMap {
         }
 
         Entry middle =  new Entry(key, value, null);
-        
+
         // color nodes in non-full bottommost level red
         if (level == redLevel)
             middle.color = RED;
-        
-        if (left != null) { 
-            middle.left = left; 
-            left.parent = middle; 
+
+        if (left != null) {
+            middle.left = left;
+            left.parent = middle;
         }
-        
+
         if (mid < hi) {
             Entry right = buildFromSorted(level+1, mid+1, hi, redLevel,
                                           it, defaultVal);
             middle.right = right;
             right.parent = middle;
         }
-        
+
         return middle;
     }
 
@@ -1532,7 +1532,7 @@ public class TreeMap extends AbstractMap implements SortedMap {
      */
     private static int computeRedLevel(int sz) {
         int level = 0;
-        for (int m = sz - 1; m >= 0; m = m / 2 - 1) 
+        for (int m = sz - 1; m >= 0; m = m / 2 - 1)
             level++;
         return level;
     }

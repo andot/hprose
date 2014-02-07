@@ -178,7 +178,7 @@ id getHprosePropertyFormProperty(Class cls, objc_property_t prop) {
             case 'G':
                 getter = NSSelectorFromString([propAttr substringFromIndex:1]);
                 [property setGetter:getter];
-                [property setGetterImp:class_getMethodImplementation(cls, getter)]; 
+                [property setGetterImp:class_getMethodImplementation(cls, getter)];
                 break;
             case 'S':
                 setter = NSSelectorFromString([propAttr substringFromIndex:1]);
@@ -297,7 +297,7 @@ static NSMutableDictionary *gPropertiesCache;
 
 + (void) initialize {
     if (self == [HproseHelper class]) {
-        gPropertiesCache = [[NSMutableDictionary alloc] init];        
+        gPropertiesCache = [[NSMutableDictionary alloc] init];
     }
 }
 
@@ -376,7 +376,7 @@ static NSMutableDictionary *gPropertiesCache;
         [property setGetterImp:(IMP)getHproseAutoObjectProperty];
         [property setSetter:setter];
         [property setSetterImp:(IMP)setHproseAutoObjectProperty];
-        [properties setObject:property forKey:propName];                    
+        [properties setObject:property forKey:propName];
         [property release];
     }
     objc_registerClassPair(cls);

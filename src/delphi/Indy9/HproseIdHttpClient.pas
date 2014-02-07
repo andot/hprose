@@ -32,7 +32,7 @@ type
 
   THproseIdHttpClient = class(THproseClient)
   private
-    FHttpPool: IList;  
+    FHttpPool: IList;
     FHeaders: TStringList;
     FProxyHost: string;
     FProxyPort: Integer;

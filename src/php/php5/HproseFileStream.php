@@ -25,7 +25,7 @@ require_once("HproseAbstractStream.php");
 class HproseFileStream extends HproseAbstractStream {
     protected $fp;
     protected $buf;
-    protected $unmark;    
+    protected $unmark;
     protected $pos;
     protected $length;
     public function __construct($fp) {
@@ -46,10 +46,10 @@ class HproseFileStream extends HproseAbstractStream {
             return $this->buf{$this->pos++};
         }
         elseif ($this->unmark) {
-            $this->buf = "";        
+            $this->buf = "";
             $this->pos = -1;
             $this->length = 0;
-            return fgetc($this->fp);            
+            return fgetc($this->fp);
         }
         elseif (($c = fgetc($this->fp)) !== false) {
             $this->buf .= $c;
@@ -73,10 +73,10 @@ class HproseFileStream extends HproseAbstractStream {
             $this->pos += strlen($s);
         }
         elseif ($this->unmark) {
-            $this->buf = "";        
+            $this->buf = "";
             $this->pos = -1;
             $this->length = 0;
-            return fread($this->fp, $length);           
+            return fread($this->fp, $length);
         }
         elseif (($s = fread($this->fp, $length)) !== "") {
             $this->buf .= $s;

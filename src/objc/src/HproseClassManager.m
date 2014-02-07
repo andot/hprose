@@ -27,8 +27,8 @@ static NSMutableDictionary *gClassCache2;
 
 + (void) initialize {
     if (self == [HproseClassManager class]) {
-        gClassCache1 = [[NSMutableDictionary alloc] init];        
-        gClassCache2 = [[NSMutableDictionary alloc] init];        
+        gClassCache1 = [[NSMutableDictionary alloc] init];
+        gClassCache2 = [[NSMutableDictionary alloc] init];
     }
 }
 
@@ -43,10 +43,10 @@ static NSMutableDictionary *gClassCache2;
     }
     @synchronized (gClassCache2) {
         if (cls == Nil) {
-            [gClassCache2 setObject:[NSNull null] forKey:alias];          
+            [gClassCache2 setObject:[NSNull null] forKey:alias];
         }
         else {
-            [gClassCache2 setObject:cls forKey:alias];          
+            [gClassCache2 setObject:cls forKey:alias];
         }
     }
 }

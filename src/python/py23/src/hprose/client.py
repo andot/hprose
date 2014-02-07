@@ -65,7 +65,7 @@ class _AsyncInvoke(object):
             else:
                 self.__callback(result, self.__args)
         except (KeyboardInterrupt, SystemExit):
-            raise            
+            raise
         except Exception, e:
             if self.__onerror != None:
                 self.__onerror(self.__name, e)
@@ -95,7 +95,7 @@ class HproseClient(object):
                 if isinstance(onerror, (str, unicode)):
                     onerror = getattr(modules['__main__'], onerror, None)
                 if not callable(onerror):
-                    raise HproseException, "onerror must be callable"            
+                    raise HproseException, "onerror must be callable"
             threading.Thread(target = _AsyncInvoke(self.__invoke, name, args,
                                                    callback, onerror,
                                                    byRef, resultMode, simple)).start()
@@ -118,13 +118,13 @@ class HproseClient(object):
 
     def getSimpleMode(self):
         return self.__simple
-    
+
     def setSimpleMode(self, simple):
         self.__simple = simple
 
     def _getInovkeContext(self):
         raise NotImplementedError
-    
+
     def _getOutputStream(self, context):
         raise NotImplementedError
 

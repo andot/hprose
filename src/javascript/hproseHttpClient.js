@@ -32,7 +32,7 @@ var HproseHttpClient = (function () {
     var r_HproseSimpleWriter = HproseSimpleWriter;
     var r_HproseWriter = HproseWriter;
     var r_HproseTags = HproseTags;
-    
+
     var s_undefined = "undefined";
     var s_boolean = "boolean";
     var s_string = "string";

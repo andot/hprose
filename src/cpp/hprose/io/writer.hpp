@@ -739,8 +739,8 @@ namespace hprose
         inline void serialize(const ValueType & g, GuidType)
         {
             write_guid(g);
-        }        
-        
+        }
+
         template<typename ValueType>
         inline void serialize(const ValueType & a, ListType)
         {

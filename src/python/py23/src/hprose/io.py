@@ -130,7 +130,7 @@ class HproseClassManager:
         finally:
             _classCacheLock.release()
     register = staticmethod(register)
-            
+
     def getClass(alias):
         if alias in _classCache2:
             return _classCache2[alias]
@@ -138,7 +138,7 @@ class HproseClassManager:
         HproseClassManager.register(cls, alias)
         return cls
     getClass = staticmethod(getClass)
-    
+
     def getClassAlias(cls):
         if cls in _classCache1:
             return _classCache1[cls]
@@ -158,7 +158,7 @@ def _readuntil(stream, char):
         if (c == char) or (c == ''): break
         a.append(c)
     return ''.join(a)
-    
+
 def _readint(stream, char):
     s = _readuntil(stream, char)
     if s == '': return 0
@@ -712,7 +712,7 @@ class HproseSimpleWriter(object):
                 format = '%c%s' % (HproseTags.TagTime, '%H%M%S')
             else:
                 format = '%c%s%c%s' % (HproseTags.TagDate, '%Y%m%d', HproseTags.TagTime, '%H%M%S')
-            if date.microsecond > 0:                
+            if date.microsecond > 0:
                 format = '%s%c%s' % (format, HproseTags.TagPoint, '%f')
             if date.utcoffset() == ZERO:
                 format = '%s%c' % (format, HproseTags.TagUTC)
@@ -725,12 +725,12 @@ class HproseSimpleWriter(object):
         if not self._writeRef(date): self.writeDate(date)
     def writeTime(self, time):
         format = '%c%s' % (HproseTags.TagTime, '%H%M%S')
-        if time.microsecond > 0:                
-            format = '%s%c%s' % (format, HproseTags.TagPoint, '%f')        
+        if time.microsecond > 0:
+            format = '%s%c%s' % (format, HproseTags.TagPoint, '%f')
         if time.utcoffset() == ZERO:
             format = '%s%c' % (format, HproseTags.TagUTC)
         else:
-            format = '%s%c' % (format, HproseTags.TagSemicolon)        
+            format = '%s%c' % (format, HproseTags.TagSemicolon)
         self.stream.write(time.strftime(format))
     def writeTimeWithRef(self, time):
         if not self._writeRef(time): self.writeTime(time)
@@ -914,7 +914,7 @@ class HproseFormatter:
         if simple:
             writer = HproseSimpleWriter(stream)
         else:
-            writer = HproseWriter(stream)            
+            writer = HproseWriter(stream)
         writer.serialize(v)
         return stream.getvalue()
     serialize = staticmethod(serialize)

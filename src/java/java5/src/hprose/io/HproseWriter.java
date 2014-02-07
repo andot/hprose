@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for Java.                          *
  *                                                        *
- * LastModified: Feb 2, 2014                              *
+ * LastModified: Feb 7, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -71,7 +71,7 @@ public final class HproseWriter {
             serialize(obj, TypeCode.get(obj.getClass()));
         }
     }
-    
+
     private void serialize(Object obj, int typecode) throws IOException {
         if (obj == null) {
             writeNull();
@@ -150,15 +150,7 @@ public final class HproseWriter {
                     }
                     break;
                 }
-                case TypeCode.ByteArray: {
-                    if (((byte[]) obj).length == 0) {
-                        writeEmpty();
-                    }
-                    else {
-                        writeBytesWithRef((byte[]) obj);
-                    }
-                    break;
-                }
+                case TypeCode.ByteArray: writeBytesWithRef((byte[]) obj); break;
                 case TypeCode.ShortArray: writeArrayWithRef((short[]) obj); break;
                 case TypeCode.IntArray: writeArrayWithRef((int[]) obj); break;
                 case TypeCode.LongArray: writeArrayWithRef((long[]) obj); break;
@@ -640,7 +632,7 @@ public final class HproseWriter {
         }
         stream.write(HproseTags.TagQuote);
     }
-    
+
     public void writeUUID(UUID uuid) throws IOException {
         ref.put(uuid, lastref++);
         stream.write(HproseTags.TagGuid);
@@ -648,7 +640,7 @@ public final class HproseWriter {
         stream.write(getAscii(uuid.toString()));
         stream.write(HproseTags.TagClosebrace);
     }
-    
+
     public void writeUUIDWithRef(UUID uuid) throws IOException {
         int r = ref.get(uuid);
         if (r > -1) {
@@ -1348,7 +1340,7 @@ public final class HproseWriter {
         }
         return null;
     }
-    
+
     private void putSerializeCache(Class<?> type, HproseMode mode, SerializeCache cache) {
         if ((mode != HproseMode.MemberMode) && Serializable.class.isAssignableFrom(type)) {
             if (mode == HproseMode.FieldMode) {

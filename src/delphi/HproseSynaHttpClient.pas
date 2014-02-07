@@ -99,7 +99,7 @@ type
 
     {:Password for user authorization.}
     property Password: string read FPassword write FPassword;
-    
+
     {:Specify default timeout for socket operations.}
     property Timeout: Integer read FTimeout write FTimeout;
   end;
@@ -260,7 +260,7 @@ begin
       Cookie := GetCookie(FHost,
                           FPath,
                           LowerCase(FProtocol) = 'https');
-      if Cookie <> '' then Headers.Add('Cookie: ' + Cookie);      
+      if Cookie <> '' then Headers.Add('Cookie: ' + Cookie);
       HTTPMethod('POST', FUri);
       SetCookie(Headers, FHost);
     end

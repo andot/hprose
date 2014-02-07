@@ -218,7 +218,7 @@ package hprose.io {
                 stream.writeByte(HproseTags.TagUTC);
             }
         }
-        
+
         public function writeUTCDateWithRef(date:Date):void {
             if (!writeRef(date)) writeUTCDate(date);
         }
@@ -370,7 +370,7 @@ package hprose.io {
                         fields.push(key);
                     }
                 }
-                index = writeClass(alias, fields);            
+                index = writeClass(alias, fields);
             }
             stream.writeByte(HproseTags.TagObject);
             stream.writeUTFBytes(index.toString());
@@ -383,7 +383,7 @@ package hprose.io {
             for (var i:uint = 0; i < count; i++) {
                 serialize(obj[fields[i]]);
             }
-            stream.writeByte(HproseTags.TagClosebrace);    
+            stream.writeByte(HproseTags.TagClosebrace);
         }
 
         public function writeObject(obj:*):void {

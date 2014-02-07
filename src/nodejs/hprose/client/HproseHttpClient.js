@@ -130,7 +130,7 @@ function HproseHttpClient(url) {
         m_options.headers = {"connection": "keep-alive"};
         return super_useService();
     }
-    
+
     function setOption(option, value) {
         if (option != 'method' && option != 'headers') {
             m_options[option] = value;
@@ -149,7 +149,7 @@ function HproseHttpClient(url) {
             }
         }
     }
-    
+
     this.on('senddata', function(invoker, data) {
         m_options.headers["content-length"] = data.length;
         var cookie = getCookie(m_options.host, m_options.path, m_secure);
@@ -191,13 +191,13 @@ function HproseHttpClient(url) {
                 setCookie(response.headers, m_options.host);
             }
         });
-        
+
         timeoutid = setTimeout(function() {
             timeoutid = null;
             request.abort();
             invoker.emit('error', new HproseException("timeout"));
         }, this.getTimeout());
-        
+
         request.on('error', function(e) {
             if (timeoutid) {
                 clearTimeout(timeoutid);
@@ -206,7 +206,7 @@ function HproseHttpClient(url) {
         });
         request.end(data);
     });
-    
+
     // public methods
     this.useService = useService;
     this.setOption = setOption;

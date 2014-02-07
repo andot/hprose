@@ -54,7 +54,7 @@ function HproseClient() {
     var m_proxy;
     var m_filter = new HproseFilter();
     if (typeof(Proxy) != 'undefined') m_proxy = Proxy.create(new HproseProxy(invoke.bind(this)));
-    
+
     function invoke(func, args) {
         var resultMode = HproseResultMode.Normal;
         var byref = m_byref;
@@ -282,7 +282,7 @@ function HproseClient() {
         var data = m_filter.outputFilter(stream.toBuffer());
         this.emit('senddata', invoker, data);
     }
-    
+
     function getResult(data, func, args, resultMode, simple) {
         data = m_filter.inputFilter(data);
         var result;
@@ -329,7 +329,7 @@ function HproseClient() {
         }
         return result;
     }
-    
+
     // public methods
     this.setTimeout = function(value) {
         m_timeout = value;

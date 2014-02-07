@@ -100,7 +100,7 @@ namespace Hprose.Client {
                     if (istream != null) {
                         client.EndInvoke(istream, asyncResult.AsyncState, success);
                     }
-                } 
+                }
                 syncContext.Post(new SendOrPostCallback(DoCallback), null);
             }
             protected abstract void DoCallback(object state);

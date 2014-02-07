@@ -48,7 +48,7 @@ package java.util;
  * collection-views do <i>not</i> affect the order of iteration of the backing
  * map.
  *
- * <p>The {@link #removeEldestEntry(Map.Entry)} method may be overridden to 
+ * <p>The {@link #removeEldestEntry(Map.Entry)} method may be overridden to
  * impose a policy for removing stale mappings automatically when new mappings
  * are added to the map.
  *
@@ -70,7 +70,7 @@ package java.util;
  * excessively high value for initial capacity is less severe for this class
  * than for <tt>HashMap</tt>, as iteration times for this class are unaffected
  * by capacity.
- * 
+ *
  * <p><strong>Note that this implementation is not synchronized.</strong> If
  * multiple threads access a linked hash map concurrently, and at least
  * one of the threads modifies the map structurally, it <em>must</em> be
@@ -103,12 +103,12 @@ package java.util;
  * <p>Note that the fail-fast behavior of an iterator cannot be guaranteed
  * as it is, generally speaking, impossible to make any hard guarantees in the
  * presence of unsynchronized concurrent modification.  Fail-fast iterators
- * throw <tt>ConcurrentModificationException</tt> on a best-effort basis. 
+ * throw <tt>ConcurrentModificationException</tt> on a best-effort basis.
  * Therefore, it would be wrong to write a program that depended on this
  * exception for its correctness:   <i>the fail-fast behavior of iterators
  * should be used only to detect bugs.</i>
  *
- * <p>This class is a member of the 
+ * <p>This class is a member of the
  * <a href="{@docRoot}/../guide/collections/index.html">
  * Java Collections Framework</a>.
  *
@@ -153,7 +153,7 @@ public class LinkedHashMap extends HashMap {
 
     /**
      * Constructs an empty insertion-ordered <tt>LinkedHashMap</tt> instance
-     * with the specified initial capacity and a default load factor (0.75). 
+     * with the specified initial capacity and a default load factor (0.75).
      *
      * @param  initialCapacity the initial capacity.
      * @throws IllegalArgumentException if the initial capacity is negative.
@@ -296,7 +296,7 @@ public class LinkedHashMap extends HashMap {
             after.before = before;
         }
 
-        /**                                             
+        /**
          * Insert this entry before the specified existing entry in the list.
          */
         private void addBefore(Entry existingEntry) {
@@ -310,7 +310,7 @@ public class LinkedHashMap extends HashMap {
          * This method is invoked by the superclass whenever the value
          * of a pre-existing entry is read by Map.get or modified by Map.set.
          * If the enclosing Map is access-ordered, it moves the entry
-         * to the end of the list; otherwise, it does nothing. 
+         * to the end of the list; otherwise, it does nothing.
          */
         void recordAccess(HashMap m) {
             LinkedHashMap lm = (LinkedHashMap)m;
@@ -394,7 +394,7 @@ public class LinkedHashMap extends HashMap {
         if (removeEldestEntry(eldest)) {
             removeEntryForKey(eldest.key);
         } else {
-            if (size >= threshold) 
+            if (size >= threshold)
                 resize(2 * table.length);
         }
     }
@@ -440,7 +440,7 @@ public class LinkedHashMap extends HashMap {
      * <p>This implementation merely returns <tt>false</tt> (so that this
      * map acts like a normal map - the eldest element is never removed).
      *
-     * @param    eldest The least recently inserted entry in the map, or if 
+     * @param    eldest The least recently inserted entry in the map, or if
      *           this is an access-ordered map, the least recently accessed
      *           entry.  This is the entry that will be removed it this
      *           method returns <tt>true</tt>.  If the map was empty prior

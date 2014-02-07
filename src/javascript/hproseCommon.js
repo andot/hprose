@@ -155,7 +155,7 @@ if (!('isArray' in Array)) {
                 }
             }
         }
-        
+
         if (!hasWeakMap) {
             global.WeakMap = function WeakMap() {
                 var namespace = createNPO();
@@ -219,7 +219,7 @@ if (!('isArray' in Array)) {
                 }
             }
         }
-        
+
         if (!hasMap) {
             var ObjectMap = function() {
                 var namespace = createNPO();
@@ -341,7 +341,7 @@ if (!('isArray' in Array)) {
                             writable: true,
                             configurable: true,
                             enumerable: false
-                        }               
+                        }
                     }));
                 }
                 else {

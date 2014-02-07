@@ -26,7 +26,7 @@ class HproseDateTime extends HproseDate {
     public $hour;
     public $minute;
     public $second;
-    public $microsecond = 0;    
+    public $microsecond = 0;
     public function __construct() {
         $args_num = func_num_args();
         $args = func_get_args();
@@ -40,7 +40,7 @@ class HproseDateTime extends HproseDate {
                 $this->hour = $time['hours'];
                 $this->minute = $time['minutes'];
                 $this->second = $time['seconds'];
-                $this->microsecond = $timeofday['usec'];              
+                $this->microsecond = $timeofday['usec'];
                 break;
             case 1:
                 $time = false;
@@ -119,7 +119,7 @@ class HproseDateTime extends HproseDate {
                 if (($args[6] < 0) || ($args[6] > 999999)) {
                     throw new HproseException('Unexpected arguments');
                 }
-                $this->microsecond = $args[6];                
+                $this->microsecond = $args[6];
             case 6:
                 if (!self::isValidDate($args[0], $args[1], $args[2])) {
                     throw new HproseException('Unexpected arguments');
@@ -138,7 +138,7 @@ class HproseDateTime extends HproseDate {
                 throw new HproseException('Unexpected arguments');
         }
     }
-    
+
     public function addMicroseconds($microseconds) {
         if (!is_int($microseconds)) return false;
         if ($microseconds == 0) return true;
@@ -156,7 +156,7 @@ class HproseDateTime extends HproseDate {
             return false;
         }
     }
-    
+
     public function addSeconds($seconds) {
         if (!is_int($seconds)) return false;
         if ($seconds == 0) return true;
@@ -298,14 +298,14 @@ class HproseDateTime extends HproseDate {
                            $this->year, $this->month, $this->day,
                            $this->hour, $this->minute, $this->second,
                            (int)($this->microsecond / 1000));
-        }        
+        }
         else {
             $format = ($fullformat ? '%04d-%02d-%02dT%02d:%02d:%02d.%06d'
                                    : '%04d%02d%02dT%02d%02d%02d.%06d');
             $str = sprintf($format,
                            $this->year, $this->month, $this->day,
                            $this->hour, $this->minute, $this->second,
-                           $this->microsecond);            
+                           $this->microsecond);
         }
         if ($this->utc) {
             $str .= 'Z';

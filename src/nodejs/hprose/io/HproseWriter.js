@@ -45,7 +45,7 @@ function HproseWriter(stream) {
     var writeBytes = this.writeBytes;
     this.writeBytes = function(bytes) {
         ref.set(bytes, refcount++);
-        writeBytes.call(this, bytes);        
+        writeBytes.call(this, bytes);
     }
     var writeString = this.writeString;
     this.writeString = function(str) {

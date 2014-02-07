@@ -150,7 +150,7 @@
         return;
     }
     if (callback) {
-        callback(result, args);        
+        callback(result, args);
     }
 #if defined(Block_copy) && defined(Block_release)
     else if (block) {
@@ -169,158 +169,158 @@
                 switch (type) {
                     case _C_ID: {
                         if (n == 3) {
-                            objc_msgSend(delegate, selector, result);                            
+                            objc_msgSend(delegate, selector, result);
                         }
                         else {
-                            objc_msgSend(delegate, selector, result, args);                            
+                            objc_msgSend(delegate, selector, result, args);
                         }
                         break;
                     }
                     case _C_CHR: {
                         char value = [result charValue];
                         if (n == 3) {
-                            objc_msgSend(delegate, selector, value);                            
+                            objc_msgSend(delegate, selector, value);
                         }
                         else {
-                            objc_msgSend(delegate, selector, value, args);                            
+                            objc_msgSend(delegate, selector, value, args);
                         }
                         break;
                     }
                     case _C_UCHR: {
                         unsigned char value = [result unsignedCharValue];
                         if (n == 3) {
-                            objc_msgSend(delegate, selector, value);                            
+                            objc_msgSend(delegate, selector, value);
                         }
                         else {
-                            objc_msgSend(delegate, selector, value, args);                            
+                            objc_msgSend(delegate, selector, value, args);
                         }
                         break;
                     }
                     case _C_SHT: {
                         short value = [result shortValue];
                         if (n == 3) {
-                            objc_msgSend(delegate, selector, value);                            
+                            objc_msgSend(delegate, selector, value);
                         }
                         else {
-                            objc_msgSend(delegate, selector, value, args);                            
+                            objc_msgSend(delegate, selector, value, args);
                         }
                         break;
                     }
                     case _C_USHT: {
                         unsigned short value = [result unsignedShortValue];
                         if (n == 3) {
-                            objc_msgSend(delegate, selector, value);                            
+                            objc_msgSend(delegate, selector, value);
                         }
                         else {
-                            objc_msgSend(delegate, selector, value, args);                            
+                            objc_msgSend(delegate, selector, value, args);
                         }
                         break;
                     }
                     case _C_INT: {
                         int value = [result intValue];
                         if (n == 3) {
-                            objc_msgSend(delegate, selector, value);                            
+                            objc_msgSend(delegate, selector, value);
                         }
                         else {
-                            objc_msgSend(delegate, selector, value, args);                            
+                            objc_msgSend(delegate, selector, value, args);
                         }
                         break;
                     }
                     case _C_UINT: {
                         unsigned int value = [result unsignedIntValue];
                         if (n == 3) {
-                            objc_msgSend(delegate, selector, value);                            
+                            objc_msgSend(delegate, selector, value);
                         }
                         else {
-                            objc_msgSend(delegate, selector, value, args);                            
+                            objc_msgSend(delegate, selector, value, args);
                         }
                         break;
                     }
                     case _C_LNG: {
                         long value = [result longValue];
                         if (n == 3) {
-                            objc_msgSend(delegate, selector, value);                            
+                            objc_msgSend(delegate, selector, value);
                         }
                         else {
-                            objc_msgSend(delegate, selector, value, args);                            
+                            objc_msgSend(delegate, selector, value, args);
                         }
                         break;
                     }
                     case _C_ULNG: {
                         unsigned long value = [result unsignedLongValue];
                         if (n == 3) {
-                            objc_msgSend(delegate, selector, value);                            
+                            objc_msgSend(delegate, selector, value);
                         }
                         else {
-                            objc_msgSend(delegate, selector, value, args);                            
+                            objc_msgSend(delegate, selector, value, args);
                         }
                         break;
                     }
                     case _C_LNG_LNG: {
                         long long value = [result longLongValue];
                         if (n == 3) {
-                            objc_msgSend(delegate, selector, value);                            
+                            objc_msgSend(delegate, selector, value);
                         }
                         else {
-                            objc_msgSend(delegate, selector, value, args);                            
+                            objc_msgSend(delegate, selector, value, args);
                         }
                         break;
                     }
                     case _C_ULNG_LNG: {
                         unsigned long long value = [result unsignedLongLongValue];
                         if (n == 3) {
-                            objc_msgSend(delegate, selector, value);                            
+                            objc_msgSend(delegate, selector, value);
                         }
                         else {
-                            objc_msgSend(delegate, selector, value, args);                            
+                            objc_msgSend(delegate, selector, value, args);
                         }
                         break;
                     }
                     case _C_FLT: {
                         float value = [result floatValue];
                         if (n == 3) {
-                            objc_msgSend(delegate, selector, value);                            
+                            objc_msgSend(delegate, selector, value);
                         }
                         else {
-                            objc_msgSend(delegate, selector, value, args);                            
+                            objc_msgSend(delegate, selector, value, args);
                         }
                         break;
                     }
                     case _C_DBL: {
                         double value = [result doubleValue];
                         if (n == 3) {
-                            objc_msgSend(delegate, selector, value);                            
+                            objc_msgSend(delegate, selector, value);
                         }
                         else {
-                            objc_msgSend(delegate, selector, value, args);                            
+                            objc_msgSend(delegate, selector, value, args);
                         }
                         break;
                     }
                     case _C_BOOL: {
                         BOOL value = [result boolValue];
                         if (n == 3) {
-                            objc_msgSend(delegate, selector, value);                            
+                            objc_msgSend(delegate, selector, value);
                         }
                         else {
-                            objc_msgSend(delegate, selector, value, args);                            
+                            objc_msgSend(delegate, selector, value, args);
                         }
                         break;
                     }
                     case _C_CHARPTR: {
                         const char *value = [result UTF8String];
                         if (n == 3) {
-                            objc_msgSend(delegate, selector, value);                            
+                            objc_msgSend(delegate, selector, value);
                         }
                         else {
-                            objc_msgSend(delegate, selector, value, args);                            
+                            objc_msgSend(delegate, selector, value, args);
                         }
                         break;
                     }
                 }
                 break;
             }
-        }        
-    }    
+        }
+    }
 }
 
 - (void) errorCallback:(NSException *)e {
@@ -336,7 +336,7 @@
         [defaultDelegate performSelector:onError withObject:name withObject:e];
     }
     else {
-        NSLog(@"%@", e);        
+        NSLog(@"%@", e);
     }
 }
 
@@ -666,8 +666,8 @@
             }
         }
     }
-    [asyncInvoke setDefaultDelegate:defaultDelegate];    
-    [asyncInvoke setDelegate:delegate];    
+    [asyncInvoke setDefaultDelegate:defaultDelegate];
+    [asyncInvoke setDelegate:delegate];
     [asyncInvoke setSelector:selector];
     [asyncInvoke setOnError:onError];
 #if defined(Block_copy) && defined(Block_release)
@@ -743,7 +743,7 @@
                 case HproseTagResult: {
                     if (mode == HproseResultMode_Normal) {
                         [reader reset];
-                        result = [reader unserialize:cls withType:type];                    
+                        result = [reader unserialize:cls withType:type];
                     }
                     else if (mode == HproseResultMode_Serialized) {
                         result = [reader readRaw];
@@ -847,7 +847,7 @@
 #if defined(Block_copy) && defined(Block_release)
     [asyncInvoke setBlock:nil];
     [asyncInvoke setErrorHandler:errorHandler];
-#endif    
+#endif
     [asyncInvoke invoke];
 }
 
@@ -870,6 +870,6 @@
     [asyncInvoke setErrorHandler:errorHandler];
     [asyncInvoke invoke];
 }
-#endif    
+#endif
 
 @end

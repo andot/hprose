@@ -171,7 +171,7 @@ class HproseSimpleWriter {
     public function writeList(&$list) {
         $count = count($list);
         $this->stream->write(HproseTags::TagList);
-        if ($count > 0) $this->stream->write((string)$count); 
+        if ($count > 0) $this->stream->write((string)$count);
         $this->stream->write(HproseTags::TagOpenbrace);
         for ($i = 0; $i < $count; ++$i) {
             $this->serialize($list[$i]);
@@ -184,7 +184,7 @@ class HproseSimpleWriter {
     public function writeMap(&$map) {
         $count = count($map);
         $this->stream->write(HproseTags::TagMap);
-        if ($count > 0) $this->stream->write((string)$count); 
+        if ($count > 0) $this->stream->write((string)$count);
         $this->stream->write(HproseTags::TagOpenbrace);
         foreach ($map as $key => &$value) {
             $this->serialize($key);

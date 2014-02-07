@@ -80,7 +80,7 @@
     }
     @throw [HproseException exceptionWithReason:
             [NSString stringWithFormat:
-             @"Not support this type: %c", type]];    
+             @"Not support this type: %c", type]];
 }
 
 + (id) numberWithString:(NSString *)s withType:(char)type {
@@ -90,7 +90,7 @@
             break;
         case _C_LNG:
             return [NSNumber numberWithLong:((sizeof(long) == 4) ? [s intValue] : [s longLongValue])];
-            break;            
+            break;
         case _C_LNG_LNG:
             return [NSNumber numberWithLongLong:[s longLongValue]];
             break;
@@ -645,7 +645,7 @@ static double NaN, Infinity, NegInfinity;
         }
         [self checkTag:HproseTagInteger withTag:tag];
     }
-    return [self readI32:HproseTagSemicolon];    
+    return [self readI32:HproseTagSemicolon];
 }
 
 - (int64_t) readInt64 {
@@ -661,7 +661,7 @@ static double NaN, Infinity, NegInfinity;
         char expectTags[] = {HproseTagInteger, HproseTagLong, 0};
         [self checkTags:expectTags withTag:tag];
     }
-    return [self readI64:HproseTagSemicolon];    
+    return [self readI64:HproseTagSemicolon];
 }
 
 - (uint8_t) readUInt8 {
@@ -900,7 +900,7 @@ static double NaN, Infinity, NegInfinity;
 }
 
 - (id) readDate:(int)tag {
-    return [self readDate:tag withClass:Nil];    
+    return [self readDate:tag withClass:Nil];
 }
 
 - (id) readDate:(int)tag withClass:(Class)cls {
@@ -986,7 +986,7 @@ static double NaN, Infinity, NegInfinity;
         cls == [NSObject class]) {
         data = [NSData dataWithBytesNoCopy:buffer
                                     length:len
-                              freeWhenDone:YES];        
+                              freeWhenDone:YES];
     }
     else if (cls == [NSMutableData class]) {
         data = [NSMutableData dataWithBytesNoCopy:buffer
@@ -1055,7 +1055,7 @@ static double NaN, Infinity, NegInfinity;
         default:
             @throw [HproseException exceptionWithReason:@"Bad utf-8 encoding"];
     }
-    return u;    
+    return u;
 }
 
 - (id) readString {
@@ -1071,7 +1071,7 @@ static double NaN, Infinity, NegInfinity;
 }
 
 - (id) readString:(int)tag withClass:(Class)cls withType:(char)type {
-    return [self readString:tag withClass:cls withType:type includeRef:YES];    
+    return [self readString:tag withClass:cls withType:type includeRef:YES];
 }
 
 - (id) readGuid {
@@ -1273,7 +1273,7 @@ static double NaN, Infinity, NegInfinity;
                     break;
             }
         }
-        [self checkTag:HproseTagQuote];        
+        [self checkTag:HproseTagQuote];
     }
     else {
         unichar *buffer = malloc(len * sizeof(unichar));
@@ -1354,7 +1354,7 @@ static double NaN, Infinity, NegInfinity;
         else {
             free(buffer);
             _throwCastException(@"String", cls);
-        }        
+        }
     }
     if (b) {
         [ref addObject:data];
@@ -1365,7 +1365,7 @@ static double NaN, Infinity, NegInfinity;
 - (id) readObject:(Class)cls withCount:(int)count {
     id obj = [[[cls alloc] init] autorelease];
     [ref addObject:obj];
-    NSDictionary *properties = [HproseHelper getHproseProperties:cls];    
+    NSDictionary *properties = [HproseHelper getHproseProperties:cls];
     for (NSUInteger i = 0; i < count; ++i) {
         id name = [self unserialize:[NSString class]];
         [self readProperty:[properties objectForKey:name] forObject:obj];
@@ -1518,7 +1518,7 @@ static double NaN, Infinity, NegInfinity;
             @throw [HproseException exceptionWithReason:@"No byte found in stream"];
             break;
         default:
-            @throw [HproseException exceptionWithReason:@"Unexpected serialize tag in stream"];            
+            @throw [HproseException exceptionWithReason:@"Unexpected serialize tag in stream"];
     }
 }
 - (void) readNumberRaw:(NSOutputStream *)ostream withTag:(int)tag {

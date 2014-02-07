@@ -45,14 +45,14 @@ package java.util;
  * requires time proportional to the <i>size</i> of the set, regardless of
  * its capacity.  Iteration over a <tt>HashSet</tt> is likely to be more
  * expensive, requiring time proportional to its <i>capacity</i>.
- * 
+ *
  * <p>A linked hash set has two parameters that affect its performance:
  * <i>initial capacity</i> and <i>load factor</i>.  They are defined precisely
  * as for <tt>HashSet</tt>.  Note, however, that the penalty for choosing an
  * excessively high value for initial capacity is less severe for this class
  * than for <tt>HashSet</tt>, as iteration times for this class are unaffected
  * by capacity.
- * 
+ *
  * <p><strong>Note that this implementation is not synchronized.</strong> If
  * multiple threads access a linked hash set concurrently, and at least one of
  * the threads modifies the set, it <em>must</em> be synchronized externally.
@@ -75,12 +75,12 @@ package java.util;
  * <p>Note that the fail-fast behavior of an iterator cannot be guaranteed
  * as it is, generally speaking, impossible to make any hard guarantees in the
  * presence of unsynchronized concurrent modification.  Fail-fast iterators
- * throw <tt>ConcurrentModificationException</tt> on a best-effort basis. 
+ * throw <tt>ConcurrentModificationException</tt> on a best-effort basis.
  * Therefore, it would be wrong to write a program that depended on this
  * exception for its correctness:   <i>the fail-fast behavior of iterators
  * should be used only to detect bugs.</i>
  *
- * <p>This class is a member of the 
+ * <p>This class is a member of the
  * <a href="{@docRoot}/../guide/collections/index.html">
  * Java Collections Framework</a>.
  *
@@ -98,7 +98,7 @@ package java.util;
 public class LinkedHashSet extends HashSet implements Set {
     /**
      * Constructs a new, empty linked hash set with the specified initial
-     * capacity and load factor. 
+     * capacity and load factor.
      *
      * @param      initialCapacity the initial capacity of the linked hash set
      * @param      loadFactor      the load factor of the linked hash set.
@@ -135,7 +135,7 @@ public class LinkedHashSet extends HashSet implements Set {
      * capacity sufficient to hold the elements in the specified collection
      * and the default load factor (0.75).
      *
-     * @param c  the collection whose elements are to be placed into 
+     * @param c  the collection whose elements are to be placed into
      *           this set.
      * @throws NullPointerException if the specified collection is null.
      */

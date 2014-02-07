@@ -45,11 +45,11 @@ module Hprose
         origin = env["HTTP_ORIGIN"]
         if (origin and origin != "null") then
           header['Access-Control-Allow-Origin'] = origin
-          header['Access-Control-Allow-Credentials'] = 'true' 
+          header['Access-Control-Allow-Credentials'] = 'true'
         else
-          header['Access-Control-Allow-Origin'] = '*' 
+          header['Access-Control-Allow-Origin'] = '*'
         end
-      end            
+      end
       @on_send_header.call(env, header) until @on_send_header.nil?
       ostream = StringIO.new()
       begin

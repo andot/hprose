@@ -17,7 +17,7 @@ package java.util;
  *	<li> Method names have been improved.
  * </ul><p>
  *
- * This interface is a member of the 
+ * This interface is a member of the
  * <a href="{@docRoot}/../guide/collections/index.html">
  * Java Collections Framework</a>.
  *
@@ -47,7 +47,7 @@ public interface Iterator {
     Object next();
 
     /**
-     * 
+     *
      * Removes from the underlying collection the last element returned by the
      * iterator (optional operation).  This method can be called only once per
      * call to <tt>next</tt>.  The behavior of an iterator is unspecified if
@@ -56,7 +56,7 @@ public interface Iterator {
      *
      * @exception UnsupportedOperationException if the <tt>remove</tt>
      *		  operation is not supported by this Iterator.
-     
+     *
      * @exception IllegalStateException if the <tt>next</tt> method has not
      *		  yet been called, or the <tt>remove</tt> method has already
      *		  been called after the last call to the <tt>next</tt>

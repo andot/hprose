@@ -22,7 +22,7 @@ package hprose {
     import hprose.common.HproseResultMode;
     import hprose.common.IHproseFilter;
     import hprose.common.HproseFilter;
-    
+
     import hprose.client.HproseHttpClient;
     import hprose.client.HproseHttpInvoker;
     import hprose.client.HproseHttpRequest;
@@ -39,7 +39,7 @@ package hprose {
     import hprose.io.HproseSimpleWriter;
     import hprose.io.HproseWriter;
     import flash.display.Sprite;
-    
+
     public class HproseLoader extends Sprite {
         public function export():void {
             hprose.common.HproseException;
