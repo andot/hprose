@@ -136,6 +136,20 @@ class BytesIO {
     return length;
   }
 
+  // the result includes tag.
+  Uint8List readBytes(int tag) {
+    Uint8List buf = new Uint8List.view(_bytes.buffer, _off, _length);
+    int pos = buf.indexOf(tag);
+    if (pos == -1) {
+      _off = _length;
+    } else {
+      buf = new Uint8List.view(_bytes.buffer, _off, pos + 1);
+      _off += pos + 1;
+    }
+    return buf;
+  }
+
+  // the result doesn't include tag. but the position is the same as readBytes
   String readUntil(int tag) {
     Uint8List buf = new Uint8List.view(_bytes.buffer, _off, _length);
     int pos = buf.indexOf(tag);
@@ -152,18 +166,6 @@ class BytesIO {
     return str;
   }
 
-  Uint8List readBytes(int tag) {
-    Uint8List buf = new Uint8List.view(_bytes.buffer, _off, _length);
-    int pos = buf.indexOf(tag);
-    if (pos == -1) {
-      _off = _length;
-    } else {
-      buf = new Uint8List.view(_bytes.buffer, _off, pos + 1);
-      _off += pos + 1;
-    }
-    return buf;
-  }
-
   String readAsciiString(int length) {
     if (_off + length > _length) {
       length = _length - _off;
@@ -174,6 +176,7 @@ class BytesIO {
     return str;
   }
 
+  // length is the UTF16 length
   String readUTF8String(int length) {
     if (length == 0) return "";
     Uint16List charCodes = new Uint16List(length);
@@ -237,6 +240,7 @@ class BytesIO {
     return new String.fromCharCodes(charCodes);
   }
 
+  // returns a view of the the internal buffer and clears `this`.
   Uint8List takeBytes() {
     if (_bytes == null) return new Uint8List(0);
     var buffer = new Uint8List.view(_bytes.buffer, 0, _length);
@@ -244,6 +248,7 @@ class BytesIO {
     return buffer;
   }
 
+  // returns a copy of the current contents and leaves `this` intact.
   Uint8List toBytes() {
     if (_bytes == null) return new Uint8List(0);
     return new Uint8List.fromList(

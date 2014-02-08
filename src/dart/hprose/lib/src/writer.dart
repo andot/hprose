@@ -280,6 +280,35 @@ class HproseWriter {
     if (!_refer.write(_bytes, value)) writeMap(value);
   }
 
+  Map<String, Symbol> _getFieldsFromCache(ClassMirror cm) {
+    Map<String, Symbol> fields = _FieldsCache[cm];
+    if (fields == null) {
+      fields = new Map<String, Symbol>();
+      Map<String, Symbol> properties = new Map<String, Symbol>();
+      cm.instanceMembers.values.forEach((MethodMirror e) {
+        if ((e.isSetter || e.isGetter) &&
+            !e.isStatic && !e.isPrivate &&
+            e.returnType is! TypedefMirror &&
+            e.returnType is! FunctionTypeMirror &&
+            e.returnType.simpleName != #Function) {
+          String name = MirrorSystem.getName(e.simpleName);
+          if (e.isSetter) name = name.substring(0, name.length - 1);
+          if (properties[name] != null) {
+            if (e.isSetter) {
+              fields[name] = properties[name];
+            } else {
+              fields[name] = e.simpleName;
+            }
+          } else {
+            properties[name] = e.simpleName;
+          }
+        }
+      });
+      _FieldsCache[cm] = fields;
+    }
+    return fields;
+  }
+
   void writeObject(dynamic value) {
     InstanceMirror im = reflect(value);
     ClassMirror cm = im.type;
@@ -297,31 +326,7 @@ class HproseWriter {
     if (index != null) {
       fields = _fieldsref[index];
     } else {
-      fields = _FieldsCache[cm];
-      if (fields == null) {
-        fields = new Map<String, Symbol>();
-        Map<String, Symbol> properties = new Map<String, Symbol>();
-        cm.instanceMembers.values.forEach((MethodMirror e) {
-          if ((e.isSetter || e.isGetter) &&
-              !e.isStatic && !e.isPrivate &&
-              e.returnType is! TypedefMirror &&
-              e.returnType is! FunctionTypeMirror &&
-              e.returnType.simpleName != #Function) {
-            String name = MirrorSystem.getName(e.simpleName);
-            if (e.isSetter) name = name.substring(0, name.length - 1);
-            if (properties[name] != null) {
-              if (e.isSetter) {
-                fields[name] = properties[name];
-              } else {
-                fields[name] = e.simpleName;
-              }
-            } else {
-              properties[name] = e.simpleName;
-            }
-          }
-        });
-        _FieldsCache[cm] = fields;
-      }
+      fields = _getFieldsFromCache(cm);
       index = _writeClass(className, fields);
     }
     _refer.set(value);
@@ -353,5 +358,10 @@ class HproseWriter {
     return index;
   }
 
+  void reset() {
+    _classref.clear();
+    _fieldsref.clear();
+    _refer.reset();
+  }
 }
 
