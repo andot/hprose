@@ -15,7 +15,7 @@
  *                                                        *
  * Hprose IO library for AAuto Quicker                    *
  *                                                        *
- * LastModified: Dec 26, 2013                             *
+ * LastModified: Feb 9, 2013                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -284,43 +284,41 @@ namespace hprose.io {
         readRaw = function(ostream, tag) {
             ostream := ..hprose.io.OutputStream();
             tag := stream.getc();
+            ostream.write(tag);
             select(tag) {
                 case '0';'9' {
-                    ostream.write(tag);
                 }
                 case tags.TagNull,tags.TagEmpty,tags.TagTrue,tags.TagFalse,tags.TagNaN {
-                    ostream.write(tag);
                 }
                 case tags.TagInfinity {
-                    ostream.write(tag, stream.getc());
+                    ostream.write(stream.getc());
                 }
                 case tags.TagInteger,tags.TagLong,tags.TagDouble,tags.TagRef {
                     this.readNumberRaw(ostream);
                 }
                 case tags.TagDate,tags.TagTime {
-                    this.readDateTimeRaw(ostream, tag);
+                    this.readDateTimeRaw(ostream);
                 }
                 case tags.TagUTF8Char {
-                    this.readUTF8CharRaw(ostream, tag);
+                    this.readUTF8CharRaw(ostream);
                 }
                 case tags.TagBytes {
-                    this.readBytesRaw(ostream, tag);
+                    this.readBytesRaw(ostream);
                 }
                 case tags.TagString {
-                    this.readStringRaw(ostream, tag);
+                    this.readStringRaw(ostream);
                 }
                 case tags.TagGuid {
-                    this.readGuidRaw(ostream, tag);
+                    this.readGuidRaw(ostream);
                 }
                 case tags.TagList,tags.TagMap,tags.TagObject {
-                    this.readComplexRaw(ostream, tag);
+                    this.readComplexRaw(ostream);
                 }
                 case tags.TagClass {
-                    this.readComplexRaw(ostream, tag);
+                    this.readComplexRaw(ostream);
                     this.readRaw(ostream);
                 }
                 case tags.TagError {
-                    ostream.write(tag);
                     this.readRaw(ostream);
                 }
                 else {
@@ -329,27 +327,26 @@ namespace hprose.io {
             }
             return ostream;
         };
-        readNumberRaw = function(ostream, tag) {
-            ostream.write(tag);
+        readNumberRaw = function(ostream) {
+            var tag;
             do {
                 tag = stream.getc();
                 ostream.write(tag);
             } while (tag != tags.TagSemicolon);
         };
-        readDateTimeRaw = function(ostream, tag) {
-            ostream.write(tag);
+        readDateTimeRaw = function(ostream) {
+            var tag;
             do {
                 tag = stream.getc();
                 ostream.write(tag);
             } while ((tag != tags.TagSemicolon) && (tag != tags.TagUTC));
         };
-        readUTF8CharRaw = function(ostream, tag) {
-            ostream.write(tag, stream.readUTF8String(1));
+        readUTF8CharRaw = function(ostream) {
+            ostream.write(stream.readUTF8String(1));
         };
-        readBytesRaw = function(ostream, tag) {
-            ostream.write(tag);
+        readBytesRaw = function(ostream) {
             var count = 0;
-            tag = '0';
+            var tag = '0';
             do {
                 count *= 10;
                 count += tag[1] - 48;
@@ -358,10 +355,9 @@ namespace hprose.io {
             } while (tag != tags.TagQuote);
             ostream.write(stream.read(count + 1));
         };
-        readStringRaw = function(ostream, tag) {
-            ostream.write(tag);
+        readStringRaw = function(ostream) {
             var count = 0;
-            tag = '0';
+            var tag = '0';
             do {
                 count *= 10;
                 count += tag[1] - 48;
@@ -370,11 +366,11 @@ namespace hprose.io {
             } while (tag != tags.TagQuote);
             ostream.write(stream.readUTF8String(count + 1));
         };
-        readGuidRaw = function(ostream, tag) {
-            ostream.write(tag, stream.read(38));
+        readGuidRaw = function(ostream) {
+            ostream.write(stream.read(38));
         };
-        readComplexRaw = function(ostream, tag) {
-            ostream.write(tag);
+        readComplexRaw = function(ostream) {
+            var tag;
             do {
                 tag = stream.getc();
                 ostream.write(tag);

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for Java.                          *
  *                                                        *
- * LastModified: Jan 28, 2014                             *
+ * LastModified: Feb 8, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -1417,6 +1417,7 @@ public final class HproseReader {
     }
 
     private void readRaw(OutputStream ostream, int tag) throws IOException {
+        ostream.write(tag);
         switch (tag) {
             case '0':
             case '1':
@@ -1433,45 +1434,42 @@ public final class HproseReader {
             case HproseTags.TagTrue:
             case HproseTags.TagFalse:
             case HproseTags.TagNaN:
-                ostream.write(tag);
                 break;
             case HproseTags.TagInfinity:
-                ostream.write(tag);
                 ostream.write(stream.read());
                 break;
             case HproseTags.TagInteger:
             case HproseTags.TagLong:
             case HproseTags.TagDouble:
             case HproseTags.TagRef:
-                readNumberRaw(ostream, tag);
+                readNumberRaw(ostream);
                 break;
             case HproseTags.TagDate:
             case HproseTags.TagTime:
-                readDateTimeRaw(ostream, tag);
+                readDateTimeRaw(ostream);
                 break;
             case HproseTags.TagUTF8Char:
-                readUTF8CharRaw(ostream, tag);
+                readUTF8CharRaw(ostream);
                 break;
             case HproseTags.TagBytes:
-                readBytesRaw(ostream, tag);
+                readBytesRaw(ostream);
                 break;
             case HproseTags.TagString:
-                readStringRaw(ostream, tag);
+                readStringRaw(ostream);
                 break;
             case HproseTags.TagGuid:
-                readGuidRaw(ostream, tag);
+                readGuidRaw(ostream);
                 break;
             case HproseTags.TagList:
             case HproseTags.TagMap:
             case HproseTags.TagObject:
-                readComplexRaw(ostream, tag);
+                readComplexRaw(ostream);
                 break;
             case HproseTags.TagClass:
-                readComplexRaw(ostream, tag);
+                readComplexRaw(ostream);
                 readRaw(ostream);
                 break;
             case HproseTags.TagError:
-                ostream.write(tag);
                 readRaw(ostream);
                 break;
             case -1:
@@ -1482,16 +1480,16 @@ public final class HproseReader {
         }
     }
 
-    private void readNumberRaw(OutputStream ostream, int tag) throws IOException {
-        ostream.write(tag);
+    private void readNumberRaw(OutputStream ostream) throws IOException {
+        int tag;
         do {
             tag = stream.read();
             ostream.write(tag);
         } while (tag != HproseTags.TagSemicolon);
     }
 
-    private void readDateTimeRaw(OutputStream ostream, int tag) throws IOException {
-        ostream.write(tag);
+    private void readDateTimeRaw(OutputStream ostream) throws IOException {
+        int tag;
         do {
             tag = stream.read();
             ostream.write(tag);
@@ -1499,9 +1497,8 @@ public final class HproseReader {
                  tag != HproseTags.TagUTC);
     }
 
-    private void readUTF8CharRaw(OutputStream ostream, int tag) throws IOException {
-        ostream.write(tag);
-        tag = stream.read();
+    private void readUTF8CharRaw(OutputStream ostream) throws IOException {
+        int tag = stream.read();
         switch (tag >>> 4) {
             case 0:
             case 1:
@@ -1536,10 +1533,9 @@ public final class HproseReader {
         }
     }
 
-    private void readBytesRaw(OutputStream ostream, int tag) throws IOException {
-        ostream.write(tag);
+    private void readBytesRaw(OutputStream ostream) throws IOException {
         int len = 0;
-        tag = '0';
+        int tag = '0';
         do {
             len *= 10;
             len += tag - '0';
@@ -1557,10 +1553,9 @@ public final class HproseReader {
         ostream.write(stream.read());
     }
 
-    private void readStringRaw(OutputStream ostream, int tag) throws IOException {
-        ostream.write(tag);
+    private void readStringRaw(OutputStream ostream) throws IOException {
         int count = 0;
-        tag = '0';
+        int tag = '0';
         do {
             count *= 10;
             count += tag - '0';
@@ -1616,8 +1611,7 @@ public final class HproseReader {
         ostream.write(stream.read());
     }
 
-    private void readGuidRaw(OutputStream ostream, int tag) throws IOException {
-        ostream.write(tag);
+    private void readGuidRaw(OutputStream ostream) throws IOException {
         int len = 38;
         int off = 0;
         byte[] b = new byte[len];
@@ -1629,8 +1623,8 @@ public final class HproseReader {
         ostream.write(b);
     }
 
-    private void readComplexRaw(OutputStream ostream, int tag) throws IOException {
-        ostream.write(tag);
+    private void readComplexRaw(OutputStream ostream) throws IOException {
+        int tag;
         do {
             tag = stream.read();
             ostream.write(tag);

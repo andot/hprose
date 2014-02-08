@@ -47,6 +47,7 @@ class HproseRawReader {
         if (is_null($tag)) {
             $tag = $this->stream->getc();
         }
+        $ostream->write($tag);
         switch ($tag) {
             case '0':
             case '1':
@@ -63,45 +64,42 @@ class HproseRawReader {
             case HproseTags::TagTrue:
             case HproseTags::TagFalse:
             case HproseTags::TagNaN:
-                $ostream->write($tag);
                 break;
             case HproseTags::TagInfinity:
-                $ostream->write($tag);
                 $ostream->write($this->stream->getc());
                 break;
             case HproseTags::TagInteger:
             case HproseTags::TagLong:
             case HproseTags::TagDouble:
             case HproseTags::TagRef:
-                $this->readNumberRaw($ostream, $tag);
+                $this->readNumberRaw($ostream);
                 break;
             case HproseTags::TagDate:
             case HproseTags::TagTime:
-                $this->readDateTimeRaw($ostream, $tag);
+                $this->readDateTimeRaw($ostream);
                 break;
             case HproseTags::TagUTF8Char:
-                $this->readUTF8CharRaw($ostream, $tag);
+                $this->readUTF8CharRaw($ostream);
                 break;
             case HproseTags::TagBytes:
-                $this->readBytesRaw($ostream, $tag);
+                $this->readBytesRaw($ostream);
                 break;
             case HproseTags::TagString:
-                $this->readStringRaw($ostream, $tag);
+                $this->readStringRaw($ostream);
                 break;
             case HproseTags::TagGuid:
-                $this->readGuidRaw($ostream, $tag);
+                $this->readGuidRaw($ostream);
                 break;
             case HproseTags::TagList:
             case HproseTags::TagMap:
             case HproseTags::TagObject:
-                $this->readComplexRaw($ostream, $tag);
+                $this->readComplexRaw($ostream);
                 break;
             case HproseTags::TagClass:
-                $this->readComplexRaw($ostream, $tag);
+                $this->readComplexRaw($ostream);
                 $this->readRaw($ostream);
                 break;
             case HproseTags::TagError:
-                $ostream->write($tag);
                 $this->readRaw($ostream);
                 break;
             default: $this->unexpectedTag($tag);
@@ -109,15 +107,14 @@ class HproseRawReader {
     	return $ostream;
     }
 
-    private function readNumberRaw($ostream, $tag) {
-        $s = $tag .
-             $this->stream->readuntil(HproseTags::TagSemicolon) .
+    private function readNumberRaw($ostream) {
+        $s = $this->stream->readuntil(HproseTags::TagSemicolon) .
              HproseTags::TagSemicolon;
         $ostream->write($s);
     }
 
-    private function readDateTimeRaw($ostream, $tag) {
-        $s = $tag;
+    private function readDateTimeRaw($ostream) {
+        $s = "";
         do {
             $tag = $this->stream->getc();
             $s .= $tag;
@@ -126,10 +123,9 @@ class HproseRawReader {
         $ostream->write($s);
     }
 
-    private function readUTF8CharRaw($ostream, $tag) {
-        $s = $tag;
+    private function readUTF8CharRaw($ostream) {
         $tag = $this->stream->getc();
-        $s .= $tag;
+        $s = $tag;
         $a = ord($tag);
         if (($a & 0xE0) == 0xC0) {
             $s .= $this->stream->getc();
@@ -143,16 +139,16 @@ class HproseRawReader {
         $ostream->write($s);
     }
 
-    private function readBytesRaw($ostream, $tag) {
+    private function readBytesRaw($ostream) {
         $len = $this->stream->readuntil(HproseTags::TagQuote);
-        $s = $tag . $len . HproseTags::TagQuote . $this->stream->read((int)$len) . HproseTags::TagQuote;
+        $s = $len . HproseTags::TagQuote . $this->stream->read((int)$len) . HproseTags::TagQuote;
         $this->stream->skip(1);
         $ostream->write($s);
     }
 
-    private function readStringRaw($ostream, $tag) {
+    private function readStringRaw($ostream) {
         $len = $this->stream->readuntil(HproseTags::TagQuote);
-        $s = $tag . $len . HproseTags::TagQuote;
+        $s = $len . HproseTags::TagQuote;
         $len = (int)$len;
         $this->stream->mark();
         $utf8len = 0;
@@ -202,14 +198,12 @@ class HproseRawReader {
         $ostream->write($s);
     }
 
-    private function readGuidRaw($ostream, $tag) {
-        $s = $tag . $this->stream->read(38);
-        $ostream->write($s);
+    private function readGuidRaw($ostream) {
+        $ostream->write($this->stream->read(38));
     }
 
-    private function readComplexRaw($ostream, $tag) {
-        $s = $tag .
-             $this->stream->readuntil(HproseTags::TagOpenbrace) .
+    private function readComplexRaw($ostream) {
+        $s = $this->stream->readuntil(HproseTags::TagOpenbrace) .
              HproseTags::TagOpenbrace;
         $ostream->write($s);
         while (($tag = $this->stream->getc()) != HproseTags::TagClosebrace) {

@@ -14,7 +14,7 @@
 #                                                          #
 # hprose io stream library for ruby                        #
 #                                                          #
-# LastModified: Jan 4, 2014                                #
+# LastModified: Feb 8, 2014                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -177,21 +177,18 @@ module Hprose
     private
     include Tags
     include Stream
-    def read_number_raw(ostream, tag)
-      ostream.putc(tag)
+    def read_number_raw(ostream)
       ostream.write(readuntil(@stream, TagSemicolon))
       ostream.putc(TagSemicolon)
     end
-    def read_datetime_raw(ostream, tag)
-      ostream.putc(tag)
+    def read_datetime_raw(ostream)
       while true
         c = @stream.getbyte
         ostream.putc(c)
         break if (c == TagSemicolon) or (c == TagUTC)
       end
     end
-    def read_utf8char_raw(ostream, tag)
-      ostream.putc(tag)
+    def read_utf8char_raw(ostream)
       c = @stream.getbyte
       ostream.putc(c)
       if (c & 0xE0) == 0xC0 then
@@ -202,17 +199,15 @@ module Hprose
         raise HproseException, 'Bad utf-8 encoding'
       end
     end
-    def read_bytes_raw(ostream, tag)
+    def read_bytes_raw(ostream)
       count = readuntil(@stream, TagQuote)
-      ostream.putc(tag)
       ostream.write(count)
       ostream.putc(TagQuote)
       count = ((count == '') ? 0 : count.to_i)
       ostream.write(@stream.read(count + 1))
     end
-    def read_string_raw(ostream, tag)
+    def read_string_raw(ostream)
       count = readuntil(@stream, TagQuote)
-      ostream.putc(tag)
       ostream.write(count)
       ostream.putc(TagQuote)
       count = ((count == '') ? 0 : count.to_i)
@@ -232,12 +227,10 @@ module Hprose
       end
       ostream.putc(@stream.getbyte())
     end
-    def read_guid_raw(ostream, tag)
-      ostream.putc(tag)
+    def read_guid_raw(ostream)
       ostream.write(@stream.read(38))
     end
-    def read_complex_raw(ostream, tag)
-      ostream.putc(tag)
+    def read_complex_raw(ostream)
       ostream.write(readuntil(@stream, TagOpenbrace))
       ostream.write(TagOpenbrace)
       tag = @stream.getbyte
@@ -264,18 +257,19 @@ module Hprose
     def read_raw(ostream = nil, tag = nil)
       ostream = StringIO.new if ostream.nil?
       tag = @stream.getbyte if tag.nil?
+      ostream.putc(tag)
       case tag
-      when TagZero..TagNine, TagNull, TagEmpty, TagTrue, TagFalse, TagNaN then ostream.putc(tag)
-      when TagInfinity then ostream.putc(tag); ostream.putc(@stream.getbyte())
-      when TagInteger, TagLong, TagDouble, TagRef then read_number_raw(ostream, tag)
-      when TagDate, TagTime then read_datetime_raw(ostream, tag)
-      when TagUTF8Char then read_utf8char_raw(ostream, tag)
-      when TagBytes then read_bytes_raw(ostream, tag)
-      when TagString then read_string_raw(ostream, tag)
-      when TagGuid then read_guid_raw(ostream, tag)
-      when TagList, TagMap, TagObject then read_complex_raw(ostream, tag)
-      when TagClass then read_complex_raw(ostream, tag); read_raw(ostream)
-      when TagError then ostream.putc(tag); read_raw(ostream)
+      when TagZero..TagNine, TagNull, TagEmpty, TagTrue, TagFalse, TagNaN then {}
+      when TagInfinity then ostream.putc(@stream.getbyte())
+      when TagInteger, TagLong, TagDouble, TagRef then read_number_raw(ostream)
+      when TagDate, TagTime then read_datetime_raw(ostream)
+      when TagUTF8Char then read_utf8char_raw(ostream)
+      when TagBytes then read_bytes_raw(ostream)
+      when TagString then read_string_raw(ostream)
+      when TagGuid then read_guid_raw(ostream)
+      when TagList, TagMap, TagObject then read_complex_raw(ostream)
+      when TagClass then read_complex_raw(ostream); read_raw(ostream)
+      when TagError then read_raw(ostream)
       else unexpected_tag(tag)
       end
       return ostream

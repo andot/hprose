@@ -15,7 +15,7 @@
  *                                                        *
  * hprose io unit for delphi.                             *
  *                                                        *
- * LastModified: Jan 28, 2014                             *
+ * LastModified: Feb 8, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -135,14 +135,14 @@ type
     function ReadSmartObject(TypeInfo: PTypeInfo): ISmartObject;
 {$ENDIF}
     procedure ReadRaw(const OStream: TStream; Tag: AnsiChar); overload;
-    procedure ReadInfinityRaw(const OStream: TStream; Tag: AnsiChar);
-    procedure ReadNumberRaw(const OStream: TStream; Tag: AnsiChar);
-    procedure ReadDateTimeRaw(const OStream: TStream; Tag: AnsiChar);
-    procedure ReadUTF8CharRaw(const OStream: TStream; Tag: AnsiChar);
-    procedure ReadStringRaw(const OStream: TStream; Tag: AnsiChar);
-    procedure ReadBytesRaw(const OStream: TStream; Tag: AnsiChar);
-    procedure ReadGuidRaw(const OStream: TStream; Tag: AnsiChar);
-    procedure ReadComplexRaw(const OStream: TStream; Tag: AnsiChar);
+    procedure ReadInfinityRaw(const OStream: TStream);
+    procedure ReadNumberRaw(const OStream: TStream);
+    procedure ReadDateTimeRaw(const OStream: TStream);
+    procedure ReadUTF8CharRaw(const OStream: TStream);
+    procedure ReadStringRaw(const OStream: TStream);
+    procedure ReadBytesRaw(const OStream: TStream);
+    procedure ReadGuidRaw(const OStream: TStream);
+    procedure ReadComplexRaw(const OStream: TStream);
   public
     constructor Create(AStream: TStream);
     procedure CheckTag(expectTag: AnsiChar);
@@ -2799,33 +2799,33 @@ end;
 
 procedure THproseReader.ReadRaw(const OStream: TStream; Tag: AnsiChar);
 begin
+  OStream.WriteBuffer(Tag, 1);
   case Tag of
     '0'..'9',
     htNull,
     htEmpty,
     htTrue,
     htFalse,
-    htNaN: OStream.WriteBuffer(Tag, 1);
-    htInfinity: ReadInfinityRaw(OStream, Tag);
+    htNaN: begin end;
+    htInfinity: ReadInfinityRaw(OStream);
     htInteger,
     htLong,
     htDouble,
-    htRef: ReadNumberRaw(OStream, Tag);
+    htRef: ReadNumberRaw(OStream);
     htDate,
-    htTime: ReadDateTimeRaw(OStream, Tag);
-    htUTF8Char: ReadUTF8CharRaw(OStream, Tag);
-    htBytes: ReadBytesRaw(OStream, Tag);
-    htString: ReadStringRaw(OStream, Tag);
-    htGuid: ReadGuidRaw(OStream, Tag);
+    htTime: ReadDateTimeRaw(OStream);
+    htUTF8Char: ReadUTF8CharRaw(OStream);
+    htBytes: ReadBytesRaw(OStream);
+    htString: ReadStringRaw(OStream);
+    htGuid: ReadGuidRaw(OStream);
     htList,
     htMap,
-    htObject: ReadComplexRaw(OStream, Tag);
+    htObject: ReadComplexRaw(OStream);
     htClass: begin
-      ReadComplexRaw(OStream, Tag);
+      ReadComplexRaw(OStream);
       ReadRaw(OStream);
     end;
     htError: begin
-      OStream.WriteBuffer(Tag, 1);
       ReadRaw(OStream);
     end;
   else
@@ -2834,25 +2834,28 @@ begin
   end;
 end;
 
-procedure THproseReader.ReadInfinityRaw(const OStream: TStream; Tag: AnsiChar);
+procedure THproseReader.ReadInfinityRaw(const OStream: TStream);
+var
+  Tag: AnsiChar;
 begin
-  OStream.WriteBuffer(Tag, 1);
   FStream.ReadBuffer(Tag, 1);
   OStream.WriteBuffer(Tag, 1);
 end;
 
-procedure THproseReader.ReadNumberRaw(const OStream: TStream; Tag: AnsiChar);
+procedure THproseReader.ReadNumberRaw(const OStream: TStream);
+var
+  Tag: AnsiChar;
 begin
-  OStream.WriteBuffer(Tag, 1);
   repeat
     FStream.ReadBuffer(Tag, 1);
     OStream.WriteBuffer(Tag, 1);
   until (Tag = HproseTagSemicolon);
 end;
 
-procedure THproseReader.ReadDateTimeRaw(const OStream: TStream; Tag: AnsiChar);
+procedure THproseReader.ReadDateTimeRaw(const OStream: TStream);
+var
+  Tag: AnsiChar;
 begin
-  OStream.WriteBuffer(Tag, 1);
   repeat
     FStream.ReadBuffer(Tag, 1);
     OStream.WriteBuffer(Tag, 1);
@@ -2860,9 +2863,10 @@ begin
         (Tag = HproseTagUTC);
 end;
 
-procedure THproseReader.ReadUTF8CharRaw(const OStream: TStream; Tag: AnsiChar);
+procedure THproseReader.ReadUTF8CharRaw(const OStream: TStream);
+var
+  Tag: AnsiChar;
 begin
-  OStream.WriteBuffer(Tag, 1);
   FStream.ReadBuffer(Tag, 1);
   case Ord(Tag) shr 4 of
     0..7: OStream.WriteBuffer(Tag, 1);
@@ -2884,11 +2888,11 @@ begin
   end;
 end;
 
-procedure THproseReader.ReadBytesRaw(const OStream: TStream; Tag: AnsiChar);
+procedure THproseReader.ReadBytesRaw(const OStream: TStream);
 var
+  Tag: AnsiChar;
   Len: Integer;
 begin
-  OStream.WriteBuffer(Tag, 1);
   Len := 0;
   Tag := '0';
   repeat
@@ -2899,11 +2903,11 @@ begin
   OStream.CopyFrom(FStream, Len + 1);
 end;
 
-procedure THproseReader.ReadStringRaw(const OStream: TStream; Tag: AnsiChar);
+procedure THproseReader.ReadStringRaw(const OStream: TStream);
 var
+  Tag: AnsiChar;
   Len, I: Integer;
 begin
-  OStream.WriteBuffer(Tag, 1);
   Len := 0;
   Tag := '0';
   repeat
@@ -2949,15 +2953,15 @@ begin
   end;
 end;
 
-procedure THproseReader.ReadGuidRaw(const OStream: TStream; Tag: AnsiChar);
+procedure THproseReader.ReadGuidRaw(const OStream: TStream);
 begin
-  OStream.WriteBuffer(Tag, 1);
   OStream.CopyFrom(FStream, 38);
 end;
 
-procedure THproseReader.ReadComplexRaw(const OStream: TStream; Tag: AnsiChar);
+procedure THproseReader.ReadComplexRaw(const OStream: TStream);
+var
+  Tag: AnsiChar;
 begin
-  OStream.WriteBuffer(Tag, 1);
   repeat
     FStream.ReadBuffer(Tag, 1);
     OStream.WriteBuffer(Tag, 1);

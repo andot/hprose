@@ -44,7 +44,7 @@ func TestRawReaderNumber(t *testing.T) {
 		t.Error(err.Error())
 	}
 	if string(raw) != "i123;" {
-		t.Error("read integer error")
+		t.Error("read integer error: ", string(raw))
 	}
 }
 

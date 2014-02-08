@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for C#.                            *
  *                                                        *
- * LastModified: Feb 2, 2014                              *
+ * LastModified: Feb 8, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -3401,6 +3401,7 @@ namespace Hprose.IO {
         }
 
         private void ReadRaw(Stream ostream, int tag) {
+            ostream.WriteByte((byte)tag);
             switch (tag) {
                 case '0':
                 case '1':
@@ -3417,61 +3418,58 @@ namespace Hprose.IO {
                 case HproseTags.TagTrue:
                 case HproseTags.TagFalse:
                 case HproseTags.TagNaN:
-                    ostream.WriteByte((byte)tag);
                     break;
                 case HproseTags.TagInfinity:
-                    ostream.WriteByte((byte)tag);
                     ostream.WriteByte((byte)stream.ReadByte());
                     break;
                 case HproseTags.TagInteger:
                 case HproseTags.TagLong:
                 case HproseTags.TagDouble:
                 case HproseTags.TagRef:
-                    ReadNumberRaw(ostream, tag);
+                    ReadNumberRaw(ostream);
                     break;
                 case HproseTags.TagDate:
                 case HproseTags.TagTime:
-                    ReadDateTimeRaw(ostream, tag);
+                    ReadDateTimeRaw(ostream);
                     break;
                 case HproseTags.TagUTF8Char:
-                    ReadUTF8CharRaw(ostream, tag);
+                    ReadUTF8CharRaw(ostream);
                     break;
                 case HproseTags.TagBytes:
-                    ReadBytesRaw(ostream, tag);
+                    ReadBytesRaw(ostream);
                     break;
                 case HproseTags.TagString:
-                    ReadStringRaw(ostream, tag);
+                    ReadStringRaw(ostream);
                     break;
                 case HproseTags.TagGuid:
-                    ReadGuidRaw(ostream, tag);
+                    ReadGuidRaw(ostream);
                     break;
                 case HproseTags.TagList:
                 case HproseTags.TagMap:
                 case HproseTags.TagObject:
-                    ReadComplexRaw(ostream, tag);
+                    ReadComplexRaw(ostream);
                     break;
                 case HproseTags.TagClass:
-                    ReadComplexRaw(ostream, tag);
+                    ReadComplexRaw(ostream);
                     ReadRaw(ostream);
                     break;
                 case HproseTags.TagError:
-                    ostream.WriteByte((byte)tag);
                     ReadRaw(ostream);
                     break;
                 default: throw UnexpectedTag(tag);
             }
         }
 
-        private void ReadNumberRaw(Stream ostream, int tag) {
-            ostream.WriteByte((byte)tag);
+        private void ReadNumberRaw(Stream ostream) {
+            int tag;
             do {
                 tag = stream.ReadByte();
                 ostream.WriteByte((byte)tag);
             } while (tag != HproseTags.TagSemicolon);
         }
 
-        private void ReadDateTimeRaw(Stream ostream, int tag) {
-            ostream.WriteByte((byte)tag);
+        private void ReadDateTimeRaw(Stream ostream) {
+            int tag;
             do {
                 tag = stream.ReadByte();
                 ostream.WriteByte((byte)tag);
@@ -3479,9 +3477,8 @@ namespace Hprose.IO {
                      tag != HproseTags.TagUTC);
         }
 
-        private void ReadUTF8CharRaw(Stream ostream, int tag) {
-            ostream.WriteByte((byte)tag);
-            tag = stream.ReadByte();
+        private void ReadUTF8CharRaw(Stream ostream) {
+            int tag = stream.ReadByte();
             switch (tag >> 4) {
                 case 0:
                 case 1:
@@ -3516,10 +3513,9 @@ namespace Hprose.IO {
             }
         }
 
-        private void ReadBytesRaw(Stream ostream, int tag) {
-            ostream.WriteByte((byte)tag);
+        private void ReadBytesRaw(Stream ostream) {
             int len = 0;
-            tag = '0';
+            int tag = '0';
             do {
                 len *= 10;
                 len += tag - '0';
@@ -3537,10 +3533,9 @@ namespace Hprose.IO {
             ostream.WriteByte((byte)stream.ReadByte());
         }
 
-        private void ReadStringRaw(Stream ostream, int tag) {
-            ostream.WriteByte((byte)tag);
+        private void ReadStringRaw(Stream ostream) {
             int count = 0;
-            tag = '0';
+            int tag = '0';
             do {
                 count *= 10;
                 count += tag - '0';
@@ -3597,8 +3592,7 @@ namespace Hprose.IO {
             ostream.WriteByte((byte)stream.ReadByte());
         }
 
-        private void ReadGuidRaw(Stream ostream, int tag) {
-            ostream.WriteByte((byte)tag);
+        private void ReadGuidRaw(Stream ostream) {
             int len = 38;
             int off = 0;
             byte[] b = new byte[len];
@@ -3610,8 +3604,8 @@ namespace Hprose.IO {
             ostream.Write(b, 0, b.Length);
         }
 
-        private void ReadComplexRaw(Stream ostream, int tag) {
-            ostream.WriteByte((byte)tag);
+        private void ReadComplexRaw(Stream ostream) {
+            int tag;
             do {
                 tag = stream.ReadByte();
                 ostream.WriteByte((byte)tag);

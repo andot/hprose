@@ -14,7 +14,7 @@
 #                                                          #
 # hprose io for python 2.3+                                #
 #                                                          #
-# LastModified: Jan 1, 2014                                #
+# LastModified: Feb 9, 2014                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -179,59 +179,56 @@ class HproseRawReader(object):
             ostream = StringIO()
         if tag == None:
             tag = self.stream.read(1)
+        ostream.write(tag)
         if ('0' <= tag <= '9' or
             tag == HproseTags.TagNull or
             tag == HproseTags.TagEmpty or
             tag == HproseTags.TagTrue or
             tag == HproseTags.TagFalse or
             tag == HproseTags.TagNaN):
-            ostream.write(tag)
         elif tag == HproseTags.TagInfinity:
-            ostream.write(tag)
             ostream.write(self.stream.read(1))
         elif (tag == HproseTags.TagInteger or
               tag == HproseTags.TagLong or
               tag == HproseTags.TagDouble or
               tag == HproseTags.TagRef):
-            self.__readNumberRaw(ostream, tag)
+            self.__readNumberRaw(ostream)
         elif (tag == HproseTags.TagDate or
               tag == HproseTags.TagTime):
-            self.__readDateTimeRaw(ostream, tag)
+            self.__readDateTimeRaw(ostream)
         elif tag == HproseTags.TagUTF8Char:
-            self.__readUTF8CharRaw(ostream, tag)
+            self.__readUTF8CharRaw(ostream)
         elif tag == HproseTags.TagBytes:
-            self.__readBytesRaw(ostream, tag)
+            self.__readBytesRaw(ostream)
         elif tag == HproseTags.TagString:
-            self.__readStringRaw(ostream, tag)
+            self.__readStringRaw(ostream)
         elif tag == HproseTags.TagGuid:
-            self.__readGuidRaw(ostream, tag)
+            self.__readGuidRaw(ostream)
         elif (tag == HproseTags.TagList or
               tag == HproseTags.TagMap or
               tag == HproseTags.TagObject):
-            self.__readComplexRaw(ostream, tag)
+            self.__readComplexRaw(ostream)
         elif tag == HproseTags.TagClass:
-            self.__readComplexRaw(ostream, tag)
+            self.__readComplexRaw(ostream)
             self.readRaw(ostream)
         elif tag == HproseTags.TagError:
-            ostream.write(tag)
             self.readRaw(ostream)
         else:
             self.unexpectedTag(tag)
         return ostream
-    def __readNumberRaw(self, ostream, tag):
-        ostream.write(tag)
+    def __readNumberRaw(self, ostream):
         ostream.write(_readuntil(self.stream, HproseTags.TagSemicolon))
         ostream.write(HproseTags.TagSemicolon)
-    def __readDateTimeRaw(self, ostream, tag):
-        s = [tag]
+    def __readDateTimeRaw(self, ostream):
+        s = []
         while True:
             c = stream.read(1)
             s.append(c)
             if (c == HproseTags.TagSemicolon or
                 c == HproseTags.TagUTC): break
         ostream.write(''.join(s))
-    def __readUTF8CharRaw(self, ostream, tag):
-        s = [tag]
+    def __readUTF8CharRaw(self, ostream):
+        s = []
         c = self.stream.read(1)
         s.append(c)
         a = ord(c)
@@ -242,9 +239,8 @@ class HproseRawReader(object):
         elif a > 0x7F:
             raise HproseException, 'Bad utf-8 encoding'
         ostream.write(''.join(s))
-    def __readBytesRaw(self, ostream, tag):
+    def __readBytesRaw(self, ostream):
         l = _readuntil(self.stream, HproseTags.TagQuote)
-        ostream.write(tag)
         ostream.write(l)
         ostream.write(HproseTags.TagQuote)
         if l == '':
@@ -252,9 +248,8 @@ class HproseRawReader(object):
         else:
             l = int(l)
         ostream.write(self.stream.read(l + 1))
-    def __readStringRaw(self, ostream, tag):
+    def __readStringRaw(self, ostream):
         l = _readuntil(self.stream, HproseTags.TagQuote)
-        ostream.write(tag)
         ostream.write(l)
         ostream.write(HproseTags.TagQuote)
         if l == '':
@@ -277,11 +272,9 @@ class HproseRawReader(object):
             i += 1
         s.append(self.stream.read(1))
         ostream.write(''.join(s))
-    def __readGuidRaw(self, ostream, tag):
-        ostream.write(tag)
+    def __readGuidRaw(self, ostream):
         ostream.write(self.stream.read(38))
-    def __readComplexRaw(self, ostream, tag):
-        ostream.write(tag)
+    def __readComplexRaw(self, ostream):
         ostream.write(_readuntil(self.stream, HproseTags.TagOpenbrace))
         ostream.write(HproseTags.TagOpenbrace)
         tag = self.stream.read(1)

@@ -14,7 +14,7 @@
  *                                                        *
  * hprose io stream library for JavaScript.               *
  *                                                        *
- * LastModified: Dec 27, 2013                             *
+ * LastModified: Feb 8, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -273,6 +273,7 @@ var HproseSimpleWriter, HproseWriter;
         function readRaw(ostream, tag) {
             if (ostream === undefined) ostream = new HproseStringOutputStream();
             if (tag === undefined) tag = stream.getc();
+            ostream.write(tag);
             switch (tag) {
                 case '0':
                 case '1':
@@ -289,63 +290,57 @@ var HproseSimpleWriter, HproseWriter;
                 case hproseTags.TagTrue:
                 case hproseTags.TagFalse:
                 case hproseTags.TagNaN:
-                    ostream.write(tag);
                     break;
                 case hproseTags.TagInfinity:
                 case hproseTags.TagUTF8Char:
-                    ostream.write(tag);
                     ostream.write(stream.getc());
                     break;
                 case hproseTags.TagInteger:
                 case hproseTags.TagLong:
                 case hproseTags.TagDouble:
                 case hproseTags.TagRef:
-                    readNumberRaw(ostream, tag);
+                    readNumberRaw(ostream);
                     break;
                 case hproseTags.TagDate:
                 case hproseTags.TagTime:
-                    readDateTimeRaw(ostream, tag);
+                    readDateTimeRaw(ostream);
                     break;
                 case hproseTags.TagString:
-                    readStringRaw(ostream, tag);
+                    readStringRaw(ostream);
                     break;
                 case hproseTags.TagGuid:
-                    readGuidRaw(ostream, tag);
+                    readGuidRaw(ostream);
                     break;
                 case hproseTags.TagList:
                 case hproseTags.TagMap:
                 case hproseTags.TagObject:
-                    readComplexRaw(ostream, tag);
+                    readComplexRaw(ostream);
                     break;
                 case hproseTags.TagClass:
-                    readComplexRaw(ostream, tag);
+                    readComplexRaw(ostream);
                     readRaw(ostream);
                     break;
                 case hproseTags.TagError:
-                    ostream.write(tag);
                     readRaw(ostream);
                     break;
                 default: unexpectedTag(tag);
             }
             return ostream;
         }
-        function readNumberRaw(ostream, tag) {
-            ostream.write(tag);
+        function readNumberRaw(ostream) {
             do {
-                tag = stream.getc();
+                var tag = stream.getc();
                 ostream.write(tag);
             } while (tag != hproseTags.TagSemicolon);
         }
-        function readDateTimeRaw(ostream, tag) {
-            ostream.write(tag);
+        function readDateTimeRaw(ostream) {
             do {
-                tag = stream.getc();
+                var tag = stream.getc();
                 ostream.write(tag);
             } while (tag != hproseTags.TagSemicolon &&
                      tag != hproseTags.TagUTC);
         }
-        function readStringRaw(ostream, tag) {
-            ostream.write(tag);
+        function readStringRaw(ostream) {
             var s = stream.readuntil(hproseTags.TagQuote);
             ostream.write(s);
             ostream.write(hproseTags.TagQuote);
@@ -353,14 +348,12 @@ var HproseSimpleWriter, HproseWriter;
             if (s.length > 0) len = parseInt(s);
             ostream.write(stream.read(len + 1));
         }
-        function readGuidRaw(ostream, tag) {
-            ostream.write(tag);
+        function readGuidRaw(ostream) {
             ostream.write(stream.read(38));
         }
-        function readComplexRaw(ostream, tag) {
-            ostream.write(tag);
+        function readComplexRaw(ostream) {
             do {
-                tag = stream.getc();
+                var tag = stream.getc();
                 ostream.write(tag);
             } while (tag != hproseTags.TagOpenbrace);
             while ((tag = stream.getc()) != hproseTags.TagClosebrace) {

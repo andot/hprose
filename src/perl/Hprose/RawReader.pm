@@ -14,7 +14,7 @@
 #                                                          #
 # Hprose RawReader class for perl                          #
 #                                                          #
-# LastModified: Jan 8, 2014                                #
+# LastModified: Feb 8, 2014                                #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -54,22 +54,18 @@ my $read_raw = sub {
     my ($self, $sref, $tag) = @_;
     my $stream = $self->{stream};
     if (defined($tag) && exists($readRawMethod{$tag})) {
-        $readRawMethod{$tag}($self, $sref, $tag);
+        $$sref .= $tag;
+        $readRawMethod{$tag}($self, $sref);
     }
     else {
         $self->unexpected_tag($tag);
     }
 };
 
-my $read_tag_raw = sub {
-    my ($self, $sref, $tag) = @_;
-    $$sref .= $tag;
-};
-
 my $read_number_raw = sub {
-    my ($self, $sref, $tag) = @_;
-    my $stream = $self->{stream};
-    for ($$sref .= $tag;
+    my ($self, $sref) = @_;
+    my $stream, $tag;
+    for ($stream = $self->{stream};
          $stream->read($tag, 1, 0);
          last if ($tag eq Hprose::Tags->Semicolon)) {
         $$sref .= $tag;
@@ -77,14 +73,14 @@ my $read_number_raw = sub {
 };
 
 my $read_infinity_raw = sub {
-    my ($self, $sref, $tag) = @_;
-    $$sref .= $tag . $self->{stream}->getc;
+    my ($self, $sref) = @_;
+    $$sref .= $self->{stream}->getc;
 };
 
 my $read_datetime_raw = sub {
-    my ($self, $sref, $tag) = @_;
-    my $stream = $self->{stream};
-    for ($$sref .= $tag;
+    my ($self, $sref) = @_;
+    my $stream, $tag;
+    for ($stream = $self->{stream};
          $stream->read($tag, 1, 0);
          last if ($tag eq Hprose::Tags->Semicolon ||
                   $tag eq Hprose::Tags->UTC)) {
@@ -93,14 +89,13 @@ my $read_datetime_raw = sub {
 };
 
 my $read_utf8char_raw = sub {
-    my ($self, $sref, $tag) = @_;
-    $$sref .= $tag . readutf8($self->{stream}, 1);
+    my ($self, $sref) = @_;
+    $$sref .= readutf8($self->{stream}, 1);
 };
 
 my $read_bytes_raw = sub {
-    my ($self, $sref, $tag) = @_;
+    my ($self, $sref) = @_;
     my $stream = $self->{stream};
-    $$sref .= $tag;
     my $count = readuntil($stream, Hprose::Tags->Quote);
     $$sref .= $count . Hprose::Tags->Quote;
     $count = 0 if $count eq '';
@@ -108,9 +103,8 @@ my $read_bytes_raw = sub {
 };
 
 my $read_string_raw = sub {
-    my ($self, $sref, $tag) = @_;
+    my ($self, $sref) = @_;
     my $stream = $self->{stream};
-    $$sref .= $tag;
     my $count = readuntil($stream, Hprose::Tags->Quote);
     $$sref .= $count . Hprose::Tags->Quote;
     $count = 0 if $count eq '';
@@ -118,15 +112,14 @@ my $read_string_raw = sub {
 };
 
 my $read_guid_raw = sub {
-    my ($self, $sref, $tag) = @_;
-    $$sref .= $tag;
+    my ($self, $sref) = @_;
     $self->{stream}->read($$sref, 38, length($$sref));
 };
 
 my $read_complex_raw = sub {
-    my ($self, $sref, $tag) = @_;
-    my $stream = $self->{stream};
-    for ($$sref .= $tag;
+    my ($self, $sref) = @_;
+    my $stream, $tag;
+    for ($stream = $self->{stream};
          $stream->read($tag, 1, 0);
          last if ($tag eq Hprose::Tags->Openbrace)) {
         $$sref .= $tag;
@@ -139,33 +132,32 @@ my $read_complex_raw = sub {
 };
 
 my $read_class_raw = sub {
-    my ($self, $sref, $tag) = @_;
-    $self->$read_complex_raw($sref, $tag);
+    my ($self, $sref) = @_;
+    $self->$read_complex_raw($sref);
     $self->$read_raw($sref, $self->{stream}->getc);
 };
 
 my $read_error_raw = sub {
-    my ($self, $sref, $tag) = @_;
-    $$sref .= $tag;
+    my ($self, $sref) = @_;
     $self->$read_raw($sref, $self->{stream}->getc);
 };
 
 %readRawMethod = (
-    '0' => $read_tag_raw,
-    '1' => $read_tag_raw,
-    '2' => $read_tag_raw,
-    '3' => $read_tag_raw,
-    '4' => $read_tag_raw,
-    '5' => $read_tag_raw,
-    '6' => $read_tag_raw,
-    '7' => $read_tag_raw,
-    '8' => $read_tag_raw,
-    '9' => $read_tag_raw,
-    Hprose::Tags->Null => $read_tag_raw,
-    Hprose::Tags->Empty => $read_tag_raw,
-    Hprose::Tags->True => $read_tag_raw,
-    Hprose::Tags->False => $read_tag_raw,
-    Hprose::Tags->NaN => $read_tag_raw,
+    '0' => sub {},
+    '1' => sub {},
+    '2' => sub {},
+    '3' => sub {},
+    '4' => sub {},
+    '5' => sub {},
+    '6' => sub {},
+    '7' => sub {},
+    '8' => sub {},
+    '9' => sub {},
+    Hprose::Tags->Null => sub {},
+    Hprose::Tags->Empty => sub {},
+    Hprose::Tags->True => sub {},
+    Hprose::Tags->False => sub {},
+    Hprose::Tags->NaN => sub {},
     Hprose::Tags->Infinity => $read_infinity_raw,
     Hprose::Tags->Integer => $read_number_raw,
     Hprose::Tags->Long => $read_number_raw,

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for Objective-C.                   *
  *                                                        *
- * LastModified: Dec 3, 2012                              *
+ * LastModified: Feb 8, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -120,13 +120,13 @@
 - (void) readClass;
 - (id) readRef;
 - (void) readRaw:(NSOutputStream *)ostream withTag:(int)tag;
-- (void) readNumberRaw:(NSOutputStream *)ostream withTag:(int)tag;
-- (void) readDateTimeRaw:(NSOutputStream *)ostream withTag:(int)tag;
-- (void) readUTF8CharRaw:(NSOutputStream *)ostream withTag:(int)tag;
-- (void) readBytesRaw:(NSOutputStream *)ostream withTag:(int)tag;
-- (void) readStringRaw:(NSOutputStream *)ostream withTag:(int)tag;
-- (void) readGuidRaw:(NSOutputStream *)ostream withTag:(int)tag;
-- (void) readComplexRaw:(NSOutputStream *)ostream withTag:(int)tag;
+- (void) readNumberRaw:(NSOutputStream *)ostream;
+- (void) readDateTimeRaw:(NSOutputStream *)ostream;
+- (void) readUTF8CharRaw:(NSOutputStream *)ostream;
+- (void) readBytesRaw:(NSOutputStream *)ostream;
+- (void) readStringRaw:(NSOutputStream *)ostream;
+- (void) readGuidRaw:(NSOutputStream *)ostream;
+- (void) readComplexRaw:(NSOutputStream *)ostream;
 
 @end
 
@@ -858,7 +858,7 @@ static double NaN, Infinity, NegInfinity;
             break;
         case _C_BOOL:
             return [NSNumber numberWithBool:
-                    ([self readUntil:HproseTagSemicolon] != @"0")];
+                    (![[self readUntil:HproseTagSemicolon]  isEqual: @"0"])];
             break;
     }
     @throw [HproseException exceptionWithReason:
@@ -1457,6 +1457,7 @@ static double NaN, Infinity, NegInfinity;
 }
 
 - (void) readRaw:(NSOutputStream *)ostream withTag:(int)tag {
+    [ostream writeByte:tag];
     switch (tag) {
         case '0':
         case '1':
@@ -1473,45 +1474,42 @@ static double NaN, Infinity, NegInfinity;
         case HproseTagTrue:
         case HproseTagFalse:
         case HproseTagNaN:
-            [ostream writeByte:tag];
             break;
         case HproseTagInfinity:
-            [ostream writeByte:tag];
             [ostream writeByte:[stream readByte]];
             break;
         case HproseTagInteger:
         case HproseTagLong:
         case HproseTagDouble:
         case HproseTagRef:
-            [self readNumberRaw:ostream withTag:tag];
+            [self readNumberRaw:ostream];
             break;
         case HproseTagDate:
         case HproseTagTime:
-            [self readDateTimeRaw:ostream withTag:tag];
+            [self readDateTimeRaw:ostream];
             break;
         case HproseTagUTF8Char:
-            [self readUTF8CharRaw:ostream withTag:tag];
+            [self readUTF8CharRaw:ostream];
             break;
         case HproseTagBytes:
-            [self readBytesRaw:ostream withTag:tag];
+            [self readBytesRaw:ostream];
             break;
         case HproseTagString:
-            [self readStringRaw:ostream withTag:tag];
+            [self readStringRaw:ostream];
             break;
         case HproseTagGuid:
-            [self readGuidRaw:ostream withTag:tag];
+            [self readGuidRaw:ostream];
             break;
         case HproseTagList:
         case HproseTagMap:
         case HproseTagObject:
-            [self readComplexRaw:ostream withTag:tag];
+            [self readComplexRaw:ostream];
             break;
         case HproseTagClass:
-            [self readComplexRaw:ostream withTag:tag];
+            [self readComplexRaw:ostream];
             [self readRaw:ostream];
             break;
         case HproseTagError:
-            [ostream writeByte:tag];
             [self readRaw:ostream];
             break;
         case -1:
@@ -1521,24 +1519,23 @@ static double NaN, Infinity, NegInfinity;
             @throw [HproseException exceptionWithReason:@"Unexpected serialize tag in stream"];
     }
 }
-- (void) readNumberRaw:(NSOutputStream *)ostream withTag:(int)tag {
-    [ostream writeByte:tag];
+- (void) readNumberRaw:(NSOutputStream *)ostream {
+    int tag;
     do {
         tag = [stream readByte];
         [ostream writeByte:tag];
     } while (tag != HproseTagSemicolon);
 }
-- (void) readDateTimeRaw:(NSOutputStream *)ostream withTag:(int)tag {
-    [ostream writeByte:tag];
+- (void) readDateTimeRaw:(NSOutputStream *)ostream {
+    int tag;
     do {
         tag = [stream readByte];
         [ostream writeByte:tag];
     } while (tag != HproseTagSemicolon &&
              tag != HproseTagUTC);
 }
-- (void) readUTF8CharRaw:(NSOutputStream *)ostream withTag:(int)tag {
-    [ostream writeByte:tag];
-    tag = [stream readByte];
+- (void) readUTF8CharRaw:(NSOutputStream *)ostream {
+    int tag = [stream readByte];
     switch (tag >> 4) {
         case 0:
         case 1:
@@ -1570,10 +1567,9 @@ static double NaN, Infinity, NegInfinity;
             @throw [HproseException exceptionWithReason:@"Bad utf-8 encoding"];
     }
 }
-- (void) readBytesRaw:(NSOutputStream *)ostream withTag:(int)tag {
-    [ostream writeByte:tag];
+- (void) readBytesRaw:(NSOutputStream *)ostream {
     NSUInteger len = 0;
-    tag = '0';
+    int tag = '0';
     do {
         len *= 10;
         len += tag - '0';
@@ -1582,10 +1578,9 @@ static double NaN, Infinity, NegInfinity;
     } while (tag != HproseTagQuote);
     [ostream copyFrom:stream maxLength:len + 1];
 }
-- (void) readStringRaw:(NSOutputStream *)ostream withTag:(int)tag {
-    [ostream writeByte:tag];
+- (void) readStringRaw:(NSOutputStream *)ostream {
     NSUInteger count = 0;
-    tag = '0';
+    int tag = '0';
     do {
         count *= 10;
         count += tag - '0';
@@ -1640,12 +1635,11 @@ static double NaN, Infinity, NegInfinity;
     }
     [ostream writeByte:[stream readByte]];
 }
-- (void) readGuidRaw:(NSOutputStream *)ostream withTag:(int)tag {
-    [ostream writeByte:tag];
+- (void) readGuidRaw:(NSOutputStream *)ostream {
     [ostream copyFrom:stream maxLength:38];
 }
-- (void) readComplexRaw:(NSOutputStream *)ostream withTag:(int)tag {
-    [ostream writeByte:tag];
+- (void) readComplexRaw:(NSOutputStream *)ostream {
+    int tag;
     do {
         tag = [stream readByte];
         [ostream writeByte:tag];

@@ -13,7 +13,7 @@
  *                                                        *
  * hprose raw reader class for ActionScript 2.0.          *
  *                                                        *
- * LastModified: Nov 19, 2013                             *
+ * LastModified: Feb 8, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -49,6 +49,7 @@ class hprose.io.HproseRawReader {
     public function readRaw(ostream:HproseStringOutputStream, tag:String) {
         if (ostream === undefined) ostream = new HproseStringOutputStream();
         if (tag === undefined) tag = stream.getc();
+        ostream.write(tag);
         switch (tag) {
             case '0':
             case '1':
@@ -65,11 +66,9 @@ class hprose.io.HproseRawReader {
             case HproseTags.TagTrue:
             case HproseTags.TagFalse:
             case HproseTags.TagNaN:
-                ostream.write(tag);
                 break;
             case HproseTags.TagInfinity:
             case HproseTags.TagUTF8Char:
-                ostream.write(tag);
                 ostream.write(stream.getc());
                 break;
             case HproseTags.TagInteger:
@@ -80,25 +79,24 @@ class hprose.io.HproseRawReader {
                 break;
             case HproseTags.TagDate:
             case HproseTags.TagTime:
-                readDateTimeRaw(ostream, tag);
+                readDateTimeRaw(ostream);
                 break;
             case HproseTags.TagString:
-                readStringRaw(ostream, tag);
+                readStringRaw(ostream);
                 break;
             case HproseTags.TagGuid:
-                readGuidRaw(ostream, tag);
+                readGuidRaw(ostream);
                 break;
             case HproseTags.TagList:
             case HproseTags.TagMap:
             case HproseTags.TagObject:
-                readComplexRaw(ostream, tag);
+                readComplexRaw(ostream);
                 break;
             case HproseTags.TagClass:
-                readComplexRaw(ostream, tag);
+                readComplexRaw(ostream);
                 readRaw(ostream);
                 break;
             case HproseTags.TagError:
-                ostream.write(tag);
                 readRaw(ostream);
                 break;
             default: unexpectedTag(tag);
@@ -106,25 +104,22 @@ class hprose.io.HproseRawReader {
         return ostream;
     }
 
-    private function readNumberRaw(ostream:HproseStringOutputStream, tag:String) {
-        ostream.write(tag);
+    private function readNumberRaw(ostream:HproseStringOutputStream) {
         do {
-            tag = stream.getc();
+            var tag:String = stream.getc();
             ostream.write(tag);
         } while (tag != HproseTags.TagSemicolon);
     }
 
-    private function readDateTimeRaw(ostream:HproseStringOutputStream, tag:String) {
-        ostream.write(tag);
+    private function readDateTimeRaw(ostream:HproseStringOutputStream) {
         do {
-            tag = stream.getc();
+            var tag:String = stream.getc();
             ostream.write(tag);
         } while (tag != HproseTags.TagSemicolon &&
                  tag != HproseTags.TagUTC);
     }
 
-    private function readStringRaw(ostream:HproseStringOutputStream, tag:String) {
-        ostream.write(tag);
+    private function readStringRaw(ostream:HproseStringOutputStream) {
         var s:String = stream.readuntil(HproseTags.TagQuote);
         ostream.write(s);
         ostream.write(HproseTags.TagQuote);
@@ -134,15 +129,13 @@ class hprose.io.HproseRawReader {
         ostream.write(stream.getc());
     }
 
-    private function readGuidRaw(ostream:HproseStringOutputStream, tag:String) {
-        ostream.write(tag);
+    private function readGuidRaw(ostream:HproseStringOutputStream) {
         ostream.write(stream.read(38));
     }
 
-    private function readComplexRaw(ostream:HproseStringOutputStream, tag:String) {
-        ostream.write(tag);
+    private function readComplexRaw(ostream:HproseStringOutputStream) {
         do {
-            tag = stream.getc();
+            var tag:String = stream.getc();
             ostream.write(tag);
         } while (tag != HproseTags.TagOpenbrace);
         while ((tag = stream.getc()) != HproseTags.TagClosebrace) {

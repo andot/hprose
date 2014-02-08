@@ -137,13 +137,31 @@ class BytesIO {
   }
 
   String readUntil(int tag) {
-    Uint8List buf = new Uint8List.view(_bytes.buffer, _off, length);
+    Uint8List buf = new Uint8List.view(_bytes.buffer, _off, _length);
     int pos = buf.indexOf(tag);
     switch (pos) {
-      case  0: return "";
-      case -1: return new Utf8Decoder().convert(buf);
+      case  0:
+        _off++;
+        return "";
+      case -1:
+        _off = _length;
+        return new Utf8Decoder().convert(buf);
     }
-    return const Utf8Decoder().convert(new Uint8List.view(_bytes.buffer, _off, pos));
+    String str = const Utf8Decoder().convert(new Uint8List.view(_bytes.buffer, _off, pos));
+    _off += pos + 1;
+    return str;
+  }
+
+  Uint8List readBytes(int tag) {
+    Uint8List buf = new Uint8List.view(_bytes.buffer, _off, _length);
+    int pos = buf.indexOf(tag);
+    if (pos == -1) {
+      _off = _length;
+    } else {
+      buf = new Uint8List.view(_bytes.buffer, _off, pos + 1);
+      _off += pos + 1;
+    }
+    return buf;
   }
 
   String readAsciiString(int length) {
@@ -151,7 +169,9 @@ class BytesIO {
       length = _length - _off;
     }
     if (length == 0) return "";
-    return const AsciiDecoder().convert(new Uint8List.view(_bytes.buffer, _off, length));
+    String str = const AsciiDecoder().convert(new Uint8List.view(_bytes.buffer, _off, length));
+    _off += length;
+    return str;
   }
 
   String readUTF8String(int length) {

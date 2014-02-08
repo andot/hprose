@@ -14,7 +14,7 @@
  *                                                        *
  * HproseRawReader for Node.js.                           *
  *                                                        *
- * LastModified: Dec 28, 2013                             *
+ * LastModified: Feb 8, 2014                              *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -47,6 +47,7 @@ function HproseRawReader(stream) {
     function readRaw(ostream, tag) {
         if (ostream === undefined) ostream = new HproseBufferOutputStream();
         if (tag === undefined) tag = stream.getc();
+        ostream.write(tag);
         switch (tag) {
             case 48:
             case 49:
@@ -63,74 +64,67 @@ function HproseRawReader(stream) {
             case HproseTags.TagTrue:
             case HproseTags.TagFalse:
             case HproseTags.TagNaN:
-                ostream.write(tag);
                 break;
             case HproseTags.TagInfinity:
-                ostream.write(tag);
                 ostream.write(stream.getc());
                 break;
             case HproseTags.TagInteger:
             case HproseTags.TagLong:
             case HproseTags.TagDouble:
             case HproseTags.TagRef:
-                readNumberRaw(ostream, tag);
+                readNumberRaw(ostream);
                 break;
             case HproseTags.TagDate:
             case HproseTags.TagTime:
-                readDateTimeRaw(ostream, tag);
+                readDateTimeRaw(ostream);
                 break;
             case HproseTags.TagUTF8Char:
-                readUTF8CharRaw(ostream, tag);
+                readUTF8CharRaw(ostream);
                 break;
             case HproseTags.TagBytes:
-                readBytesRaw(ostream, tag);
+                readBytesRaw(ostream);
                 break;
             case HproseTags.TagString:
-                readStringRaw(ostream, tag);
+                readStringRaw(ostream);
                 break;
             case HproseTags.TagGuid:
-                readGuidRaw(ostream, tag);
+                readGuidRaw(ostream);
                 break;
             case HproseTags.TagList:
             case HproseTags.TagMap:
             case HproseTags.TagObject:
-                readComplexRaw(ostream, tag);
+                readComplexRaw(ostream);
                 break;
             case HproseTags.TagClass:
-                readComplexRaw(ostream, tag);
+                readComplexRaw(ostream);
                 readRaw(ostream);
                 break;
             case HproseTags.TagError:
-                ostream.write(tag);
                 readRaw(ostream);
                 break;
             default: unexpectedTag(tag);
         }
         return ostream;
     }
-    function readNumberRaw(ostream, tag) {
-        ostream.write(tag);
+    function readNumberRaw(ostream) {
         do {
-            tag = stream.getc();
+            var tag = stream.getc();
             ostream.write(tag);
         } while (tag != HproseTags.TagSemicolon);
     }
-    function readDateTimeRaw(ostream, tag) {
-        ostream.write(tag);
+    function readDateTimeRaw(ostream) {
         do {
-            tag = stream.getc();
+            var tag = stream.getc();
             ostream.write(tag);
         } while (tag != HproseTags.TagSemicolon &&
                  tag != HproseTags.TagUTC);
     }
-    function readUTF8CharRaw(ostream, tag) {
-        ostream.write(tag);
+    function readUTF8CharRaw(ostream) {
         ostream.write(stream.readUTF8String(1));
     }
-    function readBytesRaw(ostream, tag) {
-        ostream.write(tag);
+    function readBytesRaw(ostream) {
         var count = 0;
-        tag = 48;
+        var tag = 48;
         do {
             count *= 10;
             count += tag - 48;
@@ -139,10 +133,9 @@ function HproseRawReader(stream) {
         } while (tag != HproseTags.TagQuote);
         ostream.write(stream.read(count + 1));
     }
-    function readStringRaw(ostream, tag) {
-        ostream.write(tag);
+    function readStringRaw(ostream) {
         var count = 0;
-        tag = 48;
+        var tag = 48;
         do {
             count *= 10;
             count += tag - 48;
@@ -151,14 +144,12 @@ function HproseRawReader(stream) {
         } while (tag != HproseTags.TagQuote);
         ostream.write(stream.readUTF8String(count + 1));
     }
-    function readGuidRaw(ostream, tag) {
-        ostream.write(tag);
+    function readGuidRaw(ostream) {
         ostream.write(stream.read(38));
     }
-    function readComplexRaw(ostream, tag) {
-        ostream.write(tag);
+    function readComplexRaw(ostream) {
         do {
-            tag = stream.getc();
+            var tag = stream.getc();
             ostream.write(tag);
         } while (tag != HproseTags.TagOpenbrace);
         while ((tag = stream.getc()) != HproseTags.TagClosebrace) {
