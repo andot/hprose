@@ -1,5 +1,6 @@
 Usage of Hprose for Golang
 ---------------------------
+**<div align="right">[中文版](https://github.com/andot/hprose/blob/master/src/go/README_zh_CN.md)</div>**
 
 ### Http Server ###
 
