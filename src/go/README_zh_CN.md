@@ -1,9 +1,9 @@
-Usage of Hprose for Golang
+Hprose for Golang 使用指南
 ---------------------------
 
-### Http Server ###
+### Http 服务器 ###
 
-Hprose for Golang is very easy to use. You can create a hprose http server like this:
+Hprose for Golang 使用起来很简单，你可以像这样来创建一个 Hprose 的 http 服务:
 
 <pre lang="go">
 package main
@@ -43,13 +43,13 @@ func main() {
 }
 </pre>
 
-You can publish multi-valued functions/methods, the multi-valued result will be automatically converted to an array result.
+你可以发布多值返回函数和方法，多值返回结果会自动转换为一个数组类型的结果。
 
-### Http Client ###
+### Http 客户端 ###
 
-#### Synchronous Invoking ####
+#### 同步调用 ####
 
-Then you can create a hprose http client to invoke it like this:
+然后你可以创建一个 Hprose 的 http 客户端来调用它了，就像这样：
 
 <pre lang="go">
 package main
@@ -76,9 +76,9 @@ func main() {
 }
 </pre>
 
-#### Synchronous Exception Handling ####
+#### 同步异常处理 ####
 
-Client stubs do not have exactly the same with the server-side interfaces. For example:
+客户端接口通过 struct 的函数字段的方式来定义，这些函数接口不需要完全跟服务器端的接口一致，例如：
 
 <pre lang="go">
 package main
@@ -101,11 +101,11 @@ func main() {
 }
 </pre>
 
-If an error (must be the last out parameter) returned by server-side function/method, or it panics in the server-side, the client will receive it. If the client stub has an error out parameter (also must be the last one), you can get the server-side error or panic from it. If the client stub have not define an error out parameter, the client stub will panic when receive the server-side error or panic.
+如果服务器端返回一个错误（必须是通过最后一个输出参数），或者是服务器端产生了 panic（在其他的语言中就是抛出异常），客户端将会收到它。如果客户端函数接口中包含有一个错误输出参数（也必须是最后一个），你可以通过它来得到服务器端的错误或 panic（异常）。如果客户端没有定义错误输出参数，那么客户端在收到服务器端错误或 panic（异常）之后，将会在客户端产生 panic。
 
-#### Asynchronous Invoking ####
+#### 异步调用 ####
 
-Hprose for golang supports golang style asynchronous invoke. It does not require a callback function, but need to define the channel out parameters. for example:
+Hprose for golang 支持 golang 风格的异步调用。它不需要回调函数，但是需要定义通道型的输出参数。例如：
 
 <pre lang="go">
 package main
@@ -130,11 +130,11 @@ func main() {
 }
 </pre>
 
-#### Asynchronous Exception Handling ####
+#### 异步异常处理 ####
 
-When using asynchronous invoking, you need to define a <code>&lt;-chan error</code> out parameter (also the last one) to receive the server-side error or panic (or exception in other languages). If you omit this parameter, the client will ignore the exception, like never happened.
+当使用异步调用时，你需要定义一个 <code>&lt;-chan error</code> 型的输出参数（也必须是最后一个）来接收服务器端的错误和 panic（或其它语言中的异常）。如果你省略了该参数，客户端也会忽略异常，就像从来没发生过一样。
 
-For example:
+例如：
 
 <pre lang="go">
 package main
@@ -156,13 +156,13 @@ func main() {
 }
 </pre>
 
-You will get the result <code>0</code>, but do not know what happened.
+你将会得到结果 <code>0</code>，并且不会知道发生了什么。
 
-#### Function/Method Alias ####
+#### 函数/方法 别名 ####
 
-Golang does not support method overload, but some other languages support. So hprose provides "Function/Method Alias" to invoke overloaded methods in other languages. You can also use it to invoke the same function/method with different names.
+Golang 本身不支持函数/方法的重载，但是其它一些语言支持。所以 Hprose 提供了 “函数/方法 别名” 来调用其它语言中的重载方法。你也可以使用它来通过不同的名字来调用同一个函数或方法。
 
-For example:
+例如：
 
 <pre lang="go">
 package main
@@ -186,11 +186,11 @@ func main() {
 }
 </pre>
 
-The real remote function/method name is specified in the function field tag.
+远程方法或函数的真实名字在函数字段的 tag 中指定就可以了。
 
-#### Passing by reference parameters ####
+#### 引用参数传递 ####
 
-Hprose supports passing by reference parameters. The parameters must be pointer types. Open this option also in the function field tag. For example:
+Hprose 还支持引用参数传递。在进行引用参数传递时，参数必须是指针类型（因为非指针类型没法被修改）。开启该选项也是通过在函数字段的 tag 中指定的。例如：
 
 <pre lang="go">
 package main
@@ -228,11 +228,11 @@ func main() {
 }
 </pre>
 
-The server of this example was written in PHP. In fact, You can use any language which hprose supported to write the server.
+这个例子中的服务器是用PHP编写的。实际上，你可以使用任何 Hprose 支持的语言来编写服务器，对于客户端调用上没有区别。
 
-### Hprose Proxy ###
+### Hprose 代理 ###
 
-You can use hprose server and client to create a hprose proxy server. All requests sent to the hprose proxy server will be forwarded to the backend hprose server. For example:
+你可以通过 Hprose 服务器和客户端来为 Hprose 创建代理服务器。所有的发送到 Hprose 代理服务器上的请求都将被转发到后端的 hprose 服务器上。例如：
 
 <pre lang="go">
 package main
@@ -258,11 +258,12 @@ func main() {
 }
 </pre>
 
-Whether the definition of the error out parameter does not matter, the exception will be automatically forwarded.
+不管是否定义了错误输出参数，异常都会被自动转发。
 
-#### Better Proxy ####
+#### 更好的代理 ####
 
-Hprose provides an ResultMode options to improve performance of the proxy server. You can use it like this:
+Hprose 提供了结果模式选项来改进代理服务器的性能。你可以像这样来使用它：
+
 <pre lang="go">
 package main
 
@@ -287,29 +288,34 @@ func main() {
 }
 </pre>
 
-The client result mode option is setting in the func field tag, and the return value must be <code>[]byte</code>. The server result mode option is setting by <code>AddMethods</code> parameter.
+客户端结果模式选项在函数字段的 tag 中设置，客户端接口的返回值必须是 <code>[]byte</code> 类型。服务器端的结果模式选项在 <code>AddMethods</code> 方法的参数中设置（其它几个 AddXXX 方法同样可以设置这个参数）。
 
-The ResultMode have 4 values:
+结果模式包含有四个值：
 * Normal
 * Serialized
 * Raw
 * RawWithEndTag
 
-The <code>Normal</code> result mode is the default value.
+<code>Normal</code> 是默认值。
 
-In <code>Serialized</code> result mode, the returned value is a hprose serialized data in []byte, but the arguments and exception will be parsed to the normal value.
+在 <code>Serialized</code> 结果模式下，返回值是一个hprose序列化的数据，以<code>[]byte</code> 类型返回，（即对返回结果不做解析）。但是参数和异常将被解析为正常值。
 
-In <code>Raw</code> result mode, all the reply will be returned directly to the result in []byte, but the result data doesn't have the hprose end tag.
+在 <code>Raw</code> 结果模式下，所有的应答信息都将直接以 <code>[]byte</code> 类型返回。但结果数据中不包含 Hprose 终结符。
 
-The <code>RawWithEndTag</code> is similar to the <code>Raw</code> result mode, but it has the hprose end tag.
+<code>RawWithEndTag</code> 与 <code>Raw</code> 模式类似，但是它包含 Hprose 终结符。
 
-With the ResultMode option, you can store, cache and forward the result in the original format.
+通过结果模式选项，你可以以原始格式来存储，缓存和转发结果数据。
 
-### Simple Mode ###
+如果你愿意的话，你还可以将 Hprose 结合 memcache 之类的服务来实现更高效率的 Hprose 代理服务器。
 
-By default, the data between the hprose client and server can be passed with internal references. if your data have no internal references, you can open the simple mode to improve performance.
+	注：客户端和服务器端的结果模式是相互独立的，你不需要同时在服务器端和客户端开启结果模式，只在一边设置为结果模式仍然可以正常通讯，不会有任何影响。
 
-You can open simple mode in server like this:
+### 简单模式 ###
+
+在默认情况下，在客户端和服务器端传输的数据是可以包含有内部引用的复杂数据，这样可以解决用 json 格式无法传递的循环引用数据的问题，同时引用对于复杂数据来说可以起到有效的压缩效果。但如果你的数据没有包含内部引用，那么你可以开启简单模式来进一步改善性能。
+
+你可以像这样在服务器端开启简单模式：
+
 <pre lang="go">
 package main
 
@@ -329,9 +335,10 @@ func main() {
 }
 </pre>
 
-The option parameter <code>true</code> is the simple mode switch. The result will be transmitted to the client in simple mode when it is on.
+选项参数 <code>true</code> 表示打开简单模式开关，这样结果将以简单模式返回给客户端。
 
-To open the client simple mode is like this:
+在客户端可以这样打开简单模式：
+
 <pre lang="go">
 package main
 
@@ -356,11 +363,14 @@ func main() {
 	fmt.Println(ro.Sum(1))
 }
 </pre>
-The arguments will be transmitted to the server in simple mode when it is on.
+
+在开启简单模式的情况下，参数将以简单模式传递给服务器。
+
+	注：客户端和服务器端的简单模式也是相互独立的，你不需要同时在服务器端和客户端开启简单模式，只在一边设置为简单模式仍然可以正常通讯，不会有任何影响。
 
 ### Missing Method ###
 
-Hprose supports publishing a special method: MissingMethod. All methods not explicitly published will be redirected to the method. For example:
+Hprose 支持发布一个特殊的方法：MissingMethod。所有对没有显示发布的方法的调用都讲被重定向到它上面。例如：
 
 <pre lang="go">
 package main
@@ -401,11 +411,12 @@ func main() {
 }
 </pre>
 
-If you want return an error to the client, please use panic. The error type return value can't be processed in the method.
+如果你想返回一个错误给客户端，请使用panic。因为在该方法中返回的 error 类型数据不会被特殊处理。
 
-The simple mode and the result mode options can also be used with it.
+简单模式和结果模式也可以在它上面使用，因此通过它你可以构建更通用的 Hprose 代理服务器。
 
-Invoking the missing method makes no difference with the normal method. For example:
+对客户端来说，调用 Missing Method 发布的方法跟调用普通方法没有任何区别。例如：
+
 <pre lang="go">
 package main
 
@@ -433,7 +444,9 @@ func main() {
 	fmt.Println(ro.Power(1, 2))
 }
 </pre>
-The result is:
+
+结果为：
+
 <pre>
 3
 -1
@@ -442,15 +455,15 @@ The result is:
 0 The method 'Power' is not implemented.
 </pre>
 
-### TCP Server and Client ###
+### TCP 服务器和客户端 ###
 
-Hprose for Golang supports TCP Server and Client. It is very easy to use like the HTTP Server and Client.
+Hprose for Golang 已经支持 TCP 的服务器和客户端。它跟 HTTP 版本的服务器和客户端在使用上一样简单。
 
-To create a hprose TCP server, you can use <code>NewTcpService</code> or <code>NewTcpServer</code>.
+你可以使用 <code>NewTcpService</code> 或 <code>NewTcpServer</code>，来创建 Hprose 的 TCP 服务器。
 
-To use <code>NewTcpService</code>, you need call the ServeTCP method and passing the TCP Connection to it.
+使用 <code>NewTcpService</code>，你需要调用它的 <code>ServeTCP</code> 方法传入 TCP 连接。
 
-using <code>NewTcpServer</code> is easier than <code>NewTcpService</code>. For example:
+使用 <code>NewTcpServer</code> 比 <code>NewTcpService</code> 则要简单的多。例如：
 <pre lang="go">
 	...
 	server := hprose.NewTcpServer("tcp://127.0.0.1:1234/")
@@ -459,18 +472,19 @@ using <code>NewTcpServer</code> is easier than <code>NewTcpService</code>. For e
 	...
 </pre>
 
-To create a hprose TCP client is the same as HTTP client:
+创建 Hprose 的 TCP 客户端跟 HTTP 客户端是一样的方式：
+
 <pre lang="go">
 	...
 	client := hprose.NewClient("tcp://127.0.0.1:1234/")
 	...
 </pre>
 
-You can also specify <code>tcp4://</code> scheme to using ipv4 or <code>tcp6://</code> scheme to using ipv6.
+你也可以指定 <code>tcp4://</code> 方案来使用 ipv4 或 <code>tcp6://</code> 方案来使用 ipv6。
 
-### Service Event ###
+### 服务事件 ###
 
-Hprose defines a <code>ServiceEvent</code> interface.
+Hprose 定义了一个 <code>ServiceEvent</code> 接口。
 
 <pre lang="go">
 type ServiceEvent interface {
@@ -480,7 +494,7 @@ type ServiceEvent interface {
 }
 </pre>
 
-If you want to log some thing about the service, you can implement this interface. For example:
+如果你想针对服务器的一些行为做日志的话，你可以实现这个接口，例如：
 
 <pre lang="go">
 package main
@@ -518,4 +532,15 @@ func main() {
 }
 </pre>
 
-The <code>TcpService</code> and <code>TcpServer</code> also have this interface field.
+<code>TcpService</code> 和 <code>TcpServer</code> 同样包含这个接口字段。
+
+另外，针对 Hprose HTTP 服务器，你还可以单独实现 <code>HttpServiceEvent</code> 接口，这个接口多了一个针对 Http 头的事件。
+
+<pre lang="go">
+type HttpServiceEvent interface {
+	ServiceEvent
+	OnSendHeader(response http.ResponseWriter, request *http.Request)
+}
+</pre>
+
+它的实现同样是赋值给 <code>service.ServiceEvent</code> 字段就可以了。
