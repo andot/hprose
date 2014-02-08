@@ -370,7 +370,7 @@ func main() {
 
 ### Missing Method ###
 
-Hprose 支持发布一个特殊的方法：MissingMethod。所有对没有显式发布的方法的调用都讲被重定向到它上面。例如：
+Hprose 支持发布一个特殊的方法：MissingMethod。所有对没有显式发布的方法的调用都将被重定向到它上面。例如：
 
 <pre lang="go">
 package main
