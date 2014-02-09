@@ -14,7 +14,7 @@
  *                                                        *
  * HproseSimpleReader for Node.js.                        *
  *                                                        *
- * LastModified: Dec 28, 2013                             *
+ * LastModified: Feb 10, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -48,7 +48,7 @@ function HproseSimpleReader(stream) {
     function readInt(tag) {
         var s = stream.readuntil(tag);
         if (s.length == 0) return 0;
-        return parseInt(s);
+        return parseInt(s, 10);
     }
     function unserialize(tag) {
         if (tag === undefined) {
@@ -182,19 +182,19 @@ function HproseSimpleReader(stream) {
         }
     }
     function readDateWithoutTag() {
-        var year = parseInt(stream.readAsciiString(4));
-        var month = parseInt(stream.readAsciiString(2)) - 1;
-        var day = parseInt(stream.readAsciiString(2));
+        var year = parseInt(stream.readAsciiString(4), 10);
+        var month = parseInt(stream.readAsciiString(2), 10) - 1;
+        var day = parseInt(stream.readAsciiString(2), 10);
         var date;
         var tag = stream.getc();
         if (tag == HproseTags.TagTime) {
-            var hour = parseInt(stream.readAsciiString(2));
-            var minute = parseInt(stream.readAsciiString(2));
-            var second = parseInt(stream.readAsciiString(2));
+            var hour = parseInt(stream.readAsciiString(2), 10);
+            var minute = parseInt(stream.readAsciiString(2), 10);
+            var second = parseInt(stream.readAsciiString(2), 10);
             var millisecond = 0;
             tag = stream.getc();
             if (tag == HproseTags.TagPoint) {
-                millisecond = parseInt(stream.readAsciiString(3));
+                millisecond = parseInt(stream.readAsciiString(3), 10);
                 tag = stream.getc();
                 if ((tag >= 48) && (tag <= 57)) {
                     stream.skip(2);
@@ -230,13 +230,13 @@ function HproseSimpleReader(stream) {
     }
     function readTimeWithoutTag() {
         var time;
-        var hour = parseInt(stream.readAsciiString(2));
-        var minute = parseInt(stream.readAsciiString(2));
-        var second = parseInt(stream.readAsciiString(2));
+        var hour = parseInt(stream.readAsciiString(2), 10);
+        var minute = parseInt(stream.readAsciiString(2), 10);
+        var second = parseInt(stream.readAsciiString(2), 10);
         var millisecond = 0;
         var tag = stream.getc();
         if (tag == HproseTags.TagPoint) {
-            millisecond = parseInt(stream.readAsciiString(3));
+            millisecond = parseInt(stream.readAsciiString(3), 10);
             tag = stream.getc();
             if ((tag >= 48) && (tag <= 57)) {
                 stream.skip(2);

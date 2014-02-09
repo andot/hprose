@@ -93,7 +93,7 @@ package hprose.io {
         public function readInt(tag:int):int {
             var s:String = readUntil(tag);
             if (s.length == 0) return 0;
-            return int(parseInt(s));
+            return int(parseInt(s, 10));
         }
 
         public function readIntegerWithoutTag():int {
@@ -201,24 +201,24 @@ package hprose.io {
         }
 
         public function readDateWithoutTag():Date {
-            var year:Number = parseInt(stream.readUTFBytes(4));
-            var month:Number = parseInt(stream.readUTFBytes(2)) - 1;
-            var day:Number = parseInt(stream.readUTFBytes(2));
+            var year:Number = parseInt(stream.readUTFBytes(4), 10);
+            var month:Number = parseInt(stream.readUTFBytes(2), 10) - 1;
+            var day:Number = parseInt(stream.readUTFBytes(2), 10);
             var date:Date;
             var tag:int = stream.readByte();
             if (tag == HproseTags.TagTime) {
-                var hour:Number = parseInt(stream.readUTFBytes(2));
-                var minute:Number = parseInt(stream.readUTFBytes(2));
-                var second:Number = parseInt(stream.readUTFBytes(2));
+                var hour:Number = parseInt(stream.readUTFBytes(2), 10);
+                var minute:Number = parseInt(stream.readUTFBytes(2), 10);
+                var second:Number = parseInt(stream.readUTFBytes(2), 10);
                 var millisecond:Number = 0;
                 tag = stream.readByte();
                 if (tag == HproseTags.TagPoint) {
-                    millisecond = parseInt(stream.readUTFBytes(3));
+                    millisecond = parseInt(stream.readUTFBytes(3), 10);
                     tag = stream.readByte();
                 }
                 tag = stream.readByte();
                 if (tag == HproseTags.TagPoint) {
-                    millisecond = parseInt(stream.readUTFBytes(3));
+                    millisecond = parseInt(stream.readUTFBytes(3), 10);
                     tag = stream.readByte();
                     if ((tag >= 48) && (tag <= 57)) {
                         stream.readByte();
@@ -258,13 +258,13 @@ package hprose.io {
 
         public function readTimeWithoutTag():Date {
             var time:Date;
-            var hour:Number = parseInt(stream.readUTFBytes(2));
-            var minute:Number = parseInt(stream.readUTFBytes(2));
-            var second:Number = parseInt(stream.readUTFBytes(2));
+            var hour:Number = parseInt(stream.readUTFBytes(2), 10);
+            var minute:Number = parseInt(stream.readUTFBytes(2), 10);
+            var second:Number = parseInt(stream.readUTFBytes(2), 10);
             var millisecond:Number = 0;
             var tag:int = stream.readByte();
             if (tag == HproseTags.TagPoint) {
-                millisecond = parseInt(stream.readUTFBytes(3));
+                millisecond = parseInt(stream.readUTFBytes(3), 10);
                 tag = stream.readByte();
                     if ((tag >= 48) && (tag <= 57)) {
                     stream.readByte();

@@ -14,7 +14,7 @@
  *                                                        *
  * hprose io stream library for JavaScript.               *
  *                                                        *
- * LastModified: Feb 8, 2014                              *
+ * LastModified: Feb 10, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -345,7 +345,7 @@ var HproseSimpleWriter, HproseWriter;
             ostream.write(s);
             ostream.write(hproseTags.TagQuote);
             var len = 0;
-            if (s.length > 0) len = parseInt(s);
+            if (s.length > 0) len = parseInt(s, 10);
             ostream.write(stream.read(len + 1));
         }
         function readGuidRaw(ostream) {
@@ -380,7 +380,7 @@ var HproseSimpleWriter, HproseWriter;
         function readInt(tag) {
             var s = stream.readuntil(tag);
             if (s.length == 0) return 0;
-            return parseInt(s);
+            return parseInt(s, 10);
         }
         function unserialize(tag) {
             if (tag === undefined) {
@@ -513,19 +513,19 @@ var HproseSimpleWriter, HproseWriter;
             }
         }
         function readDateWithoutTag() {
-            var year = parseInt(stream.read(4));
-            var month = parseInt(stream.read(2)) - 1;
-            var day = parseInt(stream.read(2));
+            var year = parseInt(stream.read(4), 10);
+            var month = parseInt(stream.read(2), 10) - 1;
+            var day = parseInt(stream.read(2), 10);
             var date;
             var tag = stream.getc();
             if (tag == hproseTags.TagTime) {
-                var hour = parseInt(stream.read(2));
-                var minute = parseInt(stream.read(2));
-                var second = parseInt(stream.read(2));
+                var hour = parseInt(stream.read(2), 10);
+                var minute = parseInt(stream.read(2), 10);
+                var second = parseInt(stream.read(2), 10);
                 var millisecond = 0;
                 tag = stream.getc();
                 if (tag == hproseTags.TagPoint) {
-                    millisecond = parseInt(stream.read(3));
+                    millisecond = parseInt(stream.read(3), 10);
                     tag = stream.getc();
                     if ((tag >= '0') && (tag <= '9')) {
                         stream.skip(2);
@@ -561,13 +561,13 @@ var HproseSimpleWriter, HproseWriter;
         }
         function readTimeWithoutTag() {
             var time;
-            var hour = parseInt(stream.read(2));
-            var minute = parseInt(stream.read(2));
-            var second = parseInt(stream.read(2));
+            var hour = parseInt(stream.read(2), 10);
+            var minute = parseInt(stream.read(2), 10);
+            var second = parseInt(stream.read(2), 10);
             var millisecond = 0;
             var tag = stream.getc();
             if (tag == hproseTags.TagPoint) {
-                millisecond = parseInt(stream.read(3));
+                millisecond = parseInt(stream.read(3), 10);
                 tag = stream.getc();
                 if ((tag >= '0') && (tag <= '9')) {
                     stream.skip(2);
@@ -764,7 +764,7 @@ var HproseSimpleWriter, HproseWriter;
         function readInt(tag) {
             var s = stream.readuntil(tag);
             if (s.length == 0) return 0;
-            return parseInt(s);
+            return parseInt(s, 10);
         }
         var readDateWithoutTag = this.readDateWithoutTag;
         this.readDateWithoutTag = function() {

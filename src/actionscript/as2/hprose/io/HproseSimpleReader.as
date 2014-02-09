@@ -89,7 +89,7 @@ class hprose.io.HproseSimpleReader extends HproseRawReader {
     private function readInt(tag) {
         var s = stream.readuntil(tag);
         if (s.length == 0) return 0;
-        return parseInt(s);
+        return parseInt(s, 10);
     }
 
     public function readIntegerWithoutTag():Number {
@@ -197,19 +197,19 @@ class hprose.io.HproseSimpleReader extends HproseRawReader {
     }
 
     public function readDateWithoutTag():Date {
-        var year = parseInt(stream.read(4));
-        var month = parseInt(stream.read(2)) - 1;
-        var day = parseInt(stream.read(2));
+        var year = parseInt(stream.read(4), 10);
+        var month = parseInt(stream.read(2), 10) - 1;
+        var day = parseInt(stream.read(2), 10);
         var date;
         var tag = stream.getc();
         if (tag == HproseTags.TagTime) {
-            var hour = parseInt(stream.read(2));
-            var minute = parseInt(stream.read(2));
-            var second = parseInt(stream.read(2));
+            var hour = parseInt(stream.read(2), 10);
+            var minute = parseInt(stream.read(2), 10);
+            var second = parseInt(stream.read(2), 10);
             var millisecond = 0;
             tag = stream.getc();
             if (tag == HproseTags.TagPoint) {
-                millisecond = parseInt(stream.read(3));
+                millisecond = parseInt(stream.read(3), 10);
                 tag = stream.getc();
                 if ((tag >= '0') && (tag <= '9')) {
                     stream.read(2);
@@ -247,13 +247,13 @@ class hprose.io.HproseSimpleReader extends HproseRawReader {
 
     public function readTimeWithoutTag():Date {
         var time;
-        var hour = parseInt(stream.read(2));
-        var minute = parseInt(stream.read(2));
-        var second = parseInt(stream.read(2));
+        var hour = parseInt(stream.read(2), 10);
+        var minute = parseInt(stream.read(2), 10);
+        var second = parseInt(stream.read(2), 10);
         var millisecond = 0;
         var tag = stream.getc();
         if (tag == HproseTags.TagPoint) {
-            millisecond = parseInt(stream.read(3));
+            millisecond = parseInt(stream.read(3), 10);
             tag = stream.getc();
             if ((tag >= '0') && (tag <= '9')) {
                 stream.read(2);
