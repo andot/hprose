@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for C#.                            *
  *                                                        *
- * LastModified: Feb 8, 2014                              *
+ * LastModified: Feb 10, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -782,14 +782,13 @@ namespace Hprose.IO {
             }
 #if !(dotNET10 || dotNET11 || dotNETCF10)
             DateTimeKind kind = (tag == HproseTags.TagUTC ? DateTimeKind.Utc : DateTimeKind.Local);
-            DateTime datetime = new DateTime(1, 1, 1, hour, minute, second, millisecond, kind);
+            DateTime datetime = new DateTime(1970, 1, 1, hour, minute, second, millisecond, kind);
 #else
-            DateTime datetime = new DateTime(1, 1, 1, hour, minute, second, millisecond);
+            DateTime datetime = new DateTime(1970, 1, 1, hour, minute, second, millisecond);
 #endif
             references.Add(datetime);
             return datetime;
         }
-
 
         public byte[] ReadBytesWithoutTag() {
             int len = ReadInt(HproseTags.TagQuote);

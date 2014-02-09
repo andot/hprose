@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for C#.                            *
  *                                                        *
- * LastModified: Feb 2, 2014                              *
+ * LastModified: Feb 10, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -482,7 +482,7 @@ namespace Hprose.IO {
                 WriteDate(year, month, day);
                 stream.WriteByte(tag);
             }
-            else if ((year == 1) && (month == 1) && (day == 1)) {
+            else if ((year == 1970) && (month == 1) && (day == 1)) {
                 WriteTime(hour, minute, second, millisecond);
                 stream.WriteByte(tag);
             }
