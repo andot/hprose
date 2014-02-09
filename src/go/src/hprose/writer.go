@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Writer for Go.                                  *
  *                                                        *
- * LastModified: Feb 9, 2014                              *
+ * LastModified: Feb 10, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -539,7 +539,7 @@ func (w *Writer) writeTime(v interface{}, t time.Time) (err error) {
 		if _, err = s.Write(formatDate(year, int(month), day)); err == nil {
 			err = s.WriteByte(tag)
 		}
-	} else if year == 1 && month == 1 && day == 1 {
+	} else if year == 1970 && month == 1 && day == 1 {
 		if _, err = s.Write(formatTime(hour, min, sec, nsec)); err == nil {
 			err = s.WriteByte(tag)
 		}

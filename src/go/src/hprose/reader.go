@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Reader for Go.                                  *
  *                                                        *
- * LastModified: Feb 8, 2014                              *
+ * LastModified: Feb 10, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -1265,7 +1265,7 @@ func (r *Reader) ReadTimeWithoutTag() (time.Time, error) {
 	} else {
 		return timeZero, unexpectedTag(tag, []byte{TagUTC, TagSemicolon})
 	}
-	t := time.Date(1, 1, 1, hour, min, sec, nsec, loc)
+	t := time.Date(1970, 1, 1, hour, min, sec, nsec, loc)
 	r.setRef(t)
 	return t, nil
 }
