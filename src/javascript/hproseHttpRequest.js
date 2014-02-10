@@ -14,7 +14,7 @@
  *                                                        *
  * POST data to HTTP Server (using Flash).                *
  *                                                        *
- * LastModified: Nov 16, 2013                             *
+ * LastModified: Feb 11, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -39,6 +39,8 @@ var HproseHttpRequest = (function(global) {
     var s_localfile = (location.protocol == "file:");
     var s_corsSupport = (!s_localfile && s_nativeXHR && "withCredentials" in new XMLHttpRequest());
     var s_flashID = 'hprosehttprequest_as3';
+
+    var s_flashSupport = false;
 
     /*
      * to save Flash Request
@@ -123,15 +125,6 @@ var HproseHttpRequest = (function(global) {
         }
     }
 
-    function thisMovie(movieName) {
-        if (navigator.appName.indexOf("Microsoft") != -1) {
-            return global[movieName];
-        }
-        else {
-            return document[movieName];
-        }
-    }
-
     function checkFlash() {
         var flash = 'Shockwave Flash';
         var flashmime = 'application/x-shockwave-flash';
@@ -174,11 +167,13 @@ var HproseHttpRequest = (function(global) {
     }
 
     function setFlash() {
-        var div = document.createElement('div');
-        div.style.width = 0;
-        div.style.height = 0;
-        switch (checkFlash()) {
-            case 1:
+        var flashStatus = checkFlash();
+        s_flashSupport = flashStatus > 0;
+        if (s_flashSupport) {
+            var div = document.createElement('div');
+            div.style.width = 0;
+            div.style.height = 0;
+            if (flashStatus == 1) {
                 div.innerHTML = ['<object ',
                 'classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" ',
                 'type="application/x-shockwave-flash" ',
@@ -188,21 +183,21 @@ var HproseHttpRequest = (function(global) {
                 '<param name="quality" value="high" />',
                 '<param name="wmode" value="opaque" />',
                 '</object>'].join('');
-                break;
-            case 2:
+            } else {
                 div.innerHTML = '<embed id="' + s_flashID + '" ' +
                 'src="' + s_flashpath + 'hproseHttpRequest.swf" ' +
                 'type="application/x-shockwave-flash" ' +
                 'width="0" height="0" name="' + s_flashID + '" ' +
                 'allowScriptAccess="always" />';
-                break;
+            }
+            document.body.appendChild(div);
         }
-        document.body.appendChild(div);
     }
 
     function setJsReady() {
-        if (!s_localfile && !s_corsSupport) setFlash();
+        if (s_jsReady) return;
         s_jsReady = true;
+        if (!s_localfile && !s_corsSupport) setFlash();
         while (s_jsTaskQueue.length > 0) {
             var task = s_jsTaskQueue.shift();
             if (typeof(task) == 'function') {
@@ -211,35 +206,66 @@ var HproseHttpRequest = (function(global) {
         }
     }
 
-    function init() {
+    function detach() {
         if (document.addEventListener) {
-            document.addEventListener("DOMContentLoaded", setJsReady, false);
+            document.removeEventListener("DOMContentLoaded", completed, false);
+            global.removeEventListener("load", completed, false);
+
+        } else {
+            document.detachEvent("onreadystatechange", completed);
+            global.detachEvent("onload", completed);
         }
-        else if (/WebKit/i.test(navigator.userAgent)) {
-            var timer = setInterval( function() {
-                if (/loaded|complete/.test(document.readyState)) {
-                    clearInterval(timer);
-                    setJsReady();
-                }
-            }, 10);
+    }
+
+    function completed() {
+        if (document.addEventListener || event.type === "load" || document.readyState === "complete") {
+            detach();
+            setJsReady();
+        }
+    }
+
+    function init() {
+        if (document.readyState === "complete") {
+            setTimeout(setJsReady, 1);
+        }
+        else if (document.addEventListener) {
+            document.addEventListener("DOMContentLoaded", completed, false);
+            global.addEventListener("load", completed, false);
+            if (/WebKit/i.test(navigator.userAgent)) {
+                var timer = setInterval( function() {
+                    if (/loaded|complete/.test(document.readyState)) {
+                        clearInterval(timer);
+                        completed();
+                    }
+                }, 10);
+            }
+        }
+        else if (document.attachEvent) {
+            document.attachEvent("onreadystatechange", completed);
+            global.attachEvent("onload", completed);
+            var top = false;
+            try {
+                top = window.frameElement == null && document.documentElement;
+            }
+            catch(e) {}
+            if (top && top.doScroll) {
+                (function doScrollCheck() {
+                    if (!s_jsReady) {
+                        try {
+                            top.doScroll("left");
+                        }
+                        catch(e) {
+                            return setTimeout(doScrollCheck, 15);
+                        }
+                        detach();
+                        setJsReady();
+                    }
+                })();
+            }
         }
         else if (/MSIE/i.test(navigator.userAgent) &&
                 /Windows CE/i.test(navigator.userAgent)) {
             setJsReady();
-        }
-        else if (/MSIE/i.test(navigator.userAgent) &&
-                !/Nokia/i.test(navigator.userAgent) &&
-                !/Opera/i.test(navigator.userAgent)) {
-            document.write('<script id="__ie_onload" defer src="javascript:void(0)"></script>');
-            var script = document.getElementById("__ie_onload");
-            script.onreadystatechange = function() {
-                if (this.readyState == 'complete') {
-                    setJsReady();
-                }
-            }
-        }
-        else if (global.attachEvent) {
-            global.attachEvent('onload', setJsReady);
         }
         else {
             global.onload = setJsReady;
@@ -305,7 +331,7 @@ var HproseHttpRequest = (function(global) {
     }
 
     function post(url, header, data, callbackid, timeout) {
-        if (s_request && !s_localfile &&
+        if (s_flashSupport && !s_localfile &&
            (url.substr(0, 7).toLowerCase() == "http://" ||
             url.substr(0, 8).toLowerCase() == "https://")) {
             flashpost(url, header, data, callbackid, timeout);
@@ -352,7 +378,8 @@ var HproseHttpRequest = (function(global) {
     }
 
     HproseHttpRequest.__setSwfReady = function () {
-        s_request = thisMovie(s_flashID);
+        s_request = (navigator.appName.indexOf("Microsoft") != -1) ?
+                    global[s_flashID] : document[s_flashID];
         s_swfReady = true;
         global["__flash__removeCallback"] = function(instance, name) {
             try {
