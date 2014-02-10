@@ -14,7 +14,7 @@
 #                                                          #
 # hprose io stream library for ruby                        #
 #                                                          #
-# LastModified: Feb 8, 2014                                #
+# LastModified: Feb 11, 2014                               #
 # Author: Ma Bingyao <andot@hprfc.com>                     #
 #                                                          #
 ############################################################
@@ -933,39 +933,48 @@ module Hprose
     def initialize(stream)
       super
       @ref = {}
+      @refcount = 0
     end
     def write_date(time)
-      @ref[time.object_id] = @ref.length
+      @ref[time.object_id] = @refcount
+      @refcount += 0
       super
     end
     def write_bytes(bytes)
-      @ref[bytes.object_id] = @ref.length
+      @ref[bytes.object_id] = @refcount
+      @refcount += 0
       super
     end
     def write_string(string)
-      @ref[string.object_id] = @ref.length
+      @ref[string.object_id] = @refcount
+      @refcount += 0
       super
     end
     def write_guid(guid)
-      @ref[guid.object_id] = @ref.length
+      @ref[guid.object_id] = @refcount
+      @refcount += 0
       super
     end
     def write_list(list)
-      @ref[list.object_id] = @ref.length
+      @ref[list.object_id] = @refcount
+      @refcount += 0
       super
     end
     def write_map(map)
-      @ref[map.object_id] = @ref.length
+      @ref[map.object_id] = @refcount
+      @refcount += 0
       super
     end
     def write_object(object)
       fields, vars = write_object_begin(object)
-      @ref[object.object_id] = @ref.length
+      @ref[object.object_id] = @refcount
+      @refcount += 0
       write_object_end(object, fields, vars)
     end
     def reset
       super
       @ref.clear
+      @refcount = 0
     end
   end # class Writer
 
