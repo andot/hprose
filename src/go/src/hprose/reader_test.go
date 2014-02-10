@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Writer Test for Go.                             *
  *                                                        *
- * LastModified: Feb 8, 2014                              *
+ * LastModified: Feb 11, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -37,7 +37,7 @@ func TestReaderTime(t *testing.T) {
 	writer.Serialize(time.Date(2014, 1, 19, 20, 25, 33, 12345678, time.UTC))
 	writer.Serialize(time.Date(2014, 1, 19, 20, 25, 33, 12345678, time.UTC))
 	writer.Serialize(time.Date(2014, 1, 19, 0, 0, 0, 0, time.Local))
-	writer.Serialize(time.Date(1, 1, 1, 1, 1, 1, 0, time.Local))
+	writer.Serialize(time.Date(1970, 1, 1, 1, 1, 1, 0, time.Local))
 	if b.String() != "D20140119T202533.012345678Zr0;D20140119;T010101;" {
 		t.Error(b.String())
 	}

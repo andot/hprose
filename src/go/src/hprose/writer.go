@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Writer for Go.                                  *
  *                                                        *
- * LastModified: Feb 10, 2014                             *
+ * LastModified: Feb 11, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -104,15 +104,17 @@ func (r fakeWriterRefer) writeRef(w *Writer, v interface{}) (success bool, err e
 func (r fakeWriterRefer) resetRef() {}
 
 type realWriterRefer struct {
-	ref map[interface{}]int
+	ref      map[interface{}]int
+	refcount int
 }
 
 func (r *realWriterRefer) setRef(v interface{}) {
 	if r.ref == nil {
 		r.ref = make(map[interface{}]int)
+		r.refcount = 0
 	}
-	n := len(r.ref)
-	r.ref[v] = n
+	r.ref[v] = r.refcount
+	r.refcount++
 }
 
 func (r *realWriterRefer) writeRef(w *Writer, v interface{}) (success bool, err error) {

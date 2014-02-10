@@ -13,7 +13,7 @@
  *                                                        *
  * hprose Writer Test for Go.                             *
  *                                                        *
- * LastModified: Feb 8, 2014                              *
+ * LastModified: Feb 11, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -194,7 +194,7 @@ func TestWriterTime(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
-	err = writer.Serialize(time.Date(1, 1, 1, 1, 1, 1, 0, time.Local))
+	err = writer.Serialize(time.Date(1970, 1, 1, 1, 1, 1, 0, time.Local))
 	if err != nil {
 		t.Error(err.Error())
 	}
