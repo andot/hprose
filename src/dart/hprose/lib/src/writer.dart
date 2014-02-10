@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer for Dart.                                *
  *                                                        *
- * LastModified: Feb 8, 2014                              *
+ * LastModified: Feb 11, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -37,10 +37,10 @@ class _FakeWriterRefer implements _WriterRefer {
 
 class _RealWriterRefer implements _WriterRefer {
   final Map<dynamic, int> _ref = new Map<dynamic, int>();
+  int _refcount = 0;
 
   void set(dynamic obj) {
-    int n = _ref.length;
-    _ref[obj] = n;
+    _ref[obj] = _refcount++;
   }
 
   bool write(BytesIO bytes, dynamic obj) {
@@ -56,18 +56,48 @@ class _RealWriterRefer implements _WriterRefer {
 
   void reset() {
     _ref.clear();
+    _refcount = 0;
   }
 }
 
 final Map<ClassMirror, Map<String, Symbol>> _FieldsCache = new Map<ClassMirror, Map<String, Symbol>>();
 
+Map<String, Symbol> _getFieldsFromCache(ClassMirror cm) {
+  Map<String, Symbol> fields = _FieldsCache[cm];
+  if (fields == null) {
+    fields = new Map<String, Symbol>();
+    Map<String, Symbol> properties = new Map<String, Symbol>();
+    cm.instanceMembers.values.forEach((MethodMirror e) {
+      if ((e.isSetter || e.isGetter) &&
+          !e.isStatic && !e.isPrivate &&
+          e.returnType is! TypedefMirror &&
+          e.returnType is! FunctionTypeMirror &&
+          e.returnType.simpleName != #Function) {
+        String name = MirrorSystem.getName(e.simpleName);
+        if (e.isSetter) name = name.substring(0, name.length - 1);
+        if (properties[name] != null) {
+          if (e.isSetter) {
+            fields[name] = properties[name];
+          } else {
+            fields[name] = e.simpleName;
+          }
+        } else {
+          properties[name] = e.simpleName;
+        }
+      }
+    });
+    _FieldsCache[cm] = fields;
+  }
+  return fields;
+}
+
 class HproseWriter {
   BytesIO _bytes;
   _WriterRefer _refer;
-  HashMap<String, int> _classref;
-  List<Map<String, Symbol>> _fieldsref;
+  final HashMap<String, int> _classref = new HashMap<String, int>();
+  final List<Map<String, Symbol>> _fieldsref = new List<Map<String, Symbol>>();
 
-  HproseWriter(this._bytes, [bool simple = false]) {
+  HproseWriter(BytesIO this._bytes, [bool simple = false]) {
     _refer = simple ? new _FakeWriterRefer() : new _RealWriterRefer();
   }
 
@@ -190,7 +220,7 @@ class HproseWriter {
     if (hour == 0 && minute == 0 && second == 0 && millisecond == 0) {
       _bytes.write(_formatDate(year, month, day));
       _bytes.writeByte(tag);
-    } else if (year == 1 && month == 1 && day == 1) {
+    } else if (year == 1970 && month == 1 && day == 1) {
       _bytes.write(_formatTime(hour, minute, second, millisecond));
       _bytes.writeByte(tag);
     } else {
@@ -280,35 +310,6 @@ class HproseWriter {
     if (!_refer.write(_bytes, value)) writeMap(value);
   }
 
-  Map<String, Symbol> _getFieldsFromCache(ClassMirror cm) {
-    Map<String, Symbol> fields = _FieldsCache[cm];
-    if (fields == null) {
-      fields = new Map<String, Symbol>();
-      Map<String, Symbol> properties = new Map<String, Symbol>();
-      cm.instanceMembers.values.forEach((MethodMirror e) {
-        if ((e.isSetter || e.isGetter) &&
-            !e.isStatic && !e.isPrivate &&
-            e.returnType is! TypedefMirror &&
-            e.returnType is! FunctionTypeMirror &&
-            e.returnType.simpleName != #Function) {
-          String name = MirrorSystem.getName(e.simpleName);
-          if (e.isSetter) name = name.substring(0, name.length - 1);
-          if (properties[name] != null) {
-            if (e.isSetter) {
-              fields[name] = properties[name];
-            } else {
-              fields[name] = e.simpleName;
-            }
-          } else {
-            properties[name] = e.simpleName;
-          }
-        }
-      });
-      _FieldsCache[cm] = fields;
-    }
-    return fields;
-  }
-
   void writeObject(dynamic value) {
     InstanceMirror im = reflect(value);
     ClassMirror cm = im.type;
@@ -316,10 +317,6 @@ class HproseWriter {
     if (className == null) {
       className = MirrorSystem.getName(cm.simpleName);
       HproseClassManager.register(cm, className);
-    }
-    if (_classref == null) {
-      _classref = new HashMap<String, int>();
-      _fieldsref = new List<Map<String, Symbol>>();
     }
     int index = _classref[className];
     Map<String, Symbol> fields;
