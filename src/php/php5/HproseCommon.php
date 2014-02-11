@@ -15,7 +15,7 @@
  *                                                        *
  * hprose common library for php5.                        *
  *                                                        *
- * LastModified: Jan 2, 2014                              *
+ * LastModified: Feb 11, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -26,6 +26,34 @@ require_once('HproseFilter.php');
 require_once('HproseDate.php');
 require_once('HproseTime.php');
 require_once('HproseDateTime.php');
+
+class HproseBytes {
+    public $value;
+    public function __construct($val) {
+        $this->value = $val;
+    }
+    public function __toString() {
+        return (string)$value;
+    }
+}
+
+function bytes($val) {
+    return new HproseBytes($val);
+}
+
+class HproseMap {
+    public $value;
+    public function __construct(array &$val) {
+        $this->value = &$val;
+    }
+    public function __toString() {
+        return "Map";
+    }
+}
+
+function map(&$val) {
+    return new HproseMap($val);
+}
 
 /*
  integer is_utf8(string $s)

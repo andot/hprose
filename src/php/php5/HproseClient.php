@@ -15,7 +15,7 @@
  *                                                        *
  * hprose client library for php5.                        *
  *                                                        *
- * LastModified: Jan 2, 2014                              *
+ * LastModified: Feb 11, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -58,7 +58,7 @@ abstract class HproseClient {
     public function invoke($functionName, &$arguments = array(), $byRef = false, $resultMode = HproseResultMode::Normal, $simple = NULL) {
         if ($simple === NULL) $simple = $this->simple;
         $stream = new HproseStringStream(HproseTags::TagCall);
-        $hproseWriter = ($simple ? new HproseSimpleWriter($stream) : new HproseWriter($stream));
+        $hproseWriter = new HproseWriter($stream, $simple);
         $hproseWriter->writeString($functionName);
         if (count($arguments) > 0 || $byRef) {
             $hproseWriter->reset();

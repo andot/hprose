@@ -15,7 +15,7 @@
  *                                                        *
  * hprose http server library for php5.                   *
  *                                                        *
- * LastModified: Dec 30, 2013                             *
+ * LastModified: Feb 11, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -124,13 +124,13 @@ class HproseHttpServer {
         }
         ob_clean();
         $this->output->write(HproseTags::TagError);
-        $writer = new HproseSimpleWriter($this->output);
+        $writer = new HproseWriter($this->output, true);
         $writer->writeString($this->error);
         $this->output->write(HproseTags::TagEnd);
         ob_end_flush();
     }
     private function doInvoke() {
-        $simpleReader = new HproseSimpleReader($this->input);
+        $simpleReader = new HproseReader($this->input, true);
         do {
             $functionName = $simpleReader->readString();
             $aliasName = strtolower($functionName);
@@ -149,7 +149,7 @@ class HproseHttpServer {
                 throw new HproseException("Can't find this function " . $functionName . "().");
             }
             if ($simple === NULL) $simple = $this->simple;
-            $writer = ($simple ? new HproseSimpleWriter($this->output) : new HproseWriter($this->output));
+            $writer = new HproseWriter($this->output, $simple);
             $args = array();
             $byref = false;
             $tag = $simpleReader->checkTags(array(HproseTags::TagList,
@@ -216,7 +216,7 @@ class HproseHttpServer {
     }
     private function doFunctionList() {
         $functions = array_values($this->funcNames);
-        $writer = new HproseSimpleWriter($this->output);
+        $writer = new HproseWriter($this->output, true);
         $this->output->write(HproseTags::TagFunctions);
         $writer->writeList($functions);
         $this->output->write(HproseTags::TagEnd);
