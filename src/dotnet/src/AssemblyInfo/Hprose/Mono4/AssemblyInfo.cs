@@ -6,5 +6,5 @@
 [assembly: System.Reflection.AssemblyVersion("4.0.30319.1")]
 [assembly: System.Reflection.AssemblyFileVersion("4.0.30319.1")]
 [assembly: System.Reflection.AssemblyInformationalVersion("1.3.4.0")]
-[assembly: System.Reflection.AssemblyCompany("HPRFC Software Co.,Ltd.")]
-[assembly: System.Reflection.AssemblyCopyright("\x00a9 HPRFC Software Co.,Ltd. All rights reserved.")]
+[assembly: System.Reflection.AssemblyCompany("http://www.hprose.com")]
+[assembly: System.Reflection.AssemblyCopyright("\x00a9 http://www.hprose.com, All rights reserved.")]
