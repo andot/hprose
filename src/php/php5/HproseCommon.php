@@ -15,7 +15,7 @@
  *                                                        *
  * hprose common library for php5.                        *
  *                                                        *
- * LastModified: Feb 11, 2014                             *
+ * LastModified: Feb 12, 2014                             *
  * Author: Ma Bingyao <andot@hprfc.com>                   *
  *                                                        *
 \**********************************************************/
@@ -181,8 +181,12 @@ function array_ref_search(&$value, &$array) {
  This id can be used as a hash key for storing objects or for identifying an object.
 */
 if (!function_exists('spl_object_hash')) {
+    function spl_object_hash_callback() {
+        return "";
+    }
+
     function spl_object_hash($object) {
-        ob_start();
+        ob_start("spl_object_callback");
         var_dump($object);
         preg_match('[#(\d+)]', ob_get_clean(), $match);
         return $match[1];
