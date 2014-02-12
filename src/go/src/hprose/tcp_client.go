@@ -13,7 +13,7 @@
  *                                                        *
  * hprose tcp client for Go.                              *
  *                                                        *
- * LastModified: Feb 5, 2014                              *
+ * LastModified: Feb 12, 2014                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -97,13 +97,20 @@ func (connPool *TcpConnPool) Get(uri string) *TcpConnEntry {
 	return entry
 }
 
+func (connPool *TcpConnPool) freeConns(conns []net.Conn) {
+	for _, conn := range conns {
+		conn.Close()
+	}
+}
+
 func (connPool *TcpConnPool) Close(uri string) {
 	connPool.Lock()
 	defer connPool.Unlock()
+	conns := make([]net.Conn, 0, len(connPool.pool))
 	for _, entry := range connPool.pool {
 		if entry.uri == uri {
 			if entry.free && entry.valid {
-				entry.conn.Close()
+				conns = append(conns, entry.conn)
 				entry.conn = nil
 				entry.reader = nil
 				entry.uri = ""
@@ -112,11 +119,10 @@ func (connPool *TcpConnPool) Close(uri string) {
 			}
 		}
 	}
+	go connPool.freeConns(conns)
 }
 
 func (connPool *TcpConnPool) Free(entry *TcpConnEntry) {
-	connPool.Lock()
-	defer connPool.Unlock()
 	if entry.free && !entry.valid {
 		if entry.conn != nil {
 			entry.conn.Close()
@@ -125,8 +131,10 @@ func (connPool *TcpConnPool) Free(entry *TcpConnEntry) {
 		entry.reader = nil
 		entry.uri = ""
 	}
+	connPool.Lock()
 	entry.free = true
 	entry.valid = true
+	connPool.Unlock()
 }
 
 type TcpTransporter struct {
