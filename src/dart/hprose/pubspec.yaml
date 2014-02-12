@@ -1,0 +1,7 @@
+name: hprose
+version: 0.2.12-dev+2.12.2014
+author: Ma Bingyao <mabingyao@gmail.com>
+description: Hprose for Dart
+homepage: https://github.com/andot/hprose/tree/master/src/dart/hprose
+dev_dependencies:
+  unittest: '>=0.9.0 <0.10.0'

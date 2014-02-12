@@ -10,3 +10,6 @@
 /src/java/java2/dist/
 /src/java/java5/dist/
 /src/java/java5/build/
+/src/dart/hprose/packages/
+/src/dart/hprose/test/packages/
+/src/dart/hprose/pubspec.lock
