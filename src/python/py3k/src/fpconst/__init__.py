@@ -15,7 +15,7 @@
 # fpconst for python 3.0+                                  #
 #                                                          #
 # LastModified: May 16, 2010                               #
-# Author: Ma Bingyao <andot@hprfc.com>                     #
+# Author: Ma Bingyao <andot@hprose.com>                    #
 #                                                          #
 ############################################################
 

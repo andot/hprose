@@ -15,7 +15,7 @@
  * hprose time unit for cpp.                              *
  *                                                        *
  * LastModified: Jul 16, 2010                             *
- * Author: Chen fei <cf@hprfc.com>                        *
+ * Author: Chen fei <cf@hprose.com>                       *
  *                                                        *
 \**********************************************************/
 

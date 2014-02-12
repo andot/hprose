@@ -15,7 +15,7 @@
  * hprose classes unit for cpp.                           *
  *                                                        *
  * LastModified: May 31, 2010                             *
- * Author: Chen fei <cf@hprfc.com>                        *
+ * Author: Chen fei <cf@hprose.com>                       *
  *                                                        *
 \**********************************************************/
 
@@ -30,4 +30,4 @@ namespace hprose
     boost::shared_mutex classes::cache_mutex;
     boost::shared_mutex classes::property_mutex;
 
-} // namespace hprose 
+} // namespace hprose

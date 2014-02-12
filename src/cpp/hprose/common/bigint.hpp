@@ -15,7 +15,7 @@
  * hprose big int unit for cpp.                           *
  *                                                        *
  * LastModified: Jun 2, 2010                              *
- * Author: Chen fei <cf@hprfc.com>                        *
+ * Author: Chen fei <cf@hprose.com>                       *
  *                                                        *
 \**********************************************************/
 

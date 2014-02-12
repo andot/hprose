@@ -14,7 +14,7 @@
  * hprose writer class for Java.                          *
  *                                                        *
  * LastModified: Feb 7, 2014                              *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 package hprose.io;

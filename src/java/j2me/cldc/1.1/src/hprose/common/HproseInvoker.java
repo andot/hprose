@@ -14,7 +14,7 @@
  * hprose invoker interface for Java.                     *
  *                                                        *
  * LastModified: Jun 22, 2011                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 package hprose.common;

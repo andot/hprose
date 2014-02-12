@@ -14,7 +14,7 @@
  * hprose formatter class for C#.                         *
  *                                                        *
  * LastModified: Apr 11, 2011                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 using System;

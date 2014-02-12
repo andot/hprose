@@ -15,7 +15,7 @@
 # hprose io for ruby                                       #
 #                                                          #
 # LastModified: Dec 1, 2012                                #
-# Author: Ma Bingyao <andot@hprfc.com>                     #
+# Author: Ma Bingyao <andot@hprose.com>                    #
 #                                                          #
 ############################################################
 

@@ -14,7 +14,7 @@
  * hprose client proxy for Objective-C.                   *
  *                                                        *
  * LastModified: Jun 21, 2011                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 

@@ -14,7 +14,7 @@
  * IInvocationHandler interface for C#.                   *
  *                                                        *
  * LastModified: Jul 14, 2010                             *
- * Authors: Ma Bingyao <andot@hprfc.com>                  *
+ * Authors: Ma Bingyao <andot@hprose.com>                 *
  *                                                        *
 \**********************************************************/
 

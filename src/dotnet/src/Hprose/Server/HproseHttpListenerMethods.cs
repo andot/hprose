@@ -14,7 +14,7 @@
  * hprose http listener remote methods class for C#.      *
  *                                                        *
  * LastModified: May 16, 2010                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 #if !(dotNET10 || dotNET11 || ClientOnly)

@@ -14,7 +14,7 @@
  * PropertyAccessor class for C#.                         *
  *                                                        *
  * LastModified: Dec 19, 2012                             *
- * Authors: Ma Bingyao <andot@hprfc.com>                  *
+ * Authors: Ma Bingyao <andot@hprose.com>                 *
  *                                                        *
 \**********************************************************/
 #if (dotNET10 || dotNET11)

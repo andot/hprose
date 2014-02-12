@@ -16,7 +16,7 @@
  * hprose common unit for delphi.                         *
  *                                                        *
  * LastModified: Nov 2, 2013                              *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 }
@@ -884,7 +884,7 @@ begin
       TVarData(Result).VType := VType or varByRef;
       TVarData(Result).VPointer := @TVarData(Value).VPointer;
     end
-{$ENDIF}    
+{$ENDIF}
     else begin
       TVarData(Result).VType := varByRef or varVariant;
       TVarData(Result).VPointer := @TVarData(Value);
@@ -1172,9 +1172,9 @@ begin
     vtPWideChar:
       begin
         W := Item.VPWideChar;
-        GetMem(Result.VPWideChar, 
+        GetMem(Result.VPWideChar,
                (Length(W) + 1) * SizeOf(WideChar));
-        Move(PWideChar(W)^, Result.VPWideChar^, 
+        Move(PWideChar(W)^, Result.VPWideChar^,
              (Length(W) + 1) * SizeOf(WideChar));
       end;
     // a little trickier: casting to AnsiString will ensure

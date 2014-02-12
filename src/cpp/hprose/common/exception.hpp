@@ -15,7 +15,7 @@
  * hprose exception unit for cpp.                         *
  *                                                        *
  * LastModified: May 29, 2010                             *
- * Author: Chen fei <cf@hprfc.com>                        *
+ * Author: Chen fei <cf@hprose.com>                       *
  *                                                        *
 \**********************************************************/
 

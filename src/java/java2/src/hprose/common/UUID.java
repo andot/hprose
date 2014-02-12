@@ -15,7 +15,7 @@
  * UUID for Java.                                         *
  *                                                        *
  * LastModified: Jul 19, 2010                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 package hprose.common;

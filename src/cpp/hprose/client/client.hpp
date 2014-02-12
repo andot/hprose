@@ -14,7 +14,7 @@
  * hprose client class for Cpp.                           *
  *                                                        *
  * LastModified: Jun 6, 2010                              *
- * Author: Chen fei <cf@hprfc.com>                        *
+ * Author: Chen fei <cf@hprose.com>                       *
  *                                                        *
 \**********************************************************/
 

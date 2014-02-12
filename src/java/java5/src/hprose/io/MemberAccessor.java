@@ -14,7 +14,7 @@
  * MemberAccessor interface for Java.                     *
  *                                                        *
  * LastModified: Dec 26, 2012                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 package hprose.io;

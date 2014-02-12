@@ -14,7 +14,7 @@
  * hprose http invoker class for ActionScript 2.0.        *
  *                                                        *
  * LastModified: Dec 7, 2013                              *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 

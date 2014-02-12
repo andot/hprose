@@ -14,7 +14,7 @@
  * cookie manager class for .NET Compact Framework.       *
  *                                                        *
  * LastModified: May 16, 2010                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 #if (PocketPC || Smartphone || WindowsCE)

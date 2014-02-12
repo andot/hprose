@@ -15,7 +15,7 @@
  * hprose http client for Javascript.                     *
  *                                                        *
  * LastModified: Dec 27, 2013                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 

@@ -14,7 +14,7 @@
  * hprose connection protocol for Objective-C.            *
  *                                                        *
  * LastModified: Dec 3, 2012                              *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 

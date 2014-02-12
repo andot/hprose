@@ -14,7 +14,7 @@
  * hprose tcp client for Go.                              *
  *                                                        *
  * LastModified: Feb 5, 2014                              *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 

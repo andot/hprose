@@ -14,7 +14,7 @@
  * hprose exception for Dart.                             *
  *                                                        *
  * LastModified: Feb 5, 2014                              *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 part of hprose;

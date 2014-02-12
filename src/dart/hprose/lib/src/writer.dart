@@ -14,7 +14,7 @@
  * hprose writer for Dart.                                *
  *                                                        *
  * LastModified: Feb 11, 2014                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 part of hprose;

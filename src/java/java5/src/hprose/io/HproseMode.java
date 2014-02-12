@@ -14,7 +14,7 @@
  * hprose mode enum for Java.                             *
  *                                                        *
  * LastModified: Feb 2, 2014                              *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 package hprose.io;

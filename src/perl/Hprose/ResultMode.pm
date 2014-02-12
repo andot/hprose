@@ -15,7 +15,7 @@
 # Hprose ResultMode enum for perl                          #
 #                                                          #
 # LastModified: Dec 4, 2012                                #
-# Author: Ma Bingyao <andot@hprfc.com>                     #
+# Author: Ma Bingyao <andot@hprose.com>                    #
 #                                                          #
 ############################################################
 package Hprose::ResultMode;

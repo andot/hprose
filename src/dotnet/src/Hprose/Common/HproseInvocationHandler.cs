@@ -14,7 +14,7 @@
  * hprose InvocationHandler class for C#.                 *
  *                                                        *
  * LastModified: Nov 13, 2012                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 #if !(PocketPC || Smartphone || WindowsCE || WINDOWS_PHONE || Core)

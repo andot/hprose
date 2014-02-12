@@ -15,7 +15,7 @@
 # Hprose Filter class for perl                             #
 #                                                          #
 # LastModified: Dec 5, 2012                                #
-# Author: Ma Bingyao <andot@hprfc.com>                     #
+# Author: Ma Bingyao <andot@hprose.com>                    #
 #                                                          #
 ############################################################
 package Hprose::Filter;

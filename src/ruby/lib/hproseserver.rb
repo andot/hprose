@@ -15,7 +15,7 @@
 # hprose server for ruby                                   #
 #                                                          #
 # LastModified: May 19, 2010                               #
-# Author: Ma Bingyao <andot@hprfc.com>                     #
+# Author: Ma Bingyao <andot@hprose.com>                    #
 #                                                          #
 ############################################################
 

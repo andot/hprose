@@ -14,7 +14,7 @@
  * HproseResultMode enum for ActionScript 3.0.            *
  *                                                        *
  * LastModified: Nov 24, 2013                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 package hprose.common {

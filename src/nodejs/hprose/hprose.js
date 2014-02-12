@@ -15,7 +15,7 @@
  * hprose for Node.js.                                    *
  *                                                        *
  * LastModified: Nov 18, 2013                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 

@@ -14,7 +14,7 @@
  * hprose servlet class for Java.                         *
  *                                                        *
  * LastModified: Jun 26, 2010                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 package hprose.server;

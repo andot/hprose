@@ -14,7 +14,7 @@
  * type enum for C#.                                      *
  *                                                        *
  * LastModified: Dec 17, 2012                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 namespace Hprose.IO {

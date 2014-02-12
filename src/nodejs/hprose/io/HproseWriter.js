@@ -15,7 +15,7 @@
  * HproseWriter for Node.js.                              *
  *                                                        *
  * LastModified: Dec 28, 2013                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 

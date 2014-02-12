@@ -15,7 +15,7 @@
  * Harmony Map for ActionScript 2.0.                      *
  *                                                        *
  * LastModified: Nov 19, 2013                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 

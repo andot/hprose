@@ -15,7 +15,7 @@
  * HproseResultMode for Node.js.                          *
  *                                                        *
  * LastModified: Oct 24, 2012                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 

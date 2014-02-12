@@ -14,7 +14,7 @@
  * hprose asio http client class unit for Cpp.            *
  *                                                        *
  * LastModified: Jun 3, 2010                              *
- * Author: Chen fei <cf@hprfc.com>                        *
+ * Author: Chen fei <cf@hprose.com>                       *
  *                                                        *
 \**********************************************************/
 

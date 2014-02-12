@@ -14,7 +14,7 @@
  * hprose Invoke Helper class for C#.                     *
  *                                                        *
  * LastModified: Nov 13, 2012                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 #if !(dotNET10 || dotNET11 || dotNETCF10)

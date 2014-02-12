@@ -14,7 +14,7 @@
  * hprose property class header for Objective-C.          *
  *                                                        *
  * LastModified: Jul 2, 2011                              *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 

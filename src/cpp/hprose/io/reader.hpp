@@ -15,7 +15,7 @@
  * hprose reader unit for cpp.                            *
  *                                                        *
  * LastModified: Jun 27, 2011                             *
- * Author: Chen fei <cf@hprfc.com>                        *
+ * Author: Chen fei <cf@hprose.com>                       *
  *                                                        *
 \**********************************************************/
 

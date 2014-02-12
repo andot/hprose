@@ -15,7 +15,7 @@
  * HproseHttpClient for Node.js.                          *
  *                                                        *
  * LastModified: Nov 18, 2012                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 

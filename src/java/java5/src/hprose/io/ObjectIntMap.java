@@ -14,7 +14,7 @@
  * ObjectIntMap class for Java.                           *
  *                                                        *
  * LastModified: Dec 18, 2012                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 package hprose.io;

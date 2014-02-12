@@ -14,7 +14,7 @@
  * hprose http client class for Java.                     *
  *                                                        *
  * LastModified: Jan 4, 2013                              *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 package hprose.client;

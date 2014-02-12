@@ -15,7 +15,7 @@
 # hprose io for python 3.0+                                #
 #                                                          #
 # LastModified: Feb 9, 2014                                #
-# Author: Ma Bingyao <andot@hprfc.com>                     #
+# Author: Ma Bingyao <andot@hprose.com>                    #
 #                                                          #
 ############################################################
 

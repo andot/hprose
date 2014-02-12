@@ -15,7 +15,7 @@
 # hprose common library for ruby                           #
 #                                                          #
 # LastModified: Dec 2, 2012                                #
-# Author: Ma Bingyao <andot@hprfc.com>                     #
+# Author: Ma Bingyao <andot@hprose.com>                    #
 #                                                          #
 ############################################################
 

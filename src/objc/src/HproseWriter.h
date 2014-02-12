@@ -14,7 +14,7 @@
  * hprose writer class header for Objective-C.            *
  *                                                        *
  * LastModified: Jul 1, 2011                              *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 

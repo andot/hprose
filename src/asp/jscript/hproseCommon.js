@@ -15,7 +15,7 @@
  * hprose common library for ASP.                         *
  *                                                        *
  * LastModified: Nov 26, 2012                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 

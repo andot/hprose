@@ -15,7 +15,7 @@
  * hprose io unit for cpp.                                *
  *                                                        *
  * LastModified: Jul 13, 2010                             *
- * Author: Chen fei <cf@hprfc.com>                        *
+ * Author: Chen fei <cf@hprose.com>                       *
  *                                                        *
 \**********************************************************/
 

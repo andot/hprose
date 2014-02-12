@@ -16,7 +16,7 @@
  * hprose abstract stream class for php5.                 *
  *                                                        *
  * LastModified: Jan 2, 2014                              *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 

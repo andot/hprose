@@ -14,7 +14,7 @@
  * hprose writer class for Java.                          *
  *                                                        *
  * LastModified: Feb 7, 2014                              *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 package hprose.io;
@@ -226,7 +226,7 @@ public final class HproseWriter {
         int minute = calendar.get(Calendar.MINUTE);
         int second = calendar.get(Calendar.SECOND);
         int millisecond = calendar.get(Calendar.MILLISECOND);
-        if (hour == 0 && minute == 0 && second == 0 && millisecond == 0) return; 
+        if (hour == 0 && minute == 0 && second == 0 && millisecond == 0) return;
         stream.write(HproseTags.TagTime);
         stream.write((byte) ('0' + (hour / 10 % 10)));
         stream.write((byte) ('0' + (hour % 10)));

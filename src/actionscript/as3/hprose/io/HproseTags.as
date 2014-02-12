@@ -14,7 +14,7 @@
  * hprose tags enum for ActionScript 3.0.                 *
  *                                                        *
  * LastModified: Jul 31, 2010                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 package hprose.io {

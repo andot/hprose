@@ -15,7 +15,7 @@
 # hprose common for python 2.3+                            #
 #                                                          #
 # LastModified: Jan 4, 2013                                #
-# Author: Ma Bingyao <andot@hprfc.com>                     #
+# Author: Ma Bingyao <andot@hprose.com>                    #
 #                                                          #
 ############################################################
 

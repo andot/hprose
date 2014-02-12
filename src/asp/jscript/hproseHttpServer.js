@@ -15,7 +15,7 @@
  * hprose http server library for ASP.                    *
  *                                                        *
  * LastModified: Dec 29, 2013                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 

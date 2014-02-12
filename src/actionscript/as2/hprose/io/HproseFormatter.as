@@ -14,7 +14,7 @@
  * hprose formatter class for ActionScript 2.0.           *
  *                                                        *
  * LastModified: Nov 20, 2013                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 

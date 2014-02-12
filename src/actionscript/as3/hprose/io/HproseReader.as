@@ -14,7 +14,7 @@
  * hprose reader class for ActionScript 3.0.              *
  *                                                        *
  * LastModified: Dec 7, 2013                              *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 package hprose.io {

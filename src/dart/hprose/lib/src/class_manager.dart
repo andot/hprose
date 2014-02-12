@@ -14,7 +14,7 @@
  * hprose class manager for Dart.                         *
  *                                                        *
  * LastModified: Feb 8, 2014                              *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 part of hprose;

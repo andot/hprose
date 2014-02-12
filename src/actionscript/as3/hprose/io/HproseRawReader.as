@@ -14,7 +14,7 @@
  * hprose raw reader class for ActionScript 3.0.          *
  *                                                        *
  * LastModified: Feb 8, 2014                              *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 package hprose.io {

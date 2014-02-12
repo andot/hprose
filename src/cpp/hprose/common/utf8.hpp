@@ -15,7 +15,7 @@
  * hprose utf8 unit for cpp.                              *
  *                                                        *
  * LastModified: Jun 5, 2010                              *
- * Author: Chen fei <cf@hprfc.com>                        *
+ * Author: Chen fei <cf@hprose.com>                       *
  *                                                        *
 \**********************************************************/
 

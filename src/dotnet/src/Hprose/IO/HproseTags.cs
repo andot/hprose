@@ -14,7 +14,7 @@
  * hprose tags class for C#.                              *
  *                                                        *
  * LastModified: Jul 12, 2010                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 using System;

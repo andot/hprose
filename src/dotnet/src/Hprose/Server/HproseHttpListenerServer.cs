@@ -14,7 +14,7 @@
  * hprose http listener server class for C#.              *
  *                                                        *
  * LastModified: Dec 8, 2012                              *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 #if !(dotNET10 || dotNET11 || ClientOnly)

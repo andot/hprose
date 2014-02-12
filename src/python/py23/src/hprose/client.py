@@ -15,7 +15,7 @@
 # hprose client for python 2.3+                            #
 #                                                          #
 # LastModified: Jan 4, 2014                                #
-# Author: Ma Bingyao <andot@hprfc.com>                     #
+# Author: Ma Bingyao <andot@hprose.com>                    #
 #                                                          #
 ############################################################
 

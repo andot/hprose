@@ -14,7 +14,7 @@
  * hprose helper class for Java.                          *
  *                                                        *
  * LastModified: Mar 6, 2011                              *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 package hprose.io;

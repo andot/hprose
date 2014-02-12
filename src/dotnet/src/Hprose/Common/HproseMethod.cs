@@ -14,7 +14,7 @@
  * hprose remote method class for C#.                     *
  *                                                        *
  * LastModified: Nov 6, 2012                              *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 using System;

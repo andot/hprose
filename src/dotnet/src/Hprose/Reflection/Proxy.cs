@@ -14,7 +14,7 @@
  * Proxy class for C#.                                    *
  *                                                        *
  * LastModified: Nov 6, 2012                              *
- * Authors: Ma Bingyao <andot@hprfc.com>                  *
+ * Authors: Ma Bingyao <andot@hprose.com>                 *
  *                                                        *
 \**********************************************************/
 

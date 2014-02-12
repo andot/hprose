@@ -16,7 +16,7 @@
  * hprose client library for php5.                        *
  *                                                        *
  * LastModified: Feb 11, 2014                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 

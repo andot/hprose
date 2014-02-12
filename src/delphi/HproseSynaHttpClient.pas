@@ -16,7 +16,7 @@
  * hprose synapse http client unit for delphi.            *
  *                                                        *
  * LastModified: Dec 29, 2012                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 }

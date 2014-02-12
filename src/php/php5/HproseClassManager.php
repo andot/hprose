@@ -16,7 +16,7 @@
  * hprose class manager library for php5.                 *
  *                                                        *
  * LastModified: Nov 12, 2013                             *
- * Author: Ma Bingyao <andot@hprfc.com>                   *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
