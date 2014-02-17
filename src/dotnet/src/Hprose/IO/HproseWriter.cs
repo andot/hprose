@@ -13,7 +13,7 @@
  *                                                        *
  * hprose writer class for C#.                            *
  *                                                        *
- * LastModified: Feb 10, 2014                             *
+ * LastModified: Feb 18, 2014                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -54,12 +54,14 @@ namespace Hprose.IO {
         private Hashtable classref = new Hashtable();
 #endif
         private byte[] buf = new byte[20];
+#if !Unity
         private static byte[] minIntBuf = new byte[] {(byte)'-',(byte)'2',(byte)'1',(byte)'4',(byte)'7',(byte)'4',
                                                         (byte)'8',(byte)'3',(byte)'6',(byte)'4',(byte)'8'};
         private static byte[] minLongBuf = new byte[] {(byte)'-',(byte)'9',(byte)'2',(byte)'2',(byte)'3',
                                                          (byte)'3',(byte)'7',(byte)'2',(byte)'0',(byte)'3',
                                                          (byte)'6',(byte)'8',(byte)'5',(byte)'4',(byte)'7',
                                                          (byte)'7',(byte)'5',(byte)'8',(byte)'0',(byte)'8'};
+#endif
         private int lastref = 0;
         private int lastclassref = 0;
 
@@ -272,12 +274,16 @@ namespace Hprose.IO {
             }
             else {
                 stream.WriteByte(HproseTags.TagInteger);
+#if !Unity
                 if (i == Int32.MinValue) {
                     stream.Write(minIntBuf, 0, minIntBuf.Length);
                 }
                 else {
+#endif
                     WriteIntFast(i, stream);
+#if !Unity
                 }
+#endif
                 stream.WriteByte(HproseTags.TagSemicolon);
             }
         }
@@ -321,12 +327,16 @@ namespace Hprose.IO {
             }
             else {
                 stream.WriteByte(HproseTags.TagLong);
+#if !Unity
                 if (l == Int64.MinValue) {
                     stream.Write(minLongBuf, 0, minLongBuf.Length);
                 }
                 else {
+#endif
                     WriteIntFast((long)l, stream);
+#if !Unity
                 }
+#endif
                 stream.WriteByte(HproseTags.TagSemicolon);
             }
         }

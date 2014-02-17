@@ -13,7 +13,7 @@
  *                                                        *
  * hprose client class for C#.                            *
  *                                                        *
- * LastModified: Dec 15, 2012                             *
+ * LastModified: Feb 18, 2014                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -27,7 +27,7 @@ using Hprose.Reflection;
 #endif
 
 namespace Hprose.Client {
-    public abstract class HproseClient : IHproseInvoker {
+    public abstract class HproseClient {
         private static readonly object[] nullArgs = new object[0];
         public event HproseErrorEvent OnError = null;
         private static SynchronizationContext syncContext = SynchronizationContext.Current;

@@ -25,6 +25,7 @@ if not exist bin\Mono mkdir bin\Mono
 if not exist bin\Mono2 mkdir bin\Mono2
 if not exist bin\Mono4 mkdir bin\Mono4
 if not exist bin\Mono4.5 mkdir bin\Mono4.5
+if not exist bin\Unity mkdir bin\Unity
 
 set SL2_PATH=C:\Program Files\Microsoft SDKs\Silverlight\v2.0\Reference Assemblies
 set SL3_PATH=C:\Program Files\Reference Assemblies\Microsoft\Framework\Silverlight\v3.0
@@ -34,6 +35,8 @@ set WP70_PATH=C:\Program Files\Reference Assemblies\Microsoft\Framework\Silverli
 set WP71_PATH=C:\Program Files\Reference Assemblies\Microsoft\Framework\Silverlight\v4.0\Profile\WindowsPhone71
 set WP80_PATH=C:\Program Files\Reference Assemblies\Microsoft\Framework\WindowsPhone\v8.0
 set CF_PATH=C:\Program Files\Microsoft.NET\SDK\CompactFramework
+set Unity_PATH=C:\Program Files\Unity\Editor\Data\MonoBleedingEdge\lib\mono\4.0
+
 if DEFINED ProgramFiles(x86) set SL2_PATH=C:\Program Files (x86)\Microsoft SDKs\Silverlight\v2.0\Reference Assemblies
 if DEFINED ProgramFiles(x86) set SL3_PATH=C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\Silverlight\v3.0
 if DEFINED ProgramFiles(x86) set SL4_PATH=C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\Silverlight\v4.0
@@ -42,6 +45,7 @@ if DEFINED ProgramFiles(x86) set WP70_PATH=C:\Program Files (x86)\Reference Asse
 if DEFINED ProgramFiles(x86) set WP71_PATH=C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\Silverlight\v4.0\Profile\WindowsPhone71
 if DEFINED ProgramFiles(x86) set WP80_PATH=C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\WindowsPhone\v8.0
 if DEFINED ProgramFiles(x86) set CF_PATH=C:\Program Files (x86)\Microsoft.NET\SDK\CompactFramework
+if DEFINED ProgramFiles(x86) set Unity_PATH=C:\Program Files (x86)\Unity\Editor\Data\MonoBleedingEdge\lib\mono\4.0
 
 set NUMERICS_SRC=
 
@@ -86,13 +90,10 @@ set HPROSE_SRC=%HPROSE_SRC% src\System\Threading\SynchronizationContext.cs
 set HPROSE_SRC=%HPROSE_SRC% src\System\Windows\Forms\WindowsFormsSynchronizationContext.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Common\HproseException.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Common\HproseCallback.cs
-set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Common\HproseInvocationHandler.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Common\HproseMethod.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Common\HproseMethods.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Common\HproseResultMode.cs
-set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Common\IHproseInvoker.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Common\IHproseFilter.cs
-set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Common\InvokeHelper.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Reflection\Proxy.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Reflection\IInvocationHandler.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Reflection\CtorAccessor.cs
@@ -111,6 +112,8 @@ set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Client\CookieManager.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Client\Extension.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Client\HproseClient.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Client\HproseHttpClient.cs
+set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Client\HproseInvocationHandler.cs
+set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Client\InvokeHelper.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Server\HproseService.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Server\HproseServiceEvent.cs
 set HPROSE_SRC=%HPROSE_SRC% src\Hprose\Server\HproseHttpMethods.cs
@@ -406,6 +409,13 @@ set HPROSE_INFO= src\AssemblyInfo\Hprose\Mono4.5\AssemblyInfo.cs
 set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\Mono4.5\AssemblyInfo.cs
 call gmcs -out:bin\Mono4.5\Hprose.dll -sdk:4.5 -define:dotNET4;dotNET45;MONO -noconfig -target:library -optimize+ -debug- -reference:System,System.Core,System.Runtime.Serialization,System.Web,System.Numerics %HPROSE_SRC% %HPROSE_INFO%
 call gmcs -out:bin\Mono4.5\Hprose.Client.dll -sdk:4.5 -define:dotNET4;dotNET45;MONO;ClientOnly -noconfig -target:library -optimize+ -debug- -reference:System,System.Core,System.Runtime.Serialization,System.Numerics %HPROSE_SRC% %HPROSECLIENT_INFO%
+
+echo start compile hprose for Unity
+set HPROSE_INFO= src\AssemblyInfo\Hprose\Unity\AssemblyInfo.cs
+set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\Unity\AssemblyInfo.cs
+call "%Unity_PATH%\dmcs" -out:bin\Unity\Hprose.dll -sdk:4 -define:dotNET4;MONO;Unity -noconfig -target:library -optimize+ -debug- -reference:System,System.Core,System.Runtime.Serialization,System.Web,System.Numerics %HPROSE_SRC% %HPROSE_INFO%
+call "%Unity_PATH%\dmcs" -out:bin\Unity\Hprose.Client.dll -sdk:4 -define:dotNET4;MONO;Unity;ClientOnly -noconfig -target:library -optimize+ -debug- -reference:System,System.Core,System.Runtime.Serialization,System.Numerics %HPROSE_SRC% %HPROSECLIENT_INFO%
+
 
 set DHPARAMS_RESOURCE=
 set NUMERICS_SRC=

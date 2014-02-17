@@ -13,28 +13,30 @@
  *                                                        *
  * hprose Invoke Helper class for C#.                     *
  *                                                        *
- * LastModified: Nov 13, 2012                             *
+ * LastModified: Feb 18, 2014                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 #if !(dotNET10 || dotNET11 || dotNETCF10)
 using System;
-namespace Hprose.Common {
+using Hprose.Common;
+
+namespace Hprose.Client {
     interface IInvokeHelper {
-        void Invoke(IHproseInvoker client, string functionName, object[] args, Delegate callback, bool byRef);
+        void Invoke(HproseClient client, string functionName, object[] args, Delegate callback, bool byRef);
     }
 
     class InvokeHelper<T> : IInvokeHelper {
-        public void Invoke(IHproseInvoker client, string functionName, object[] args, Delegate callback, bool byRef) {
+        public void Invoke(HproseClient client, string functionName, object[] args, Delegate callback, bool byRef) {
             client.Invoke<T>(functionName, args, (HproseCallback<T>)callback, byRef);
         }
     }
     interface IInvokeHelper1 {
-        void Invoke(IHproseInvoker client, string functionName, object[] args, Delegate callback);
+        void Invoke(HproseClient client, string functionName, object[] args, Delegate callback);
     }
 
     class InvokeHelper1<T> : IInvokeHelper1 {
-        public void Invoke(IHproseInvoker client, string functionName, object[] args, Delegate callback) {
+        public void Invoke(HproseClient client, string functionName, object[] args, Delegate callback) {
             client.Invoke<T>(functionName, args, (HproseCallback1<T>)callback);
         }
     }

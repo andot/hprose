@@ -13,7 +13,7 @@
  *                                                        *
  * hprose InvocationHandler class for C#.                 *
  *                                                        *
- * LastModified: Nov 13, 2012                             *
+ * LastModified: Feb 18, 2014                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -24,13 +24,14 @@ using System.Reflection;
 using System.Threading;
 using Hprose.IO;
 using Hprose.Reflection;
+using Hprose.Common;
 
-namespace Hprose.Common {
+namespace Hprose.Client {
     class HproseInvocationHandler : IInvocationHandler {
-        private IHproseInvoker client;
         private String ns;
+        private HproseClient client;
 
-        public HproseInvocationHandler(IHproseInvoker client, String ns) {
+        public HproseInvocationHandler(HproseClient client, String ns) {
             this.client = client;
             this.ns = ns;
         }
