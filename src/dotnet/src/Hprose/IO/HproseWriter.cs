@@ -246,6 +246,7 @@ namespace Hprose.IO {
             }
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteInteger(sbyte i) {
             if (i >= 0 && i <= 9) {
                 stream.WriteByte((byte)('0' + i));
@@ -299,6 +300,7 @@ namespace Hprose.IO {
             }
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteInteger(ushort i) {
             if (i <= 9) {
                 stream.WriteByte((byte)('0' + i));
@@ -310,6 +312,7 @@ namespace Hprose.IO {
             }
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteLong(uint l) {
             if (l <= 9) {
                 stream.WriteByte((byte)('0' + l));
@@ -341,6 +344,7 @@ namespace Hprose.IO {
             }
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteLong(ulong l) {
             if (l <= 9) {
                 stream.WriteByte((byte)('0' + l));
@@ -696,6 +700,7 @@ namespace Hprose.IO {
             else WriteGuid(g);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArray(sbyte[] array) {
             references[array] = lastref++;
             int length = array.Length;
@@ -708,11 +713,13 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArrayWithRef(sbyte[] array) {
             if (references.ContainsKey(array)) WriteRef(array);
             else WriteArray(array);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArray(short[] array) {
             references[array] = lastref++;
             int length = array.Length;
@@ -725,11 +732,13 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArrayWithRef(short[] array) {
             if (references.ContainsKey(array)) WriteRef(array);
             else WriteArray(array);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArray(int[] array) {
             references[array] = lastref++;
             int length = array.Length;
@@ -742,11 +751,13 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArrayWithRef(int[] array) {
             if (references.ContainsKey(array)) WriteRef(array);
             else WriteArray(array);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArray(long[] array) {
             references[array] = lastref++;
             int length = array.Length;
@@ -759,11 +770,13 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArrayWithRef(long[] array) {
             if (references.ContainsKey(array)) WriteRef(array);
             else WriteArray(array);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArray(ushort[] array) {
             references[array] = lastref++;
             int length = array.Length;
@@ -776,11 +789,13 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArrayWithRef(ushort[] array) {
             if (references.ContainsKey(array)) WriteRef(array);
             else WriteArray(array);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArray(uint[] array) {
             references[array] = lastref++;
             int length = array.Length;
@@ -793,11 +808,13 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArrayWithRef(uint[] array) {
             if (references.ContainsKey(array)) WriteRef(array);
             else WriteArray(array);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArray(ulong[] array) {
             references[array] = lastref++;
             int length = array.Length;
@@ -810,11 +827,13 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArrayWithRef(ulong[] array) {
             if (references.ContainsKey(array)) WriteRef(array);
             else WriteArray(array);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArray(BigInteger[] array) {
             references[array] = lastref++;
             int length = array.Length;
@@ -827,11 +846,13 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArrayWithRef(BigInteger[] array) {
             if (references.ContainsKey(array)) WriteRef(array);
             else WriteArray(array);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArray(float[] array) {
             references[array] = lastref++;
             int length = array.Length;
@@ -844,11 +865,13 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArrayWithRef(float[] array) {
             if (references.ContainsKey(array)) WriteRef(array);
             else WriteArray(array);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArray(double[] array) {
             references[array] = lastref++;
             int length = array.Length;
@@ -861,11 +884,13 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArrayWithRef(double[] array) {
             if (references.ContainsKey(array)) WriteRef(array);
             else WriteArray(array);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArray(decimal[] array) {
             references[array] = lastref++;
             int length = array.Length;
@@ -878,11 +903,13 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArrayWithRef(decimal[] array) {
             if (references.ContainsKey(array)) WriteRef(array);
             else WriteArray(array);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArray(bool[] array) {
             references[array] = lastref++;
             int length = array.Length;
@@ -895,11 +922,13 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArrayWithRef(bool[] array) {
             if (references.ContainsKey(array)) WriteRef(array);
             else WriteArray(array);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArray(byte[][] array) {
             references[array] = lastref++;
             int length = array.Length;
@@ -914,11 +943,13 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArrayWithRef(byte[][] array) {
             if (references.ContainsKey(array)) WriteRef(array);
             else WriteArray(array);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArray(char[][] array) {
             references[array] = lastref++;
             int length = array.Length;
@@ -933,11 +964,13 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArrayWithRef(char[][] array) {
             if (references.ContainsKey(array)) WriteRef(array);
             else WriteArray(array);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArray(string[] array) {
             references[array] = lastref++;
             int length = array.Length;
@@ -952,11 +985,13 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArrayWithRef(string[] array) {
             if (references.ContainsKey(array)) WriteRef(array);
             else WriteArray(array);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArray(StringBuilder[] array) {
             references[array] = lastref++;
             int length = array.Length;
@@ -971,11 +1006,13 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArrayWithRef(StringBuilder[] array) {
             if (references.ContainsKey(array)) WriteRef(array);
             else WriteArray(array);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArray(Guid[] array) {
             references[array] = lastref++;
             int length = array.Length;
@@ -988,11 +1025,13 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArrayWithRef(Guid[] array) {
             if (references.ContainsKey(array)) WriteRef(array);
             else WriteArray(array);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArray(TimeSpan[] array) {
             references[array] = lastref++;
             int length = array.Length;
@@ -1005,11 +1044,13 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArrayWithRef(TimeSpan[] array) {
             if (references.ContainsKey(array)) WriteRef(array);
             else WriteArray(array);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArray(DateTime[] array) {
             references[array] = lastref++;
             int length = array.Length;
@@ -1022,6 +1063,7 @@ namespace Hprose.IO {
             stream.WriteByte(HproseTags.TagClosebrace);
         }
 
+        [CLSCompliantAttribute(false)]
         public void WriteArrayWithRef(DateTime[] array) {
             if (references.ContainsKey(array)) WriteRef(array);
             else WriteArray(array);

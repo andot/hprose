@@ -1,4 +1,4 @@
-
+[assembly: System.CLSCompliant(true)]
 [assembly: System.Reflection.AssemblyProduct("Hprose 1.3 for Mono 2")]
 [assembly: System.Reflection.AssemblyTitle("Hprose.dll")]
 [assembly: System.Reflection.AssemblyDescription("Hprose.dll")]

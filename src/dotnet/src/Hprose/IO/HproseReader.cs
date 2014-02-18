@@ -13,7 +13,7 @@
  *                                                        *
  * hprose reader class for C#.                            *
  *                                                        *
- * LastModified: Feb 10, 2014                             *
+ * LastModified: Feb 18, 2014                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -1179,6 +1179,7 @@ namespace Hprose.IO {
             }
         }
 
+        [CLSCompliantAttribute(false)]
         public sbyte ReadSByte() {
             int tag = stream.ReadByte();
             switch (tag) {
@@ -1272,6 +1273,7 @@ namespace Hprose.IO {
             }
         }
 
+        [CLSCompliantAttribute(false)]
         public ushort ReadUInt16() {
             int tag = stream.ReadByte();
             switch (tag) {
@@ -1326,6 +1328,7 @@ namespace Hprose.IO {
             }
         }
 
+        [CLSCompliantAttribute(false)]
         public uint ReadUInt32() {
             int tag = stream.ReadByte();
             switch (tag) {
@@ -1382,6 +1385,7 @@ namespace Hprose.IO {
             }
         }
 
+        [CLSCompliantAttribute(false)]
         public ulong ReadUInt64() {
             int tag = stream.ReadByte();
             switch (tag) {
@@ -1791,6 +1795,7 @@ namespace Hprose.IO {
             }
         }
 
+        [CLSCompliantAttribute(false)]
         public sbyte[] ReadSByteArray() {
             int tag = stream.ReadByte();
             switch (tag) {
@@ -1861,6 +1866,7 @@ namespace Hprose.IO {
             }
         }
 
+        [CLSCompliantAttribute(false)]
         public ushort[] ReadUInt16Array() {
             int tag = stream.ReadByte();
             switch (tag) {
@@ -1899,6 +1905,7 @@ namespace Hprose.IO {
             }
         }
 
+        [CLSCompliantAttribute(false)]
         public uint[] ReadUInt32Array() {
             int tag = stream.ReadByte();
             switch (tag) {
@@ -1937,6 +1944,7 @@ namespace Hprose.IO {
             }
         }
 
+        [CLSCompliantAttribute(false)]
         public ulong[] ReadUInt64Array() {
             int tag = stream.ReadByte();
             switch (tag) {
@@ -2127,6 +2135,7 @@ namespace Hprose.IO {
             }
         }
 
+        [CLSCompliantAttribute(false)]
         public char[][] ReadCharsArray() {
             int tag = stream.ReadByte();
             switch (tag) {
@@ -2146,6 +2155,7 @@ namespace Hprose.IO {
             }
         }
 
+        [CLSCompliantAttribute(false)]
         public byte[][] ReadBytesArray() {
             int tag = stream.ReadByte();
             switch (tag) {
@@ -2428,6 +2438,7 @@ namespace Hprose.IO {
             }
         }
 
+        [CLSCompliantAttribute(false)]
         public List<sbyte> ReadSByteList() {
             int tag = stream.ReadByte();
             switch (tag) {
@@ -2485,6 +2496,7 @@ namespace Hprose.IO {
             }
         }
 
+        [CLSCompliantAttribute(false)]
         public List<ushort> ReadUInt16List() {
             int tag = stream.ReadByte();
             switch (tag) {
@@ -2523,6 +2535,7 @@ namespace Hprose.IO {
             }
         }
 
+        [CLSCompliantAttribute(false)]
         public List<uint> ReadUInt32List() {
             int tag = stream.ReadByte();
             switch (tag) {
@@ -2561,6 +2574,7 @@ namespace Hprose.IO {
             }
         }
 
+        [CLSCompliantAttribute(false)]
         public List<ulong> ReadUInt64List() {
             int tag = stream.ReadByte();
             switch (tag) {

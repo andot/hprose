@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http listener service class for C#.             *
  *                                                        *
- * LastModified: Feb 2, 2014                              *
+ * LastModified: Feb 18, 2014                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -61,10 +61,10 @@ namespace Hprose.Server {
 
         public override HproseMethods GlobalMethods {
             get {
-                if (globalMethods == null) {
-                    globalMethods = new HproseHttpListenerMethods();
+                if (gMethods == null) {
+                    gMethods = new HproseHttpListenerMethods();
                 }
-                return globalMethods;
+                return gMethods;
             }
         }
 

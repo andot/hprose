@@ -3,6 +3,7 @@
 #else
 [assembly: System.Reflection.AssemblyProduct("Hprose 1.3 for .NET Framework 4.0")]
 #endif
+[assembly: System.CLSCompliant(true)]
 [assembly: System.Reflection.AssemblyTitle("Hprose.dll")]
 [assembly: System.Reflection.AssemblyDescription("Hprose.dll")]
 [assembly: System.Reflection.AssemblyDefaultAlias("Hprose.dll")]

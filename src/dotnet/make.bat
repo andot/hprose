@@ -35,7 +35,7 @@ set WP70_PATH=C:\Program Files\Reference Assemblies\Microsoft\Framework\Silverli
 set WP71_PATH=C:\Program Files\Reference Assemblies\Microsoft\Framework\Silverlight\v4.0\Profile\WindowsPhone71
 set WP80_PATH=C:\Program Files\Reference Assemblies\Microsoft\Framework\WindowsPhone\v8.0
 set CF_PATH=C:\Program Files\Microsoft.NET\SDK\CompactFramework
-set Unity_PATH=C:\Program Files\Unity\Editor\Data\MonoBleedingEdge\lib\mono\4.0
+set Unity_PATH=C:\Program Files\Unity\Editor\Data\MonoBleedingEdge\lib\mono\2.0
 
 if DEFINED ProgramFiles(x86) set SL2_PATH=C:\Program Files (x86)\Microsoft SDKs\Silverlight\v2.0\Reference Assemblies
 if DEFINED ProgramFiles(x86) set SL3_PATH=C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\Silverlight\v3.0
@@ -45,7 +45,7 @@ if DEFINED ProgramFiles(x86) set WP70_PATH=C:\Program Files (x86)\Reference Asse
 if DEFINED ProgramFiles(x86) set WP71_PATH=C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\Silverlight\v4.0\Profile\WindowsPhone71
 if DEFINED ProgramFiles(x86) set WP80_PATH=C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\WindowsPhone\v8.0
 if DEFINED ProgramFiles(x86) set CF_PATH=C:\Program Files (x86)\Microsoft.NET\SDK\CompactFramework
-if DEFINED ProgramFiles(x86) set Unity_PATH=C:\Program Files (x86)\Unity\Editor\Data\MonoBleedingEdge\lib\mono\4.0
+if DEFINED ProgramFiles(x86) set Unity_PATH=C:\Program Files (x86)\Unity\Editor\Data\MonoBleedingEdge\lib\mono\2.0
 
 set NUMERICS_SRC=
 
@@ -413,8 +413,8 @@ call gmcs -out:bin\Mono4.5\Hprose.Client.dll -sdk:4.5 -define:dotNET4;dotNET45;M
 echo start compile hprose for Unity
 set HPROSE_INFO= src\AssemblyInfo\Hprose\Unity\AssemblyInfo.cs
 set HPROSECLIENT_INFO= src\AssemblyInfo\Hprose.Client\Unity\AssemblyInfo.cs
-call "%Unity_PATH%\dmcs" -out:bin\Unity\Hprose.dll -sdk:4 -define:dotNET4;MONO;Unity -noconfig -target:library -optimize+ -debug- -reference:System,System.Core,System.Runtime.Serialization,System.Web,System.Numerics %HPROSE_SRC% %HPROSE_INFO%
-call "%Unity_PATH%\dmcs" -out:bin\Unity\Hprose.Client.dll -sdk:4 -define:dotNET4;MONO;Unity;ClientOnly -noconfig -target:library -optimize+ -debug- -reference:System,System.Core,System.Runtime.Serialization,System.Numerics %HPROSE_SRC% %HPROSECLIENT_INFO%
+call "%Unity_PATH%\gmcs" -out:bin\Unity\Hprose.dll -sdk:2 -define:dotNET2;MONO;Unity -noconfig -target:library -optimize+ -debug- -reference:System,System.Web %NUMERICS_SRC% %HPROSE_SRC% %HPROSE_INFO%
+call "%Unity_PATH%\gmcs" -out:bin\Unity\Hprose.Client.dll -sdk:2 -define:dotNET2;MONO;Unity;ClientOnly -noconfig -target:library -optimize+ -debug- -reference:System %NUMERICS_SRC% %HPROSE_SRC% %HPROSECLIENT_INFO%
 
 
 set DHPARAMS_RESOURCE=

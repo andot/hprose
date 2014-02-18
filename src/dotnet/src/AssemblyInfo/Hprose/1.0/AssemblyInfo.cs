@@ -1,4 +1,4 @@
-
+[assembly: System.CLSCompliant(true)]
 [assembly: System.Reflection.AssemblyProduct("Hprose 1.3 for .NET Framework 1.0")]
 [assembly: System.Reflection.AssemblyTitle("Hprose.dll")]
 [assembly: System.Reflection.AssemblyDescription("Hprose.dll")]

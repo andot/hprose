@@ -7,6 +7,7 @@
 [assembly: System.Reflection.AssemblyVersion("4.0.30319.17929")]
 [assembly: System.Reflection.AssemblyFileVersion("4.0.30319.17929")]
 #endif
+[assembly: System.CLSCompliant(true)]
 [assembly: System.Reflection.AssemblyTitle("Hprose.dll")]
 [assembly: System.Reflection.AssemblyDescription("Hprose.dll")]
 [assembly: System.Reflection.AssemblyDefaultAlias("Hprose.dll")]

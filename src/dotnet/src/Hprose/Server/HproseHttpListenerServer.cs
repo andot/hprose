@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http listener server class for C#.              *
  *                                                        *
- * LastModified: Dec 8, 2012                              *
+ * LastModified: Feb 18, 2014                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -36,7 +36,7 @@ namespace Hprose.Server {
         private string clientAccessPolicyXmlContent = null;
         private string lastModified = null;
         private string etag = null;
-        private uint threadCount = 2;
+        private int tCount = 2;
         public event BeforeInvokeEvent OnBeforeInvoke = null;
         public event AfterInvokeEvent OnAfterInvoke = null;
         public event SendHeaderEvent OnSendHeader = null;
@@ -67,12 +67,12 @@ namespace Hprose.Server {
             }
         }
 
-        public uint ThreadCount {
+        public int ThreadCount {
             get {
-                return threadCount;
+                return tCount;
             }
             set {
-                threadCount = value;
+                tCount = value;
             }
         }
 
@@ -243,7 +243,7 @@ namespace Hprose.Server {
             lastModified = DateTime.Now.ToString("R");
             etag = '"' + new Random().Next().ToString("x") + ":" + new Random().Next().ToString() + '"';
             Listener.Start();
-            for (uint i = 0; i < threadCount; i++) {
+            for (int i = 0; i < tCount; i++) {
                 Listener.BeginGetContext(GetContext, Listener);
             }
         }

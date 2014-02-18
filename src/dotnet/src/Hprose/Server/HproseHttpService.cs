@@ -13,7 +13,7 @@
  *                                                        *
  * hprose http service class for C#.                      *
  *                                                        *
- * LastModified: Feb 2, 2014                              *
+ * LastModified: Feb 18, 2014                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -67,10 +67,10 @@ namespace Hprose.Server {
 
         public override HproseMethods GlobalMethods {
             get {
-                if (globalMethods == null) {
-                    globalMethods = new HproseHttpMethods();
+                if (gMethods == null) {
+                    gMethods = new HproseHttpMethods();
                 }
-                return globalMethods;
+                return gMethods;
             }
         }
 

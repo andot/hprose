@@ -13,7 +13,7 @@
  *                                                        *
  * hprose service class for C#.                           *
  *                                                        *
- * LastModified: Feb 2, 2014                              *
+ * LastModified: Feb 18, 2014                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -34,7 +34,7 @@ namespace Hprose.Server {
 
         private HproseMode mode = HproseMode.FieldMode;
         private bool debugEnabled = false;
-        protected HproseMethods globalMethods = null;
+        protected HproseMethods gMethods = null;
         public event BeforeInvokeEvent OnBeforeInvoke = null;
         public event AfterInvokeEvent OnAfterInvoke = null;
         public event SendErrorEvent OnSendError = null;
@@ -42,13 +42,13 @@ namespace Hprose.Server {
 
         public virtual HproseMethods GlobalMethods {
             get {
-                if (globalMethods == null) {
-                    globalMethods = new HproseMethods();
+                if (gMethods == null) {
+                    gMethods = new HproseMethods();
                 }
-                return globalMethods;
+                return gMethods;
             }
             set {
-                globalMethods = value;
+                gMethods = value;
             }
         }
 
