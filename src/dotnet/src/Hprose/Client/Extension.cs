@@ -13,12 +13,12 @@
  *                                                        *
  * hprose client extension class for C#.                  *
  *                                                        *
- * LastModified: Nov 12, 2012                             *
+ * LastModified: Feb 18, 2014                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
-#if !(dotNET10 || dotNET11 || dotNETCF10)
+#if !(dotNET10 || dotNET11 || dotNETCF10 || Unity)
 #if (dotNET2 || dotNETCF20 || SL2)
 #define NET_2_0
 #endif
