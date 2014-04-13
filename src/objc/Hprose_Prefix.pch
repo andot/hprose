@@ -1,7 +1,0 @@
-//
-// Prefix header for all source files of the 'Hprose' target in the 'Hprose' project.
-//
-
-#ifdef __OBJC__
-    #import <Foundation/Foundation.h>
-#endif
