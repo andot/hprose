@@ -359,6 +359,7 @@ sub read_bytes_without_tag {
 
 my %readBytesMethod = (
     Hprose::Tags->Ref => $read_ref,
+    Hprose::Tags->Empty => $read_empty,
     Hprose::Tags->Bytes => $read_bytes_without_tag,
 );
 
@@ -385,6 +386,8 @@ sub read_string_without_tag {
 
 my %readStringMethod = (
     Hprose::Tags->Ref => $read_ref,
+    Hprose::Tags->Empty => $read_empty,
+    Hprose::Tags->UTF8Char => \&read_utf8char_without_tag,
     Hprose::Tags->String => $read_string_without_tag,
 );
 
