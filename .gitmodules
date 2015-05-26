@@ -1,3 +1,72 @@
 [submodule "php"]
 	path = php
 	url = https://github.com/hprose/hprose-php
+[submodule "go"]
+	path = go
+	url = https://github.com/hprose/hprose-go
+[submodule "java"]
+	path = java
+	url = https://github.com/hprose/hprose-java
+[submodule "pecl"]
+	path = pecl
+	url = https://github.com/hprose/hprose-pecl
+[submodule "swift"]
+	path = swift
+	url = https://github.com/hprose/hprose-swift
+[submodule "nodejs"]
+	path = nodejs
+	url = https://github.com/hprose/hprose-nodejs
+[submodule "html5"]
+	path = html5
+	url = https://github.com/hprose/hprose-html5
+[submodule "objc"]
+	path = objc
+	url = https://github.com/hprose/hprose-objc
+[submodule "perl"]
+	path = perl
+	url = https://github.com/hprose/hprose-perl
+[submodule "d"]
+	path = d
+	url = https://github.com/hprose/hprose-d
+[submodule "ruby"]
+	path = ruby
+	url = https://github.com/hprose/hprose-ruby
+[submodule "python"]
+	path = python
+	url = https://github.com/hprose/hprose-python
+[submodule "lua"]
+	path = lua
+	url = https://github.com/hprose/hprose-lua
+[submodule "js"]
+	path = js
+	url = https://github.com/hprose/hprose-js
+[submodule "j2me"]
+	path = j2me
+	url = https://github.com/hprose/hprose-j2me
+[submodule "hack"]
+	path = hack
+	url = https://github.com/hprose/hprose-hack
+[submodule "dotnet"]
+	path = dotnet
+	url = https://github.com/hprose/hprose-dotnet
+[submodule "delphi"]
+	path = delphi
+	url = https://github.com/hprose/hprose-delphi
+[submodule "dart"]
+	path = dart
+	url = https://github.com/hprose/hprose-dart
+[submodule "cpp"]
+	path = cpp
+	url = https://github.com/hprose/hprose-cpp
+[submodule "asp"]
+	path = asp
+	url = https://github.com/hprose/hprose-asp
+[submodule "as2"]
+	path = as2
+	url = https://github.com/hprose/hprose-as2
+[submodule "as3"]
+	path = as3
+	url = https://github.com/hprose/hprose-as3
+[submodule "aauto"]
+	path = aauto
+	url = https://github.com/hprose/hprose-aauto
