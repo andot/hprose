@@ -1,0 +1,3 @@
+[submodule "php"]
+	path = php
+	url = https://github.com/hprose/hprose-php
