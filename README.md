@@ -3,35 +3,31 @@ Hprose
 
 *Hprose* is a High Performance Remote Object Service Engine. 
 
-It is a modern, lightweight, cross-language, cross-platform, object-oriented,
-high performance, remote dynamic communication middleware. It is not only easy to
-use, but powerful. You just need a little time to learn, then you can use it to
-easily construct cross language cross platform distributed application system.
+It is a modern, lightweight, cross-language, cross-platform, object-oriented, high performance, remote dynamic communication middleware. It is not only easy to use, but powerful. You just need a little time to learn, then you can use it to easily construct cross language cross platform distributed application system.
+
+It contains a semi-text serialization format, an RPC protocol and its implementation. The meaning of semi-text is all the data are represented as text, except the original binary data. The serialization format is very compact. It takes up very little space, and can be parsed very quickly in programming language. You can use this serialization format without hprose RPC protocol in other communications protocols, data storage, and more. If you want to know more, please read [Hprose Specification](https://github.com/hprose/hprose/blob/master/spec.mediawiki)([中文版](https://github.com/hprose/hprose/blob/master/spec_zh_CN.mediawiki)).
 
 Language support
 ----------------
 
-*Hprose* supports many programming languages, for example:
+Hprose 2.0.x：
 
-* AAuto Quicker
-* ActionScript
-* ASP
-* C++
-* Delphi/Free Pascal
-* dotNET(C#, Visual Basic...)
-* Golang
-* Java
-* JavaScript
-* Node.js
-* Objective-C
-* Perl
-* PHP
-* Python
-* Ruby
-* ...
-
-Through *Hprose*, You can conveniently and efficiently intercommunicate between those
-programming languages.
+  hprose  | language or platform | lastest-version | documents
+  :------|:--------|:---------------|:----------
+[![hprose-php](https://img.shields.io/badge/hprose-php-blue.svg)](https://github.com/hprose/hprose-php) | ![Supported PHP versions: 5.3 .. 7.1](https://img.shields.io/badge/php-5.3~7.1-blue.svg) | [![Packagist](https://img.shields.io/packagist/v/hprose/hprose.svg)](https://packagist.org/packages/hprose/hprose) | [![Documents](https://img.shields.io/badge/doc-2.0-blue.svg)](https://github.com/hprose/hprose-php/wiki)
+[![hprose-swoole](https://img.shields.io/badge/hprose-swoole-blue.svg)](https://github.com/hprose/hprose-swoole) | ![Supported PHP versions: 5.3 .. 7.1](https://img.shields.io/badge/php-5.3~7.1-blue.svg) | [![Packagist](https://img.shields.io/packagist/v/hprose/hprose-swoole.svg)](https://packagist.org/packages/hprose/hprose-swoole) | [![Documents](https://img.shields.io/badge/doc-2.0-blue.svg)](https://github.com/hprose/hprose-php/wiki)
+[![hprose-yii](https://img.shields.io/badge/hprose-yii2-blue.svg)](https://github.com/hprose/hprose-yii) | ![Supported PHP versions: 5.3 .. 7.1](https://img.shields.io/badge/php-5.3~7.1-blue.svg) | [![Packagist](https://img.shields.io/packagist/v/hprose/hprose-yii.svg)](https://packagist.org/packages/hprose/hprose-yii) | [![Documents](https://img.shields.io/badge/doc-2.0-blue.svg)](https://github.com/hprose/hprose-php/wiki)
+[![hprose-symfony](https://img.shields.io/badge/hprose-symfony-blue.svg)](https://github.com/hprose/hprose-symfony) | ![Supported PHP versions: 5.3 .. 7.1](https://img.shields.io/badge/php-5.3~7.1-blue.svg) | [![Packagist](https://img.shields.io/packagist/v/hprose/hprose-symfony.svg)](https://packagist.org/packages/hprose/hprose-symfony) | [![Documents](https://img.shields.io/badge/doc-2.0-blue.svg)](https://github.com/hprose/hprose-php/wiki)
+[![hprose-psr7](https://img.shields.io/badge/hprose-psr7-blue.svg)](https://github.com/hprose/hprose-psr7) | ![Supported PHP versions: 5.3 .. 7.1](https://img.shields.io/badge/php-5.3~7.1-blue.svg) | [![Packagist](https://img.shields.io/packagist/v/hprose/hprose-psr7.svg)](https://packagist.org/packages/hprose/hprose-psr7) | [![Documents](https://img.shields.io/badge/doc-2.0-blue.svg)](https://github.com/hprose/hprose-php/wiki)
+[![hprose-java](https://img.shields.io/badge/hprose-java-blue.svg)](https://github.com/hprose/hprose-java) | ![Supported Java versions: jdk5-jdk8](https://img.shields.io/badge/java-jdk5~jdk8-blue.svg) | [![Maven Central](https://img.shields.io/maven-central/v/org.hprose/hprose-java.svg)](https://maven-badges.herokuapp.com/maven-central/org.hprose/hprose-java/) | [![Documents](https://img.shields.io/badge/doc-2.0-blue.svg)](https://github.com/hprose/hprose-java/wiki)
+[![hprose-golang](https://img.shields.io/badge/hprose-golang-blue.svg)](https://github.com/hprose/hprose-golang) | ![Supported Golang versions: 1.6-1.7](https://img.shields.io/badge/golang-1.6~1.7-blue.svg) | [![GitHub release](https://img.shields.io/github/release/hprose/hprose-golang.svg)](https://github.com/hprose/hprose-golang/releases) | [![Documents](https://img.shields.io/badge/doc-2.0-blue.svg)](https://github.com/hprose/hprose-golang/wiki)
+[![hprose-nodejs](https://img.shields.io/badge/hprose-nodejs-blue.svg)](https://github.com/hprose/hprose-nodejs) | ![Supported Nodejs versions: all](https://img.shields.io/badge/nodejs-all-blue.svg) | [![npm version](https://img.shields.io/npm/v/hprose.svg)](https://www.npmjs.com/package/hprose) | [![Documents](https://img.shields.io/badge/doc-2.0-blue.svg)](https://github.com/hprose/hprose-nodejs/wiki)
+[![hprose-js](https://img.shields.io/badge/hprose-js-blue.svg)](https://github.com/hprose/hprose-js) | ![Supported JavaScript versions: es3-es2016](https://img.shields.io/badge/javascript-es3~es2016-blue.svg) | [![npm version](https://img.shields.io/npm/v/hprose-js.svg)](https://www.npmjs.com/package/hprose-js) [![bower version](https://img.shields.io/bower/v/hprose.svg)](http://bower.io/search/?q=hprose) | [![Documents](https://img.shields.io/badge/doc-2.0-blue.svg)](https://github.com/hprose/hprose-js/wiki)
+[![hprose-html5](https://img.shields.io/badge/hprose-html5-blue.svg)](https://github.com/hprose/hprose-html5) | ![Supported JavaScript versions: es5-es2016](https://img.shields.io/badge/javascript-es5~es2016-blue.svg) | [![npm version](https://img.shields.io/npm/v/hprose-html5.svg)](https://www.npmjs.com/package/hprose-html5) [![bower version](https://img.shields.io/bower/v/hprose-html5.svg)](http://bower.io/search/?q=hprose-html5) | [![Documents](https://img.shields.io/badge/doc-2.0-blue.svg)](https://github.com/hprose/hprose-html5/wiki)
+[![hprose-wx](https://img.shields.io/badge/hprose-wx-blue.svg)](https://github.com/hprose/hprose-wx) | ![Supported JavaScript versions: es5-es6](https://img.shields.io/badge/javascript-es5~es6-blue.svg) | [![GitHub release](https://img.shields.io/github/release/hprose/hprose-wx.svg)](https://github.com/hprose/hprose-wx/releases) | [![Documents](https://img.shields.io/badge/doc-2.0-blue.svg)](https://github.com/hprose/hprose-wx/blob/master/README_zh_CN.md)
+[![hprose-objc](https://img.shields.io/badge/hprose-objc-blue.svg)](https://github.com/hprose/hprose-objc) | [![Platform](https://img.shields.io/cocoapods/p/hprose.svg)](http://cocoapods.org/pods/hprose) | [![Version](https://img.shields.io/cocoapods/v/hprose.svg)](http://cocoapods.org/pods/hprose) | [![Documents](https://img.shields.io/badge/doc-1.3-blue.svg)](https://github.com/andot/hprose/blob/master/doc/1.3/pdf/objc.pdf)
+[![hprose-swift](https://img.shields.io/badge/hprose-swift-blue.svg)](https://github.com/hprose/hprose-swift) | [![Platform](https://img.shields.io/cocoapods/p/hprose.svg)](http://cocoapods.org/pods/hprose) | [![Version](https://img.shields.io/cocoapods/v/hprose.svg)](http://cocoapods.org/pods/hprose) | [![Documents](https://img.shields.io/badge/doc-2.0-blue.svg)](https://github.com/hprose/hprose-swift/)
+[![hprose-delphi](https://img.shields.io/badge/hprose-delphi/freepascal-blue.svg)](https://github.com/hprose/hprose-delphi) | ![Supported Delphi versions: delphi6-delphi10.1](https://img.shields.io/badge/delphi-5~10.1-blue.svg) ![Supported FreePascal versions: freepascal2-freepascal3](https://img.shields.io/badge/freepascal-2~3-blue.svg) | [![GitHub release](https://img.shields.io/github/release/hprose/hprose-delphi.svg)](https://github.com/hprose/hprose-delphi/releases) | [![Documents](https://img.shields.io/badge/doc-1.3-blue.svg)](https://github.com/andot/hprose/blob/master/doc/1.3/pdf/pascal.pdf) [![Documents](https://img.shields.io/badge/doc-2.0-blue.svg)](https://github.com/hprose/hprose-delphi/wiki)
 
 License
 -------
