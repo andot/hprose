@@ -1,4 +1,4 @@
-Hprose
+<img src="http://hprose.com/banner.@2x.png" alt="Hprose" title="Hprose" width="650" height="200" />
 ===============
 
 *Hprose* is a High Performance Remote Object Service Engine. 
